@@ -24,6 +24,17 @@ export default {
         }
     },
 
+    async getTeamYear(year) {
+        try {
+            const response = await api.get('/reports/team-year', {
+                params: { year },
+            })
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getOvertime(employeeId, year) {
         try {
             const response = await api.get('/reports/overtime', {
