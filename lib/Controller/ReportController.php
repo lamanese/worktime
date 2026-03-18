@@ -6,6 +6,7 @@ namespace OCA\WorkTime\Controller;
 
 use DateTime;
 use OCA\WorkTime\Db\Employee;
+use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\TimeEntryMapper;
 use OCA\WorkTime\Service\AbsenceService;
 use OCA\WorkTime\Service\EmployeeService;
@@ -160,6 +161,105 @@ class ReportController extends BaseController {
     }
 
     #[NoAdminRequired]
+    public function teamYear(int $year): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        $teamMembers = $this->permissionService->getTeamMembers($this->userId);
+
+        if (empty($teamMembers)) {
+            return $this->successResponse([]);
+        }
+
+        $report = [];
+
+        foreach ($teamMembers as $employee) {
+            $months = [];
+            $totalOvertimeMinutes = 0;
+
+            for ($month = 1; $month <= 12; $month++) {
+                $startDate = new DateTime("$year-$month-01");
+
+                // Future months: only load vacation, skip time entries
+                if ($startDate > new DateTime()) {
+                    $futureAbsences = $this->absenceService->findByEmployeeAndMonth($employee->getId(), $year, $month);
+                    $futureVacationDays = 0;
+                    foreach ($futureAbsences as $absence) {
+                        if ($absence->countsAsVacation() && $absence->getStatus() === Absence::STATUS_APPROVED) {
+                            $futureVacationDays += $this->countWorkingDaysInMonth($absence, $year, $month);
+                        }
+                    }
+                    $months[] = [
+                        'month' => $month,
+                        'overtimeMinutes' => null,
+                        'vacationDays' => $futureVacationDays > 0 ? $futureVacationDays : null,
+                        'status' => null,
+                        'canApprove' => false,
+                    ];
+                    continue;
+                }
+
+                $timeEntries = $this->timeEntryService->findByEmployeeAndMonth($employee->getId(), $year, $month);
+                $absences = $this->absenceService->findByEmployeeAndMonth($employee->getId(), $year, $month);
+                $holidays = $this->holidayService->findByMonth($year, $month, $employee->getFederalState());
+
+                $stats = $this->calculateMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
+                $statusSummary = $this->timeEntryMapper->getMonthlyStatusSummary($employee->getId(), $year, $month);
+
+                // Determine dominant status
+                $status = 'draft';
+                if ($statusSummary['approved'] > 0 && $statusSummary['submitted'] === 0 && $statusSummary['draft'] === 0 && $statusSummary['rejected'] === 0) {
+                    $status = 'approved';
+                } elseif ($statusSummary['submitted'] > 0) {
+                    $status = 'submitted';
+                } elseif ($statusSummary['rejected'] > 0) {
+                    $status = 'rejected';
+                }
+
+                // Count vacation days in this month
+                $vacationDays = 0;
+                foreach ($absences as $absence) {
+                    if ($absence->countsAsVacation() && $absence->getStatus() === Absence::STATUS_APPROVED) {
+                        $vacationDays += $this->countWorkingDaysInMonth($absence, $year, $month);
+                    }
+                }
+
+                $months[] = [
+                    'month' => $month,
+                    'overtimeMinutes' => $stats['overtimeMinutes'],
+                    'vacationDays' => $vacationDays,
+                    'status' => $status,
+                    'canApprove' => $statusSummary['submitted'] > 0,
+                ];
+
+                $totalOvertimeMinutes += $stats['overtimeMinutes'];
+            }
+
+            // Vacation stats
+            $vacationStats = $this->absenceService->getVacationStats(
+                $employee->getId(),
+                $year,
+                (int)$employee->getVacationDays()
+            );
+
+            $report[] = [
+                'employee' => [
+                    'id' => $employee->getId(),
+                    'userId' => $employee->getUserId(),
+                    'fullName' => $employee->getFullName(),
+                    'weeklyHours' => $employee->getWeeklyHours(),
+                ],
+                'vacationStats' => $vacationStats,
+                'months' => $months,
+                'totalOvertimeMinutes' => $totalOvertimeMinutes,
+            ];
+        }
+
+        return $this->successResponse($report);
+    }
+
+    #[NoAdminRequired]
     public function overtime(?int $employeeId = null, int $year = 0): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -263,6 +363,40 @@ class ReportController extends BaseController {
      *   Credited as work time (added to Ist)
      * - Unpaid: Reduces target (Soll), not credited as work time
      */
+
+    /**
+     * Count working days of an absence that fall within a specific month.
+     * Excludes weekends (Sat/Sun).
+     */
+    private function countWorkingDaysInMonth(Absence $absence, int $year, int $month): float {
+        $monthStart = new DateTime("$year-$month-01");
+        $monthEnd = (clone $monthStart)->modify('last day of this month');
+
+        $absStart = $absence->getStartDate();
+        $absEnd = $absence->getEndDate();
+
+        // Clamp to month boundaries
+        $start = $absStart > $monthStart ? $absStart : $monthStart;
+        $end = $absEnd < $monthEnd ? $absEnd : $monthEnd;
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        // Count working days (Mon-Fri)
+        $days = 0;
+        $current = clone $start;
+        while ($current <= $end) {
+            $dayOfWeek = (int)$current->format('N'); // 1=Mon, 7=Sun
+            if ($dayOfWeek <= 5) {
+                $days++;
+            }
+            $current->modify('+1 day');
+        }
+
+        return (float)$days;
+    }
+
     private function calculateMonthlyStats(
         Employee $employee,
         int $year,
