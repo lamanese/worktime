@@ -7,6 +7,19 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-19
+
+### Added
+- Team-Jahresuebersicht mit Ueberstunden, Urlaub und Status pro Mitarbeiter (#32)
+- Jahres-Picker Komponente fuer Team-View
+- API-Endpoint fuer Jahresberichte (ReportController)
+
+### Fixed
+- Korrekte Jahres-Ueberstundenberechnung im Dashboard (#37)
+- Beschreibungsspalte in der Zeiteintrags-Ansicht sichtbar (#35)
+- Null-Guard fuer employeeId in allen Controllern (#33)
+- Verbessertes Onboarding fuer Nutzer ohne Mitarbeiterprofil
+
 ## [0.1.1] - 2026-02-23
 
 ### Added
