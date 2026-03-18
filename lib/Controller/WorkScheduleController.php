@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OCA\WorkTime\Controller;
+
+use OCA\WorkTime\Service\PermissionService;
+use OCA\WorkTime\Service\WorkScheduleService;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+
+class WorkScheduleController extends BaseController {
+
+    public function __construct(
+        IRequest $request,
+        ?string $userId,
+        private WorkScheduleService $workScheduleService,
+        private PermissionService $permissionService,
+    ) {
+        parent::__construct($request, $userId);
+    }
+
+    #[NoAdminRequired]
+    public function index(int $employeeId): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        $schedules = $this->workScheduleService->findByEmployee($employeeId);
+        return $this->successResponse($schedules);
+    }
+
+    #[NoAdminRequired]
+    public function create(
+        int $employeeId,
+        string $validFrom,
+        array $dayHours = [],
+        int $vacationDays = 30
+    ): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $schedule = $this->workScheduleService->create(
+                $employeeId,
+                $validFrom,
+                $dayHours,
+                $vacationDays,
+                $this->userId
+            );
+
+            return $this->createdResponse($schedule);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    #[NoAdminRequired]
+    public function update(
+        int $employeeId,
+        int $id,
+        array $dayHours = [],
+        int $vacationDays = 30
+    ): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $schedule = $this->workScheduleService->update(
+                $id,
+                $dayHours,
+                $vacationDays,
+                $this->userId
+            );
+
+            return $this->successResponse($schedule);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    #[NoAdminRequired]
+    public function destroy(int $employeeId, int $id): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $this->workScheduleService->delete($id, $this->userId);
+            return $this->deletedResponse();
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+}

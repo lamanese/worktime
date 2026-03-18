@@ -7,6 +7,7 @@ namespace OCA\WorkTime\Service;
 use DateTime;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\EmployeeMapper;
+use OCA\WorkTime\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -15,6 +16,7 @@ class EmployeeService {
 
     public function __construct(
         private EmployeeMapper $employeeMapper,
+        private WorkScheduleMapper $workScheduleMapper,
         private AuditLogService $auditLogService,
         private IUserManager $userManager,
         private LoggerInterface $logger,
@@ -112,6 +114,9 @@ class EmployeeService {
 
         $employee = $this->employeeMapper->insert($employee);
 
+        // Create initial work schedule profile
+        $this->createInitialWorkSchedule($employee);
+
         // Audit log
         if ($currentUserId) {
             $this->auditLogService->logCreate($currentUserId, 'employee', $employee->getId(), $employee->jsonSerialize());
@@ -189,6 +194,9 @@ class EmployeeService {
             $this->auditLogService->logDelete($currentUserId, 'employee', $employee->getId(), $employee->jsonSerialize());
         }
 
+        // Delete associated work schedules
+        $this->workScheduleMapper->deleteByEmployeeId($id);
+
         $this->employeeMapper->delete($employee);
     }
 
@@ -248,6 +256,34 @@ class EmployeeService {
         $this->auditLogService->logUpdate($userId, 'employee', $employee->getId(), $oldValues, $employee->jsonSerialize());
 
         return $employee;
+    }
+
+    /**
+     * Create the initial work schedule profile for a new employee.
+     */
+    private function createInitialWorkSchedule(Employee $employee): void {
+        try {
+            $dailyHours = round((float)$employee->getWeeklyHours() / 5, 2);
+            $validFrom = $employee->getEntryDate() ?? new DateTime('2020-01-01');
+
+            $schedule = new \OCA\WorkTime\Db\WorkSchedule();
+            $schedule->setEmployeeId($employee->getId());
+            $schedule->setValidFrom($validFrom);
+            $schedule->setMonHours(number_format($dailyHours, 2, '.', ''));
+            $schedule->setTueHours(number_format($dailyHours, 2, '.', ''));
+            $schedule->setWedHours(number_format($dailyHours, 2, '.', ''));
+            $schedule->setThuHours(number_format($dailyHours, 2, '.', ''));
+            $schedule->setFriHours(number_format($dailyHours, 2, '.', ''));
+            $schedule->setSatHours('0.00');
+            $schedule->setSunHours('0.00');
+            $schedule->setVacationDays($employee->getVacationDays());
+            $schedule->setCreatedAt(new DateTime());
+            $schedule->setUpdatedAt(new DateTime());
+
+            $this->workScheduleMapper->insert($schedule);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create initial work schedule: ' . $e->getMessage());
+        }
     }
 
     /**

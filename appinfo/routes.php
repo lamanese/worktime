@@ -79,6 +79,12 @@ return [
         ['name' => 'settings#update', 'url' => '/api/settings/{key}', 'verb' => 'PUT'],
         ['name' => 'settings#reset', 'url' => '/api/settings/{key}/reset', 'verb' => 'POST'],
 
+        // Work Schedules API
+        ['name' => 'work_schedule#index',   'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'GET'],
+        ['name' => 'work_schedule#create',  'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'POST'],
+        ['name' => 'work_schedule#update',  'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'work_schedule#destroy', 'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
         // Reports API
         ['name' => 'report#monthly', 'url' => '/api/reports/monthly', 'verb' => 'GET'],
         ['name' => 'report#pdf', 'url' => '/api/reports/pdf', 'verb' => 'GET'],

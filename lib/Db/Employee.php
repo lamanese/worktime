@@ -104,6 +104,10 @@ class Employee extends Entity implements JsonSerializable {
         return trim($this->firstName . ' ' . $this->lastName);
     }
 
+    /**
+     * @deprecated Use WorkScheduleService::getDailyMinutesForDate() instead.
+     * This assumes a 5-day week which is incorrect for part-time employees.
+     */
     public function getDailyHours(): float {
         return (float)$this->weeklyHours / 5;
     }
