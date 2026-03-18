@@ -223,7 +223,7 @@ export default {
 
                 if (overtimeReport) {
                     this.overtimeStats = {
-                        yearTotal: overtimeReport.yearTotal || 0,
+                        yearTotal: overtimeReport.totalOvertimeMinutes || 0,
                     }
                 }
             } catch (error) {

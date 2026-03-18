@@ -74,6 +74,19 @@ export function getMonthName(month) {
 }
 
 /**
+ * Get short German month name (3 chars)
+ * @param {number} month (1-12)
+ * @returns {string}
+ */
+export function getMonthNameShort(month) {
+    const months = [
+        'Jan', 'Feb', 'Mrz', 'Apr', 'Mai', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+    ]
+    return months[month - 1] || ''
+}
+
+/**
  * Get German day name
  * @param {number} dayOfWeek (0-6, 0 = Sunday)
  * @returns {string}
