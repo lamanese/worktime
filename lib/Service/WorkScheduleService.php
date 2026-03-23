@@ -84,6 +84,17 @@ class WorkScheduleService {
             $errors['validFrom'] = ['Gültig-ab darf frühestens der 1. des aktuellen Monats sein'];
         }
 
+        // Check for duplicate valid_from date
+        if (empty($errors['validFrom'])) {
+            $existingSchedules = $this->mapper->findByEmployeeId($employeeId);
+            foreach ($existingSchedules as $existing) {
+                if ($existing->getValidFrom()->format('Y-m-d') === $validFrom) {
+                    $errors['validFrom'] = ['Ein Profil mit diesem Gültig-ab Datum existiert bereits'];
+                    break;
+                }
+            }
+        }
+
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
@@ -102,7 +113,14 @@ class WorkScheduleService {
         $schedule->setCreatedAt(new DateTime());
         $schedule->setUpdatedAt(new DateTime());
 
-        $schedule = $this->mapper->insert($schedule);
+        try {
+            $schedule = $this->mapper->insert($schedule);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'wt_ws_emp_valid_idx') || str_contains($e->getMessage(), 'Unique violation')) {
+                throw new ValidationException(['validFrom' => ['Ein Profil mit diesem Gültig-ab Datum existiert bereits']]);
+            }
+            throw $e;
+        }
 
         // Sync employee if this is the latest schedule
         $this->syncEmployeeIfLatest($employeeId, $schedule);
@@ -120,11 +138,16 @@ class WorkScheduleService {
      */
     public function update(
         int $id,
+        int $employeeId,
         array $dayHours,
         int $vacationDays,
         string $currentUserId
     ): WorkSchedule {
         $schedule = $this->find($id);
+
+        if ($schedule->getEmployeeId() !== $employeeId) {
+            throw new NotFoundException('Work schedule not found');
+        }
         $oldValues = $schedule->jsonSerialize();
 
         $errors = $this->validate($dayHours, $vacationDays);
@@ -157,8 +180,12 @@ class WorkScheduleService {
      * @throws NotFoundException
      * @throws ForbiddenException
      */
-    public function delete(int $id, string $currentUserId): void {
+    public function delete(int $id, int $employeeId, string $currentUserId): void {
         $schedule = $this->find($id);
+
+        if ($schedule->getEmployeeId() !== $employeeId) {
+            throw new NotFoundException('Work schedule not found');
+        }
 
         // Cannot delete the last schedule
         $allSchedules = $this->mapper->findByEmployeeId($schedule->getEmployeeId());

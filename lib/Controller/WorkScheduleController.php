@@ -83,6 +83,7 @@ class WorkScheduleController extends BaseController {
         try {
             $schedule = $this->workScheduleService->update(
                 $id,
+                $employeeId,
                 $dayHours,
                 $vacationDays,
                 $this->userId
@@ -105,7 +106,7 @@ class WorkScheduleController extends BaseController {
         }
 
         try {
-            $this->workScheduleService->delete($id, $this->userId);
+            $this->workScheduleService->delete($id, $employeeId, $this->userId);
             return $this->deletedResponse();
         } catch (\Exception $e) {
             return $this->handleException($e);

@@ -136,6 +136,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import { mapGetters, mapActions } from 'vuex'
+import { showError } from '@nextcloud/dialogs'
 import { formatDateISO } from '../utils/dateUtils.js'
 
 export default {
@@ -272,6 +273,8 @@ export default {
                 this.$emit('updated')
             } catch (error) {
                 console.error('Failed to save schedule:', error)
+                const msg = error?.response?.data?.message || t('worktime', 'Fehler beim Speichern des Profils')
+                showError(msg)
             }
         },
         confirmDelete(schedule) {
@@ -287,6 +290,7 @@ export default {
                 this.$emit('updated')
             } catch (error) {
                 console.error('Failed to delete schedule:', error)
+                showError(t('worktime', 'Fehler beim Löschen des Profils'))
             } finally {
                 this.showDeleteDialog = false
                 this.scheduleToDelete = null
