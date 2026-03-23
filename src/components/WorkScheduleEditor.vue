@@ -390,12 +390,14 @@ td.actions-col {
 
 .day-hours-row {
     display: flex;
-    gap: 12px;
+    gap: 6px;
     margin-bottom: 16px;
 }
 
 .day-input {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .day-input label {
@@ -436,7 +438,7 @@ td.actions-col {
 }
 
 .input-small {
-    width: 5rem;
+    width: 3.5rem;
 }
 
 .hint {
