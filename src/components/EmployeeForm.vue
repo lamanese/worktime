@@ -75,6 +75,18 @@
 
         <div class="form-row">
             <div class="form-group">
+                <label for="workingDaysPerWeek">{{ t('worktime', 'Arbeitstage pro Woche') }}</label>
+                <input id="workingDaysPerWeek"
+                    v-model.number="form.workingDaysPerWeek"
+                    type="number"
+                    min="1"
+                    max="7"
+                    class="input-field input-small">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
                 <label for="federalState">{{ t('worktime', 'Bundesland') }} *</label>
                 <NcSelect id="federalState"
                     v-model="selectedFederalState"
@@ -164,6 +176,7 @@ export default {
                 personnelNumber: '',
                 weeklyHours: 40,
                 vacationDays: 30,
+                workingDaysPerWeek: 5,
                 supervisorId: null,
                 federalState: 'BY',
                 entryDate: null,
@@ -263,6 +276,7 @@ export default {
                         personnelNumber: employee.personnelNumber || '',
                         weeklyHours: employee.weeklyHours,
                         vacationDays: employee.vacationDays,
+                        workingDaysPerWeek: employee.workingDaysPerWeek ?? 5,
                         supervisorId: employee.supervisorId,
                         federalState: employee.federalState,
                         entryDate: employee.entryDate ? new Date(employee.entryDate) : null,
@@ -293,6 +307,7 @@ export default {
                 personnelNumber: '',
                 weeklyHours: 40,
                 vacationDays: 30,
+                workingDaysPerWeek: 5,
                 supervisorId: null,
                 federalState: 'BY',
                 entryDate: null,
@@ -313,6 +328,7 @@ export default {
                     personnelNumber: this.form.personnelNumber.trim() || null,
                     weeklyHours: this.form.weeklyHours,
                     vacationDays: this.form.vacationDays,
+                    workingDaysPerWeek: this.form.workingDaysPerWeek,
                     supervisorId: this.form.supervisorId,
                     federalState: this.form.federalState,
                     entryDate: this.form.entryDate ? formatDateISO(this.form.entryDate) : null,

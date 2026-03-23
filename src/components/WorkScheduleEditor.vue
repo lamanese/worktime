@@ -14,6 +14,8 @@
                         <th class="text-right">{{ t('worktime', 'Mi') }}</th>
                         <th class="text-right">{{ t('worktime', 'Do') }}</th>
                         <th class="text-right">{{ t('worktime', 'Fr') }}</th>
+                        <th class="text-right">{{ t('worktime', 'Sa') }}</th>
+                        <th class="text-right">{{ t('worktime', 'So') }}</th>
                         <th class="text-right">{{ t('worktime', 'Woche') }}</th>
                         <th class="text-right">{{ t('worktime', 'Urlaub') }}</th>
                         <th class="actions-col">{{ t('worktime', 'Aktionen') }}</th>
@@ -27,6 +29,8 @@
                         <td class="text-right">{{ schedule.wedHours }}</td>
                         <td class="text-right">{{ schedule.thuHours }}</td>
                         <td class="text-right">{{ schedule.friHours }}</td>
+                        <td class="text-right">{{ schedule.satHours }}</td>
+                        <td class="text-right">{{ schedule.sunHours }}</td>
                         <td class="text-right"><strong>{{ schedule.weeklyHours }}</strong></td>
                         <td class="text-right">{{ schedule.vacationDays }}</td>
                         <td class="actions-col">
@@ -76,7 +80,7 @@
                         <input v-model.number="form.dayHours[day.key]"
                             type="number"
                             min="0"
-                            max="24"
+                            :max="maxDailyHours"
                             step="0.5"
                             class="input-field input-small">
                     </div>
@@ -138,6 +142,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
 import { formatDateISO } from '../utils/dateUtils.js'
+import SettingsService from '../services/SettingsService.js'
 
 export default {
     name: 'WorkScheduleEditor',
@@ -162,6 +167,7 @@ export default {
             editingSchedule: null,
             showDeleteDialog: false,
             scheduleToDelete: null,
+            maxDailyHours: 10,
             form: this.getEmptyForm(),
             weekdays: [
                 { key: 'mon', label: this.t('worktime', 'Mo') },
@@ -169,6 +175,8 @@ export default {
                 { key: 'wed', label: this.t('worktime', 'Mi') },
                 { key: 'thu', label: this.t('worktime', 'Do') },
                 { key: 'fri', label: this.t('worktime', 'Fr') },
+                { key: 'sat', label: this.t('worktime', 'Sa') },
+                { key: 'sun', label: this.t('worktime', 'So') },
             ],
         }
     },
@@ -185,8 +193,8 @@ export default {
             return d
         },
         isFormValid() {
-            const total = this.form.dayHours.mon + this.form.dayHours.tue
-                + this.form.dayHours.wed + this.form.dayHours.thu + this.form.dayHours.fri
+            const h = this.form.dayHours
+            const total = h.mon + h.tue + h.wed + h.thu + h.fri + h.sat + h.sun
             return total > 0
                 && this.form.vacationDays >= 0
                 && (this.editingSchedule || this.form.validFrom)
@@ -195,9 +203,17 @@ export default {
     watch: {
         employeeId: {
             immediate: true,
-            handler(id) {
+            async handler(id) {
                 if (id) {
                     this.fetchSchedules(id)
+                    try {
+                        const val = await SettingsService.get('max_daily_hours')
+                        if (val) {
+                            this.maxDailyHours = parseFloat(val)
+                        }
+                    } catch (e) {
+                        // Fallback bleibt bei 10
+                    }
                 }
             },
         },

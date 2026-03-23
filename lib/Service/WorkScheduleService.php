@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\WorkTime\Service;
 
 use DateTime;
+use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\EmployeeMapper;
 use OCA\WorkTime\Db\WorkSchedule;
@@ -17,6 +18,7 @@ class WorkScheduleService {
     public function __construct(
         private WorkScheduleMapper $mapper,
         private EmployeeMapper $employeeMapper,
+        private CompanySettingsService $companySettingsService,
         private AuditLogService $auditLogService,
         private LoggerInterface $logger,
     ) {
@@ -428,11 +430,16 @@ class WorkScheduleService {
     private function validate(array $dayHours, int $vacationDays): array {
         $errors = [];
 
+        $maxDailyHours = $this->companySettingsService->getMaxDailyHours();
+        if ($maxDailyHours <= 0) {
+            $maxDailyHours = (float)(CompanySetting::DEFAULTS[CompanySetting::KEY_MAX_DAILY_HOURS]);
+        }
+
         $days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         foreach ($days as $day) {
             $value = (float)($dayHours[$day] ?? 0);
-            if ($value < 0 || $value > 24) {
-                $errors[$day] = ["Hours must be between 0 and 24"];
+            if ($value < 0 || $value > $maxDailyHours) {
+                $errors[$day] = ["Stunden müssen zwischen 0 und $maxDailyHours liegen"];
             }
         }
 

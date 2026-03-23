@@ -80,7 +80,8 @@ class EmployeeService {
         ?int $supervisorId = null,
         string $federalState = 'BY',
         ?string $entryDate = null,
-        string $currentUserId = ''
+        string $currentUserId = '',
+        int $workingDaysPerWeek = 5
     ): Employee {
         // Validate
         $errors = $this->validate($userId, $firstName, $lastName, $federalState);
@@ -102,6 +103,7 @@ class EmployeeService {
         $employee->setWeeklyHours((string)$weeklyHours);
         $employee->setVacationDays($vacationDays);
         $employee->setSupervisorId($supervisorId);
+        $employee->setWorkingDaysPerWeek(max(1, min(7, $workingDaysPerWeek)));
         $employee->setFederalState($federalState);
 
         if ($entryDate) {
@@ -142,7 +144,8 @@ class EmployeeService {
         ?string $entryDate = null,
         ?string $exitDate = null,
         bool $isActive = true,
-        string $currentUserId = ''
+        string $currentUserId = '',
+        int $workingDaysPerWeek = 5
     ): Employee {
         $employee = $this->find($id);
         $oldValues = $employee->jsonSerialize();
@@ -165,6 +168,7 @@ class EmployeeService {
         $employee->setWeeklyHours((string)$weeklyHours);
         $employee->setVacationDays($vacationDays);
         $employee->setSupervisorId($supervisorId);
+        $employee->setWorkingDaysPerWeek(max(1, min(7, $workingDaysPerWeek)));
         $employee->setFederalState($federalState);
 
         $employee->setEntryDate($entryDate ? new DateTime($entryDate) : null);
