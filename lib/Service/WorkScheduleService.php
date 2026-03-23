@@ -439,7 +439,7 @@ class WorkScheduleService {
         foreach ($days as $day) {
             $value = (float)($dayHours[$day] ?? 0);
             if ($value < 0 || $value > $maxDailyHours) {
-                $errors[$day] = ["Stunden müssen zwischen 0 und $maxDailyHours liegen"];
+                $errors[$day] = ["Maximale tägliche Arbeitszeit ist $maxDailyHours Stunden (siehe Einstellungen)"];
             }
         }
 

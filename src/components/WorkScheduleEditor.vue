@@ -82,9 +82,10 @@
                             min="0"
                             :max="maxDailyHours"
                             step="0.5"
-                            class="input-field input-small">
+                            :class="['input-field', 'input-small', { 'input-error': form.dayHours[day.key] > maxDailyHours }]">
                     </div>
                 </div>
+                <p class="hint">{{ t('worktime', 'Max. {hours} Std./Tag', { hours: maxDailyHours }) }}</p>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -195,7 +196,9 @@ export default {
         isFormValid() {
             const h = this.form.dayHours
             const total = h.mon + h.tue + h.wed + h.thu + h.fri + h.sat + h.sun
+            const allWithinLimit = Object.values(h).every(v => v >= 0 && v <= this.maxDailyHours)
             return total > 0
+                && allWithinLimit
                 && this.form.vacationDays >= 0
                 && (this.editingSchedule || this.form.validFrom)
         },
@@ -289,7 +292,13 @@ export default {
                 this.$emit('updated')
             } catch (error) {
                 console.error('Failed to save schedule:', error)
-                const msg = error?.response?.data?.message || t('worktime', 'Fehler beim Speichern des Profils')
+                const data = error?.response?.data
+                let msg = t('worktime', 'Fehler beim Speichern des Profils')
+                if (data?.errors) {
+                    msg = Object.values(data.errors).flat().join(', ')
+                } else if (data?.message) {
+                    msg = data.message
+                }
                 showError(msg)
             }
         },
@@ -428,6 +437,17 @@ td.actions-col {
 
 .input-small {
     width: 5rem;
+}
+
+.hint {
+    margin: -8px 0 12px 0;
+    font-size: 0.8em;
+    color: var(--color-text-maxcontrast);
+}
+
+.input-error {
+    border-color: #dc2626 !important;
+    background-color: #fef2f2 !important;
 }
 
 .form-actions {
