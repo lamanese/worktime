@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <div class="form-row">
+        <div v-if="!isEdit" class="form-row">
             <div class="form-group">
                 <label for="weeklyHours">{{ t('worktime', 'Wochenstunden') }} *</label>
                 <input id="weeklyHours"
@@ -70,6 +70,18 @@
                     max="60"
                     class="input-field input-small"
                     required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="workingDaysPerWeek">{{ t('worktime', 'Arbeitstage pro Woche') }}</label>
+                <input id="workingDaysPerWeek"
+                    v-model.number="form.workingDaysPerWeek"
+                    type="number"
+                    min="1"
+                    max="7"
+                    class="input-field input-small">
             </div>
         </div>
 
@@ -115,6 +127,10 @@
             </NcCheckboxRadioSwitch>
         </div>
 
+        <WorkScheduleEditor v-if="isEdit && employee"
+            :employee-id="employee.id"
+            @updated="$emit('schedule-updated')" />
+
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
                 {{ t('worktime', 'Abbrechen') }}
@@ -131,6 +147,7 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import WorkScheduleEditor from './WorkScheduleEditor.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO } from '../utils/dateUtils.js'
 
@@ -141,6 +158,7 @@ export default {
         NcSelect,
         NcDateTimePicker,
         NcCheckboxRadioSwitch,
+        WorkScheduleEditor,
     },
     props: {
         employee: {
@@ -158,6 +176,7 @@ export default {
                 personnelNumber: '',
                 weeklyHours: 40,
                 vacationDays: 30,
+                workingDaysPerWeek: 5,
                 supervisorId: null,
                 federalState: 'BY',
                 entryDate: null,
@@ -233,12 +252,15 @@ export default {
             },
         },
         isValid() {
-            return (this.isEdit || this.form.userId) &&
-                this.form.firstName.trim() &&
-                this.form.lastName.trim() &&
-                this.form.federalState &&
-                this.form.weeklyHours > 0 &&
-                this.form.vacationDays >= 0
+            const baseValid = (this.isEdit || this.form.userId)
+                && this.form.firstName.trim()
+                && this.form.lastName.trim()
+                && this.form.federalState
+            if (this.isEdit) {
+                return baseValid
+            }
+            // New employee: weeklyHours and vacationDays are in the form
+            return baseValid && this.form.weeklyHours > 0 && this.form.vacationDays >= 0
         },
     },
     watch: {
@@ -254,6 +276,7 @@ export default {
                         personnelNumber: employee.personnelNumber || '',
                         weeklyHours: employee.weeklyHours,
                         vacationDays: employee.vacationDays,
+                        workingDaysPerWeek: employee.workingDaysPerWeek ?? 5,
                         supervisorId: employee.supervisorId,
                         federalState: employee.federalState,
                         entryDate: employee.entryDate ? new Date(employee.entryDate) : null,
@@ -284,6 +307,7 @@ export default {
                 personnelNumber: '',
                 weeklyHours: 40,
                 vacationDays: 30,
+                workingDaysPerWeek: 5,
                 supervisorId: null,
                 federalState: 'BY',
                 entryDate: null,
@@ -304,6 +328,7 @@ export default {
                     personnelNumber: this.form.personnelNumber.trim() || null,
                     weeklyHours: this.form.weeklyHours,
                     vacationDays: this.form.vacationDays,
+                    workingDaysPerWeek: this.form.workingDaysPerWeek,
                     supervisorId: this.form.supervisorId,
                     federalState: this.form.federalState,
                     entryDate: this.form.entryDate ? formatDateISO(this.form.entryDate) : null,

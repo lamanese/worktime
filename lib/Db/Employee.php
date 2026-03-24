@@ -38,6 +38,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
  * @method void setUpdatedAt(DateTime $updatedAt)
+ * @method int getWorkingDaysPerWeek()
+ * @method void setWorkingDaysPerWeek(int $workingDaysPerWeek)
  * @method DateTime|null getDefaultStartTime()
  * @method void setDefaultStartTime(?DateTime $defaultStartTime)
  * @method DateTime|null getDefaultEndTime()
@@ -75,6 +77,7 @@ class Employee extends Entity implements JsonSerializable {
     protected string $federalState = 'BY';
     protected ?DateTime $entryDate = null;
     protected ?DateTime $exitDate = null;
+    protected int $workingDaysPerWeek = 5;
     protected int $isActive = 1;
     protected ?DateTime $createdAt = null;
     protected ?DateTime $updatedAt = null;
@@ -85,6 +88,7 @@ class Employee extends Entity implements JsonSerializable {
         $this->addType('id', 'integer');
         $this->addType('vacationDays', 'integer');
         $this->addType('supervisorId', 'integer');
+        $this->addType('workingDaysPerWeek', 'integer');
         $this->addType('entryDate', 'datetime');
         $this->addType('exitDate', 'datetime');
         $this->addType('isActive', 'integer');
@@ -104,6 +108,10 @@ class Employee extends Entity implements JsonSerializable {
         return trim($this->firstName . ' ' . $this->lastName);
     }
 
+    /**
+     * @deprecated Use WorkScheduleService::getDailyMinutesForDate() instead.
+     * This assumes a 5-day week which is incorrect for part-time employees.
+     */
     public function getDailyHours(): float {
         return (float)$this->weeklyHours / 5;
     }
@@ -119,6 +127,7 @@ class Employee extends Entity implements JsonSerializable {
             'email' => $this->email,
             'weeklyHours' => (float)$this->weeklyHours,
             'vacationDays' => $this->vacationDays,
+            'workingDaysPerWeek' => $this->workingDaysPerWeek,
             'supervisorId' => $this->supervisorId,
             'federalState' => $this->federalState,
             'federalStateName' => self::FEDERAL_STATES[$this->federalState] ?? $this->federalState,

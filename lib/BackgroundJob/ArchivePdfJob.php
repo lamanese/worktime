@@ -16,6 +16,7 @@ use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\NotFoundException;
 use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\TimeEntryService;
+use OCA\WorkTime\Service\WorkScheduleService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -35,6 +36,7 @@ class ArchivePdfJob extends TimedJob {
         private TimeEntryService $timeEntryService,
         private AbsenceService $absenceService,
         private HolidayService $holidayService,
+        private WorkScheduleService $workScheduleService,
         private LoggerInterface $logger,
     ) {
         parent::__construct($time);
@@ -183,7 +185,8 @@ class ArchivePdfJob extends TimedJob {
     }
 
     /**
-     * Calculate monthly statistics for PDF generation
+     * Calculate monthly statistics for PDF generation.
+     * Uses WorkScheduleService for schedule-aware calculations.
      */
     private function calculateMonthlyStats(
         Employee $employee,
@@ -195,16 +198,20 @@ class ArchivePdfJob extends TimedJob {
     ): array {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
+        $employeeId = $employee->getId();
 
-        // Count working days in the month
-        $workingDays = $this->countWorkingDays($startDate, $endDate, $holidays);
+        // Count working days using schedule-aware service
+        $workingDays = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $endDate, $holidays);
 
-        // Calculate target minutes based on weekly hours
-        $dailyMinutes = ((float)$employee->getWeeklyHours() / 5) * 60;
-        $targetMinutes = (int)round($workingDays * $dailyMinutes);
+        // Calculate target minutes using schedule-aware service
+        $targetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $endDate, $holidays);
 
-        // Count absence days
+        // dailyMinutes approximation for display
+        $dailyMinutes = $workingDays > 0 ? (int)round($targetMinutes / $workingDays) : 0;
+
+        // Count absence days and calculate absence minutes
         $absenceDays = 0;
+        $absenceMinutesTotal = 0;
         foreach ($absences as $absence) {
             if ($absence->isApproved()) {
                 $absenceStart = $absence->getStartDate();
@@ -212,18 +219,33 @@ class ArchivePdfJob extends TimedJob {
 
                 // Limit to month boundaries
                 if ($absenceStart < $startDate) {
-                    $absenceStart = $startDate;
+                    $absenceStart = clone $startDate;
                 }
                 if ($absenceEnd > $endDate) {
-                    $absenceEnd = $endDate;
+                    $absenceEnd = clone $endDate;
                 }
 
-                $absenceDays += $this->countWorkingDays($absenceStart, $absenceEnd, $holidays);
+                $absenceDays += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays);
+
+                // Calculate actual absence minutes per day from schedule
+                $current = clone $absenceStart;
+                $holidayMap = [];
+                foreach ($holidays as $holiday) {
+                    $holidayMap[$holiday->getDate()->format('Y-m-d')] = true;
+                }
+                while ($current <= $absenceEnd) {
+                    $dateStr = $current->format('Y-m-d');
+                    $dayMin = $this->workScheduleService->getDailyMinutesForDate($employeeId, $current);
+                    if ($dayMin > 0 && !isset($holidayMap[$dateStr])) {
+                        $absenceMinutesTotal += $dayMin;
+                    }
+                    $current->modify('+1 day');
+                }
             }
         }
 
         // Adjusted target (reduced by absences)
-        $adjustedTargetMinutes = (int)round($targetMinutes - ($absenceDays * $dailyMinutes));
+        $adjustedTargetMinutes = $targetMinutes - $absenceMinutesTotal;
 
         // Sum actual work minutes
         $actualMinutes = 0;
@@ -238,7 +260,7 @@ class ArchivePdfJob extends TimedJob {
             'workingDays' => $workingDays,
             'holidayCount' => count($holidays),
             'absenceDays' => $absenceDays,
-            'dailyMinutes' => (int)$dailyMinutes,
+            'dailyMinutes' => $dailyMinutes,
             'targetMinutes' => $targetMinutes,
             'adjustedTargetMinutes' => $adjustedTargetMinutes,
             'actualMinutes' => $actualMinutes,
@@ -247,32 +269,5 @@ class ArchivePdfJob extends TimedJob {
             'overtimeHours' => round($overtimeMinutes / 60, 2),
             'entryCount' => count($timeEntries),
         ];
-    }
-
-    /**
-     * Count working days (Mon-Fri) excluding holidays
-     */
-    private function countWorkingDays(DateTime $startDate, DateTime $endDate, array $holidays): int {
-        $holidayDates = [];
-        foreach ($holidays as $holiday) {
-            $holidayDates[] = $holiday->getDate()->format('Y-m-d');
-        }
-
-        $workingDays = 0;
-        $current = clone $startDate;
-
-        while ($current <= $endDate) {
-            $dayOfWeek = (int)$current->format('N');
-            $dateStr = $current->format('Y-m-d');
-
-            // Count if Monday-Friday and not a holiday
-            if ($dayOfWeek < 6 && !in_array($dateStr, $holidayDates)) {
-                $workingDays++;
-            }
-
-            $current->modify('+1 day');
-        }
-
-        return $workingDays;
     }
 }
