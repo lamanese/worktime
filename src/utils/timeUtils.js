@@ -93,28 +93,32 @@ export function calculateGrossMinutes(startTime, endTime) {
 }
 
 /**
- * Suggest break time based on German labor law
+ * Suggest break time based on company settings
  * @param {number} grossMinutes
+ * @param {number} break6h - Min break for >6h (from settings, default 30)
+ * @param {number} break9h - Min break for >9h (from settings, default 45)
  * @returns {number}
  */
-export function suggestBreak(grossMinutes) {
+export function suggestBreak(grossMinutes, break6h = 30, break9h = 45) {
     const hours = grossMinutes / 60
     if (hours <= 6) return 0
-    if (hours <= 9) return 30
-    return 45
+    if (hours <= 9) return break6h
+    return break9h
 }
 
 /**
- * Validate break time against German labor law
+ * Validate break time against company settings
  * @param {number} grossMinutes
  * @param {number} breakMinutes
+ * @param {number} break6h - Min break for >6h (from settings, default 30)
+ * @param {number} break9h - Min break for >9h (from settings, default 45)
  * @returns {boolean}
  */
-export function validateBreak(grossMinutes, breakMinutes) {
+export function validateBreak(grossMinutes, breakMinutes, break6h = 30, break9h = 45) {
     const hours = grossMinutes / 60
     if (hours <= 6) return true
-    if (hours <= 9) return breakMinutes >= 30
-    return breakMinutes >= 45
+    if (hours <= 9) return breakMinutes >= break6h
+    return breakMinutes >= break9h
 }
 
 /**

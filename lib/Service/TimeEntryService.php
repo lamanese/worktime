@@ -555,8 +555,10 @@ class TimeEntryService {
 
             // Validate break
             if (!$this->validateBreak((int)$grossMinutes, $breakMinutes)) {
-                $minBreak = $grossMinutes > 9 * 60 ? 45 : 30;
-                $errors['breakMinutes'] = ["Mindestpause von {$minBreak} Minuten erforderlich (§4 ArbZG)"];
+                $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
+                $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
+                $minBreak = $grossMinutes > 9 * 60 ? $break9h : $break6h;
+                $errors['breakMinutes'] = ["Mindestpause von {$minBreak} Minuten erforderlich"];
             }
 
             // Check for absence conflict
