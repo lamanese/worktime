@@ -20,6 +20,7 @@ class AbsenceService {
         private TimeEntryService $timeEntryService,
         private AuditLogService $auditLogService,
         private NotificationService $notificationService,
+        private WorkScheduleService $workScheduleService,
         private LoggerInterface $logger,
     ) {
     }
@@ -85,9 +86,8 @@ class AbsenceService {
             throw new ValidationException($errors);
         }
 
-        // Calculate working days and apply scope
-        // e.g., 5 working days * 0.5 scope = 2.5 effective days
-        $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState);
+        // Calculate working days and apply scope (schedule-aware)
+        $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $employeeId);
         $days = $workingDays * $scope;
 
         $absence = new Absence();
@@ -159,8 +159,8 @@ class AbsenceService {
             throw new ValidationException($errors);
         }
 
-        // Calculate working days and apply scope
-        $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState);
+        // Calculate working days and apply scope (schedule-aware)
+        $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $absence->getEmployeeId());
         $days = $workingDays * $scope;
 
         $absence->setType($type);
@@ -312,10 +312,18 @@ class AbsenceService {
     }
 
     /**
-     * Calculate number of working days between two dates
-     * Excludes weekends and holidays
+     * Calculate number of working days between two dates.
+     * Schedule-aware: uses the employee's work schedule to determine which days are working days.
+     * Falls back to Mon-Fri if no employeeId is available.
      */
-    public function calculateWorkingDays(DateTime $startDate, DateTime $endDate, string $federalState): float {
+    public function calculateWorkingDays(DateTime $startDate, DateTime $endDate, string $federalState, ?int $employeeId = null): float {
+        if ($employeeId !== null) {
+            // Use schedule-aware calculation
+            $holidays = $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
+            return $this->workScheduleService->countWorkingDays($employeeId, $startDate, $endDate, $holidays);
+        }
+
+        // Fallback: standard Mon-Fri calculation
         $days = 0;
         $current = clone $startDate;
 

@@ -14,6 +14,7 @@ use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\PermissionService;
 use OCA\WorkTime\Service\TimeEntryService;
+use OCA\WorkTime\Service\WorkScheduleService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -32,6 +33,7 @@ class ReportController extends BaseController {
         private HolidayService $holidayService,
         private PermissionService $permissionService,
         private PdfService $pdfService,
+        private WorkScheduleService $workScheduleService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -236,11 +238,12 @@ class ReportController extends BaseController {
                 $totalOvertimeMinutes += $stats['overtimeMinutes'];
             }
 
-            // Vacation stats
+            // Vacation stats - use schedule-aware vacation days
+            $vacationDaysForYear = $this->workScheduleService->getVacationDaysForYear($employee->getId(), $year);
             $vacationStats = $this->absenceService->getVacationStats(
                 $employee->getId(),
                 $year,
-                (int)$employee->getVacationDays()
+                $vacationDaysForYear
             );
 
             $report[] = [
@@ -366,7 +369,7 @@ class ReportController extends BaseController {
 
     /**
      * Count working days of an absence that fall within a specific month.
-     * Excludes weekends (Sat/Sun).
+     * Uses schedule-aware logic (only counts days where the employee has >0 hours).
      */
     private function countWorkingDaysInMonth(Absence $absence, int $year, int $month): float {
         $monthStart = new DateTime("$year-$month-01");
@@ -383,18 +386,7 @@ class ReportController extends BaseController {
             return 0;
         }
 
-        // Count working days (Mon-Fri)
-        $days = 0;
-        $current = clone $start;
-        while ($current <= $end) {
-            $dayOfWeek = (int)$current->format('N'); // 1=Mon, 7=Sun
-            if ($dayOfWeek <= 5) {
-                $days++;
-            }
-            $current->modify('+1 day');
-        }
-
-        return (float)$days;
+        return $this->workScheduleService->countWorkingDays($absence->getEmployeeId(), $start, $end, []);
     }
 
     private function calculateMonthlyStats(
@@ -408,15 +400,15 @@ class ReportController extends BaseController {
         $startDate = new DateTime("$year-$month-01");
         $monthEndDate = (clone $startDate)->modify('last day of this month');
         $today = new DateTime('today');
+        $employeeId = $employee->getId();
 
         // Determine if this is a future month (hasn't started yet)
         $isFutureMonth = $startDate > $today;
 
         // For future months: return zeros for Soll/Ist/Überstunden
-        // (the month hasn't started, so no meaningful calculation possible)
         if ($isFutureMonth) {
-            $workingDaysMonth = $this->countWorkingDays($startDate, $monthEndDate, $holidays);
-            $dailyMinutes = ((float)$employee->getWeeklyHours() / 5) * 60;
+            $workingDaysMonth = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $monthEndDate, $holidays);
+            $monthlyTargetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $monthEndDate, $holidays);
 
             // Count planned absences for display only
             $absenceDaysMonth = 0;
@@ -424,9 +416,12 @@ class ReportController extends BaseController {
                 if ($absence->isApproved()) {
                     $absenceStart = $absence->getStartDate() < $startDate ? $startDate : $absence->getStartDate();
                     $absenceEnd = $absence->getEndDate() > $monthEndDate ? $monthEndDate : $absence->getEndDate();
-                    $absenceDaysMonth += $this->countWorkingDays($absenceStart, $absenceEnd, $holidays);
+                    $absenceDaysMonth += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays);
                 }
             }
+
+            // dailyMinutes approximation for display
+            $dailyMinutes = $workingDaysMonth > 0 ? (int)round($monthlyTargetMinutes / $workingDaysMonth) : 0;
 
             return [
                 'workingDays' => $workingDaysMonth,
@@ -436,7 +431,7 @@ class ReportController extends BaseController {
                 'paidAbsenceDays' => $absenceDaysMonth,
                 'unpaidAbsenceDays' => 0,
                 'absenceDays' => $absenceDaysMonth,
-                'dailyMinutes' => (int)$dailyMinutes,
+                'dailyMinutes' => $dailyMinutes,
                 'targetMinutes' => 0,
                 'monthlyTargetMinutes' => 0,
                 'adjustedTargetMinutes' => 0,
@@ -460,27 +455,26 @@ class ReportController extends BaseController {
         // For "up to today" calculations
         $endDateForActual = ($isCurrentMonth && $today < $monthEndDate) ? $today : $monthEndDate;
 
-        // Count working days for entire month (for display)
-        $workingDaysMonth = $this->countWorkingDays($startDate, $monthEndDate, $holidays);
+        // Count working days using schedule-aware service
+        $workingDaysMonth = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $monthEndDate, $holidays);
+        $workingDaysUntilToday = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $endDateForActual, $holidays);
 
-        // Count working days up to today (for proportional overtime calculation)
-        $workingDaysUntilToday = $this->countWorkingDays($startDate, $endDateForActual, $holidays);
+        // Calculate target minutes using schedule-aware service
+        $monthlyTargetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $monthEndDate, $holidays);
+        $proportionalTargetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $endDateForActual, $holidays);
 
-        // Calculate target minutes based on weekly hours
-        $dailyMinutes = ((float)$employee->getWeeklyHours() / 5) * 60;
-        $monthlyTargetMinutes = (int)round($workingDaysMonth * $dailyMinutes);
-        $proportionalTargetMinutes = (int)round($workingDaysUntilToday * $dailyMinutes);
+        // dailyMinutes approximation for display
+        $dailyMinutes = $workingDaysMonth > 0 ? (int)round($monthlyTargetMinutes / $workingDaysMonth) : 0;
 
         // Process absences: separate paid vs unpaid/compensatory
-        // - Paid absences (vacation, sick, child_sick, special, training): Add to Ist (credited work time)
-        // - Unpaid and Compensatory: Reduce Soll (target time), not added to Ist
-        //   Compensatory (Freizeitausgleich) uses overtime - it should reduce target, not credit work time
         $paidAbsenceMinutesMonth = 0;
         $paidAbsenceDaysMonth = 0;
-        $targetReductionDaysMonth = 0;  // For unpaid + compensatory
+        $targetReductionMinutesMonth = 0;
+        $targetReductionDaysMonth = 0;
 
         $paidAbsenceMinutesUntilToday = 0;
         $paidAbsenceDaysUntilToday = 0;
+        $targetReductionMinutesUntilToday = 0;
         $targetReductionDaysUntilToday = 0;
 
         // Types that reduce target (Soll) instead of crediting work time (Ist)
@@ -495,19 +489,22 @@ class ReportController extends BaseController {
                 $absenceEnd = $absence->getEndDate();
                 $absenceScope = $absence->getScopeValue();
 
-                // For full month display: count all absences in the month
+                // For full month display
                 if ($absenceStart <= $monthEndDate) {
                     $monthAbsenceStart = $absenceStart < $startDate ? $startDate : $absenceStart;
                     $monthAbsenceEnd = $absenceEnd > $monthEndDate ? $monthEndDate : $absenceEnd;
-                    $daysInMonth = $this->countWorkingDays($monthAbsenceStart, $monthAbsenceEnd, $holidays);
-                    // Apply scope: e.g., 5 days * 0.5 scope = 2.5 effective days
+                    $daysInMonth = $this->workScheduleService->countWorkingDays($employeeId, $monthAbsenceStart, $monthAbsenceEnd, $holidays);
                     $effectiveDays = $daysInMonth * $absenceScope;
+
+                    // Calculate absence minutes per day using actual schedule
+                    $absenceMinutes = $this->calculateAbsenceMinutes($employeeId, $monthAbsenceStart, $monthAbsenceEnd, $absenceScope, $holidays);
 
                     if (in_array($absence->getType(), $targetReductionTypes, true)) {
                         $targetReductionDaysMonth += $effectiveDays;
+                        $targetReductionMinutesMonth += $absenceMinutes;
                     } else {
                         $paidAbsenceDaysMonth += $effectiveDays;
-                        $paidAbsenceMinutesMonth += (int)round($effectiveDays * $dailyMinutes);
+                        $paidAbsenceMinutesMonth += $absenceMinutes;
                     }
                 }
 
@@ -515,22 +512,25 @@ class ReportController extends BaseController {
                 if ($absenceStart <= $endDateForActual) {
                     $actualAbsenceStart = $absenceStart < $startDate ? $startDate : $absenceStart;
                     $actualAbsenceEnd = $absenceEnd > $endDateForActual ? $endDateForActual : $absenceEnd;
-                    $daysUntilToday = $this->countWorkingDays($actualAbsenceStart, $actualAbsenceEnd, $holidays);
+                    $daysUntilToday = $this->workScheduleService->countWorkingDays($employeeId, $actualAbsenceStart, $actualAbsenceEnd, $holidays);
                     $effectiveDaysUntilToday = $daysUntilToday * $absenceScope;
+
+                    $absenceMinutesUntilToday = $this->calculateAbsenceMinutes($employeeId, $actualAbsenceStart, $actualAbsenceEnd, $absenceScope, $holidays);
 
                     if (in_array($absence->getType(), $targetReductionTypes, true)) {
                         $targetReductionDaysUntilToday += $effectiveDaysUntilToday;
+                        $targetReductionMinutesUntilToday += $absenceMinutesUntilToday;
                     } else {
                         $paidAbsenceDaysUntilToday += $effectiveDaysUntilToday;
-                        $paidAbsenceMinutesUntilToday += (int)round($effectiveDaysUntilToday * $dailyMinutes);
+                        $paidAbsenceMinutesUntilToday += $absenceMinutesUntilToday;
                     }
                 }
             }
         }
 
         // Adjust targets for unpaid leave and compensatory time
-        $adjustedMonthlyTargetMinutes = (int)round($monthlyTargetMinutes - ($targetReductionDaysMonth * $dailyMinutes));
-        $adjustedProportionalTargetMinutes = (int)round($proportionalTargetMinutes - ($targetReductionDaysUntilToday * $dailyMinutes));
+        $adjustedMonthlyTargetMinutes = $monthlyTargetMinutes - $targetReductionMinutesMonth;
+        $adjustedProportionalTargetMinutes = $proportionalTargetMinutes - $targetReductionMinutesUntilToday;
 
         // Sum actual work minutes from time entries
         $workedMinutes = 0;
@@ -553,7 +553,7 @@ class ReportController extends BaseController {
             'paidAbsenceDays' => $paidAbsenceDaysMonth,
             'targetReductionDays' => $targetReductionDaysMonth,  // Unpaid + Compensatory
             'absenceDays' => $paidAbsenceDaysMonth + $targetReductionDaysMonth,
-            'dailyMinutes' => (int)$dailyMinutes,
+            'dailyMinutes' => $dailyMinutes,
 
             // Target values
             'targetMinutes' => $adjustedMonthlyTargetMinutes,
@@ -575,6 +575,30 @@ class ReportController extends BaseController {
             'entryCount' => count($timeEntries),
             'isFutureMonth' => false,
         ];
+    }
+
+    /**
+     * Calculate absence minutes using actual schedule for each day.
+     */
+    private function calculateAbsenceMinutes(int $employeeId, DateTime $start, DateTime $end, float $scope, array $holidays): int {
+        $holidayMap = [];
+        foreach ($holidays as $holiday) {
+            $holidayMap[$holiday->getDate()->format('Y-m-d')] = $holiday;
+        }
+
+        $totalMinutes = 0;
+        $current = clone $start;
+        while ($current <= $end) {
+            $dateStr = $current->format('Y-m-d');
+            $dayMinutes = $this->workScheduleService->getDailyMinutesForDate($employeeId, $current);
+
+            if ($dayMinutes > 0 && !isset($holidayMap[$dateStr])) {
+                $totalMinutes += (int)round($dayMinutes * $scope);
+            }
+            $current->modify('+1 day');
+        }
+
+        return $totalMinutes;
     }
 
     /**

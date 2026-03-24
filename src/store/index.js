@@ -7,6 +7,7 @@ import timeEntries from './modules/timeEntries.js'
 import absences from './modules/absences.js'
 import holidays from './modules/holidays.js'
 import projects from './modules/projects.js'
+import workSchedules from './modules/workSchedules.js'
 
 Vue.use(Vuex)
 
@@ -18,5 +19,6 @@ export default new Vuex.Store({
         absences,
         holidays,
         projects,
+        workSchedules,
     },
 })
