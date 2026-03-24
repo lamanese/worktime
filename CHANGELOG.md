@@ -7,6 +7,28 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-24
+
+### Added
+- Arbeitszeitprofile mit Wochenprofil und Stichtag (#39)
+- Stunden pro Wochentag individuell konfigurierbar (Mo-So)
+- Samstag/Sonntag im Profil-Editor anzeigbar
+- Soll-Berechnung nutzt das am jeweiligen Tag gueltige Profil
+- Pro-rata Urlaubsberechnung bei Profilwechsel
+- Max. Tagesstunden aus Einstellungen als Limit im Profil-Editor
+- Feld "Arbeitstage pro Woche" pro Mitarbeiter (manuell, Default 5)
+- Kontakt-E-Mail in info.xml
+
+### Fixed
+- IDOR-Schutz: update/delete pruefen employeeId-Ownership
+- Duplicate-Validierung fuer Profil-Stichtage (valid_from)
+- Pausenzeit-Einstellungen werden jetzt korrekt ausgewertet (#43)
+- Frontend-Validierung mit visueller Rueckmeldung bei Ueberschreitung der Max-Stunden
+- Fehlermeldungen im Profil-Editor zeigen konkrete Validierungsfehler
+
+### Changed
+- suggestBreak() und validateBreak() nutzen konfigurierte Werte statt hardcoded 30/45 Min
+
 ## [0.2.0] - 2026-03-19
 
 ### Added
