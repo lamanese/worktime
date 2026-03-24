@@ -82,6 +82,7 @@ import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO, getToday } from '../utils/dateUtils.js'
 import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil } from '../utils/timeUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
+import SettingsService from '../services/SettingsService.js'
 
 export default {
     name: 'TimeEntryForm',
@@ -98,6 +99,8 @@ export default {
     },
     data() {
         return {
+            break6h: 30,
+            break9h: 45,
             form: {
                 date: new Date(),
                 startTime: '08:00',
@@ -114,7 +117,7 @@ export default {
         requiredBreak() {
             if (!this.form.startTime || !this.form.endTime) return 0
             const grossMinutes = calculateWorkMinutes(this.form.startTime, this.form.endTime, 0)
-            return suggestBreakUtil(grossMinutes)
+            return suggestBreakUtil(grossMinutes, this.break6h, this.break9h)
         },
         isEdit() {
             return !!this.entry
@@ -169,8 +172,20 @@ export default {
             },
         },
     },
-    created() {
+    async created() {
         this.$store.dispatch('projects/fetchProjects')
+        try {
+            const [b6h, b9h] = await Promise.all([
+                SettingsService.get('min_break_minutes_6h'),
+                SettingsService.get('min_break_minutes_9h'),
+            ])
+            if (b6h !== undefined) this.break6h = parseInt(b6h)
+            if (b9h !== undefined) this.break9h = parseInt(b9h)
+            // Pause neu berechnen mit geladenen Settings
+            this.onTimeChange()
+        } catch (e) {
+            // Fallback bleibt bei 30/45
+        }
     },
     methods: {
         ...mapActions('timeEntries', ['createTimeEntry', 'updateTimeEntry']),
@@ -194,10 +209,10 @@ export default {
             })
         },
         onTimeChange() {
-            // Automatisch die gesetzlich vorgeschriebene Pause eintragen
+            // Automatisch die konfigurierte Mindestpause eintragen
             if (this.form.startTime && this.form.endTime) {
                 const grossMinutes = calculateWorkMinutes(this.form.startTime, this.form.endTime, 0)
-                this.form.breakMinutes = suggestBreakUtil(grossMinutes)
+                this.form.breakMinutes = suggestBreakUtil(grossMinutes, this.break6h, this.break9h)
             }
         },
         cancel() {
