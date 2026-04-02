@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-vendor/
 
 # Build output (js/ is committed for easy installation)
 # js/
@@ -26,8 +25,7 @@ npm-debug.log*
 .env
 .env.local
 
-# Composer
-composer.lock
+# Composer (vendor/ and composer.lock are committed for deployment)
 
 # Package lock (keep package-lock.json for reproducible builds)
 # package-lock.json
