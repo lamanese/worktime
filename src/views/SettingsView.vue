@@ -32,10 +32,24 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Berechtigungen')"
-                :description="t('worktime', 'HR-Manager können Mitarbeiter verwalten und Anträge genehmigen.')">
+                :name="t('worktime', 'Berechtigungen')">
+                <NcNoteCard v-if="showPermissionInfo" type="info" class="permission-info">
+                    <p><strong>Admin</strong> – {{ t('worktime', 'Automatisch für alle Nextcloud-Administratoren. Volle Rechte.') }}</p>
+                    <p><strong>HR-Manager</strong> – {{ t('worktime', 'Manuell zuweisen (siehe unten). Kann Mitarbeiter verwalten und Anträge genehmigen.') }}</p>
+                    <p><strong>{{ t('worktime', 'Vorgesetzter') }}</strong> – {{ t('worktime', 'Automatisch, wenn als Vorgesetzter in einem Mitarbeiterprofil eingetragen.') }}</p>
+                    <p><strong>Mitarbeiter</strong> – {{ t('worktime', 'Automatisch für alle angelegten Mitarbeiter.') }}</p>
+                </NcNoteCard>
                 <div class="form-group">
-                    <label>{{ t('worktime', 'HR-Manager') }}</label>
+                    <div class="label-with-info">
+                        <label>{{ t('worktime', 'HR-Manager') }}</label>
+                        <NcButton type="tertiary"
+                            :aria-label="t('worktime', 'Rollen-Info anzeigen')"
+                            @click="showPermissionInfo = !showPermissionInfo">
+                            <template #icon>
+                                <InformationOutline :size="20" />
+                            </template>
+                        </NcButton>
+                    </div>
                     <NcSelect
                         v-model="selectedHrManagers"
                         :options="principalOptions"
@@ -398,6 +412,7 @@ import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
@@ -407,6 +422,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import { getFilePickerBuilder, FilePickerType, DialogBuilder } from '@nextcloud/dialogs'
 import { mapGetters, mapActions } from 'vuex'
 import SettingsService from '../services/SettingsService.js'
@@ -436,12 +452,15 @@ export default {
         CalendarBlank,
         ChevronRight,
         ChevronDown,
+        InformationOutline,
+        NcNoteCard,
         EmployeeForm,
         EmployeeList,
     },
     data() {
         return {
             loading: false,
+            showPermissionInfo: false,
             settings: {},
             holidayYear: getCurrentYear(),
             showEmployeeForm: false,
@@ -879,6 +898,25 @@ export default {
     display: block;
     margin-bottom: 4px;
     font-weight: 500;
+}
+
+.label-with-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.label-with-info label {
+    margin-bottom: 0;
+}
+
+.permission-info {
+    margin-bottom: 16px;
+}
+
+.permission-info p {
+    margin: 4px 0;
 }
 
 .form-row {
