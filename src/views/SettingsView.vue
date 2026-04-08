@@ -31,6 +31,32 @@
                 </NcModal>
             </NcSettingsSection>
 
+            <NcSettingsSection v-if="canManageProjects"
+                :name="t('worktime', 'Projektverwaltung')">
+                <div class="section-header-actions">
+                    <NcButton type="primary" @click="openNewProjectForm">
+                        <template #icon>
+                            <Plus :size="20" />
+                        </template>
+                        {{ t('worktime', 'Neues Projekt') }}
+                    </NcButton>
+                </div>
+
+                <ProjectList
+                    :projects="allProjects"
+                    @edit="editProject"
+                    @delete="handleDeleteProject" />
+
+                <NcModal v-if="showProjectForm"
+                    :name="editingProject ? t('worktime', 'Projekt bearbeiten') : t('worktime', 'Neues Projekt')"
+                    @close="closeProjectForm">
+                    <ProjectForm
+                        :project="editingProject"
+                        @saved="onProjectSaved"
+                        @cancel="closeProjectForm" />
+                </NcModal>
+            </NcSettingsSection>
+
             <NcSettingsSection v-if="canManageSettings"
                 :name="t('worktime', 'Berechtigungen')">
                 <NcNoteCard v-if="showPermissionInfo" type="info" class="permission-info">
@@ -429,6 +455,8 @@ import SettingsService from '../services/SettingsService.js'
 import HolidayService from '../services/HolidayService.js'
 import EmployeeForm from '../components/EmployeeForm.vue'
 import EmployeeList from '../components/EmployeeList.vue'
+import ProjectForm from '../components/ProjectForm.vue'
+import ProjectList from '../components/ProjectList.vue'
 import { showSuccessMessage, showErrorMessage } from '../utils/errorHandler.js'
 import { getCurrentYear } from '../utils/dateUtils.js'
 
@@ -456,6 +484,8 @@ export default {
         NcNoteCard,
         EmployeeForm,
         EmployeeList,
+        ProjectForm,
+        ProjectList,
     },
     data() {
         return {
@@ -465,6 +495,8 @@ export default {
             holidayYear: getCurrentYear(),
             showEmployeeForm: false,
             editingEmployee: null,
+            showProjectForm: false,
+            editingProject: null,
             availablePrincipals: [],
             hrManagers: [],
             // Holiday management
@@ -488,9 +520,10 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('permissions', ['canManageSettings', 'canManageHolidays', 'canManageEmployees']),
+        ...mapGetters('permissions', ['canManageSettings', 'canManageHolidays', 'canManageEmployees', 'canManageProjects']),
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
+        ...mapGetters('projects', { allProjects: 'projects' }),
         federalStateOptions() {
             return Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
         },
@@ -586,10 +619,14 @@ export default {
         if (this.canManageHolidays) {
             this.loadHolidays()
         }
+        if (this.canManageProjects) {
+            this.fetchProjects(true)
+        }
     },
     methods: {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
+        ...mapActions('projects', ['fetchProjects', 'deleteProject']),
         async loadSettings() {
             this.loading = true
             try {
@@ -666,6 +703,30 @@ export default {
             try {
                 await this.deleteEmployee(employee.id)
                 showSuccessMessage(this.t('worktime', 'Mitarbeiter gelöscht'))
+            } catch (error) {
+                showErrorMessage(error.message)
+            }
+        },
+        openNewProjectForm() {
+            this.editingProject = null
+            this.showProjectForm = true
+        },
+        editProject(project) {
+            this.editingProject = project
+            this.showProjectForm = true
+        },
+        closeProjectForm() {
+            this.showProjectForm = false
+            this.editingProject = null
+        },
+        async onProjectSaved() {
+            this.closeProjectForm()
+            await this.fetchProjects(true)
+        },
+        async handleDeleteProject(project) {
+            try {
+                await this.deleteProject(project.id)
+                showSuccessMessage(this.t('worktime', 'Projekt gelöscht'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
