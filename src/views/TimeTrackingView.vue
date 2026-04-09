@@ -26,6 +26,8 @@
         <TimeEntryList v-else
             ref="entryList"
             :entries="timeEntries"
+            :absences="reportAbsences"
+            :holidays="reportHolidays"
             @refresh="loadData" />
     </div>
 </template>
@@ -53,6 +55,8 @@ export default {
     data() {
         return {
             statistics: null,
+            reportAbsences: [],
+            reportHolidays: [],
         }
     },
     computed: {
@@ -98,6 +102,8 @@ export default {
                     this.selectedMonth.month
                 )
                 this.statistics = report.statistics
+                this.reportAbsences = report.absences || []
+                this.reportHolidays = report.holidays || []
             } catch (error) {
                 console.error('Failed to load statistics:', error)
             }
