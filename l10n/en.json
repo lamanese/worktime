@@ -160,6 +160,7 @@
         "Umfang": "Scope",
         "Ganzer Tag": "Full Day",
         "Halber Tag": "Half Day",
+        "KW {week}": "CW {week}",
         "½ Tag": "½ day",
         "1 Tag": "1 day",
         "Halber Tag = 0,5 Tage. Start- und Enddatum sind identisch.": "Half day = 0.5 days. Start and end date are identical.",
