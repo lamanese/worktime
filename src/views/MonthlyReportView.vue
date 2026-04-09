@@ -3,9 +3,6 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Monatsübersicht') }}</h2>
             <div class="header-actions">
-                <MonthPicker :year="year"
-                    :month="month"
-                    @update="onMonthChange" />
                 <NcButton v-if="hasSubmittableEntries"
                     type="primary"
                     @click="confirmSubmitMonth">
@@ -24,6 +21,9 @@
                     </template>
                     {{ t('worktime', 'PDF herunterladen') }}
                 </NcButton>
+                <MonthPicker :year="year"
+                    :month="month"
+                    @update="onMonthChange" />
             </div>
         </div>
 
@@ -247,6 +247,10 @@ export default {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.header-actions :deep(.month-picker) {
+    margin-left: auto;
 }
 
 .report-content {

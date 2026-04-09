@@ -107,6 +107,14 @@ export default {
             type: Array,
             default: () => [],
         },
+        filterYear: {
+            type: Number,
+            default: null,
+        },
+        filterMonth: {
+            type: Number,
+            default: null,
+        },
     },
     emits: ['refresh'],
     data() {
@@ -147,6 +155,10 @@ export default {
                     const dayOfWeek = d.getDay()
                     // Skip weekends
                     if (dayOfWeek === 0 || dayOfWeek === 6) continue
+                    // Filter to selected month
+                    if (this.filterYear && this.filterMonth) {
+                        if (d.getFullYear() !== this.filterYear || (d.getMonth() + 1) !== this.filterMonth) continue
+                    }
                     const dateStr = d.toISOString().split('T')[0]
                     // Skip if there's already a time entry on this day
                     if (items.some(i => i._type === 'entry' && i._date === dateStr)) continue
