@@ -182,8 +182,8 @@ export default {
 
 .year-overview__header h3 {
     margin: 0;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--color-main-text);
 }
 
@@ -205,13 +205,12 @@ export default {
 .year-table th,
 .year-table td {
     padding: 8px 12px;
-    font-size: 14px;
     font-variant-numeric: tabular-nums;
 }
 
 .year-table th {
-    font-weight: 400;
-    font-size: 13px;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--color-text-maxcontrast);
     border-bottom: 2px solid var(--color-border);
 }

@@ -225,9 +225,9 @@ export default {
 }
 
 .card-title {
-    margin: 0 0 16px;
-    font-size: 16px;
-    font-weight: 700;
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--color-main-text);
 }
 
@@ -239,12 +239,13 @@ export default {
 }
 
 .stat-label {
-    font-size: 13px;
+    font-size: 15px;
     color: var(--color-text-maxcontrast);
 }
 
 .stat-value {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--color-main-text);
     font-variant-numeric: tabular-nums;
 }

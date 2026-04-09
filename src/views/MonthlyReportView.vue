@@ -260,7 +260,16 @@ export default {
 }
 
 .report-section h3 {
-    margin: 0 0 12px 0;
+    margin: 24px 0 8px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.report-section:first-child h3 {
+    margin-top: 0;
 }
 
 .stats-grid {
@@ -270,23 +279,24 @@ export default {
 }
 
 .stat-card {
-    padding: 16px;
+    padding: 20px;
     background: var(--color-main-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
 .stat-label {
-    font-size: 0.85em;
+    font-size: 13px;
     color: var(--color-text-maxcontrast);
 }
 
 .stat-value {
-    font-size: 1.5em;
+    font-size: 15px;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 
 .absence-table {
@@ -296,14 +306,20 @@ export default {
 
 .absence-table th,
 .absence-table td {
-    padding: 12px 8px;
+    padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
+    font-variant-numeric: tabular-nums;
 }
 
 .absence-table th {
+    font-size: 15px;
     font-weight: 600;
-    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.absence-table td {
+    border-bottom: 1px solid var(--color-border);
 }
 
 .holiday-list {
@@ -315,6 +331,7 @@ export default {
 .holiday-list li {
     padding: 8px 0;
     border-bottom: 1px solid var(--color-border);
+    font-size: 15px;
 }
 
 .status-info {

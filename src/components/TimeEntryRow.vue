@@ -368,7 +368,7 @@ tr {
 
 tr td {
     padding: 14px 12px;
-    font-size: 16px;
+    font-size: 15px;
     border-bottom: 1px solid var(--color-border);
 }
 
@@ -429,12 +429,12 @@ tr.holiday {
 }
 
 .work-minutes-cell {
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .break-hint {
     display: block;
-    font-size: 0.75em;
+    font-size: 13px;
     color: var(--color-warning);
     margin-top: 2px;
 }
@@ -450,7 +450,8 @@ tr.holiday {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 12px;
-    font-size: 0.85em;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .status-badge.draft {
