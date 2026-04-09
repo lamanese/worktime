@@ -18,7 +18,8 @@
         <OvertimeSummary v-if="statistics"
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
-            :overtime-minutes="statistics.overtimeMinutes" />
+            :overtime-minutes="statistics.overtimeMinutes"
+            :statistics="statistics" />
 
         <NcLoadingIcon v-if="loading" :size="44" />
 

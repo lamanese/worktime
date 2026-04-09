@@ -54,7 +54,8 @@
 
             <OvertimeSummary :target-minutes="report.statistics.targetMinutes"
                 :actual-minutes="report.statistics.actualMinutes"
-                :overtime-minutes="report.statistics.overtimeMinutes" />
+                :overtime-minutes="report.statistics.overtimeMinutes"
+                :statistics="report.statistics" />
 
             <div class="report-section">
                 <h3>{{ t('worktime', 'Zeiteinträge') }}</h3>

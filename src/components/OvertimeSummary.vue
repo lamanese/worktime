@@ -1,26 +1,84 @@
 <template>
     <div class="overtime-summary">
-        <div class="overtime-summary__item">
-            <span class="label">{{ t('worktime', 'Soll') }}</span>
-            <span class="value">{{ formatMinutes(targetMinutes) }}</span>
+        <div class="overtime-summary__row">
+            <div class="overtime-summary__item">
+                <span class="label">{{ t('worktime', 'Soll') }}</span>
+                <span class="value">{{ formatMinutes(targetMinutes) }}</span>
+            </div>
+            <div class="overtime-summary__item">
+                <span class="label">{{ t('worktime', 'Ist') }}</span>
+                <span class="value">{{ formatMinutes(actualMinutes) }}</span>
+            </div>
+            <div class="overtime-summary__item overtime-summary__item--highlight"
+                :class="{ positive: overtimeMinutes > 0, negative: overtimeMinutes < 0 }">
+                <span class="label">{{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}</span>
+                <span class="value">{{ formatMinutes(Math.abs(overtimeMinutes)) }}</span>
+            </div>
+            <NcButton v-if="statistics"
+                type="tertiary"
+                class="overtime-summary__toggle"
+                :aria-label="t('worktime', 'Berechnung anzeigen')"
+                @click="showDetails = !showDetails">
+                <template #icon>
+                    <ChevronUp v-if="showDetails" :size="20" />
+                    <ChevronDown v-else :size="20" />
+                </template>
+            </NcButton>
         </div>
-        <div class="overtime-summary__item">
-            <span class="label">{{ t('worktime', 'Ist') }}</span>
-            <span class="value">{{ formatMinutes(actualMinutes) }}</span>
-        </div>
-        <div class="overtime-summary__item overtime-summary__item--highlight"
-            :class="{ positive: overtimeMinutes > 0, negative: overtimeMinutes < 0 }">
-            <span class="label">{{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}</span>
-            <span class="value">{{ formatMinutes(Math.abs(overtimeMinutes)) }}</span>
+
+        <div v-if="showDetails && statistics" class="overtime-details">
+            <div class="overtime-details__section">
+                <h4>{{ t('worktime', 'Soll-Berechnung') }}</h4>
+                <div class="detail-row">
+                    <span>{{ t('worktime', 'Arbeitstage ({count})', { count: statistics.workingDays }) }}</span>
+                    <span class="detail-value">{{ formatMinutes(statistics.monthlyTargetMinutes) }}</span>
+                </div>
+                <div v-if="statistics.holidayCount > 0" class="detail-row info">
+                    <span>{{ t('worktime', 'davon Feiertage ({count})', { count: statistics.holidayCount }) }}</span>
+                    <span class="detail-value"></span>
+                </div>
+                <div v-if="statistics.targetReductionDays > 0" class="detail-row subtract">
+                    <span>{{ t('worktime', 'Soll-Reduktion ({count} Tage)', { count: statistics.targetReductionDays }) }}</span>
+                    <span class="detail-value">-{{ formatMinutes(statistics.monthlyTargetMinutes - statistics.targetMinutes) }}</span>
+                </div>
+                <div class="detail-row detail-row--total">
+                    <span>{{ t('worktime', 'Soll') }}</span>
+                    <span class="detail-value">{{ formatMinutes(targetMinutes) }}</span>
+                </div>
+            </div>
+
+            <div class="overtime-details__section">
+                <h4>{{ t('worktime', 'Ist-Berechnung') }}</h4>
+                <div class="detail-row">
+                    <span>{{ t('worktime', 'Geleistete Arbeitszeit') }}</span>
+                    <span class="detail-value">{{ formatMinutes(statistics.workedMinutes) }}</span>
+                </div>
+                <div v-if="statistics.paidAbsenceMinutes > 0" class="detail-row add">
+                    <span>{{ t('worktime', 'Bezahlte Abwesenheiten ({count} Tage)', { count: statistics.paidAbsenceDays }) }}</span>
+                    <span class="detail-value">+{{ formatMinutes(statistics.paidAbsenceMinutes) }}</span>
+                </div>
+                <div class="detail-row detail-row--total">
+                    <span>{{ t('worktime', 'Ist') }}</span>
+                    <span class="detail-value">{{ formatMinutes(actualMinutes) }}</span>
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
+import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import { formatMinutesWithUnit } from '../utils/timeUtils.js'
 
 export default {
     name: 'OvertimeSummary',
+    components: {
+        NcButton,
+        ChevronDown,
+        ChevronUp,
+    },
     props: {
         targetMinutes: {
             type: Number,
@@ -34,6 +92,15 @@ export default {
             type: Number,
             default: 0,
         },
+        statistics: {
+            type: Object,
+            default: null,
+        },
+    },
+    data() {
+        return {
+            showDetails: false,
+        }
     },
     methods: {
         formatMinutes(minutes) {
@@ -45,13 +112,17 @@ export default {
 
 <style scoped>
 .overtime-summary {
-    display: flex;
-    gap: 24px;
-    padding: 16px;
     background: var(--color-main-background);
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-large);
     margin-bottom: 24px;
+}
+
+.overtime-summary__row {
+    display: flex;
+    gap: 24px;
+    padding: 16px;
+    align-items: center;
 }
 
 .overtime-summary__item {
@@ -76,5 +147,68 @@ export default {
 
 .overtime-summary__item--highlight.negative .value {
     color: var(--color-error-text);
+}
+
+.overtime-summary__toggle {
+    margin-left: auto;
+}
+
+.overtime-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--color-border);
+    align-items: stretch;
+}
+
+.overtime-details__section {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.overtime-details__section .detail-row--total {
+    margin-top: auto;
+}
+
+.overtime-details__section h4 {
+    margin: 0 0 8px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.9em;
+}
+
+.detail-row.subtract .detail-value {
+    color: var(--color-error-text);
+}
+
+.detail-row.info {
+    color: var(--color-text-maxcontrast);
+    font-size: 0.85em;
+}
+
+.detail-row.add .detail-value {
+    color: var(--color-success-text);
+}
+
+.detail-row--total {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+    font-weight: 600;
+}
+
+.detail-value {
+    font-variant-numeric: tabular-nums;
 }
 </style>
