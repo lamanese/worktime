@@ -3,15 +3,15 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
             <div class="header-actions">
-                <MonthPicker :year="selectedMonth.year"
-                    :month="selectedMonth.month"
-                    @update="onMonthChange" />
                 <NcButton type="primary" @click="startCreate">
                     <template #icon>
                         <PlusIcon :size="20" />
                     </template>
                     {{ t('worktime', 'Neuer Eintrag') }}
                 </NcButton>
+                <MonthPicker :year="selectedMonth.year"
+                    :month="selectedMonth.month"
+                    @update="onMonthChange" />
             </div>
         </div>
 
@@ -28,6 +28,8 @@
             :entries="timeEntries"
             :absences="reportAbsences"
             :holidays="reportHolidays"
+            :filter-year="selectedMonth.year"
+            :filter-month="selectedMonth.month"
             @refresh="loadData" />
     </div>
 </template>
@@ -142,5 +144,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.header-actions :deep(.month-picker) {
+    margin-left: auto;
 }
 </style>

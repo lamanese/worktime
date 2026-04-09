@@ -244,15 +244,16 @@ export default {
 
 .vacation-stats {
     margin-bottom: 24px;
-    padding: 16px;
+    padding: 20px;
     background: var(--color-main-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
+    border-radius: 16px;
 }
 
 .vacation-stats h3 {
     margin: 0 0 12px 0;
-    font-size: 1em;
+    font-size: 15px;
+    font-weight: 600;
 }
 
 .stats-row {
@@ -268,35 +269,41 @@ export default {
 }
 
 .stat .label {
-    font-size: 0.85em;
+    font-size: 13px;
     color: var(--color-text-maxcontrast);
 }
 
 .stat .value {
-    font-size: 1.1em;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat.highlight .value {
-    color: var(--color-primary);
+    color: var(--color-success-text);
     font-weight: 600;
 }
 
 .absence-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 16px;
 }
 
 .absence-table th,
 .absence-table td {
-    padding: 14px 12px;
+    padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
 }
 
 .absence-table th {
+    font-size: 15px;
     font-weight: 600;
-    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.absence-table td {
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--color-border);
 }
 </style>

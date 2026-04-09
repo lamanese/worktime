@@ -107,6 +107,14 @@ export default {
             type: Array,
             default: () => [],
         },
+        filterYear: {
+            type: Number,
+            default: null,
+        },
+        filterMonth: {
+            type: Number,
+            default: null,
+        },
     },
     emits: ['refresh'],
     data() {
@@ -147,6 +155,10 @@ export default {
                     const dayOfWeek = d.getDay()
                     // Skip weekends
                     if (dayOfWeek === 0 || dayOfWeek === 6) continue
+                    // Filter to selected month
+                    if (this.filterYear && this.filterMonth) {
+                        if (d.getFullYear() !== this.filterYear || (d.getMonth() + 1) !== this.filterMonth) continue
+                    }
                     const dateStr = d.toISOString().split('T')[0]
                     // Skip if there's already a time entry on this day
                     if (items.some(i => i._type === 'entry' && i._date === dateStr)) continue
@@ -255,19 +267,25 @@ export default {
 .time-entry-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 16px;
 }
 
 .time-entry-table th,
 .time-entry-table td {
-    padding: 14px 12px;
+    padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
 }
 
 .time-entry-table th {
+    font-size: 15px;
     font-weight: 600;
-    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.time-entry-table td {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .absence-row td {
@@ -284,8 +302,8 @@ export default {
     display: inline-block;
     padding: 2px 10px;
     border-radius: 12px;
-    font-size: 0.85em;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     background: #0082c8;
     color: white;
 }
@@ -312,7 +330,7 @@ export default {
 }
 
 .absence-scope {
-    font-size: 0.85em;
+    font-size: 13px;
     color: var(--color-text-maxcontrast);
 }
 

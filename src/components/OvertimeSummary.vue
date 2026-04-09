@@ -114,7 +114,7 @@ export default {
 .overtime-summary {
     background: var(--color-main-background);
     border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
+    border-radius: 16px;
     margin-bottom: 24px;
 }
 
@@ -132,13 +132,14 @@ export default {
 }
 
 .overtime-summary__item .label {
-    font-size: 0.85em;
+    font-size: 15px;
     color: var(--color-text-maxcontrast);
 }
 
 .overtime-summary__item .value {
-    font-size: 1.2em;
+    font-size: 15px;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 
 .overtime-summary__item--highlight.positive .value {
@@ -174,7 +175,7 @@ export default {
 
 .overtime-details__section h4 {
     margin: 0 0 8px;
-    font-size: 0.85em;
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
     text-transform: uppercase;
@@ -185,7 +186,7 @@ export default {
     display: flex;
     justify-content: space-between;
     padding: 4px 0;
-    font-size: 0.9em;
+    font-size: 15px;
 }
 
 .detail-row.subtract .detail-value {
@@ -194,7 +195,7 @@ export default {
 
 .detail-row.info {
     color: var(--color-text-maxcontrast);
-    font-size: 0.85em;
+    font-size: 13px;
 }
 
 .detail-row.add .detail-value {
