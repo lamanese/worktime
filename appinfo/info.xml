@@ -29,7 +29,7 @@ Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     <version>0.4.0</version>
     <licence>AGPL-3.0-or-later</licence>
 
-    <author homepage="https://github.com/cpcMomentum">Axel Deffner</author>
+    <author mail="axel.deffner@cpcmomentum.com" homepage="https://github.com/cpcMomentum">Axel Deffner</author>
 
     <namespace>WorkTime</namespace>
 
