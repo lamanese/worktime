@@ -3,28 +3,33 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
             <div class="header-actions">
-                <MonthPicker :year="selectedMonth.year"
-                    :month="selectedMonth.month"
-                    @update="onMonthChange" />
                 <NcButton type="primary" @click="startCreate">
                     <template #icon>
                         <PlusIcon :size="20" />
                     </template>
                     {{ t('worktime', 'Neuer Eintrag') }}
                 </NcButton>
+                <MonthPicker :year="selectedMonth.year"
+                    :month="selectedMonth.month"
+                    @update="onMonthChange" />
             </div>
         </div>
 
         <OvertimeSummary v-if="statistics"
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
-            :overtime-minutes="statistics.overtimeMinutes" />
+            :overtime-minutes="statistics.overtimeMinutes"
+            :statistics="statistics" />
 
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <TimeEntryList v-else
             ref="entryList"
             :entries="timeEntries"
+            :absences="reportAbsences"
+            :holidays="reportHolidays"
+            :filter-year="selectedMonth.year"
+            :filter-month="selectedMonth.month"
             @refresh="loadData" />
     </div>
 </template>
@@ -52,6 +57,8 @@ export default {
     data() {
         return {
             statistics: null,
+            reportAbsences: [],
+            reportHolidays: [],
         }
     },
     computed: {
@@ -97,6 +104,8 @@ export default {
                     this.selectedMonth.month
                 )
                 this.statistics = report.statistics
+                this.reportAbsences = report.absences || []
+                this.reportHolidays = report.holidays || []
             } catch (error) {
                 console.error('Failed to load statistics:', error)
             }
@@ -135,5 +144,9 @@ export default {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.header-actions :deep(.month-picker) {
+    margin-left: auto;
 }
 </style>

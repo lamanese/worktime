@@ -260,7 +260,7 @@ export default {
                 return baseValid
             }
             // New employee: weeklyHours and vacationDays are in the form
-            return baseValid && this.form.weeklyHours > 0 && this.form.vacationDays >= 0
+            return baseValid && this.form.weeklyHours >= 0 && this.form.vacationDays >= 0
         },
     },
     watch: {

@@ -31,11 +31,51 @@
                 </NcModal>
             </NcSettingsSection>
 
+            <NcSettingsSection v-if="canManageProjects"
+                :name="t('worktime', 'Projektverwaltung')">
+                <div class="section-header-actions">
+                    <NcButton type="primary" @click="openNewProjectForm">
+                        <template #icon>
+                            <Plus :size="20" />
+                        </template>
+                        {{ t('worktime', 'Neues Projekt') }}
+                    </NcButton>
+                </div>
+
+                <ProjectList
+                    :projects="allProjects"
+                    @edit="editProject"
+                    @delete="handleDeleteProject" />
+
+                <NcModal v-if="showProjectForm"
+                    :name="editingProject ? t('worktime', 'Projekt bearbeiten') : t('worktime', 'Neues Projekt')"
+                    @close="closeProjectForm">
+                    <ProjectForm
+                        :project="editingProject"
+                        @saved="onProjectSaved"
+                        @cancel="closeProjectForm" />
+                </NcModal>
+            </NcSettingsSection>
+
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Berechtigungen')"
-                :description="t('worktime', 'HR-Manager können Mitarbeiter verwalten und Anträge genehmigen.')">
+                :name="t('worktime', 'Berechtigungen')">
+                <NcNoteCard v-if="showPermissionInfo" type="info" class="permission-info">
+                    <p><strong>Admin</strong> – {{ t('worktime', 'Automatisch für alle Nextcloud-Administratoren. Volle Rechte.') }}</p>
+                    <p><strong>HR-Manager</strong> – {{ t('worktime', 'Manuell zuweisen (siehe unten). Kann Mitarbeiter verwalten und Anträge genehmigen.') }}</p>
+                    <p><strong>{{ t('worktime', 'Vorgesetzter') }}</strong> – {{ t('worktime', 'Automatisch, wenn als Vorgesetzter in einem Mitarbeiterprofil eingetragen.') }}</p>
+                    <p><strong>Mitarbeiter</strong> – {{ t('worktime', 'Automatisch für alle angelegten Mitarbeiter.') }}</p>
+                </NcNoteCard>
                 <div class="form-group">
-                    <label>{{ t('worktime', 'HR-Manager') }}</label>
+                    <div class="label-with-info">
+                        <label>{{ t('worktime', 'HR-Manager') }}</label>
+                        <NcButton type="tertiary"
+                            :aria-label="t('worktime', 'Rollen-Info anzeigen')"
+                            @click="showPermissionInfo = !showPermissionInfo">
+                            <template #icon>
+                                <InformationOutline :size="20" />
+                            </template>
+                        </NcButton>
+                    </div>
                     <NcSelect
                         v-model="selectedHrManagers"
                         :options="principalOptions"
@@ -398,6 +438,7 @@ import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Account from 'vue-material-design-icons/Account.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
@@ -407,12 +448,15 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import { getFilePickerBuilder, FilePickerType, DialogBuilder } from '@nextcloud/dialogs'
 import { mapGetters, mapActions } from 'vuex'
 import SettingsService from '../services/SettingsService.js'
 import HolidayService from '../services/HolidayService.js'
 import EmployeeForm from '../components/EmployeeForm.vue'
 import EmployeeList from '../components/EmployeeList.vue'
+import ProjectForm from '../components/ProjectForm.vue'
+import ProjectList from '../components/ProjectList.vue'
 import { showSuccessMessage, showErrorMessage } from '../utils/errorHandler.js'
 import { getCurrentYear } from '../utils/dateUtils.js'
 
@@ -436,16 +480,23 @@ export default {
         CalendarBlank,
         ChevronRight,
         ChevronDown,
+        InformationOutline,
+        NcNoteCard,
         EmployeeForm,
         EmployeeList,
+        ProjectForm,
+        ProjectList,
     },
     data() {
         return {
             loading: false,
+            showPermissionInfo: false,
             settings: {},
             holidayYear: getCurrentYear(),
             showEmployeeForm: false,
             editingEmployee: null,
+            showProjectForm: false,
+            editingProject: null,
             availablePrincipals: [],
             hrManagers: [],
             // Holiday management
@@ -469,9 +520,10 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('permissions', ['canManageSettings', 'canManageHolidays', 'canManageEmployees']),
+        ...mapGetters('permissions', ['canManageSettings', 'canManageHolidays', 'canManageEmployees', 'canManageProjects']),
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
+        ...mapGetters('projects', { allProjects: 'projects' }),
         federalStateOptions() {
             return Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
         },
@@ -567,10 +619,14 @@ export default {
         if (this.canManageHolidays) {
             this.loadHolidays()
         }
+        if (this.canManageProjects) {
+            this.fetchProjects(true)
+        }
     },
     methods: {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
+        ...mapActions('projects', ['fetchProjects', 'deleteProject']),
         async loadSettings() {
             this.loading = true
             try {
@@ -647,6 +703,30 @@ export default {
             try {
                 await this.deleteEmployee(employee.id)
                 showSuccessMessage(this.t('worktime', 'Mitarbeiter gelöscht'))
+            } catch (error) {
+                showErrorMessage(error.message)
+            }
+        },
+        openNewProjectForm() {
+            this.editingProject = null
+            this.showProjectForm = true
+        },
+        editProject(project) {
+            this.editingProject = project
+            this.showProjectForm = true
+        },
+        closeProjectForm() {
+            this.showProjectForm = false
+            this.editingProject = null
+        },
+        async onProjectSaved() {
+            this.closeProjectForm()
+            await this.fetchProjects(true)
+        },
+        async handleDeleteProject(project) {
+            try {
+                await this.deleteProject(project.id)
+                showSuccessMessage(this.t('worktime', 'Projekt gelöscht'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -879,6 +959,25 @@ export default {
     display: block;
     margin-bottom: 4px;
     font-weight: 500;
+}
+
+.label-with-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.label-with-info label {
+    margin-bottom: 0;
+}
+
+.permission-info {
+    margin-bottom: 16px;
+}
+
+.permission-info p {
+    margin: 4px 0;
 }
 
 .form-row {
