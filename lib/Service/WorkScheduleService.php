@@ -452,8 +452,8 @@ class WorkScheduleService {
         foreach ($days as $day) {
             $total += (float)($dayHours[$day] ?? 0);
         }
-        if ($total <= 0) {
-            $errors['weeklyHours'] = ['Total weekly hours must be greater than 0'];
+        if ($total < 0) {
+            $errors['weeklyHours'] = ['Total weekly hours must not be negative'];
         }
 
         return $errors;

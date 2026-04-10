@@ -197,7 +197,7 @@ export default {
             const h = this.form.dayHours
             const total = h.mon + h.tue + h.wed + h.thu + h.fri + h.sat + h.sun
             const allWithinLimit = Object.values(h).every(v => v >= 0 && v <= this.maxDailyHours)
-            return total > 0
+            return total >= 0
                 && allWithinLimit
                 && this.form.vacationDays >= 0
                 && (this.editingSchedule || this.form.validFrom)
@@ -225,7 +225,7 @@ export default {
         ...mapActions('workSchedules', ['fetchSchedules', 'createSchedule', 'updateSchedule', 'deleteSchedule']),
         getEmptyForm() {
             return {
-                validFrom: null,
+                validFrom: new Date(),
                 dayHours: { mon: 8, tue: 8, wed: 8, thu: 8, fri: 8, sat: 0, sun: 0 },
                 vacationDays: 30,
             }
