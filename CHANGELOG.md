@@ -7,6 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-11
+
+### Fixed
+- Automatische Bereinigung von Extra-Dateien aus frueheren Releases via RepairStep
+
 ## [0.4.1] - 2026-04-11
 
 ### Fixed

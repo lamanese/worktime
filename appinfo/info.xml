@@ -26,7 +26,7 @@ Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland.
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
 
-    <version>0.4.1</version>
+    <version>0.4.2</version>
     <licence>AGPL-3.0-or-later</licence>
 
     <author mail="axel.deffner@cpcmomentum.com" homepage="https://github.com/cpcMomentum">Axel Deffner</author>
@@ -55,6 +55,12 @@ Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     <background-jobs>
         <job>OCA\WorkTime\BackgroundJob\ArchivePdfJob</job>
     </background-jobs>
+
+    <repair-steps>
+        <post-migration>
+            <step>OCA\WorkTime\Migration\CleanupExtraFiles</step>
+        </post-migration>
+    </repair-steps>
 
     <navigations>
         <navigation>
