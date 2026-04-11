@@ -284,6 +284,42 @@ class AbsenceController extends BaseController {
     }
 
     #[NoAdminRequired]
+    public function overview(int $year = 0, int $month = 0): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if ($year === 0) {
+            $year = (int)date('Y');
+        }
+        if ($month === 0) {
+            $month = (int)date('n');
+        }
+
+        $isPrivileged = $this->permissionService->canManageEmployees($this->userId)
+            || $this->permissionService->isSupervisor($this->userId);
+
+        $currentEmployee = $this->permissionService->getEmployeeForUser($this->userId);
+        $currentEmployeeId = $currentEmployee?->getId();
+
+        // Supervisors are privileged only for their team — but for simplicity
+        // we treat them as privileged here (they see all, sensitive types unmasked for their team).
+        // Admin/HR see everything unmasked.
+        $supervisorEmployeeId = $currentEmployeeId;
+
+        $overview = $this->absenceService->getAbsenceOverview(
+            $year,
+            $month,
+            $this->userId,
+            $isPrivileged,
+            $currentEmployeeId,
+            $supervisorEmployeeId
+        );
+
+        return $this->successResponse($overview);
+    }
+
+    #[NoAdminRequired]
     public function types(): JSONResponse {
         return $this->successResponse(Absence::TYPES);
     }

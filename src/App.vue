@@ -39,6 +39,15 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
+				v-if="isEmployee"
+				:name="t('worktime', 'Abwesenheitsübersicht')"
+				to="/absence-overview">
+				<template #icon>
+					<CalendarMultipleIcon :size="20" />
+				</template>
+			</NcAppNavigationItem>
+
+			<NcAppNavigationItem
 				v-if="canApprove && hasEmployees"
 				:name="t('worktime', 'Team')"
 				to="/team">
@@ -122,6 +131,7 @@ import ViewDashboardIcon from 'vue-material-design-icons/ViewDashboard.vue'
 import ClockIcon from 'vue-material-design-icons/Clock.vue'
 import ChartIcon from 'vue-material-design-icons/ChartBar.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
+import CalendarMultipleIcon from 'vue-material-design-icons/CalendarMultiple.vue'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
 import CheckDecagramIcon from 'vue-material-design-icons/CheckDecagram.vue'
 import CogIcon from 'vue-material-design-icons/Cog.vue'
@@ -142,6 +152,7 @@ export default {
 		ClockIcon,
 		ChartIcon,
 		CalendarIcon,
+		CalendarMultipleIcon,
 		AccountGroupIcon,
 		CheckDecagramIcon,
 		CogIcon,

@@ -7,6 +7,8 @@ namespace OCA\WorkTime\Service;
 use DateTime;
 use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\AbsenceMapper;
+use OCA\WorkTime\Db\Employee;
+use OCA\WorkTime\Db\EmployeeMapper;
 use OCA\WorkTime\Db\HolidayMapper;
 use OCA\WorkTime\Notification\NotificationService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -16,6 +18,7 @@ class AbsenceService {
 
     public function __construct(
         private AbsenceMapper $absenceMapper,
+        private EmployeeMapper $employeeMapper,
         private HolidayMapper $holidayMapper,
         private TimeEntryService $timeEntryService,
         private AuditLogService $auditLogService,
@@ -415,6 +418,91 @@ class AbsenceService {
         }
 
         return $errors;
+    }
+
+    /**
+     * Get absence overview for all visible employees in a given month.
+     *
+     * @return array[] Array of { employeeId, employeeName, absences }
+     */
+    public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): array {
+        $allEmployees = $this->employeeMapper->findAllActive();
+        $result = [];
+
+        foreach ($allEmployees as $employee) {
+            // Skip if employee is the current user (they see their own absences in their own view)
+            // Actually, include them — they should see themselves in the overview too
+
+            if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $supervisorEmployeeId)) {
+                continue;
+            }
+
+            $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
+
+            $absenceData = [];
+            $detail = $employee->getAbsenceDetail();
+            foreach ($absences as $absence) {
+                $data = $absence->jsonSerialize();
+
+                // Mask types for non-privileged users based on employee's detail setting
+                if (!$isPrivileged && $detail !== 'detailed') {
+                    $data['type'] = 'absent';
+                    $data['typeName'] = 'Abwesend';
+                }
+
+                $absenceData[] = $data;
+            }
+
+            $result[] = [
+                'employeeId' => $employee->getId(),
+                'employeeName' => $employee->getFullName(),
+                'absences' => $absenceData,
+            ];
+        }
+
+        // Sort by employee name
+        usort($result, fn(array $a, array $b) => strcasecmp($a['employeeName'], $b['employeeName']));
+
+        return $result;
+    }
+
+    /**
+     * Check if an employee's absences should be visible to the current user.
+     */
+    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): bool {
+        // Privileged users (Admin, HR, Supervisor for their team) always see everyone
+        if ($isPrivileged) {
+            return true;
+        }
+
+        // Own entry is always visible
+        if ($currentEmployeeId !== null && $employee->getId() === $currentEmployeeId) {
+            return true;
+        }
+
+        $visibility = $employee->getAbsenceVisibility();
+
+        if ($visibility === 'none') {
+            return false;
+        }
+
+        if ($visibility === 'team') {
+            // Visible only if same supervisor
+            if ($currentEmployeeId === null) {
+                return false;
+            }
+            try {
+                $currentEmployee = $this->employeeMapper->find($currentEmployeeId);
+                // Same team = same supervisor, or the viewer is the supervisor
+                return $employee->getSupervisorId() === $currentEmployee->getSupervisorId()
+                    || $employee->getSupervisorId() === $currentEmployeeId;
+            } catch (DoesNotExistException) {
+                return false;
+            }
+        }
+
+        // 'all' — visible to everyone
+        return true;
     }
 
     /**

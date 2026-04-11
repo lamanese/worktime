@@ -204,6 +204,41 @@ class AbsenceMapper extends QBMapper {
         return $this->findEntities($qb);
     }
 
+    /**
+     * Find approved absences for a specific employee within a month.
+     *
+     * @return Absence[]
+     */
+    public function findApprovedByEmployeeAndMonth(int $employeeId, int $year, int $month): array {
+        $startDate = new DateTime("$year-$month-01");
+        $endDate = (clone $startDate)->modify('last day of this month');
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('employee_id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(Absence::STATUS_APPROVED)))
+            ->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->andX(
+                        $qb->expr()->gte('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
+                        $qb->expr()->lte('start_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
+                    ),
+                    $qb->expr()->andX(
+                        $qb->expr()->gte('end_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
+                        $qb->expr()->lte('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
+                    ),
+                    $qb->expr()->andX(
+                        $qb->expr()->lte('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
+                        $qb->expr()->gte('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
+                    )
+                )
+            )
+            ->orderBy('start_date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
     public function sumVacationDaysByEmployeeAndYear(int $employeeId, int $year): float {
         $startDate = new DateTime("$year-01-01");
         $endDate = new DateTime("$year-12-31");
