@@ -7,6 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-11
+
+### Fixed
+- Integritaetspruefung: `test-results/` und `appinfo/*.crt` aus Tarball entfernt
+
 ## [0.4.0] - 2026-04-11
 
 ### Added
