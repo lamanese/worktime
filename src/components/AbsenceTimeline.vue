@@ -228,14 +228,14 @@ export default {
 	cursor: default;
 }
 
-.type-vacation { background-color: #0082c9; }
-.type-absent { background-color: #e67e22; }
-.type-sick { background-color: #e67e22; }
-.type-child_sick { background-color: #e67e22; }
-.type-training { background-color: #2ecc71; }
-.type-special { background-color: #9b59b6; }
-.type-compensatory { background-color: #1abc9c; }
-.type-unpaid { background-color: #95a5a6; }
+.type-vacation { background-color: #0082c9; }     /* Urlaub – blau */
+.type-sick { background-color: #e74c3c; }         /* Krank – rot */
+.type-child_sick { background-color: #f39c12; }   /* Kind krank – orange */
+.type-training { background-color: #2ecc71; }     /* Fortbildung – gruen */
+.type-special { background-color: #9b59b6; }      /* Sonderurlaub – lila */
+.type-compensatory { background-color: #1abc9c; } /* Freizeitausgleich – tuerkis */
+.type-unpaid { background-color: #34495e; }       /* Unbezahlt – dunkelblau */
+.type-absent { background-color: #95a5a6; }       /* Abwesend (maskiert) – grau */
 
 .timeline-empty {
 	padding: 40px;
