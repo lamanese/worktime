@@ -7,6 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-04-12
+
+### Fixed
+- `.htaccess` aus TCPDF vendor/ entfernt — NC entfernt diese Datei bei der Installation automatisch (FilenameValidator), was zu FILE_MISSING Integritaetsfehler seit v0.4.0 fuehrte
+
 ## [0.4.3] - 2026-04-12
 
 ### Fixed
