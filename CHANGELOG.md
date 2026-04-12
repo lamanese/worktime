@@ -7,6 +7,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-04-12
+
+### Fixed
+- Header "Abwesenheitsuebersicht" wurde vom Sidebar-Toggle ueberlagert (padding-left: 50px ergaenzt)
+- Monat-Navigation im MonthPicker funktionierte nicht (falsches Event-Binding)
+
+### Changed
+- Admin/HR/Supervisor sehen in der Abwesenheitsuebersicht die vollstaendige Typ-Legende
+
 ## [0.5.0] - 2026-04-12
 
 ### Added
