@@ -197,7 +197,7 @@ class EmployeeController extends BaseController {
     }
 
     #[NoAdminRequired]
-    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null): JSONResponse {
+    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null, ?string $absenceVisibility = null, ?string $absenceDetail = null): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
@@ -206,7 +206,9 @@ class EmployeeController extends BaseController {
             $employee = $this->employeeService->updateMyDefaults(
                 $this->userId,
                 $defaultStartTime,
-                $defaultEndTime
+                $defaultEndTime,
+                $absenceVisibility,
+                $absenceDetail
             );
 
             return $this->successResponse($employee);

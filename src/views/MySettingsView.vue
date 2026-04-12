@@ -16,7 +16,8 @@
                             v-model="form.defaultStartTime"
                             type="time"
                             class="time-input"
-                            :placeholder="t('worktime', 'z.B. 08:00')">
+                            :placeholder="t('worktime', 'z.B. 08:00')"
+                            @change="saveWorkTimes">
                     </div>
 
                     <div class="form-group">
@@ -25,24 +26,60 @@
                             v-model="form.defaultEndTime"
                             type="time"
                             class="time-input"
-                            :placeholder="t('worktime', 'z.B. 17:00')">
+                            :placeholder="t('worktime', 'z.B. 17:00')"
+                            @change="saveWorkTimes">
+                    </div>
+
+                    <div class="save-indicator">
+                        <NcLoadingIcon v-if="savingWorkTimes" :size="20" />
+                        <span v-if="workTimesSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
                     </div>
                 </div>
 
                 <p class="hint">
                     {{ t('worktime', 'Leer lassen für Standardwerte (08:00 - 17:00).') }}
                 </p>
+            </div>
+        </div>
 
-                <div class="form-actions">
-                    <NcButton type="tertiary" @click="reset" :disabled="saving">
-                        {{ t('worktime', 'Zurücksetzen') }}
-                    </NcButton>
-                    <NcButton type="primary" @click="save" :disabled="saving || !hasChanges">
-                        <template #icon>
-                            <NcLoadingIcon v-if="saving" :size="20" />
-                        </template>
-                        {{ t('worktime', 'Speichern') }}
-                    </NcButton>
+        <div class="settings-section">
+            <h3>{{ t('worktime', 'Datenschutz') }}</h3>
+            <p class="settings-description">
+                {{ t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.') }}
+            </p>
+
+            <div class="settings-form">
+                <div class="form-group">
+                    <label for="absenceVisibility">{{ t('worktime', 'Abwesenheiten sichtbar für') }}</label>
+                    <div class="visibility-row">
+                        <select id="absenceVisibility"
+                            v-model="form.absenceVisibility"
+                            class="visibility-select"
+                            :disabled="savingVisibility"
+                            @change="saveVisibility">
+                            <option value="none">{{ t('worktime', 'Niemand') }}</option>
+                            <option value="team">{{ t('worktime', 'Mein Team') }}</option>
+                            <option value="all">{{ t('worktime', 'Alle Mitarbeiter') }}</option>
+                        </select>
+                        <NcLoadingIcon v-if="savingVisibility" :size="20" />
+                        <span v-if="visibilitySaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
+                    </div>
+                </div>
+
+                <div v-if="form.absenceVisibility !== 'none'" class="form-group">
+                    <label for="absenceDetail">{{ t('worktime', 'Detailgrad') }}</label>
+                    <div class="visibility-row">
+                        <select id="absenceDetail"
+                            v-model="form.absenceDetail"
+                            class="visibility-select"
+                            :disabled="savingDetail"
+                            @change="saveDetail">
+                            <option value="hidden">{{ t('worktime', 'Nur \"Abwesend\" anzeigen') }}</option>
+                            <option value="detailed">{{ t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, ...)') }}</option>
+                        </select>
+                        <NcLoadingIcon v-if="savingDetail" :size="20" />
+                        <span v-if="detailSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -50,15 +87,13 @@
 </template>
 
 <script>
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import { mapGetters, mapActions } from 'vuex'
-import { showSuccess, showError } from '@nextcloud/dialogs'
+import { showError } from '@nextcloud/dialogs'
 
 export default {
     name: 'MySettingsView',
     components: {
-        NcButton,
         NcLoadingIcon,
     },
     data() {
@@ -66,20 +101,25 @@ export default {
             form: {
                 defaultStartTime: '',
                 defaultEndTime: '',
+                absenceVisibility: 'none',
+                absenceDetail: 'hidden',
             },
             originalValues: {
                 defaultStartTime: '',
                 defaultEndTime: '',
+                absenceVisibility: 'none',
+                absenceDetail: 'hidden',
             },
-            saving: false,
+            savingWorkTimes: false,
+            workTimesSaved: false,
+            savingVisibility: false,
+            visibilitySaved: false,
+            savingDetail: false,
+            detailSaved: false,
         }
     },
     computed: {
         ...mapGetters('employees', ['currentEmployee']),
-        hasChanges() {
-            return this.form.defaultStartTime !== this.originalValues.defaultStartTime
-                || this.form.defaultEndTime !== this.originalValues.defaultEndTime
-        },
     },
     watch: {
         currentEmployee: {
@@ -94,18 +134,18 @@ export default {
     methods: {
         ...mapActions('employees', ['updateMyDefaults', 'fetchCurrentEmployee']),
         loadFromEmployee(employee) {
-            // Show saved values or defaults (08:00 / 17:00)
             this.form.defaultStartTime = employee.defaultStartTime || '08:00'
             this.form.defaultEndTime = employee.defaultEndTime || '17:00'
+            this.form.absenceVisibility = employee.absenceVisibility || 'none'
+            this.form.absenceDetail = employee.absenceDetail || 'hidden'
             this.originalValues.defaultStartTime = this.form.defaultStartTime
             this.originalValues.defaultEndTime = this.form.defaultEndTime
+            this.originalValues.absenceVisibility = this.form.absenceVisibility
+            this.originalValues.absenceDetail = this.form.absenceDetail
         },
-        reset() {
-            this.form.defaultStartTime = this.originalValues.defaultStartTime
-            this.form.defaultEndTime = this.originalValues.defaultEndTime
-        },
-        async save() {
-            this.saving = true
+        async saveWorkTimes() {
+            this.savingWorkTimes = true
+            this.workTimesSaved = false
             try {
                 await this.updateMyDefaults({
                     defaultStartTime: this.form.defaultStartTime || null,
@@ -113,12 +153,49 @@ export default {
                 })
                 this.originalValues.defaultStartTime = this.form.defaultStartTime
                 this.originalValues.defaultEndTime = this.form.defaultEndTime
-                showSuccess(t('worktime', 'Einstellungen gespeichert'))
+                this.workTimesSaved = true
+                setTimeout(() => { this.workTimesSaved = false }, 2000)
             } catch (error) {
-                console.error('Failed to save settings:', error)
-                showError(t('worktime', 'Fehler beim Speichern der Einstellungen'))
+                console.error('Failed to save work times:', error)
+                showError(t('worktime', 'Fehler beim Speichern'))
             } finally {
-                this.saving = false
+                this.savingWorkTimes = false
+            }
+        },
+        async saveVisibility() {
+            this.savingVisibility = true
+            this.visibilitySaved = false
+            try {
+                await this.updateMyDefaults({
+                    absenceVisibility: this.form.absenceVisibility,
+                })
+                this.originalValues.absenceVisibility = this.form.absenceVisibility
+                this.visibilitySaved = true
+                setTimeout(() => { this.visibilitySaved = false }, 2000)
+            } catch (error) {
+                console.error('Failed to save visibility:', error)
+                showError(t('worktime', 'Fehler beim Speichern'))
+                this.form.absenceVisibility = this.originalValues.absenceVisibility
+            } finally {
+                this.savingVisibility = false
+            }
+        },
+        async saveDetail() {
+            this.savingDetail = true
+            this.detailSaved = false
+            try {
+                await this.updateMyDefaults({
+                    absenceDetail: this.form.absenceDetail,
+                })
+                this.originalValues.absenceDetail = this.form.absenceDetail
+                this.detailSaved = true
+                setTimeout(() => { this.detailSaved = false }, 2000)
+            } catch (error) {
+                console.error('Failed to save detail:', error)
+                showError(t('worktime', 'Fehler beim Speichern'))
+                this.form.absenceDetail = this.originalValues.absenceDetail
+            } finally {
+                this.savingDetail = false
             }
         },
     },
@@ -143,6 +220,10 @@ export default {
     padding: 20px;
 }
 
+.settings-section + .settings-section {
+    margin-top: 24px;
+}
+
 .settings-section h3 {
     margin: 0 0 8px 0;
 }
@@ -159,6 +240,7 @@ export default {
 .form-row {
     display: flex;
     gap: 24px;
+    align-items: flex-end;
 }
 
 .form-group {
@@ -184,10 +266,29 @@ export default {
     margin: 0 0 16px 0;
 }
 
-.form-actions {
+.save-indicator {
     display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 20px;
+    align-items: center;
+    margin-bottom: 16px;
+    min-height: 36px;
+}
+
+.visibility-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.visibility-select {
+    width: 16rem;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-main-background);
+}
+
+.saved-hint {
+    color: var(--color-success);
+    font-size: 13px;
 }
 </style>

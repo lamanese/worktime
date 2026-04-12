@@ -44,6 +44,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDefaultStartTime(?DateTime $defaultStartTime)
  * @method DateTime|null getDefaultEndTime()
  * @method void setDefaultEndTime(?DateTime $defaultEndTime)
+ * @method string getAbsenceVisibility()
+ * @method void setAbsenceVisibility(string $absenceVisibility)
+ * @method string getAbsenceDetail()
+ * @method void setAbsenceDetail(string $absenceDetail)
  */
 class Employee extends Entity implements JsonSerializable {
 
@@ -83,6 +87,8 @@ class Employee extends Entity implements JsonSerializable {
     protected ?DateTime $updatedAt = null;
     protected ?DateTime $defaultStartTime = null;
     protected ?DateTime $defaultEndTime = null;
+    protected string $absenceVisibility = 'none';
+    protected string $absenceDetail = 'hidden';
 
     public function __construct() {
         $this->addType('id', 'integer');
@@ -138,6 +144,8 @@ class Employee extends Entity implements JsonSerializable {
             'updatedAt' => $this->updatedAt?->format('c'),
             'defaultStartTime' => $this->defaultStartTime?->format('H:i'),
             'defaultEndTime' => $this->defaultEndTime?->format('H:i'),
+            'absenceVisibility' => $this->absenceVisibility,
+            'absenceDetail' => $this->absenceDetail,
         ];
     }
 }

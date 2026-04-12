@@ -237,7 +237,9 @@ class EmployeeService {
     public function updateMyDefaults(
         string $userId,
         ?string $defaultStartTime = null,
-        ?string $defaultEndTime = null
+        ?string $defaultEndTime = null,
+        ?string $absenceVisibility = null,
+        ?string $absenceDetail = null
     ): Employee {
         $employee = $this->findByUserId($userId);
         $oldValues = $employee->jsonSerialize();
@@ -252,6 +254,15 @@ class EmployeeService {
 
         $employee->setDefaultStartTime($defaultStartTime ? new DateTime($defaultStartTime) : null);
         $employee->setDefaultEndTime($defaultEndTime ? new DateTime($defaultEndTime) : null);
+
+        if ($absenceVisibility !== null && in_array($absenceVisibility, ['all', 'team', 'none'], true)) {
+            $employee->setAbsenceVisibility($absenceVisibility);
+        }
+
+        if ($absenceDetail !== null && in_array($absenceDetail, ['detailed', 'hidden'], true)) {
+            $employee->setAbsenceDetail($absenceDetail);
+        }
+
         $employee->setUpdatedAt(new DateTime());
 
         $employee = $this->employeeMapper->update($employee);
