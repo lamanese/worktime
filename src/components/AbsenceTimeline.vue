@@ -69,6 +69,10 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+		showFullLegend: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	computed: {
 		activeLegendItems() {
@@ -81,6 +85,12 @@ export default {
 				special: t('worktime', 'Sonderurlaub'),
 				compensatory: t('worktime', 'Freizeitausgleich'),
 				unpaid: t('worktime', 'Unbezahlt'),
+			}
+			// Privilegierte User (Admin/HR/Supervisor) sehen immer die volle Legende
+			// ohne "Abwesend" (das ist nur die maskierte Anzeige für Kollegen)
+			if (this.showFullLegend) {
+				const types = ['vacation', 'sick', 'child_sick', 'training', 'special', 'compensatory', 'unpaid']
+				return types.map(type => ({ type, label: typeLabels[type] }))
 			}
 			const usedTypes = new Set()
 			this.employees.forEach(emp => {
