@@ -22,6 +22,7 @@ return [
         ['name' => 'time_entry#reject', 'url' => '/api/time-entries/{id}/reject', 'verb' => 'POST'],
 
         // Absences API (static routes first, then {id} with numeric constraint)
+        ['name' => 'absence#overview', 'url' => '/api/absences/overview', 'verb' => 'GET'],
         ['name' => 'absence#types', 'url' => '/api/absences/types', 'verb' => 'GET'],
         ['name' => 'absence#pending', 'url' => '/api/absences/pending', 'verb' => 'GET'],
         ['name' => 'absence#vacationStats', 'url' => '/api/absences/vacation-stats', 'verb' => 'GET'],

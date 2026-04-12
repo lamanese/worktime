@@ -7,6 +7,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-12
+
+### Added
+- **Abwesenheitsuebersicht** (#3): Neue Timeline-Ansicht, farbige Balken pro Person
+- **Datenschutz-Einstellungen** pro Mitarbeiter: Sichtbarkeit (Alle/Team/Niemand) + Detailgrad (Detailliert/Nur abwesend)
+- Auto-Save fuer Einstellungen in "Meine Einstellungen"
+
+### Fixed
+- **KRITISCH**: Inkonsistenz zwischen v0.4.2 und v0.4.3/v0.4.4 behoben. In v0.4.2 war die `absence_visibility`-DB-Spalte angelegt worden, v0.4.3/v0.4.4 haben den zugehoerigen Code aber wieder entfernt — was zu "Interner Serverfehler" beim Oeffnen der App fuehrte. Dieses Release stellt den konsistenten Zustand her.
+
 ## [0.4.4] - 2026-04-12
 
 ### Fixed

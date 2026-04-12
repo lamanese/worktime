@@ -4,6 +4,7 @@ import VueRouter from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
+import AbsenceOverviewView from '../views/AbsenceOverviewView.vue'
 import MonthlyReportView from '../views/MonthlyReportView.vue'
 import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
@@ -32,6 +33,12 @@ const routes = [
 		path: '/report',
 		name: 'report',
 		component: MonthlyReportView,
+	},
+	{
+		path: '/absence-overview',
+		name: 'absence-overview',
+		component: AbsenceOverviewView,
+		meta: { requiresEmployee: true },
 	},
 	{
 		path: '/team',

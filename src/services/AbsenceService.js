@@ -103,4 +103,15 @@ export default {
             handleApiError(error)
         }
     },
+
+    async getOverview(year, month) {
+        try {
+            const response = await api.get('/absences/overview', {
+                params: { year, month },
+            })
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
 }
