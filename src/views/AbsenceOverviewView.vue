@@ -15,12 +15,14 @@
             :employees="overview"
             :year="year"
             :month="month"
-            :holidays="holidays" />
+            :holidays="holidays"
+            :show-full-legend="isPrivileged" />
     </div>
 </template>
 
 <script>
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { mapGetters } from 'vuex'
 import MonthPicker from '../components/MonthPicker.vue'
 import AbsenceTimeline from '../components/AbsenceTimeline.vue'
 import AbsenceService from '../services/AbsenceService.js'
@@ -32,6 +34,12 @@ export default {
         NcLoadingIcon,
         MonthPicker,
         AbsenceTimeline,
+    },
+    computed: {
+        ...mapGetters('permissions', ['isAdmin', 'isHrManager', 'canApprove']),
+        isPrivileged() {
+            return this.isAdmin || this.isHrManager || this.canApprove
+        },
     },
     data() {
         const now = new Date()
