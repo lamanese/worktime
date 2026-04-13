@@ -331,7 +331,7 @@
                                         :aria-label="t('worktime', 'Löschen')"
                                         @click="confirmDeleteHolidayGroup(group)">
                                         <template #icon>
-                                            <Delete :size="20" />
+                                            <Close :size="20" />
                                         </template>
                                     </NcButton>
                                 </td>
@@ -444,7 +444,7 @@ import Account from 'vue-material-design-icons/Account.vue'
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import Folder from 'vue-material-design-icons/Folder.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
@@ -476,7 +476,7 @@ export default {
         AccountGroup,
         Folder,
         Pencil,
-        Delete,
+        Close,
         CalendarBlank,
         ChevronRight,
         ChevronDown,

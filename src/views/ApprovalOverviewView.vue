@@ -16,6 +16,36 @@
             </div>
         </div>
 
+        <!-- Zur Kenntnisnahme (Krankmeldungen) -->
+        <div v-if="informationalAbsences.length > 0" class="report-section">
+            <h3>{{ t('worktime', 'Zur Kenntnisnahme') }} ({{ informationalAbsences.length }})</h3>
+            <table class="approval-table">
+                <thead>
+                    <tr>
+                        <th>{{ t('worktime', 'Mitarbeiter') }}</th>
+                        <th>{{ t('worktime', 'Art') }}</th>
+                        <th>{{ t('worktime', 'Zeitraum') }}</th>
+                        <th class="center">{{ t('worktime', 'Tage') }}</th>
+                        <th>{{ t('worktime', 'Bemerkung') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="absence in informationalAbsences" :key="absence.id">
+                        <td class="employee-cell">
+                            <NcAvatar :user="absence.employeeUserId"
+                                :display-name="absence.employeeName"
+                                :size="32" />
+                            <span class="employee-name">{{ absence.employeeName }}</span>
+                        </td>
+                        <td>{{ absence.typeName }}</td>
+                        <td>{{ formatDate(absence.startDate) }} - {{ formatDate(absence.endDate) }}</td>
+                        <td class="center">{{ absence.days }}</td>
+                        <td>{{ absence.note || '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- Ausstehende Abwesenheiten -->
         <div v-if="pendingAbsences.length > 0" class="report-section">
             <h3>{{ t('worktime', 'Ausstehende Urlaubsanträge') }} ({{ pendingAbsences.length }})</h3>
@@ -197,6 +227,7 @@ export default {
             month: getCurrentMonth(),
             employees: [],
             pendingAbsences: [],
+            informationalAbsences: [],
             loading: false,
             approvingEmployee: null,
             processingAbsence: null,
@@ -238,20 +269,22 @@ export default {
     methods: {
         async loadData() {
             this.loading = true
-            try {
-                const [employees, absences] = await Promise.all([
-                    ReportService.getAllEmployeesStatus(this.year, this.month),
-                    AbsenceService.getPending(),
-                ])
-                this.employees = employees
-                this.pendingAbsences = absences
-            } catch (error) {
-                console.error('Failed to load data:', error)
-                this.employees = []
-                this.pendingAbsences = []
-            } finally {
-                this.loading = false
-            }
+            const results = await Promise.allSettled([
+                ReportService.getAllEmployeesStatus(this.year, this.month),
+                AbsenceService.getPending(),
+                AbsenceService.getInformational(),
+            ])
+            this.employees = results[0].status === 'fulfilled' ? results[0].value : []
+            this.pendingAbsences = results[1].status === 'fulfilled' ? results[1].value : []
+            this.informationalAbsences = results[2].status === 'fulfilled' ? results[2].value : []
+
+            results.forEach((r, i) => {
+                if (r.status === 'rejected') {
+                    const names = ['getAllEmployeesStatus', 'getPending', 'getInformational']
+                    console.error(`Failed: ${names[i]}`, r.reason)
+                }
+            })
+            this.loading = false
         },
         formatDate(date) {
             return formatDate(date)

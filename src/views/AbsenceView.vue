@@ -65,8 +65,7 @@
                     @edit="startEdit(absence.id)"
                     @save="onUpdate"
                     @cancel="cancelEdit"
-                    @delete="confirmDelete"
-                    @cancel-absence="confirmCancel" />
+                    @remove="confirmRemove" />
             </tbody>
         </table>
 
@@ -184,40 +183,37 @@ export default {
                 showErrorMessage(error.message || this.t('worktime', 'Fehler beim Speichern'))
             }
         },
-        async confirmDelete(absence) {
-            const confirmed = await confirmAction(
-                this.t('worktime', 'Möchten Sie diese Abwesenheit wirklich löschen?'),
-                this.t('worktime', 'Abwesenheit löschen'),
-                this.t('worktime', 'Löschen'),
-                true
-            )
-            if (confirmed) {
-                try {
-                    await this.deleteAbsence(absence.id)
-                    showSuccessMessage(this.t('worktime', 'Abwesenheit gelöscht'))
-                    this.loadData()
-                } catch (error) {
-                    console.error('Failed to delete absence:', error)
-                    showErrorMessage(error.message || this.t('worktime', 'Fehler beim Löschen'))
-                }
-            }
-        },
-        async confirmCancel(absence) {
-            const confirmed = await confirmAction(
-                this.t('worktime', 'Möchten Sie diese Abwesenheit wirklich stornieren?'),
-                this.t('worktime', 'Abwesenheit stornieren'),
-                this.t('worktime', 'Stornieren'),
-                true
-            )
-            if (confirmed) {
-                try {
+        async confirmRemove(absence) {
+            // Genehmigte Urlaube/Sonderurlaube bleiben mit Status "Storniert" in der Liste (Audit-Trail)
+            // Pending, rejected und Krankheit werden komplett geloescht
+            const shouldCancel = absence.status === 'approved'
+                && absence.type !== 'sick' && absence.type !== 'child_sick'
+
+            const question = shouldCancel
+                ? this.t('worktime', 'Diese Abwesenheit stornieren? Sie bleibt mit Status "Storniert" sichtbar.')
+                : this.t('worktime', 'Diese Abwesenheit löschen?')
+            const title = shouldCancel
+                ? this.t('worktime', 'Abwesenheit stornieren')
+                : this.t('worktime', 'Abwesenheit löschen')
+            const button = shouldCancel
+                ? this.t('worktime', 'Stornieren')
+                : this.t('worktime', 'Löschen')
+
+            const confirmed = await confirmAction(question, title, button, true)
+            if (!confirmed) return
+
+            try {
+                if (shouldCancel) {
                     await this.cancelAbsence(absence.id)
                     showSuccessMessage(this.t('worktime', 'Abwesenheit storniert'))
-                    this.loadData()
-                } catch (error) {
-                    console.error('Failed to cancel absence:', error)
-                    showErrorMessage(error.message || this.t('worktime', 'Fehler beim Stornieren'))
+                } else {
+                    await this.deleteAbsence(absence.id)
+                    showSuccessMessage(this.t('worktime', 'Abwesenheit gelöscht'))
                 }
+                this.loadData()
+            } catch (error) {
+                console.error('Failed to remove absence:', error)
+                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Entfernen'))
             }
         },
     },
