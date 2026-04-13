@@ -197,64 +197,59 @@ export default {
 .team-year-table {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
 }
 
-/* Member card – same style as stat-card in MonthlyReportView */
+/* Member card – same pattern as dashboard-card / stat-card */
 .member-card {
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
     background: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 20px;
     overflow-x: auto;
 }
 
 .member-card__header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 16px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .member-card__name {
+    font-size: 15px;
     font-weight: 600;
-    font-size: 1.15em;
+    color: var(--color-main-text);
 }
 
 .member-card__hours {
+    font-size: 13px;
     color: var(--color-text-maxcontrast);
-    font-size: 0.95em;
 }
 
 table {
-    width: calc(100% - 32px);
-    margin: 0 16px 16px;
+    width: 100%;
     border-collapse: collapse;
 }
 
-/* Month column headers – same style as other app tables */
+/* Month column headers – match reference tables (maxcontrast text, 2px divider) */
 .month-header th {
-    padding: 8px 4px;
+    padding: 10px 4px;
     text-align: center;
-    font-size: 0.85em;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-main-text);
-    background: var(--color-background-dark);
-    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border);
     white-space: nowrap;
 }
 
-/* Top-left corner cell: same grey as header */
-.month-header .col-label {
-    background: var(--color-background-dark);
-}
-
-/* Label column */
+/* Label column (first col) */
 .col-label {
     text-align: left;
-    padding-left: 8px !important;
-    font-size: 0.85em;
+    padding: 10px 12px 10px 0 !important;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-main-text);
+    color: var(--color-text-maxcontrast);
     white-space: nowrap;
     min-width: 60px;
 }
@@ -263,27 +258,29 @@ table {
 .col-month {
     text-align: center;
     min-width: 58px;
-    padding: 8px 4px;
-    font-size: 0.9em;
+    padding: 10px 4px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Total column */
 .col-total {
     text-align: center;
     min-width: 75px;
-    padding: 8px 4px;
-    font-size: 0.9em;
+    padding: 10px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     border-left: 1px solid var(--color-border);
 }
 
 /* Data rows */
 .row-data td {
-    padding-top: 8px;
-    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
 }
 
-.row-data:not(:last-child) td {
-    border-bottom: 1px solid var(--color-border-dark, rgba(0, 0, 0, 0.05));
+.row-data:last-child td {
+    border-bottom: none;
 }
 
 /* Vacation */

@@ -1,7 +1,23 @@
 <template>
     <div class="approval-view">
+        <div class="view-header">
+            <h2>{{ t('worktime', 'Genehmigungen') }}</h2>
+            <div class="view-header__controls">
+                <NcSelect v-model="statusFilter"
+                    :options="statusOptions"
+                    :placeholder="t('worktime', 'Alle Status')"
+                    :clearable="true"
+                    label="label"
+                    class="status-filter" />
+                <MonthPicker :year="year"
+                    :month="month"
+                    :allow-past="true"
+                    @update="onMonthChange" />
+            </div>
+        </div>
+
         <!-- Ausstehende Abwesenheiten -->
-        <div v-if="pendingAbsences.length > 0" class="section absence-section">
+        <div v-if="pendingAbsences.length > 0" class="report-section">
             <h3>{{ t('worktime', 'Ausstehende Urlaubsanträge') }} ({{ pendingAbsences.length }})</h3>
             <table class="approval-table">
                 <thead>
@@ -51,28 +67,13 @@
         </div>
 
         <!-- Zeiteinträge Übersicht -->
-        <div class="section">
-            <div class="view-header">
-                <h2>{{ t('worktime', 'Zeiteinträge') }}</h2>
-                <div class="view-header__controls">
-                    <NcSelect v-model="statusFilter"
-                        :options="statusOptions"
-                        :placeholder="t('worktime', 'Alle Status')"
-                        :clearable="true"
-                        label="label"
-                        class="status-filter" />
-                    <MonthPicker :year="year"
-                        :month="month"
-                        :allow-past="true"
-                        @update="onMonthChange" />
-                </div>
-            </div>
-        </div>
+        <div class="report-section">
+            <h3>{{ t('worktime', 'Zeiteinträge') }}</h3>
 
-        <NcLoadingIcon v-if="loading" :size="44" />
+            <NcLoadingIcon v-if="loading" :size="44" />
 
-        <div v-else-if="filteredEmployees.length > 0" class="approval-table-wrapper">
-            <table class="approval-table">
+            <div v-else-if="filteredEmployees.length > 0" class="approval-table-wrapper">
+                <table class="approval-table">
                 <thead>
                     <tr>
                         <th>{{ t('worktime', 'Mitarbeiter') }}</th>
@@ -144,19 +145,20 @@
                             <span v-else class="no-action">-</span>
                         </td>
                     </tr>
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
 
-        <NcEmptyContent v-else
-            :name="t('worktime', 'Keine Mitarbeiter')">
-            <template #icon>
-                <AccountGroupIcon />
-            </template>
-            <template #description>
-                {{ t('worktime', 'Keine Mitarbeiter mit dem gewählten Filter gefunden.') }}
-            </template>
-        </NcEmptyContent>
+            <NcEmptyContent v-else
+                :name="t('worktime', 'Keine Mitarbeiter')">
+                <template #icon>
+                    <AccountGroupIcon />
+                </template>
+                <template #description>
+                    {{ t('worktime', 'Keine Mitarbeiter mit dem gewählten Filter gefunden.') }}
+                </template>
+            </NcEmptyContent>
+        </div>
     </div>
 </template>
 
@@ -332,6 +334,19 @@ export default {
     min-width: 200px;
 }
 
+.report-section {
+    margin-bottom: 24px;
+}
+
+.report-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .approval-table-wrapper {
     overflow-x: auto;
 }
@@ -339,19 +354,28 @@ export default {
 .approval-table {
     width: 100%;
     border-collapse: collapse;
-    background: var(--color-main-background);
 }
 
 .approval-table th,
 .approval-table td {
-    padding: 12px;
-    border-bottom: 1px solid var(--color-border);
+    padding: 10px 12px;
     text-align: left;
+    font-variant-numeric: tabular-nums;
 }
 
 .approval-table th {
-    background: var(--color-background-dark);
+    font-size: 15px;
     font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.approval-table td {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.approval-table tr:last-child td {
+    border-bottom: none;
 }
 
 .approval-table th.center,
@@ -366,6 +390,7 @@ export default {
 }
 
 .employee-name {
+    font-size: 15px;
     font-weight: 500;
 }
 
@@ -374,7 +399,7 @@ export default {
     min-width: 24px;
     padding: 2px 8px;
     border-radius: 12px;
-    font-size: 0.85em;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -406,7 +431,7 @@ export default {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 4px;
-    font-size: 0.85em;
+    font-size: 13px;
     font-weight: 500;
 }
 
@@ -432,20 +457,6 @@ export default {
 
 .no-action {
     color: var(--color-text-maxcontrast);
-}
-
-.section {
-    margin-bottom: 32px;
-}
-
-.absence-section {
-    padding-top: 24px;
-    border-top: 1px solid var(--color-border);
-}
-
-.absence-section h3 {
-    margin: 0 0 16px 0;
-    color: var(--color-primary);
 }
 
 .actions-cell {

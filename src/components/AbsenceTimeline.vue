@@ -256,7 +256,7 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--color-text-maxcontrast);
 }
 
