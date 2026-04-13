@@ -52,6 +52,10 @@ class AbsenceService {
     /**
      * @return Absence[]
      */
+    public function findActiveInformationalForSupervisor(int $supervisorEmployeeId): array {
+        return $this->absenceMapper->findActiveInformationalForSupervisor($supervisorEmployeeId);
+    }
+
     public function findPendingForApproval(int $supervisorEmployeeId): array {
         return $this->absenceMapper->findPendingForApproval($supervisorEmployeeId);
     }
@@ -93,6 +97,8 @@ class AbsenceService {
         $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $employeeId);
         $days = $workingDays * $scope;
 
+        $isInformational = in_array($type, [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true);
+
         $absence = new Absence();
         $absence->setEmployeeId($employeeId);
         $absence->setType($type);
@@ -101,9 +107,17 @@ class AbsenceService {
         $absence->setDays((string)$days);
         $absence->setScopeValue($scope);
         $absence->setNote($note);
-        $absence->setStatus(Absence::STATUS_PENDING);
         $absence->setCreatedAt(new DateTime());
         $absence->setUpdatedAt(new DateTime());
+
+        if ($isInformational) {
+            // Krankheit/Kind krank werden nicht genehmigt — direkt approved
+            $absence->setStatus(Absence::STATUS_APPROVED);
+            $absence->setApprovedAt(new DateTime());
+            $absence->setApprovedBy(null);
+        } else {
+            $absence->setStatus(Absence::STATUS_PENDING);
+        }
 
         $absence = $this->absenceMapper->insert($absence);
 
@@ -113,7 +127,11 @@ class AbsenceService {
         }
 
         try {
-            $this->notificationService->notifyAbsenceSubmitted($absence);
+            if ($isInformational) {
+                $this->notificationService->notifyAbsenceInformational($absence);
+            } else {
+                $this->notificationService->notifyAbsenceSubmitted($absence);
+            }
         } catch (\Throwable $e) {
             $this->logger->error('Failed to send absence notification', ['exception' => $e]);
         }
@@ -166,17 +184,27 @@ class AbsenceService {
         $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $absence->getEmployeeId());
         $days = $workingDays * $scope;
 
+        $isInformational = in_array($type, [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true);
+
         $absence->setType($type);
         $absence->setStartDate($startDateObj);
         $absence->setEndDate($endDateObj);
         $absence->setDays((string)$days);
         $absence->setScopeValue($scope);
         $absence->setNote($note);
-        $absence->setStatus(Absence::STATUS_PENDING);
         $absence->setUpdatedAt(new DateTime());
-        // Clear approval data since re-approval is required
-        $absence->setApprovedBy(null);
-        $absence->setApprovedAt(null);
+
+        if ($isInformational) {
+            // Krankheit/Kind krank bleiben approved (kein Re-Approval noetig)
+            $absence->setStatus(Absence::STATUS_APPROVED);
+            $absence->setApprovedAt(new DateTime());
+            $absence->setApprovedBy(null);
+        } else {
+            // Urlaub & Co: Re-Approval erforderlich
+            $absence->setStatus(Absence::STATUS_PENDING);
+            $absence->setApprovedBy(null);
+            $absence->setApprovedAt(null);
+        }
 
         $absence = $this->absenceMapper->update($absence);
 
@@ -194,8 +222,9 @@ class AbsenceService {
     public function delete(int $id, string $currentUserId = ''): void {
         $absence = $this->find($id);
 
-        // Cannot delete approved absences
-        if ($absence->getStatus() === Absence::STATUS_APPROVED) {
+        // Cannot delete approved absences (except sick/child_sick, which are info, not requests)
+        if ($absence->getStatus() === Absence::STATUS_APPROVED
+            && !in_array($absence->getType(), [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true)) {
             throw new ForbiddenException('Cannot delete approved absences');
         }
 
@@ -275,6 +304,7 @@ class AbsenceService {
     public function cancel(int $id, string $currentUserId = ''): Absence {
         $absence = $this->find($id);
         $oldValues = $absence->jsonSerialize();
+        $wasInformational = in_array($absence->getType(), [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true);
 
         $absence->setStatus(Absence::STATUS_CANCELLED);
         $absence->setUpdatedAt(new DateTime());
@@ -284,6 +314,15 @@ class AbsenceService {
         // Audit log
         if ($currentUserId) {
             $this->auditLogService->log($currentUserId, 'cancel', 'absence', $absence->getId(), $oldValues, $absence->jsonSerialize());
+        }
+
+        // Fuer Krankheit/Kind krank: Vorgesetzten ueber Stornierung informieren
+        if ($wasInformational) {
+            try {
+                $this->notificationService->notifyAbsenceCancelled($absence);
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to send absence_cancelled notification', ['exception' => $e]);
+            }
         }
 
         return $absence;

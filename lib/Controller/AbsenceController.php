@@ -346,7 +346,35 @@ class AbsenceController extends BaseController {
             $absences = [];
         }
 
-        // Enrich absences with employee data
+        return $this->successResponse($this->enrichWithEmployeeData($absences));
+    }
+
+    #[NoAdminRequired]
+    public function informational(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        $employee = $this->permissionService->getEmployeeForUser($this->userId);
+
+        if (!$employee && !$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        if ($this->permissionService->canManageEmployees($this->userId)) {
+            // Admin/HR sees all active sick leaves
+            $absences = $this->absenceService->findActiveInformationalForSupervisor(0);
+        } elseif ($employee) {
+            // Supervisor sees their team's active sick leaves
+            $absences = $this->absenceService->findActiveInformationalForSupervisor($employee->getId());
+        } else {
+            $absences = [];
+        }
+
+        return $this->successResponse($this->enrichWithEmployeeData($absences));
+    }
+
+    private function enrichWithEmployeeData(array $absences): array {
         $result = [];
         foreach ($absences as $absence) {
             $absenceData = $absence->jsonSerialize();
@@ -360,7 +388,6 @@ class AbsenceController extends BaseController {
             }
             $result[] = $absenceData;
         }
-
-        return $this->successResponse($result);
+        return $result;
     }
 }

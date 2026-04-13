@@ -39,7 +39,7 @@
                             :aria-label="t('worktime', 'Löschen')"
                             @click="confirmDelete(project)">
                             <template #icon>
-                                <Delete :size="20" />
+                                <Close :size="20" />
                             </template>
                         </NcButton>
                     </td>
@@ -77,7 +77,7 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 
 export default {
@@ -87,7 +87,7 @@ export default {
         NcEmptyContent,
         NcDialog,
         Pencil,
-        Delete,
+        Close,
         FolderOutline,
     },
     props: {

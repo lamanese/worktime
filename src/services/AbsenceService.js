@@ -104,6 +104,15 @@ export default {
         }
     },
 
+    async getInformational() {
+        try {
+            const response = await api.get('/absences/informational')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getOverview(year, month) {
         try {
             const response = await api.get('/absences/overview', {
