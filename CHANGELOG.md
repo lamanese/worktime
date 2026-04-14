@@ -7,6 +7,23 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-14
+
+### Fixed
+- **KRITISCH (#88)**: App-Update und `occ upgrade` stuerzten auf Nextcloud 33 ab, weil der Repair-Step die seit NC 11 deprecated und in NC 33 entfernte `OC_App::getAppPath()` nutzte. Betroffene User konnten ihre Nextcloud-Instanz nicht mehr aktualisieren. Fix nutzt jetzt die OCP-API `IAppManager::getAppPath()`.
+- Abwesenheits-Timeline: jede Abwesenheitsart hat jetzt eine eigene, deutlich unterscheidbare Farbe (#87)
+- Irrefuehrender Dialog-Text beim Einreichen des Monats: enthielt "keine Aenderungen moeglich", obwohl Nachtraege durchaus eingereicht werden koennen
+- Yes/No-Buttons im Bestaetigungsdialog werden jetzt auf Deutsch angezeigt
+
+### Added
+- **Genehmigungsansicht (#68)**: Aufklappbare Detailzeile pro Mitarbeiter mit Datum, Beginn/Ende, Pause, Arbeitszeit, Projekt, Beschreibung und Status. PDF-Monatsbericht direkt aus der Detailansicht herunterladbar.
+- **Auto-Genehmigung fuer Krankheit und Kind krank (#74)**: Krankmeldungen gehen ohne Genehmigungsworkflow direkt auf "genehmigt". Vorgesetzte sehen sie als "Zur Kenntnisnahme" in der Genehmigungsuebersicht.
+- Benachrichtigungs-Flow fuer Krankmeldungen und stornierte Krankmeldungen
+
+### Changed
+- **UI-Konsistenz (#69)**: Team-, Genehmigungs- und Abwesenheitsuebersicht nutzen jetzt einheitliche Typografie, Padding und Kartenstil wie die etablierten Referenz-Views (Dashboard, Zeiterfassung, Meine Einstellungen)
+- Icon-Unifikation: Entfernen-Buttons nutzen durchgaengig das Close-Icon (statt gemischt Close/Delete)
+
 ## [0.5.1] - 2026-04-12
 
 ### Fixed
