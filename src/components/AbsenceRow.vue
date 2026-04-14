@@ -12,30 +12,24 @@
                 </span>
             </td>
             <td v-if="!readonly" class="actions">
-                <NcButton v-if="canEdit"
-                    type="tertiary"
-                    :aria-label="t('worktime', 'Bearbeiten')"
-                    @click="$emit('edit')">
-                    <template #icon>
-                        <PencilIcon :size="20" />
-                    </template>
-                </NcButton>
-                <NcButton v-if="canCancel"
-                    type="tertiary"
-                    :aria-label="t('worktime', 'Stornieren')"
-                    @click="$emit('cancel-absence', absence)">
-                    <template #icon>
-                        <CancelIcon :size="20" />
-                    </template>
-                </NcButton>
-                <NcButton v-if="canDelete"
-                    type="tertiary"
-                    :aria-label="t('worktime', 'Löschen')"
-                    @click="$emit('delete', absence)">
-                    <template #icon>
-                        <DeleteIcon :size="20" />
-                    </template>
-                </NcButton>
+                <div v-if="canEdit || canRemove" class="actions-buttons">
+                    <NcButton v-if="canEdit"
+                        type="tertiary"
+                        :aria-label="t('worktime', 'Bearbeiten')"
+                        @click="$emit('edit')">
+                        <template #icon>
+                            <PencilIcon :size="20" />
+                        </template>
+                    </NcButton>
+                    <NcButton v-if="canRemove"
+                        type="tertiary"
+                        :aria-label="removeLabel"
+                        @click="$emit('remove', absence)">
+                        <template #icon>
+                            <CloseIcon :size="20" />
+                        </template>
+                    </NcButton>
+                </div>
             </td>
         </template>
 
@@ -84,7 +78,7 @@
                     @keydown="onKeydown">
             </td>
             <td>
-                <span v-if="absence && absence.status === 'approved'" class="edit-hint">
+                <span v-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
                     {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
                 </span>
             </td>
@@ -114,10 +108,8 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
-import DeleteIcon from 'vue-material-design-icons/Delete.vue'
-import CancelIcon from 'vue-material-design-icons/Cancel.vue'
-import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
+import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import { formatDateISO } from '../utils/dateUtils.js'
 import { formatDateWithWeekday } from '../utils/formatters.js'
 
@@ -128,10 +120,8 @@ export default {
         NcSelect,
         NcDateTimePicker,
         PencilIcon,
-        DeleteIcon,
-        CancelIcon,
-        ContentSaveIcon,
         CloseIcon,
+        ContentSaveIcon,
     },
     props: {
         absence: {
@@ -152,7 +142,7 @@ export default {
             default: false,
         },
     },
-    emits: ['edit', 'save', 'cancel', 'delete', 'cancel-absence'],
+    emits: ['edit', 'save', 'cancel', 'remove'],
     data() {
         return {
             form: {
@@ -237,11 +227,18 @@ export default {
             // (Backend validiert welche Tage geändert werden dürfen)
             return this.absence && this.absence.status !== 'cancelled'
         },
-        canCancel() {
-            return this.absence && this.absence.status === 'approved'
+        canRemove() {
+            // Ein einziger "Weg damit"-Button: alle aktiven Abwesenheiten
+            // (Backend entscheidet intern, ob echtes Delete oder Cancel mit Audit-Trail)
+            return this.absence && this.absence.status !== 'cancelled'
         },
-        canDelete() {
-            return this.absence && (this.absence.status === 'pending' || this.absence.status === 'rejected')
+        removeLabel() {
+            if (!this.absence) return this.t('worktime', 'Entfernen')
+            if (this.absence.status === 'approved'
+                && this.absence.type !== 'sick' && this.absence.type !== 'child_sick') {
+                return this.t('worktime', 'Stornieren')
+            }
+            return this.t('worktime', 'Löschen')
         },
     },
     watch: {
@@ -404,7 +401,11 @@ tr.creating {
 }
 
 .actions {
-    display: flex;
+    text-align: center;
+}
+
+.actions-buttons {
+    display: inline-flex;
     justify-content: center;
     gap: 4px;
     white-space: nowrap;

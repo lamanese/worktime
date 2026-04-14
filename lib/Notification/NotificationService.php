@@ -60,6 +60,14 @@ class NotificationService {
 		$this->sendAbsenceDecisionNotification($absence, 'absence_rejected');
 	}
 
+	public function notifyAbsenceInformational(Absence $absence): void {
+		$this->sendSupervisorAbsenceNotification($absence, 'absence_informational');
+	}
+
+	public function notifyAbsenceCancelled(Absence $absence): void {
+		$this->sendSupervisorAbsenceNotification($absence, 'absence_cancelled');
+	}
+
 	public function notifyTimeEntriesSubmitted(int $employeeId, int $year, int $month): void {
 		try {
 			$employee = $this->employeeMapper->find($employeeId);
@@ -91,6 +99,31 @@ class NotificationService {
 
 	public function notifyTimeEntriesRejected(int $employeeId, int $year, int $month): void {
 		$this->sendTimeEntryDecisionNotification($employeeId, $year, $month, 'time_entries_rejected');
+	}
+
+	private function sendSupervisorAbsenceNotification(Absence $absence, string $subject): void {
+		try {
+			$employee = $this->employeeMapper->find($absence->getEmployeeId());
+			$supervisorUserId = $this->getSupervisorUserId($employee->getSupervisorId());
+			if ($supervisorUserId === null) {
+				return;
+			}
+
+			$notification = $this->createNotification($subject, $supervisorUserId, [
+				'employeeName' => $employee->getFullName(),
+				'typeName' => $absence->getTypeName(),
+				'startDate' => $absence->getStartDate()->format('d.m.'),
+				'endDate' => $absence->getEndDate()->format('d.m.'),
+			]);
+			$notification->setObject('absence', (string)$absence->getId());
+
+			$this->notificationManager->notify($notification);
+		} catch (\Throwable $e) {
+			$this->logger->error('Failed to send ' . $subject . ' notification', [
+				'exception' => $e,
+				'absenceId' => $absence->getId(),
+			]);
+		}
 	}
 
 	private function sendAbsenceDecisionNotification(Absence $absence, string $subject): void {

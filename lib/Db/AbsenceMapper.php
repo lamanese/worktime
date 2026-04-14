@@ -153,6 +153,40 @@ class AbsenceMapper extends QBMapper {
     }
 
     /**
+     * Laufende und zukuenftige Krankmeldungen (sick, child_sick) fuer "Zur Kenntnisnahme"-Liste.
+     * Filter: approved, type in sick/child_sick, end_date >= heute.
+     *
+     * @param int $supervisorEmployeeId 0 = alle (Admin/HR), >0 = nur Team des Supervisors
+     * @return Absence[]
+     */
+    public function findActiveInformationalForSupervisor(int $supervisorEmployeeId): array {
+        $qb = $this->db->getQueryBuilder();
+        $today = (new DateTime())->format('Y-m-d');
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('status', $qb->createNamedParameter(Absence::STATUS_APPROVED)))
+            ->andWhere($qb->expr()->in('type', $qb->createNamedParameter(
+                [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK],
+                IQueryBuilder::PARAM_STR_ARRAY
+            )))
+            ->andWhere($qb->expr()->gte('end_date', $qb->createNamedParameter($today)));
+
+        if ($supervisorEmployeeId > 0) {
+            $subQb = $this->db->getQueryBuilder();
+            $subQb->select('id')
+                ->from('wt_employees')
+                ->where($subQb->expr()->eq('supervisor_id', $subQb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT)));
+
+            $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
+        }
+
+        $qb->orderBy('start_date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
      * @return Absence[]
      */
     public function findOverlapping(int $employeeId, DateTime $startDate, DateTime $endDate, ?int $excludeId = null): array {

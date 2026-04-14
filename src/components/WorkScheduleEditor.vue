@@ -46,7 +46,7 @@
                                 :aria-label="t('worktime', 'Löschen')"
                                 @click="confirmDelete(schedule)">
                                 <template #icon>
-                                    <Delete :size="20" />
+                                    <Close :size="20" />
                                 </template>
                             </NcButton>
                         </td>
@@ -138,7 +138,7 @@ import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js
 import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
+import Close from 'vue-material-design-icons/Close.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
@@ -153,7 +153,7 @@ export default {
         NcDialog,
         NcLoadingIcon,
         Pencil,
-        Delete,
+        Close,
         Plus,
     },
     props: {

@@ -67,6 +67,30 @@ class Notifier implements INotifier {
 				);
 				break;
 
+			case 'absence_informational':
+				$notification->setParsedSubject(
+					sprintf(
+						'Information: %s ist abwesend (%s, %s - %s)',
+						$params['employeeName'],
+						$params['typeName'],
+						$params['startDate'],
+						$params['endDate']
+					)
+				);
+				break;
+
+			case 'absence_cancelled':
+				$notification->setParsedSubject(
+					sprintf(
+						'%s hat Abwesenheit (%s, %s - %s) storniert',
+						$params['employeeName'],
+						$params['typeName'],
+						$params['startDate'],
+						$params['endDate']
+					)
+				);
+				break;
+
 			case 'time_entries_submitted':
 				$notification->setParsedSubject(
 					sprintf(

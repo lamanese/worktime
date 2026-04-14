@@ -28,7 +28,7 @@
                     :aria-label="t('worktime', 'Löschen')"
                     @click="$emit('delete', entry)">
                     <template #icon>
-                        <DeleteIcon :size="20" />
+                        <CloseIcon :size="20" />
                     </template>
                 </NcButton>
             </td>
@@ -118,9 +118,8 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
-import DeleteIcon from 'vue-material-design-icons/Delete.vue'
-import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
+import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import { mapGetters } from 'vuex'
 import { formatDateWithWeekday, formatDateISO, isWeekend } from '../utils/dateUtils.js'
 import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak } from '../utils/timeUtils.js'
@@ -133,9 +132,8 @@ export default {
         NcSelect,
         NcDateTimePicker,
         PencilIcon,
-        DeleteIcon,
-        ContentSaveIcon,
         CloseIcon,
+        ContentSaveIcon,
     },
     props: {
         entry: {
