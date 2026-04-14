@@ -63,23 +63,16 @@ export function extractValidationErrors(errors) {
  */
 export function confirmAction(message, title = 'Bestätigung', confirmLabel = 'OK', destructive = false) {
     return new Promise((resolve) => {
-        if (destructive && window.OC?.dialogs?.confirmDestructive) {
+        if (window.OC?.dialogs?.confirmDestructive) {
             window.OC.dialogs.confirmDestructive(
                 message,
                 title,
                 {
                     type: window.OC.dialogs.YES_NO_BUTTONS,
                     confirm: confirmLabel,
-                    confirmClasses: 'error',
+                    confirmClasses: destructive ? 'error' : 'primary',
                     cancel: 'Abbrechen',
                 },
-                (result) => resolve(result),
-                true
-            )
-        } else if (window.OC?.dialogs?.confirm) {
-            window.OC.dialogs.confirm(
-                message,
-                title,
                 (result) => resolve(result),
                 true
             )

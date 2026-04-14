@@ -201,7 +201,7 @@ export default {
             const monthName = new Date(this.year, this.month - 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 
             const confirmed = await confirmAction(
-                this.t('worktime', 'Möchten Sie alle Einträge für {month} einreichen? Nach dem Einreichen können Sie keine Änderungen mehr vornehmen.', { month: monthName }),
+                this.t('worktime', 'Möchten Sie die Zeiteinträge für {month} einreichen? Die eingereichten Einträge werden zur Genehmigung übermittelt.', { month: monthName }),
                 this.t('worktime', 'Monat einreichen'),
                 this.t('worktime', 'Einreichen'),
                 false
