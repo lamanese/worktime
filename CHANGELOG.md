@@ -7,6 +7,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-04-29
+
+### Fixed
+- **Uebersetzungen funktionieren jetzt (#103)**: Fehlende `l10n/*.js`-Dateien ergaenzt (NC laedt nur `.js`, nicht `.json`). Alle hardcoded deutschen Strings durch `t()`-Aufrufe ersetzt. Hardcoded `de-DE` Locale durch NC-Locale ersetzt. 51 fehlende Uebersetzungs-Keys ergaenzt (390 Keys gesamt).
+- **Dashboard zeigt korrekte Minusstunden (#98)**: Fuer den aktuellen Monat wird jetzt das proportionale Soll (bis heute) statt des vollen Monatssolls angezeigt. Kein irregulaeres Defizit mehr am Morgen.
+- **Stornierte Abwesenheiten in Zeiterfassung (#108)**: Stornierte Abwesenheiten (z.B. zurueckgenommener Freizeitausgleich) werden in der Zeiterfassungsliste nicht mehr angezeigt. In der Abwesenheitsuebersicht bleiben sie mit Status "Storniert" sichtbar.
+
 ## [0.6.0] - 2026-04-14
 
 ### Fixed
