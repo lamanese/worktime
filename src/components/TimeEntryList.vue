@@ -81,7 +81,7 @@ import ClockIcon from 'vue-material-design-icons/Clock.vue'
 import { mapGetters, mapActions } from 'vuex'
 import TimeEntryRow from './TimeEntryRow.vue'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
-import { formatDateWithWeekday } from '../utils/dateUtils.js'
+import { formatDateWithWeekday, formatDateISO } from '../utils/dateUtils.js'
 import { getAbsenceTypeLabel } from '../utils/formatters.js'
 
 export default {
@@ -152,6 +152,7 @@ export default {
             for (const absence of this.absences) {
                 const start = new Date(absence.startDate)
                 const end = new Date(absence.endDate)
+                const typeName = getAbsenceTypeLabel(absence.type)
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     const dayOfWeek = d.getDay()
                     // Skip weekends
@@ -160,7 +161,7 @@ export default {
                     if (this.filterYear && this.filterMonth) {
                         if (d.getFullYear() !== this.filterYear || (d.getMonth() + 1) !== this.filterMonth) continue
                     }
-                    const dateStr = d.toISOString().split('T')[0]
+                    const dateStr = formatDateISO(d)
                     // Skip if there's already a time entry on this day
                     if (items.some(i => i._type === 'entry' && i._date === dateStr)) continue
                     items.push({
@@ -168,7 +169,7 @@ export default {
                         _date: dateStr,
                         _key: 'absence-' + absence.id + '-' + dateStr,
                         date: dateStr,
-                        typeName: getAbsenceTypeLabel(absence.type),
+                        typeName,
                         absenceType: absence.type || '',
                         scope: absence.scope || 1,
                     })

@@ -3,7 +3,10 @@
         <!-- View Mode -->
         <template v-if="mode === 'view'">
             <td>{{ formatDateRange }}</td>
-            <td>{{ translatedTypeName }}</td>
+            <td class="type-cell">
+                <span class="type-dot" :class="'type-' + absence.type"></span>
+                {{ translatedTypeName }}
+            </td>
             <td>{{ absence.days }}</td>
             <td>{{ absence.note || '-' }}</td>
             <td>
@@ -111,7 +114,7 @@ import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
 import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
 import { formatDateISO } from '../utils/dateUtils.js'
-import { formatDateWithWeekday, getAbsenceTypeLabel } from '../utils/formatters.js'
+import { formatDateWithWeekday, getAbsenceTypeLabel, getStatusLabel } from '../utils/formatters.js'
 
 export default {
     name: 'AbsenceRow',
@@ -267,15 +270,7 @@ export default {
         },
     },
     methods: {
-        getStatusLabel(status) {
-            const labels = {
-                pending: this.t('worktime', 'Ausstehend'),
-                approved: this.t('worktime', 'Genehmigt'),
-                rejected: this.t('worktime', 'Abgelehnt'),
-                cancelled: this.t('worktime', 'Storniert'),
-            }
-            return labels[status] || status
-        },
+        getStatusLabel,
         loadAbsence(absence) {
             this.form = {
                 type: absence.type,
@@ -448,4 +443,27 @@ tr.creating {
     color: var(--color-warning);
     font-style: italic;
 }
+
+.type-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.type-dot {
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    border-radius: 50%;
+}
+
+.type-dot.type-vacation { background-color: #0082c9; }
+.type-dot.type-sick { background-color: #e74c3c; }
+.type-dot.type-child_sick { background-color: #f39c12; }
+.type-dot.type-special { background-color: #9b59b6; }
+.type-dot.type-training { background-color: #2ecc71; }
+.type-dot.type-unpaid { background-color: #34495e; }
+.type-dot.type-compensatory { background-color: #1abc9c; }
+
 </style>
+

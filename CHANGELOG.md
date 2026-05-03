@@ -7,6 +7,21 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-05-03
+
+### Added
+- **Kontextuelle Hilfe (#114, #116)**: Info-Icons (ⓘ) mit Popover-Erklaerungen an 32 Stellen in der App. Dashboard (Soll, Noch offen), Jahresuebersicht (Ueberstunden), Zeiterfassung (Minusstunden, Pausenvorschlag), Admin-Settings (13 Einstellungen), Mitarbeiter-Formular (8 Felder), Genehmigungsuebersicht, Monatsübersicht und User-Settings.
+- **Abwesenheitstyp-Legende (#97)**: Legende unter der Abwesenheitstabelle mit Farbpunkten und Erklaerungstexten. Farbpunkte neben Typ-Namen in der Tabelle.
+
+### Fixed
+- **Timezone-Bug in Datumsvergleich (#113)**: `toISOString().split('T')[0]` durch `formatDateISO()` ersetzt — UTC-Konvertierung konnte Datum um einen Tag verschieben.
+- **Info-Icons einheitlich (#122)**: Alle 32 Icons nutzen identisches Popover-Pattern. Kein Fragezeichen-Cursor mehr beim Hover. HR-Manager Rollen-Info von NcNoteCard-Toggle auf Popover umgebaut.
+
+### Changed
+- **getStatusLabel() zentralisiert (#117)**: Duplizierte Methode aus TimeEntryRow und AbsenceRow entfernt, zentrale Funktion aus formatters.js verwendet.
+- **ABSENCE_TYPE_LABELS() gecacht (#118)**: Label-Lookup wird einmal pro Abwesenheit aufgerufen statt einmal pro expandiertem Tag.
+
+=======
 ## [0.6.1] - 2026-04-29
 
 ### Fixed
