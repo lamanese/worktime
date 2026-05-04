@@ -13,6 +13,31 @@
 
 set -euo pipefail
 
+# --- Check 1: Conflict markers in staged files ---
+CONFLICT_STAGED=$(git diff --cached --name-only --diff-filter=ACM || true)
+if [ -n "$CONFLICT_STAGED" ]; then
+    CONFLICT_VIOLATIONS=""
+    for file in $CONFLICT_STAGED; do
+        [ -f "$file" ] || continue
+        MATCHES=$(git show ":$file" | grep -nE '^(<{7,}|={7,}|>{7,})' || true)
+        if [ -n "$MATCHES" ]; then
+            CONFLICT_VIOLATIONS="${CONFLICT_VIOLATIONS}${file}:
+${MATCHES}
+
+"
+        fi
+    done
+
+    if [ -n "$CONFLICT_VIOLATIONS" ]; then
+        printf '\033[0;31m[Conflict-Marker Check] BLOCKED\033[0m\n\n'
+        printf 'Git merge conflict markers detected in staged files.\n'
+        printf '(See RCA: docs/rca/release-v062-broken.md — conflict markers in JS broke v0.6.2 release.)\n\n'
+        printf '%s' "$CONFLICT_VIOLATIONS"
+        exit 1
+    fi
+fi
+
+# --- Check 2: OCP-only API usage in PHP files ---
 PATTERN='(^|[^A-Za-z])OC_[A-Z][a-zA-Z_]*::|\\OC::|\\OC\\[A-Z]|^use OC\\[A-Z]|^use OC;'
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.php$' || true)

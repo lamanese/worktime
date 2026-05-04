@@ -7,7 +7,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
-## [0.6.2] - 2026-05-03
+## [0.6.3] - 2026-05-04
+
+### Fixed
+- **Release v0.6.2 war nicht installierbar**: Kompilierte JS-Dateien enthielten Git-Merge-Conflict-Marker aus dem manuellen Release-Prozess. v0.6.2 wurde aus dem App Store entfernt. Dieses Release ersetzt es mit sauber gebauten Dateien.
+
+### Changed
+- **InfoIcon Wrapper-Komponente (#127)**: Shared `InfoIcon.vue` extrahiert. NcPopover+Icon+CSS an einer Stelle statt 9x dupliziert. ~230 Zeilen CSS-Duplizierung entfernt.
+- **Pre-commit Hook erweitert**: Blockiert jetzt auch Conflict-Marker in allen Dateitypen (nicht nur OC\*-Check in PHP).
+
+## [0.6.2] - 2026-05-03 [ZURÜCKGEZOGEN]
 
 ### Added
 - **Kontextuelle Hilfe (#114, #116)**: Info-Icons (ⓘ) mit Popover-Erklaerungen an 32 Stellen in der App. Dashboard (Soll, Noch offen), Jahresuebersicht (Ueberstunden), Zeiterfassung (Minusstunden, Pausenvorschlag), Admin-Settings (13 Einstellungen), Mitarbeiter-Formular (8 Felder), Genehmigungsuebersicht, Monatsübersicht und User-Settings.
