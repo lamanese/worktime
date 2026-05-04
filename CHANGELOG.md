@@ -7,7 +7,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
-## [0.6.3] - 2026-05-04
+## [0.6.4] - 2026-05-04
+
+### Fixed
+- **v0.6.3 war nicht installierbar**: Tarball enthielt `__MACOSX/`-Ordner (macOS-Metadaten). NC verweigert Installation bei mehr als einem Top-Level-Ordner. v0.6.3 wurde aus dem App Store entfernt. Dieses Release ist inhaltlich identisch mit v0.6.3, aber mit korrektem Tarball.
+
+## [0.6.3] - 2026-05-04 [ZURÜCKGEZOGEN]
 
 ### Fixed
 - **Release v0.6.2 war nicht installierbar**: Kompilierte JS-Dateien enthielten Git-Merge-Conflict-Marker aus dem manuellen Release-Prozess. v0.6.2 wurde aus dem App Store entfernt. Dieses Release ersetzt es mit sauber gebauten Dateien.
