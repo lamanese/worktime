@@ -426,7 +426,7 @@ tr.holiday {
 .break-hint {
     display: block;
     font-size: 13px;
-    color: var(--color-warning);
+    color: var(--color-main-text);
     margin-top: 2px;
 }
 
