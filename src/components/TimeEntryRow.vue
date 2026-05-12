@@ -70,7 +70,6 @@
                     class="inline-input break-input"
                     :class="{ invalid: !isBreakValid }"
                     @keydown="onKeydown">
-                <span v-if="breakHint" class="break-hint">{{ breakHint }}</span>
             </td>
             <td class="work-minutes-cell">
                 {{ calculatedWorkMinutes > 0 ? formatMinutes(calculatedWorkMinutes) : '-' }}
@@ -125,6 +124,7 @@ import { formatDateWithWeekday, formatDateISO, isWeekend } from '../utils/dateUt
 import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak } from '../utils/timeUtils.js'
 import { getStatusLabel } from '../utils/formatters.js'
 import SettingsService from '../services/SettingsService.js'
+import { showWarningMessage } from '../utils/errorHandler.js'
 
 export default {
     name: 'TimeEntryRow',
@@ -207,12 +207,6 @@ export default {
             const grossMinutes = calculateWorkMinutes(this.form.startTime, this.form.endTime, 0)
             return suggestBreak(grossMinutes, this.break6h, this.break9h)
         },
-        breakHint() {
-            if (this.requiredBreak > 0 && this.form.breakMinutes < this.requiredBreak) {
-                return this.t('worktime', 'Min: {min}', { min: this.requiredBreak })
-            }
-            return null
-        },
         isStartTimeValid() {
             return !!this.form.startTime
         },
@@ -228,7 +222,6 @@ export default {
             return this.form.date &&
                 this.isStartTimeValid &&
                 this.isEndTimeValid &&
-                this.isBreakValid &&
                 this.calculatedWorkMinutes > 0
         },
         canEdit() {
@@ -332,6 +325,10 @@ export default {
         },
         save() {
             if (!this.isValid) return
+            if (!this.isBreakValid) {
+                showWarningMessage(this.t('worktime', 'Bitte mindestens {min} Minuten Pause eintragen.', { min: this.requiredBreak }))
+                return
+            }
 
             const data = {
                 date: formatDateISO(this.form.date),
@@ -388,7 +385,7 @@ tr.holiday {
 }
 
 .inline-input.invalid {
-    border-color: var(--color-error);
+    border-color: #dc2626 !important;
 }
 
 .time-input {
@@ -423,12 +420,6 @@ tr.holiday {
     font-weight: 600;
 }
 
-.break-hint {
-    display: block;
-    font-size: 13px;
-    color: var(--color-main-text);
-    margin-top: 2px;
-}
 
 .actions {
     display: flex;
