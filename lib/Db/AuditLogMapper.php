@@ -112,7 +112,8 @@ class AuditLogMapper extends QBMapper {
         ?DateTime $from = null,
         ?DateTime $to = null,
         int $limit = 500,
-        int $offset = 0
+        int $offset = 0,
+        ?string $userId = null
     ): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -134,6 +135,9 @@ class AuditLogMapper extends QBMapper {
             $to = clone $to;
             $to->setTime(23, 59, 59);
             $qb->andWhere($qb->expr()->lte('created_at', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+        }
+        if ($userId !== null) {
+            $qb->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
         }
 
         return $this->findEntities($qb);
