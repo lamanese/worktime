@@ -52,6 +52,7 @@
                     :absence="null"
                     mode="create"
                     :absence-types="absenceTypes"
+                    :vacation-stats="vacationStats"
                     @save="onCreate"
                     @cancel="cancelCreate" />
 
@@ -62,6 +63,7 @@
                     :absence="absence"
                     :mode="editingId === absence.id ? 'edit' : 'view'"
                     :absence-types="absenceTypes"
+                    :vacation-stats="vacationStats"
                     @edit="startEdit(absence.id)"
                     @save="onUpdate"
                     @cancel="cancelEdit"
