@@ -48,6 +48,10 @@
                 rows="2" />
         </div>
 
+        <p v-if="isOverQuota" class="quota-warning">
+            {{ t('worktime', 'Nicht genügend Urlaubstage. Verfügbar: {available}, beantragt: {requested}.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+        </p>
+
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
                 {{ t('worktime', 'Abbrechen') }}
@@ -93,7 +97,7 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('absences', ['absenceTypes']),
+        ...mapGetters('absences', ['absenceTypes', 'vacationStats']),
         isEdit() {
             return !!this.absence
         },
@@ -111,9 +115,35 @@ export default {
                 this.form.type = value?.id || 'vacation'
             },
         },
+        estimatedDays() {
+            if (this.form.isHalfDay) return 0.5
+            if (!this.form.startDate || !this.form.endDate) return 0
+            let days = 0
+            const cur = new Date(this.form.startDate)
+            const end = new Date(this.form.endDate)
+            while (cur <= end) {
+                const dow = cur.getDay()
+                if (dow !== 0 && dow !== 6) days++
+                cur.setDate(cur.getDate() + 1)
+            }
+            return days
+        },
+        quotaAvailable() {
+            if (!this.vacationStats) return Infinity
+            let available = this.vacationStats.remaining
+            if (this.isEdit && this.absence?.type === 'vacation') {
+                available += parseFloat(this.absence.days || 0)
+            }
+            return available
+        },
+        isOverQuota() {
+            if (this.form.type !== 'vacation') return false
+            if (!this.vacationStats) return false
+            return this.estimatedDays > this.quotaAvailable
+        },
         isValid() {
-            return this.form.type && this.form.startDate && this.form.endDate &&
-                this.form.startDate <= this.form.endDate
+            return !!(this.form.type && this.form.startDate && this.form.endDate &&
+                this.form.startDate <= this.form.endDate && !this.isOverQuota)
         },
     },
     watch: {
@@ -234,6 +264,16 @@ export default {
     margin: 4px 0 0 0;
     font-size: 0.85em;
     color: var(--color-text-maxcontrast);
+}
+
+.quota-warning {
+    margin: 0 0 12px 0;
+    padding: 8px 12px;
+    background: var(--color-error-hover);
+    color: var(--color-error);
+    border-left: 3px solid var(--color-error);
+    border-radius: var(--border-radius);
+    font-size: 0.9em;
 }
 </style>
 
