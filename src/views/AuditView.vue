@@ -3,6 +3,11 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Audit-Log') }}</h2>
             <div class="view-header__controls">
+                <NcSelect v-model="filterEmployee"
+                    :options="employeeOptions"
+                    :placeholder="t('worktime', 'Alle Mitarbeiter')"
+                    :clearable="true"
+                    label="label" />
                 <NcSelect v-model="filterAction"
                     :options="actionOptions"
                     :placeholder="t('worktime', 'Alle Aktionen')"
@@ -91,6 +96,7 @@ import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import ShieldIcon from 'vue-material-design-icons/Shield.vue'
 import AuditService from '../services/AuditService.js'
 import { formatDateISO } from '../utils/dateUtils.js'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
     name: 'AuditView',
@@ -105,6 +111,7 @@ export default {
         return {
             entries: [],
             loading: false,
+            filterEmployee: null,
             filterAction: null,
             filterEntityType: null,
             filterFrom: null,
@@ -112,6 +119,13 @@ export default {
         }
     },
     computed: {
+        ...mapGetters('employees', ['employees']),
+        employeeOptions() {
+            return this.employees.map((e) => ({
+                id: e.userId,
+                label: e.displayName || (e.firstName + ' ' + e.lastName).trim() || e.userId,
+            }))
+        },
         actionOptions() {
             return [
                 { id: 'create', label: this.t('worktime', 'Erstellt') },
@@ -133,9 +147,11 @@ export default {
         },
     },
     created() {
+        this.fetchEmployees()
         this.load()
     },
     methods: {
+        ...mapActions('employees', ['fetchEmployees']),
         async load() {
             this.loading = true
             this.entries = await AuditService.getFiltered({
@@ -143,6 +159,7 @@ export default {
                 entityType: this.filterEntityType?.id || '',
                 from: this.filterFrom ? formatDateISO(this.filterFrom) : '',
                 to: this.filterTo ? formatDateISO(this.filterTo) : '',
+                userId: this.filterEmployee?.id || '',
             }) || []
             this.loading = false
         },

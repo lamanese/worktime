@@ -29,7 +29,8 @@ class AuditController extends BaseController {
         string $from = '',
         string $to = '',
         int $limit = 200,
-        int $offset = 0
+        int $offset = 0,
+        string $userId = ''
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -49,6 +50,7 @@ class AuditController extends BaseController {
             $toDate,
             min($limit, 500),
             $offset,
+            $userId !== '' ? $userId : null,
         );
 
         return $this->successResponse(array_map(fn($e) => $e->jsonSerialize(), $entries));
