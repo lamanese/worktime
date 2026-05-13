@@ -466,6 +466,28 @@ class ReportController extends BaseController {
         $today = new DateTime('today');
         $employeeId = $employee->getId();
 
+        // Clip to employee's employment period
+        $entryDate = $employee->getEntryDate();
+        $exitDate = $employee->getExitDate();
+
+        // Month entirely before employment start → return zeros
+        if ($entryDate !== null && $monthEndDate < $entryDate) {
+            return $this->zeroMonthStats(workingDaysOverride: 0);
+        }
+
+        // Month entirely after employment end → return zeros
+        if ($exitDate !== null && $startDate > $exitDate) {
+            return $this->zeroMonthStats(workingDaysOverride: 0);
+        }
+
+        // Clip start/end to employment period
+        if ($entryDate !== null && $startDate < $entryDate) {
+            $startDate = clone $entryDate;
+        }
+        if ($exitDate !== null && $monthEndDate > $exitDate) {
+            $monthEndDate = clone $exitDate;
+        }
+
         // Determine if this is a future month (hasn't started yet)
         $isFutureMonth = $startDate > $today;
 
@@ -541,10 +563,11 @@ class ReportController extends BaseController {
         $targetReductionMinutesUntilToday = 0;
         $targetReductionDaysUntilToday = 0;
 
-        // Types that reduce target (Soll) instead of crediting work time (Ist)
+        // Types that reduce target (Soll) instead of crediting work time (Ist).
+        // Compensatory time (FZA) is intentionally NOT here — it should credit Ist-Stunden
+        // so that accumulated overtime decreases when FZA is taken.
         $targetReductionTypes = [
             \OCA\WorkTime\Db\Absence::TYPE_UNPAID,
-            \OCA\WorkTime\Db\Absence::TYPE_COMPENSATORY,
         ];
 
         foreach ($absences as $absence) {
@@ -637,6 +660,33 @@ class ReportController extends BaseController {
             'overtimeMinutes' => $overtimeMinutes,
             'overtimeHours' => round($overtimeMinutes / 60, 2),
             'entryCount' => count($timeEntries),
+            'isFutureMonth' => false,
+        ];
+    }
+
+    private function zeroMonthStats(int $workingDaysOverride = 0): array {
+        return [
+            'workingDays' => $workingDaysOverride,
+            'workingDaysMonth' => $workingDaysOverride,
+            'workingDaysUntilToday' => 0,
+            'holidayCount' => 0,
+            'paidAbsenceDays' => 0,
+            'targetReductionDays' => 0,
+            'absenceDays' => 0,
+            'dailyMinutes' => 0,
+            'targetMinutes' => 0,
+            'monthlyTargetMinutes' => 0,
+            'adjustedTargetMinutes' => 0,
+            'adjustedMonthlyTargetMinutes' => 0,
+            'workedMinutes' => 0,
+            'workedHours' => 0,
+            'paidAbsenceMinutes' => 0,
+            'paidAbsenceHours' => 0,
+            'actualMinutes' => 0,
+            'actualHours' => 0,
+            'overtimeMinutes' => 0,
+            'overtimeHours' => 0,
+            'entryCount' => 0,
             'isFutureMonth' => false,
         ];
     }
