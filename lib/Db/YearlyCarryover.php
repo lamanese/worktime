@@ -27,6 +27,14 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
  * @method void setUpdatedAt(DateTime $updatedAt)
+ * @method DateTime|null getLockedAt()
+ * @method void setLockedAt(?DateTime $lockedAt)
+ * @method DateTime|null getCancelledAt()
+ * @method void setCancelledAt(?DateTime $cancelledAt)
+ * @method string|null getCancelledBy()
+ * @method void setCancelledBy(?string $cancelledBy)
+ * @method int|null getReplacesId()
+ * @method void setReplacesId(?int $replacesId)
  */
 class YearlyCarryover extends Entity implements JsonSerializable {
 
@@ -38,6 +46,10 @@ class YearlyCarryover extends Entity implements JsonSerializable {
     protected string $createdBy = '';
     protected ?DateTime $createdAt = null;
     protected ?DateTime $updatedAt = null;
+    protected ?DateTime $lockedAt = null;
+    protected ?DateTime $cancelledAt = null;
+    protected ?string $cancelledBy = null;
+    protected ?int $replacesId = null;
 
     public function __construct() {
         $this->addType('id', 'integer');
@@ -46,6 +58,17 @@ class YearlyCarryover extends Entity implements JsonSerializable {
         $this->addType('overtimeMinutes', 'integer');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
+        $this->addType('lockedAt', 'datetime');
+        $this->addType('cancelledAt', 'datetime');
+        $this->addType('replacesId', 'integer');
+    }
+
+    public function isLocked(): bool {
+        return $this->lockedAt !== null;
+    }
+
+    public function isCancelled(): bool {
+        return $this->cancelledAt !== null;
     }
 
     public function getVacationDaysFloat(): float {
@@ -68,6 +91,12 @@ class YearlyCarryover extends Entity implements JsonSerializable {
             'createdBy' => $this->getCreatedBy(),
             'createdAt' => $this->getCreatedAt()?->format('Y-m-d H:i:s'),
             'updatedAt' => $this->getUpdatedAt()?->format('Y-m-d H:i:s'),
+            'lockedAt' => $this->getLockedAt()?->format('Y-m-d H:i:s'),
+            'cancelledAt' => $this->getCancelledAt()?->format('Y-m-d H:i:s'),
+            'cancelledBy' => $this->getCancelledBy(),
+            'replacesId' => $this->getReplacesId(),
+            'isLocked' => $this->isLocked(),
+            'isCancelled' => $this->isCancelled(),
         ];
     }
 }
