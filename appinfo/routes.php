@@ -91,6 +91,8 @@ return [
         ['name' => 'yearly_carryover#index', 'url' => '/api/carryover/{year}', 'verb' => 'GET', 'requirements' => ['year' => '\d+']],
         ['name' => 'yearly_carryover#show', 'url' => '/api/carryover/{year}/{employeeId}', 'verb' => 'GET', 'requirements' => ['year' => '\d+', 'employeeId' => '\d+']],
         ['name' => 'yearly_carryover#upsert', 'url' => '/api/carryover', 'verb' => 'PUT'],
+        ['name' => 'yearly_carryover#lock', 'url' => '/api/carryover/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'yearly_carryover#cancel', 'url' => '/api/carryover/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Reports API
         ['name' => 'report#monthly', 'url' => '/api/reports/monthly', 'verb' => 'GET'],

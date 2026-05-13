@@ -69,6 +69,34 @@ class YearlyCarryoverMapper extends QBMapper {
         return $this->findEntities($qb);
     }
 
+    /**
+     * @return YearlyCarryover[]
+     */
+    public function findActiveByYear(int $year): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('year', $qb->createNamedParameter($year, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('cancelled_at'))
+            ->orderBy('employee_id', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * @throws DoesNotExistException
+     */
+    public function findActiveByEmployeeAndYear(int $employeeId, int $year): YearlyCarryover {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('employee_id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('year', $qb->createNamedParameter($year, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->isNull('cancelled_at'));
+
+        return $this->findEntity($qb);
+    }
+
     public function deleteByEmployeeId(int $employeeId): void {
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())

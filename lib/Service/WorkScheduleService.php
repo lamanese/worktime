@@ -343,6 +343,23 @@ class WorkScheduleService {
         return (int)round($totalDays);
     }
 
+    /**
+     * Check if an employee had a work schedule active in a given year.
+     * Returns true if any schedule has valid_from <= Dec 31 of that year.
+     */
+    public function wasActiveInYear(int $employeeId, int $year): bool {
+        $schedules = $this->mapper->findByEmployeeId($employeeId);
+        $yearEnd = new DateTime("$year-12-31");
+
+        foreach ($schedules as $schedule) {
+            if ($schedule->getValidFrom() <= $yearEnd) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // ---- Private helpers ----
 
     /**
