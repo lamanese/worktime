@@ -11,6 +11,7 @@ import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
 import MySettingsView from '../views/MySettingsView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import AuditView from '../views/AuditView.vue'
 
 Vue.use(VueRouter)
 
@@ -64,6 +65,12 @@ const routes = [
 		name: 'settings',
 		component: SettingsView,
 		meta: { requiresSettings: true },
+	},
+	{
+		path: '/audit',
+		name: 'audit',
+		component: AuditView,
+		meta: { requiresAdminOrHr: true },
 	},
 	// Fallback: unbekannte Routes -> Dashboard
 	{

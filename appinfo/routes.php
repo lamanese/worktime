@@ -94,6 +94,9 @@ return [
         ['name' => 'yearly_carryover#lock', 'url' => '/api/carryover/{id}/lock', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'yearly_carryover#cancel', 'url' => '/api/carryover/{id}/cancel', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
+        // Audit Log API
+        ['name' => 'audit#index', 'url' => '/api/audit-logs', 'verb' => 'GET'],
+
         // Reports API
         ['name' => 'report#monthly', 'url' => '/api/reports/monthly', 'verb' => 'GET'],
         ['name' => 'report#pdf', 'url' => '/api/reports/pdf', 'verb' => 'GET'],
