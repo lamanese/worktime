@@ -74,6 +74,7 @@ OC.L10N.register(
     "Maximale tägliche Arbeitszeit (Stunden)" : "Maximum daily working time (hours)",
     "Max. {hours} Std./Tag" : "Max. {hours} hrs/day",
     "Min: {min}" : "Min: {min}",
+    "Bitte mindestens {min} Minuten Pause eintragen." : "Please enter at least {min} minutes of break time.",
     "Nach §3 ArbZG sind maximal 10 Stunden erlaubt (Ausnahmen möglich)." : "According to §3 of the German Working Hours Act, a maximum of 10 hours is permitted (exceptions possible).",
     "Keine Einträge" : "No Entries",
     "Für diesen Monat sind noch keine Zeiteinträge vorhanden." : "There are no time entries for this month yet.",

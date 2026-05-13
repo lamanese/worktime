@@ -440,7 +440,7 @@ tr.creating {
 
 .edit-hint {
     font-size: 0.85em;
-    color: var(--color-warning);
+    color: var(--color-main-text);
     font-style: italic;
 }
 
