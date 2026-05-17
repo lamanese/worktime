@@ -7,6 +7,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-17
+
+### Added
+- **Audit-Log View (#91)**: Neue Ansicht für Admin und HR-Manager mit vollständigem Änderungsprotokoll. Filterbar nach Monat und Mitarbeiter. Farbige Action-Badges (erstellt, aktualisiert, gelöscht) mit Old→New-Diff-Anzeige.
+- **Jahresübertrag für Überstunden und Urlaubstage (#100)**: Offene Überstunden und nicht genommene Urlaubstage aus dem Vorjahr werden automatisch ins neue Jahr übertragen. Konfigurierbar in Admin-Einstellungen. Dashboard und Jahresübersicht zeigen Übertragswerte an.
+- **Jahresübertrag UX-Überarbeitung (#144)**: Übertragsstatus in Übersicht, manuelle Korrekturmöglichkeit, verbesserter Workflow für HR-Manager.
+
+### Fixed
+- **Genehmigungsansicht zeigt jetzt auch Abwesenheiten (#158)**: In der aufgeklappten Detailzeile werden Urlaub, Krankheit etc. neben Zeiteinträgen angezeigt, sortiert nach Datum mit farbigem Typ-Badge.
+- **Urlaubsquoten-Validierung (#147)**: Urlaubsantrag wird beim Erstellen und Bearbeiten gegen das verfügbare Kontingent geprüft. Überschreitung zeigt Warnung im Formular.
+- **Eintrittsdatum wird bei Sollberechnung berücksichtigt (#145)**: Monate vor dem Eintrittsdatum liefern 0-Stats statt falscher Minusstunden.
+- **FZA-Stunden reduzieren Soll nicht mehr (#149)**: Freizeitausgleich wurde fälschlicherweise vom Monatssoll abgezogen.
+- **Pausenvalidierung als Toast (#151)**: Blockierende UI-Sperre bei Pausenverstoß durch informativen Toast-Hinweis ersetzt.
+- **Warnhinweise mit lesbarem Kontrast (#146)**: Warntexte nutzen jetzt `--color-main-text` statt kaum lesbarer NC-Standardfarbe.
+
+### Changed
+- **Batch-Loading für Team-Abfragen**: Team- und Jahresübersicht laden Daten jetzt in einem Batch-Request mit DB-Indizes statt N+1 Queries.
+
 ## [0.6.4] - 2026-05-04
 
 ### Fixed
