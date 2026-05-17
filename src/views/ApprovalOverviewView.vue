@@ -405,9 +405,28 @@ export default {
             }
             return labels[status] || status
         },
+        calendarDays(startStr, endStr) {
+            return Math.round((new Date(endStr) - new Date(startStr)) / 86400000) + 1
+        },
         mergedDetailItems(employeeId) {
+            const pad = n => String(n).padStart(2, '0')
+            const monthStart = `${this.year}-${pad(this.month)}-01`
+            const lastDay = new Date(this.year, this.month, 0).getDate()
+            const monthEnd = `${this.year}-${pad(this.month)}-${pad(lastDay)}`
+
             const entries = (this.detailEntries[employeeId] || []).map(e => ({ ...e, kind: 'entry' }))
-            const absences = (this.detailAbsences[employeeId] || []).map(a => ({ ...a, kind: 'absence' }))
+            const absences = (this.detailAbsences[employeeId] || []).map(a => {
+                const clippedStart = a.startDate < monthStart ? monthStart : a.startDate
+                const clippedEnd = a.endDate > monthEnd ? monthEnd : a.endDate
+                let clippedDays = a.days
+                if (a.startDate < monthStart || a.endDate > monthEnd) {
+                    const totalCal = this.calendarDays(a.startDate, a.endDate)
+                    const clippedCal = this.calendarDays(clippedStart, clippedEnd)
+                    clippedDays = totalCal > 0 ? Math.max(1, Math.round(a.days * clippedCal / totalCal)) : a.days
+                }
+                return { ...a, kind: 'absence', startDate: clippedStart, endDate: clippedEnd, days: clippedDays }
+            })
+
             return [...entries, ...absences].sort((a, b) => {
                 const dateA = a.kind === 'entry' ? a.date : a.startDate
                 const dateB = b.kind === 'entry' ? b.date : b.startDate
