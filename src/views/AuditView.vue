@@ -66,16 +66,20 @@
                     <td>{{ translateEntityType(entry.entityType) }}</td>
                     <td>{{ entry.entityId || '-' }}</td>
                     <td class="diff-cell">
-                        <span v-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
+                        <template v-if="entry.action === 'update'">
+                            <div v-for="d in updateDiff(entry)" :key="d.key" class="diff-item">
+                                <span class="diff-key">{{ d.key }}:</span>
+                                <span class="diff-old-val">{{ d.old }}</span>
+                                <span class="diff-arrow">→</span>
+                                <span class="diff-new-val">{{ d.new }}</span>
+                            </div>
+                        </template>
+                        <span v-else-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
                             {{ formatValues(entry.oldValues) }}
                         </span>
                         <span v-else-if="entry.action === 'create' && entry.newValues" class="diff-new">
                             {{ formatValues(entry.newValues) }}
                         </span>
-                        <template v-else-if="entry.oldValues || entry.newValues">
-                            <span v-if="entry.oldValues" class="diff-old">{{ formatValues(entry.oldValues) }}</span>
-                            <span v-if="entry.newValues" class="diff-new">{{ formatValues(entry.newValues) }}</span>
-                        </template>
                         <span v-else>-</span>
                     </td>
                 </tr>
@@ -190,12 +194,22 @@ export default {
             const locale = document.documentElement.lang || 'de-DE'
             return d.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })
         },
+        updateDiff(entry) {
+            const skip = new Set(['id', 'employeeId', 'createdAt', 'updatedAt', 'userId'])
+            const old = entry.oldValues || {}
+            const neu = entry.newValues || {}
+            const allKeys = [...new Set([...Object.keys(old), ...Object.keys(neu)])].filter(k => !skip.has(k))
+            return allKeys
+                .filter(k => String(old[k] ?? '') !== String(neu[k] ?? ''))
+                .map(k => ({ key: k, old: old[k] ?? '—', new: neu[k] ?? '—' }))
+        },
         formatValues(values) {
             if (!values || typeof values !== 'object') return '-'
+            const skip = new Set(['id', 'employeeId', 'createdAt', 'updatedAt', 'userId'])
             return Object.entries(values)
-                .filter(([, v]) => v !== null && v !== '')
+                .filter(([k, v]) => !skip.has(k) && v !== null && v !== '')
                 .map(([k, v]) => `${k}: ${v}`)
-                .join(', ')
+                .join(', ') || '-'
         },
     },
 }
@@ -278,24 +292,50 @@ export default {
 
 .diff-old {
     display: block;
-    color: var(--color-error);
+    color: #b91c1c;
     text-decoration: line-through;
-    opacity: 0.8;
 }
 
 .diff-new {
     display: block;
-    color: var(--color-success);
+    color: #15803d;
+}
+
+.diff-item {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.diff-key {
+    font-weight: 600;
+    color: #1a1a1a;
+    white-space: nowrap;
+}
+
+.diff-old-val {
+    color: #b91c1c;
+    text-decoration: line-through;
+}
+
+.diff-arrow {
+    color: #555;
+}
+
+.diff-new-val {
+    color: #15803d;
 }
 
 .loading-hint {
     padding: 20px;
-    color: var(--color-text-maxcontrast);
+    color: #555;
 }
 
 .limit-hint {
     margin-top: 12px;
     font-size: 0.85em;
-    color: var(--color-text-maxcontrast);
+    color: #555;
 }
 </style>
