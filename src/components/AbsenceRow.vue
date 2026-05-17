@@ -81,7 +81,10 @@
                     @keydown="onKeydown">
             </td>
             <td>
-                <span v-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
+                <span v-if="isOverQuota" class="quota-warning">
+                    {{ t('worktime', 'Nicht genügend Urlaubstage. Verfügbar: {available}, beantragt: {requested}.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+                </span>
+                <span v-else-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
                     {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
                 </span>
             </td>
@@ -143,6 +146,10 @@ export default {
         readonly: {
             type: Boolean,
             default: false,
+        },
+        vacationStats: {
+            type: Object,
+            default: null,
         },
     },
     emits: ['edit', 'save', 'cancel', 'remove'],
@@ -224,11 +231,37 @@ export default {
             const locale = document.documentElement.lang || navigator.language || 'de-DE'
             return effectiveDays.toLocaleString(locale, { maximumFractionDigits: 1 })
         },
+        estimatedDays() {
+            if (!this.form.startDate || !this.form.endDate) return 0
+            if (this.form.scope < 1.0) return 0.5
+            let days = 0
+            const cur = new Date(this.form.startDate)
+            const end = new Date(this.form.endDate)
+            while (cur <= end) {
+                const dow = cur.getDay()
+                if (dow !== 0 && dow !== 6) days++
+                cur.setDate(cur.getDate() + 1)
+            }
+            return days * this.form.scope
+        },
+        quotaAvailable() {
+            if (!this.vacationStats) return Infinity
+            let available = this.vacationStats.remaining
+            if (this.mode === 'edit' && this.absence?.type === 'vacation') {
+                available += parseFloat(this.absence.days || 0)
+            }
+            return available
+        },
+        isOverQuota() {
+            if (this.form.type !== 'vacation') return false
+            if (!this.vacationStats) return false
+            return this.estimatedDays > this.quotaAvailable
+        },
         isValid() {
             if (!this.form.type || !this.form.startDate || !this.form.endDate) return false
             const start = new Date(this.form.startDate)
             const end = new Date(this.form.endDate)
-            return start <= end
+            return start <= end && !this.isOverQuota
         },
         canEdit() {
             // Auch genehmigte Abwesenheiten können bearbeitet werden
@@ -440,8 +473,14 @@ tr.creating {
 
 .edit-hint {
     font-size: 0.85em;
-    color: var(--color-warning);
+    color: var(--color-main-text);
     font-style: italic;
+}
+
+.quota-warning {
+    font-size: 0.85em;
+    color: var(--color-error);
+    font-weight: 500;
 }
 
 .type-cell {

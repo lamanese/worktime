@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\WorkTime\Controller;
 
 use DateTime;
+use OCA\WorkTime\Db\AbsenceMapper;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\TimeEntryMapper;
@@ -15,6 +16,7 @@ use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\PermissionService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\WorkTime\Service\YearlyCarryoverService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -23,19 +25,32 @@ use OCP\IRequest;
 
 class ReportController extends BaseController {
 
+    /** @var array<string, array> Holiday cache by "state-year-month" */
+    private array $holidayCache = [];
+
     public function __construct(
         IRequest $request,
         ?string $userId,
         private TimeEntryService $timeEntryService,
         private TimeEntryMapper $timeEntryMapper,
+        private AbsenceMapper $absenceMapper,
         private AbsenceService $absenceService,
         private EmployeeService $employeeService,
         private HolidayService $holidayService,
         private PermissionService $permissionService,
         private PdfService $pdfService,
         private WorkScheduleService $workScheduleService,
+        private YearlyCarryoverService $carryoverService,
     ) {
         parent::__construct($request, $userId);
+    }
+
+    private function getHolidaysCached(int $year, int $month, string $federalState): array {
+        $key = "$federalState-$year-$month";
+        if (!isset($this->holidayCache[$key])) {
+            $this->holidayCache[$key] = $this->holidayService->findByMonth($year, $month, $federalState);
+        }
+        return $this->holidayCache[$key];
     }
 
     #[NoAdminRequired]
@@ -134,17 +149,22 @@ class ReportController extends BaseController {
             return $this->successResponse([]);
         }
 
+        // Batch-load all data in 3 queries instead of 4×N
+        $employeeIds = array_map(fn(Employee $e) => $e->getId(), $teamMembers);
+        $allTimeEntries = $this->timeEntryMapper->findByEmployeeIdsAndMonth($employeeIds, $year, $month);
+        $allAbsences = $this->absenceMapper->findByEmployeeIdsAndMonth($employeeIds, $year, $month);
+        $allStatusSummaries = $this->timeEntryMapper->getMonthlyStatusSummaryBatch($employeeIds, $year, $month);
+
         $report = [];
 
         foreach ($teamMembers as $employee) {
-            $timeEntries = $this->timeEntryService->findByEmployeeAndMonth($employee->getId(), $year, $month);
-            $absences = $this->absenceService->findByEmployeeAndMonth($employee->getId(), $year, $month);
-            $holidays = $this->holidayService->findByMonth($year, $month, $employee->getFederalState());
+            $empId = $employee->getId();
+            $timeEntries = $allTimeEntries[$empId] ?? [];
+            $absences = $allAbsences[$empId] ?? [];
+            $holidays = $this->getHolidaysCached($year, $month, $employee->getFederalState());
 
             $stats = $this->calculateMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
-
-            // Get status summary for approval workflow
-            $statusSummary = $this->timeEntryMapper->getMonthlyStatusSummary($employee->getId(), $year, $month);
+            $statusSummary = $allStatusSummaries[$empId] ?? ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0];
 
             $report[] = [
                 'employee' => $employee,
@@ -174,9 +194,44 @@ class ReportController extends BaseController {
             return $this->successResponse([]);
         }
 
+        // Batch-load all year data: 2 queries for all employees
+        $employeeIds = array_map(fn(Employee $e) => $e->getId(), $teamMembers);
+        $allTimeEntries = $this->timeEntryMapper->findByEmployeeIdsAndYear($employeeIds, $year);
+        $allAbsences = $this->absenceMapper->findByEmployeeIdsAndYear($employeeIds, $year);
+
+        // Batch-load status summaries for all months (12 queries total, not 12×N)
+        $allStatusByMonth = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $allStatusByMonth[$m] = $this->timeEntryMapper->getMonthlyStatusSummaryBatch($employeeIds, $year, $m);
+        }
+
         $report = [];
 
         foreach ($teamMembers as $employee) {
+            $empId = $employee->getId();
+            $empTimeEntries = $allTimeEntries[$empId] ?? [];
+            $empAbsences = $allAbsences[$empId] ?? [];
+
+            // Split time entries by month in-memory
+            $entriesByMonth = [];
+            foreach ($empTimeEntries as $entry) {
+                $entryMonth = (int)$entry->getDate()->format('n');
+                $entriesByMonth[$entryMonth][] = $entry;
+            }
+
+            // Split absences by month in-memory (an absence can span multiple months)
+            $absencesByMonth = [];
+            for ($month = 1; $month <= 12; $month++) {
+                $monthStart = new DateTime("$year-$month-01");
+                $monthEnd = (clone $monthStart)->modify('last day of this month');
+                $absencesByMonth[$month] = [];
+                foreach ($empAbsences as $absence) {
+                    if ($absence->getStartDate() <= $monthEnd && $absence->getEndDate() >= $monthStart) {
+                        $absencesByMonth[$month][] = $absence;
+                    }
+                }
+            }
+
             $months = [];
             $totalOvertimeMinutes = 0;
 
@@ -185,7 +240,7 @@ class ReportController extends BaseController {
 
                 // Future months: only load vacation, skip time entries
                 if ($startDate > new DateTime()) {
-                    $futureAbsences = $this->absenceService->findByEmployeeAndMonth($employee->getId(), $year, $month);
+                    $futureAbsences = $absencesByMonth[$month];
                     $futureVacationDays = 0;
                     foreach ($futureAbsences as $absence) {
                         if ($absence->countsAsVacation() && $absence->getStatus() === Absence::STATUS_APPROVED) {
@@ -202,12 +257,12 @@ class ReportController extends BaseController {
                     continue;
                 }
 
-                $timeEntries = $this->timeEntryService->findByEmployeeAndMonth($employee->getId(), $year, $month);
-                $absences = $this->absenceService->findByEmployeeAndMonth($employee->getId(), $year, $month);
-                $holidays = $this->holidayService->findByMonth($year, $month, $employee->getFederalState());
+                $timeEntries = $entriesByMonth[$month] ?? [];
+                $absences = $absencesByMonth[$month];
+                $holidays = $this->getHolidaysCached($year, $month, $employee->getFederalState());
 
                 $stats = $this->calculateMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
-                $statusSummary = $this->timeEntryMapper->getMonthlyStatusSummary($employee->getId(), $year, $month);
+                $statusSummary = $allStatusByMonth[$month][$empId] ?? ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0];
 
                 // Determine dominant status
                 $status = 'draft';
@@ -238,24 +293,30 @@ class ReportController extends BaseController {
                 $totalOvertimeMinutes += $stats['overtimeMinutes'];
             }
 
-            // Vacation stats - use schedule-aware vacation days
-            $vacationDaysForYear = $this->workScheduleService->getVacationDaysForYear($employee->getId(), $year);
+            // Vacation stats - use schedule-aware vacation days + carryover
+            $vacationDaysForYear = $this->workScheduleService->getVacationDaysForYear($empId, $year);
+            $vacationCarryover = $this->carryoverService->getVacationCarryoverDays($empId, $year);
             $vacationStats = $this->absenceService->getVacationStats(
-                $employee->getId(),
+                $empId,
                 $year,
-                $vacationDaysForYear
+                $vacationDaysForYear + (int)round($vacationCarryover)
             );
+            $vacationStats['carryover'] = $vacationCarryover;
+
+            // Overtime carryover
+            $overtimeCarryover = $this->carryoverService->getOvertimeCarryoverMinutes($empId, $year);
 
             $report[] = [
                 'employee' => [
-                    'id' => $employee->getId(),
+                    'id' => $empId,
                     'userId' => $employee->getUserId(),
                     'fullName' => $employee->getFullName(),
                     'weeklyHours' => $employee->getWeeklyHours(),
                 ],
                 'vacationStats' => $vacationStats,
                 'months' => $months,
-                'totalOvertimeMinutes' => $totalOvertimeMinutes,
+                'carryoverMinutes' => $overtimeCarryover,
+                'totalOvertimeMinutes' => $totalOvertimeMinutes + $overtimeCarryover,
             ];
         }
 
@@ -305,12 +366,15 @@ class ReportController extends BaseController {
                 $totalOvertime += $stats['overtimeMinutes'];
             }
 
+            $carryoverMinutes = $this->carryoverService->getOvertimeCarryoverMinutes($employeeId, $year);
+
             return $this->successResponse([
                 'employee' => $employee,
                 'year' => $year,
                 'monthly' => $monthlyData,
-                'totalOvertimeMinutes' => $totalOvertime,
-                'totalOvertimeHours' => round($totalOvertime / 60, 2),
+                'carryoverMinutes' => $carryoverMinutes,
+                'totalOvertimeMinutes' => $totalOvertime + $carryoverMinutes,
+                'totalOvertimeHours' => round(($totalOvertime + $carryoverMinutes) / 60, 2),
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -402,6 +466,28 @@ class ReportController extends BaseController {
         $today = new DateTime('today');
         $employeeId = $employee->getId();
 
+        // Clip to employee's employment period
+        $entryDate = $employee->getEntryDate();
+        $exitDate = $employee->getExitDate();
+
+        // Month entirely before employment start → return zeros
+        if ($entryDate !== null && $monthEndDate < $entryDate) {
+            return $this->zeroMonthStats(workingDaysOverride: 0);
+        }
+
+        // Month entirely after employment end → return zeros
+        if ($exitDate !== null && $startDate > $exitDate) {
+            return $this->zeroMonthStats(workingDaysOverride: 0);
+        }
+
+        // Clip start/end to employment period
+        if ($entryDate !== null && $startDate < $entryDate) {
+            $startDate = clone $entryDate;
+        }
+        if ($exitDate !== null && $monthEndDate > $exitDate) {
+            $monthEndDate = clone $exitDate;
+        }
+
         // Determine if this is a future month (hasn't started yet)
         $isFutureMonth = $startDate > $today;
 
@@ -477,10 +563,11 @@ class ReportController extends BaseController {
         $targetReductionMinutesUntilToday = 0;
         $targetReductionDaysUntilToday = 0;
 
-        // Types that reduce target (Soll) instead of crediting work time (Ist)
+        // Types that reduce target (Soll) instead of crediting work time (Ist).
+        // Compensatory time (FZA) is intentionally NOT here — it should credit Ist-Stunden
+        // so that accumulated overtime decreases when FZA is taken.
         $targetReductionTypes = [
             \OCA\WorkTime\Db\Absence::TYPE_UNPAID,
-            \OCA\WorkTime\Db\Absence::TYPE_COMPENSATORY,
         ];
 
         foreach ($absences as $absence) {
@@ -573,6 +660,33 @@ class ReportController extends BaseController {
             'overtimeMinutes' => $overtimeMinutes,
             'overtimeHours' => round($overtimeMinutes / 60, 2),
             'entryCount' => count($timeEntries),
+            'isFutureMonth' => false,
+        ];
+    }
+
+    private function zeroMonthStats(int $workingDaysOverride = 0): array {
+        return [
+            'workingDays' => $workingDaysOverride,
+            'workingDaysMonth' => $workingDaysOverride,
+            'workingDaysUntilToday' => 0,
+            'holidayCount' => 0,
+            'paidAbsenceDays' => 0,
+            'targetReductionDays' => 0,
+            'absenceDays' => 0,
+            'dailyMinutes' => 0,
+            'targetMinutes' => 0,
+            'monthlyTargetMinutes' => 0,
+            'adjustedTargetMinutes' => 0,
+            'adjustedMonthlyTargetMinutes' => 0,
+            'workedMinutes' => 0,
+            'workedHours' => 0,
+            'paidAbsenceMinutes' => 0,
+            'paidAbsenceHours' => 0,
+            'actualMinutes' => 0,
+            'actualHours' => 0,
+            'overtimeMinutes' => 0,
+            'overtimeHours' => 0,
+            'entryCount' => 0,
             'isFutureMonth' => false,
         ];
     }

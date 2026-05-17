@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import store from '../store/index.js'
 
 import DashboardView from '../views/DashboardView.vue'
 import TimeTrackingView from '../views/TimeTrackingView.vue'
@@ -10,6 +11,7 @@ import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
 import MySettingsView from '../views/MySettingsView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import AuditView from '../views/AuditView.vue'
 
 Vue.use(VueRouter)
 
@@ -64,6 +66,12 @@ const routes = [
 		component: SettingsView,
 		meta: { requiresSettings: true },
 	},
+	{
+		path: '/audit',
+		name: 'audit',
+		component: AuditView,
+		meta: { requiresAdminOrHr: true },
+	},
 	// Fallback: unbekannte Routes -> Dashboard
 	{
 		path: '*',
@@ -75,6 +83,25 @@ const router = new VueRouter({
 	mode: 'hash',
 	base: '/apps/worktime/',
 	routes,
+})
+
+// Route guards: enforce meta permissions
+router.beforeEach((to, from, next) => {
+	const perms = store.getters['permissions/permissions']
+
+	if (to.meta.requiresSettings && !perms.canManageSettings) {
+		return next('/')
+	}
+	if (to.meta.requiresApprove && !perms.canApprove && !perms.isAdmin && !perms.isHrManager) {
+		return next('/')
+	}
+	if (to.meta.requiresAdminOrHr && !perms.isAdmin && !perms.isHrManager) {
+		return next('/')
+	}
+	if (to.meta.requiresEmployee && !perms.employeeId) {
+		return next('/')
+	}
+	next()
 })
 
 // View-Persistierung bei Navigation

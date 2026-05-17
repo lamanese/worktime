@@ -97,6 +97,10 @@ class AbsenceService {
         $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $employeeId);
         $days = $workingDays * $scope;
 
+        if ($type === Absence::TYPE_VACATION) {
+            $this->checkVacationQuota($employeeId, $days, (int)$startDateObj->format('Y'));
+        }
+
         $isInformational = in_array($type, [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true);
 
         $absence = new Absence();
@@ -183,6 +187,10 @@ class AbsenceService {
         // Calculate working days and apply scope (schedule-aware)
         $workingDays = $this->calculateWorkingDays($startDateObj, $endDateObj, $federalState, $absence->getEmployeeId());
         $days = $workingDays * $scope;
+
+        if ($type === Absence::TYPE_VACATION) {
+            $this->checkVacationQuota($absence->getEmployeeId(), $days, (int)$startDateObj->format('Y'), $id);
+        }
 
         $isInformational = in_array($type, [Absence::TYPE_SICK, Absence::TYPE_CHILD_SICK], true);
 
@@ -389,6 +397,38 @@ class AbsenceService {
     /**
      * @return array<string, string[]>
      */
+    private function checkVacationQuota(int $employeeId, float $requestedDays, int $year, ?int $excludeId = null): void {
+        $employee = $this->employeeMapper->find($employeeId);
+        $totalVacationDays = (int)$employee->getVacationDays();
+
+        // Sum all active (approved + pending) vacation days for the year, excluding the current record
+        $allVacations = $this->absenceMapper->findByEmployeeAndYear($employeeId, $year);
+        $usedDays = 0.0;
+        foreach ($allVacations as $absence) {
+            if ($absence->getType() !== Absence::TYPE_VACATION) {
+                continue;
+            }
+            if ($absence->getStatus() === Absence::STATUS_CANCELLED) {
+                continue;
+            }
+            if ($excludeId !== null && $absence->getId() === $excludeId) {
+                continue;
+            }
+            $usedDays += (float)$absence->getDays();
+        }
+
+        $remaining = $totalVacationDays - $usedDays;
+        if ($requestedDays > $remaining) {
+            throw new ValidationException([
+                'vacationQuota' => [sprintf(
+                    'Not enough vacation days. Available: %.1f, requested: %.1f.',
+                    max(0, $remaining),
+                    $requestedDays
+                )],
+            ]);
+        }
+    }
+
     private function validate(int $employeeId, string $type, DateTime $startDate, DateTime $endDate, ?int $excludeId = null, float $scope = 1.0): array {
         $errors = [];
 

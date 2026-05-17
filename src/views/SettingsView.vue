@@ -410,6 +410,149 @@
                 </NcModal>
 
                 </NcSettingsSection>
+
+            <NcSettingsSection v-if="canManageEmployees"
+                :name="t('worktime', 'Jahresübertrag')"
+                :description="t('worktime', 'Überstunden und Resturlaub aus dem Vorjahr händisch übertragen. Durchgeführte Überträge sind verbindlich und unveränderbar.')">
+                <div class="form-row">
+                    <div class="form-group">
+                        <select v-model.number="carryoverYear"
+                            class="input-field"
+                            @change="loadCarryovers">
+                            <option v-for="y in carryoverYearOptions" :key="y" :value="y">
+                                {{ y - 1 }} → {{ y }}
+                            </option>
+                        </select>
+                    </div>
+                    <div v-if="carryoverSourceYearStatus" class="form-group carryover-year-status">
+                        <span v-if="carryoverSourceYearStatus === 'closed'" class="year-status year-status--closed">
+                            ✓ {{ t('worktime', 'Alle Monate {year} genehmigt', { year: carryoverYear - 1 }) }}
+                        </span>
+                        <span v-else-if="carryoverSourceYearStatus === 'open'" class="year-status year-status--open">
+                            ⚠ {{ t('worktime', '{year}: Noch offene Monate', { year: carryoverYear - 1 }) }}
+                        </span>
+                    </div>
+                </div>
+                <table v-if="carryoverEmployees.length > 0" class="carryover-table">
+                    <thead>
+                        <tr>
+                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
+                            <th>{{ t('worktime', 'Überstunden') }}<br>{{ t('worktime', 'Ist') }}</th>
+                            <th>{{ t('worktime', 'Überstunden') }}<br>{{ t('worktime', 'Übertrag') }}</th>
+                            <th>{{ t('worktime', 'Resturlaub') }}<br>{{ t('worktime', 'Ist') }}</th>
+                            <th>{{ t('worktime', 'Resturlaub') }}<br>{{ t('worktime', 'Übertrag') }}</th>
+                            <th>{{ t('worktime', 'Bemerkung') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="emp in carryoverEmployees" :key="emp.employeeId"
+                            :class="{ 'carryover-row--locked': emp.isLocked }">
+                            <td>{{ emp.fullName }}</td>
+                            <td class="text-right carryover-actual">
+                                <span v-if="emp.wasActive" :class="emp.actualOvertimeHours >= 0 ? 'value-positive' : 'value-negative'">
+                                    {{ formatHours(emp.actualOvertimeHours) }}
+                                </span>
+                                <span v-else class="value-na">–</span>
+                            </td>
+                            <td class="text-right">
+                                <input v-if="!emp.isLocked"
+                                    v-model.number="emp.overtimeHours"
+                                    type="number"
+                                    step="0.5"
+                                    class="input-field input-small carryover-input"
+                                    @change="autoSaveCarryover(emp)">
+                                <span v-else class="carryover-locked-value">{{ formatHours(emp.overtimeHours) }}</span>
+                            </td>
+                            <td class="text-right carryover-actual">
+                                <span v-if="emp.wasActive">{{ emp.actualVacationRemaining }}</span>
+                                <span v-else class="value-na">–</span>
+                            </td>
+                            <td class="text-right">
+                                <input v-if="!emp.isLocked"
+                                    v-model.number="emp.vacationDays"
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    class="input-field input-small carryover-input"
+                                    @change="autoSaveCarryover(emp)">
+                                <span v-else class="carryover-locked-value">{{ emp.vacationDays }}</span>
+                            </td>
+                            <td class="carryover-note-cell">
+                                <textarea v-if="!emp.isLocked"
+                                    v-model="emp.note"
+                                    class="input-field carryover-note"
+                                    rows="1"
+                                    @input="resizeTextarea($event)"
+                                    @change="autoSaveCarryover(emp)"></textarea>
+                                <span v-else class="carryover-locked-note">{{ emp.note || '–' }}</span>
+                            </td>
+                            <td class="carryover-actions">
+                                <NcButton v-if="emp.hasValues && !emp.isLocked"
+                                    type="primary"
+                                    :aria-label="t('worktime', 'Übertrag durchführen')"
+                                    @click="lockCarryover(emp)">
+                                    {{ t('worktime', 'Übertrag durchführen') }}
+                                </NcButton>
+                                <span v-else-if="emp.isLocked" class="carryover-locked-label">
+                                    🔒 {{ t('worktime', 'Durchgeführt') }}
+                                    <NcButton type="tertiary"
+                                        :aria-label="t('worktime', 'Korrektur')"
+                                        @click="openCancelModal(emp)">
+                                        {{ t('worktime', 'Korrektur') }}
+                                    </NcButton>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Cancel/Correction Modal -->
+                <NcModal v-if="showCancelModal"
+                    :name="t('worktime', 'Übertrag korrigieren')"
+                    @close="closeCancelModal">
+                    <div class="cancel-modal">
+                        <h3>{{ t('worktime', 'Übertrag korrigieren für {name}', { name: cancellingEmployee?.fullName }) }}</h3>
+                        <p class="cancel-modal__hint">
+                            {{ t('worktime', 'Der bestehende Übertrag wird storniert und durch die neuen Werte ersetzt. Beide Einträge bleiben im Audit-Log erhalten.') }}
+                        </p>
+                        <div class="form-group">
+                            <label>{{ t('worktime', 'Neue Überstunden (Std.)') }}</label>
+                            <input v-model.number="cancelForm.overtimeHours"
+                                type="number"
+                                step="0.5"
+                                class="input-field input-small">
+                        </div>
+                        <div class="form-group">
+                            <label>{{ t('worktime', 'Neuer Resturlaub (Tage)') }}</label>
+                            <input v-model.number="cancelForm.vacationDays"
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                class="input-field input-small">
+                        </div>
+                        <div class="form-group">
+                            <label>{{ t('worktime', 'Begründung (Pflicht)') }}</label>
+                            <input v-model="cancelForm.reason"
+                                type="text"
+                                :placeholder="t('worktime', 'Grund für die Korrektur')"
+                                class="input-field"
+                                required>
+                        </div>
+                        <div class="form-actions">
+                            <NcButton type="tertiary" @click="closeCancelModal">
+                                {{ t('worktime', 'Abbrechen') }}
+                            </NcButton>
+                            <NcButton type="primary"
+                                :disabled="!cancelForm.reason.trim()"
+                                @click="submitCancel">
+                                {{ t('worktime', 'Stornieren & Ersetzen') }}
+                            </NcButton>
+                        </div>
+                    </div>
+                </NcModal>
+            </NcSettingsSection>
+
         </div>
     </div>
 </template>
@@ -442,7 +585,13 @@ import ProjectForm from '../components/ProjectForm.vue'
 import ProjectList from '../components/ProjectList.vue'
 import { showSuccessMessage, showErrorMessage } from '../utils/errorHandler.js'
 import { getCurrentYear } from '../utils/dateUtils.js'
+import YearlyCarryoverService from '../services/YearlyCarryoverService.js'
+import ReportService from '../services/ReportService.js'
 import InfoIcon from '../components/InfoIcon.vue'
+
+function round2(value) {
+    return Math.round(value * 100) / 100
+}
 
 export default {
     name: 'SettingsView',
@@ -499,6 +648,17 @@ export default {
             ],
             // Grouped holiday view
             expandedGroups: [],
+            // Yearly carryover
+            carryoverYear: getCurrentYear(),
+            carryoverEmployees: [],
+            carryoverSourceYearStatus: null,
+            showCancelModal: false,
+            cancellingEmployee: null,
+            cancelForm: {
+                overtimeHours: 0,
+                vacationDays: 0,
+                reason: '',
+            },
         }
     },
     computed: {
@@ -506,6 +666,14 @@ export default {
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
         ...mapGetters('projects', { allProjects: 'projects' }),
+        carryoverYearOptions() {
+            const current = getCurrentYear()
+            const years = []
+            for (let y = current - 3; y <= current + 1; y++) {
+                years.push(y)
+            }
+            return years
+        },
         federalStateOptions() {
             return Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
         },
@@ -604,6 +772,9 @@ export default {
         if (this.canManageProjects) {
             this.fetchProjects(true)
         }
+        if (this.canManageEmployees) {
+            this.loadCarryovers()
+        }
     },
     methods: {
         ...mapActions('holidays', ['generateAllHolidays']),
@@ -672,11 +843,12 @@ export default {
             this.editingEmployee = null
         },
         async onEmployeeSaved() {
+            const wasEditing = !!this.editingEmployee
             this.closeEmployeeForm()
             await this.$store.dispatch('employees/fetchEmployees')
             await this.$store.dispatch('permissions/fetchPermissions')
             showSuccessMessage(
-                this.editingEmployee
+                wasEditing
                     ? this.t('worktime', 'Mitarbeiter aktualisiert')
                     : this.t('worktime', 'Mitarbeiter erstellt')
             )
@@ -915,6 +1087,157 @@ export default {
                 showErrorMessage(error.message)
             }
         },
+
+        // Yearly Carryover
+        async loadCarryovers() {
+            try {
+                const sourceYear = this.carryoverYear - 1
+                const [carryovers, teamYearData] = await Promise.all([
+                    YearlyCarryoverService.getByYear(this.carryoverYear),
+                    ReportService.getTeamYear(sourceYear),
+                ])
+
+                const carryoverMap = {}
+                ;(carryovers || []).forEach(c => { carryoverMap[c.employeeId] = c })
+
+                // wasActive: must have schedule in source year AND real time entries
+                // Schedule check comes from backend (wasActiveInSourceYear)
+                // Real data check: at least one month with submitted/approved/rejected status
+                const scheduleMap = {}
+                ;(carryovers || []).forEach(c => { scheduleMap[c.employeeId] = c.wasActiveInSourceYear || false })
+
+                const realDataMap = {}
+                ;(teamYearData || []).forEach(r => {
+                    const hasRealData = r.months?.some(m =>
+                        m.status === 'submitted' || m.status === 'approved' || m.status === 'rejected'
+                    ) || false
+                    realDataMap[r.employee.id] = hasRealData
+                    // If has real data, also counts as having schedule
+                    if (hasRealData && !(r.employee.id in scheduleMap)) {
+                        scheduleMap[r.employee.id] = true
+                    }
+                })
+
+                const activityMap = {}
+                for (const empId of Object.keys({ ...scheduleMap, ...realDataMap })) {
+                    activityMap[empId] = (scheduleMap[empId] || false) && (realDataMap[empId] || false)
+                }
+
+                // Build actuals from team-year report
+                // totalOvertimeMinutes includes carryover — subtract for pure year value
+                const actualsMap = {}
+                ;(teamYearData || []).forEach(r => {
+                    const pureOvertimeMinutes = (r.totalOvertimeMinutes || 0) - (r.carryoverMinutes || 0)
+                    actualsMap[r.employee.id] = {
+                        overtimeHours: round2(pureOvertimeMinutes / 60),
+                        vacationRemaining: r.vacationStats?.remaining ?? null,
+                    }
+                })
+
+                // Year closed status — only for employees with real data
+                let allClosed = true
+                let hasAnyRealData = false
+                ;(teamYearData || []).forEach(r => {
+                    if (realDataMap[r.employee.id]) {
+                        hasAnyRealData = true
+                        r.months?.forEach(m => {
+                            if (m.overtimeMinutes !== null && m.status !== 'approved') {
+                                allClosed = false
+                            }
+                        })
+                    }
+                })
+                this.carryoverSourceYearStatus = hasAnyRealData ? (allClosed ? 'closed' : 'open') : null
+
+                this.carryoverEmployees = this.employees.map(emp => {
+                    const existing = carryoverMap[emp.id]
+                    const wasActive = activityMap[emp.id] || false
+                    const actuals = actualsMap[emp.id] || {}
+                    const overtimeHours = existing ? existing.overtimeHours : 0
+                    const vacationDays = existing ? existing.vacationDays : 0
+                    const note = existing ? (existing.note || '') : ''
+                    return {
+                        employeeId: emp.id,
+                        carryoverId: existing ? existing.id : null,
+                        fullName: `${emp.firstName} ${emp.lastName}`,
+                        overtimeHours,
+                        vacationDays,
+                        note,
+                        isLocked: existing ? existing.isLocked : false,
+                        wasActive,
+                        actualOvertimeHours: wasActive ? (actuals.overtimeHours ?? null) : null,
+                        actualVacationRemaining: wasActive ? (actuals.vacationRemaining ?? null) : null,
+                        hasValues: !!(existing && (existing.overtimeMinutes !== 0 || existing.vacationDays !== 0 || existing.note)),
+                    }
+                })
+            } catch (error) {
+                console.error('Failed to load carryovers:', error)
+            }
+        },
+        async autoSaveCarryover(emp) {
+            try {
+                const result = await YearlyCarryoverService.upsert(
+                    emp.employeeId,
+                    this.carryoverYear,
+                    Math.round((emp.overtimeHours || 0) * 60),
+                    emp.vacationDays || 0,
+                    emp.note || null,
+                )
+                emp.carryoverId = result.id
+                emp.hasValues = !!(result.overtimeMinutes !== 0 || result.vacationDays !== 0 || result.note)
+            } catch (error) {
+                showErrorMessage(error.message)
+            }
+        },
+        async lockCarryover(emp) {
+            if (!emp.carryoverId) return
+            try {
+                await YearlyCarryoverService.lock(emp.carryoverId)
+                emp.isLocked = true
+                showSuccessMessage(this.t('worktime', 'Übertrag durchgeführt'))
+            } catch (error) {
+                showErrorMessage(error.message)
+            }
+        },
+        openCancelModal(emp) {
+            this.cancellingEmployee = emp
+            this.cancelForm = {
+                overtimeHours: emp.overtimeHours,
+                vacationDays: emp.vacationDays,
+                reason: '',
+            }
+            this.showCancelModal = true
+        },
+        closeCancelModal() {
+            this.showCancelModal = false
+            this.cancellingEmployee = null
+        },
+        async submitCancel() {
+            if (!this.cancellingEmployee?.carryoverId) return
+            try {
+                await YearlyCarryoverService.cancel(
+                    this.cancellingEmployee.carryoverId,
+                    Math.round(this.cancelForm.overtimeHours * 60),
+                    this.cancelForm.vacationDays,
+                    this.cancelForm.reason,
+                )
+                showSuccessMessage(this.t('worktime', 'Übertrag korrigiert'))
+                this.closeCancelModal()
+                await this.loadCarryovers()
+            } catch (error) {
+                showErrorMessage(error.message)
+            }
+        },
+        resizeTextarea(event) {
+            const el = event.target
+            el.style.height = 'auto'
+            el.style.height = el.scrollHeight + 'px'
+        },
+        formatHours(value) {
+            if (value === null || value === undefined) return '–'
+            const sign = value >= 0 ? '+' : ''
+            return `${sign}${value.toFixed(1)}`
+        },
     },
 }
 </script>
@@ -1133,5 +1456,117 @@ export default {
     color: var(--color-primary-element);
     border-radius: 12px;
     font-size: 0.85em;
+}
+
+.carryover-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+.carryover-table th,
+.carryover-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.carryover-table th {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-text-maxcontrast);
+}
+
+.carryover-input {
+    width: 80px !important;
+    text-align: right;
+}
+
+.carryover-note-cell {
+    min-width: 200px;
+}
+
+.carryover-note {
+    width: 100% !important;
+    resize: none;
+    overflow: hidden;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.carryover-saved {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+.carryover-actual {
+    color: var(--color-text-maxcontrast);
+}
+
+.carryover-row--locked {
+    background: var(--color-background-hover);
+}
+
+.carryover-locked-value,
+.carryover-locked-note {
+    color: var(--color-text-maxcontrast);
+}
+
+.carryover-locked-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    color: var(--color-text-maxcontrast);
+}
+
+.carryover-actions {
+    white-space: nowrap;
+}
+
+.carryover-year-status {
+    align-self: center;
+}
+
+.year-status {
+    font-size: 13px;
+}
+
+.year-status--closed {
+    color: var(--color-success);
+}
+
+.year-status--open {
+    color: var(--color-warning);
+}
+
+.value-positive {
+    color: var(--color-success);
+}
+
+.value-negative {
+    color: var(--color-error);
+}
+
+.value-na {
+    color: var(--color-text-maxcontrast);
+}
+
+.cancel-modal {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cancel-modal__hint {
+    color: var(--color-text-maxcontrast);
+    font-size: 13px;
+    margin: 0;
+}
+
+.text-right {
+    text-align: right !important;
 }
 </style>

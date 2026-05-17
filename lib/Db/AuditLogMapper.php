@@ -68,8 +68,8 @@ class AuditLogMapper extends QBMapper {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->gte('created_at', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATETIME)))
-            ->andWhere($qb->expr()->lte('created_at', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATETIME)))
+            ->where($qb->expr()->gte('created_at', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+            ->andWhere($qb->expr()->lte('created_at', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
             ->orderBy('created_at', 'DESC')
             ->setMaxResults($limit);
 
@@ -103,10 +103,50 @@ class AuditLogMapper extends QBMapper {
         return $this->findEntities($qb);
     }
 
+    /**
+     * @return AuditLog[]
+     */
+    public function findFiltered(
+        ?string $action = null,
+        ?string $entityType = null,
+        ?DateTime $from = null,
+        ?DateTime $to = null,
+        int $limit = 500,
+        int $offset = 0,
+        ?string $userId = null
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created_at', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        if ($action !== null) {
+            $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
+        }
+        if ($entityType !== null) {
+            $qb->andWhere($qb->expr()->eq('entity_type', $qb->createNamedParameter($entityType)));
+        }
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+        }
+        if ($to !== null) {
+            $to = clone $to;
+            $to->setTime(23, 59, 59);
+            $qb->andWhere($qb->expr()->lte('created_at', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+        }
+        if ($userId !== null) {
+            $qb->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
+        }
+
+        return $this->findEntities($qb);
+    }
+
     public function deleteOlderThan(DateTime $date): int {
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())
-            ->where($qb->expr()->lt('created_at', $qb->createNamedParameter($date, IQueryBuilder::PARAM_DATETIME)));
+            ->where($qb->expr()->lt('created_at', $qb->createNamedParameter($date, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 
         return $qb->executeStatement();
     }
