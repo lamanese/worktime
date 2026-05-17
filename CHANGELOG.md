@@ -7,6 +7,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-17
+
+### Fixed
+- **Audit-Log Kontrast (#162)**: Schrift in der Änderungsspalte war kaum lesbar (blasse NC CSS-Variablen). Alle Farben durch explizite Hex-Werte ersetzt (`#b91c1c`, `#15803d`, `#555`).
+- **Audit-Log Diff-Anzeige (#163)**: Änderungsspalte zeigte bei `update`-Aktionen den kompletten Objekt-Dump. Jetzt werden nur tatsächlich geänderte Felder als `Feld: alt → neu` angezeigt. Interne Felder (id, employeeId, createdAt, updatedAt) werden ausgeblendet.
+- **Monatsübergreifende Abwesenheiten in Genehmigungsansicht (#164)**: Eine Abwesenheit die z.B. vom 27.04–08.05 läuft, zeigte im April-View den gesamten Zeitraum. Jetzt wird der Zeitraum auf den angezeigten Monat geclipt (April: 27.04–30.04, Mai: 01.05–08.05).
+
 ## [0.7.0] - 2026-05-17
 
 ### Added
