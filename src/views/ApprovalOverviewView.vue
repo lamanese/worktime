@@ -190,7 +190,7 @@
                         class="details-row">
                         <td colspan="7" class="details-cell">
                             <div class="details-header">
-                                <span class="details-title">{{ t('worktime', 'Zeiteinträge im Zeitraum') }}</span>
+                                <span class="details-title">{{ t('worktime', 'Einträge im Zeitraum') }}</span>
                                 <NcButton type="tertiary" @click="downloadPdf(item.employee.id)">
                                     <template #icon>
                                         <FileDocumentIcon :size="18" />
@@ -199,7 +199,7 @@
                                 </NcButton>
                             </div>
                             <NcLoadingIcon v-if="loadingDetails === item.employee.id" :size="32" />
-                            <table v-else-if="detailEntries[item.employee.id] && detailEntries[item.employee.id].length > 0"
+                            <table v-else-if="mergedDetailItems(item.employee.id).length > 0"
                                 class="details-table">
                                 <thead>
                                     <tr>
@@ -214,24 +214,43 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="entry in sortedDetailEntries(item.employee.id)" :key="entry.id">
-                                        <td>{{ formatDate(entry.date) }}</td>
-                                        <td>{{ entry.startTime }}</td>
-                                        <td>{{ entry.endTime }}</td>
-                                        <td class="center">{{ entry.breakMinutes }} min</td>
-                                        <td class="center">{{ formatMinutes(entry.workMinutes) }}</td>
-                                        <td>{{ projectName(entry.projectId) }}</td>
-                                        <td class="description-cell">{{ entry.description || '-' }}</td>
-                                        <td class="center">
-                                            <span class="status-badge" :class="entry.status">
-                                                {{ statusLabel(entry.status) }}
-                                            </span>
-                                        </td>
-                                    </tr>
+                                    <template v-for="item2 in mergedDetailItems(item.employee.id)">
+                                        <tr v-if="item2.kind === 'entry'" :key="`e-${item2.id}`">
+                                            <td>{{ formatDate(item2.date) }}</td>
+                                            <td>{{ item2.startTime }}</td>
+                                            <td>{{ item2.endTime }}</td>
+                                            <td class="center">{{ item2.breakMinutes }} min</td>
+                                            <td class="center">{{ formatMinutes(item2.workMinutes) }}</td>
+                                            <td>{{ projectName(item2.projectId) }}</td>
+                                            <td class="description-cell">{{ item2.description || '-' }}</td>
+                                            <td class="center">
+                                                <span class="status-badge" :class="item2.status">
+                                                    {{ statusLabel(item2.status) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr v-else :key="`a-${item2.id}`" class="detail-absence-row">
+                                            <td class="absence-date-cell">
+                                                <span v-if="item2.startDate === item2.endDate">{{ formatDate(item2.startDate) }}</span>
+                                                <span v-else>{{ formatDate(item2.startDate) }} – {{ formatDate(item2.endDate) }}</span>
+                                            </td>
+                                            <td colspan="4" class="absence-info-cell">
+                                                <span class="absence-type-badge" :class="item2.type">{{ item2.typeName }}</span>
+                                                <span class="absence-days">{{ item2.days }} {{ item2.days === 1 ? t('worktime', 'Tag') : t('worktime', 'Tage') }}</span>
+                                            </td>
+                                            <td>—</td>
+                                            <td class="description-cell">{{ item2.note || '—' }}</td>
+                                            <td class="center">
+                                                <span class="status-badge" :class="item2.status">
+                                                    {{ statusLabel(item2.status) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </template>
                                 </tbody>
                             </table>
                             <p v-else class="details-empty">
-                                {{ t('worktime', 'Keine Zeiteinträge in diesem Monat.') }}
+                                {{ t('worktime', 'Keine Einträge in diesem Monat.') }}
                             </p>
                         </td>
                     </tr>
@@ -306,6 +325,7 @@ export default {
             statusFilter: null,
             expandedEmployeeId: null,
             detailEntries: {},
+            detailAbsences: {},
             loadingDetails: null,
             statusOptions: [
                 { value: 'pending', label: t('worktime', 'Ausstehend (zur Genehmigung)') },
@@ -380,15 +400,23 @@ export default {
                 submitted: t('worktime', 'Eingereicht'),
                 approved: t('worktime', 'Genehmigt'),
                 rejected: t('worktime', 'Abgelehnt'),
+                pending: t('worktime', 'Ausstehend'),
+                cancelled: t('worktime', 'Storniert'),
             }
             return labels[status] || status
         },
-        sortedDetailEntries(employeeId) {
-            const entries = this.detailEntries[employeeId] || []
-            return [...entries].sort((a, b) => {
-                const dateCompare = a.date.localeCompare(b.date)
-                if (dateCompare !== 0) return dateCompare
-                return a.startTime.localeCompare(b.startTime)
+        mergedDetailItems(employeeId) {
+            const entries = (this.detailEntries[employeeId] || []).map(e => ({ ...e, kind: 'entry' }))
+            const absences = (this.detailAbsences[employeeId] || []).map(a => ({ ...a, kind: 'absence' }))
+            return [...entries, ...absences].sort((a, b) => {
+                const dateA = a.kind === 'entry' ? a.date : a.startDate
+                const dateB = b.kind === 'entry' ? b.date : b.startDate
+                const cmp = dateA.localeCompare(dateB)
+                if (cmp !== 0) return cmp
+                if (a.kind === 'absence' && b.kind === 'entry') return -1
+                if (a.kind === 'entry' && b.kind === 'absence') return 1
+                if (a.kind === 'entry' && b.kind === 'entry') return a.startTime.localeCompare(b.startTime)
+                return 0
             })
         },
         async toggleDetails(employeeId) {
@@ -402,12 +430,17 @@ export default {
             }
             this.loadingDetails = employeeId
             try {
-                const entries = await TimeEntryService.getByEmployee(employeeId, this.year, this.month)
+                const [entries, absences] = await Promise.all([
+                    TimeEntryService.getByEmployee(employeeId, this.year, this.month),
+                    AbsenceService.getByEmployee(employeeId, this.year, this.month),
+                ])
                 this.$set(this.detailEntries, employeeId, entries || [])
+                this.$set(this.detailAbsences, employeeId, absences || [])
             } catch (error) {
-                console.error('Failed to load time entry details:', error)
-                showError(t('worktime', 'Fehler beim Laden der Zeiteinträge'))
+                console.error('Failed to load details:', error)
+                showError(t('worktime', 'Fehler beim Laden der Einträge'))
                 this.$set(this.detailEntries, employeeId, [])
+                this.$set(this.detailAbsences, employeeId, [])
             } finally {
                 this.loadingDetails = null
             }
@@ -420,6 +453,7 @@ export default {
             this.month = month
             this.expandedEmployeeId = null
             this.detailEntries = {}
+            this.detailAbsences = {}
             this.loadData()
         },
         async approveMonth(employeeId) {
@@ -428,6 +462,7 @@ export default {
                 const result = await TimeEntryService.approveMonth(employeeId, this.year, this.month)
                 showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
                 this.$delete(this.detailEntries, employeeId)
+                this.$delete(this.detailAbsences, employeeId)
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to approve month:', error)
@@ -745,5 +780,42 @@ export default {
     font-style: italic;
 }
 
+.detail-absence-row {
+    background: #f0f7ff;
+}
+
+.absence-date-cell {
+    font-weight: 500;
+}
+
+.absence-info-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+}
+
+.absence-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: #2563eb;
+}
+
+.absence-type-badge.vacation { background: #16a34a; }
+.absence-type-badge.sick { background: #dc2626; }
+.absence-type-badge.child_sick { background: #ea580c; }
+.absence-type-badge.compensatory { background: #7c3aed; }
+.absence-type-badge.unpaid { background: #6b7280; }
+.absence-type-badge.special { background: #0891b2; }
+.absence-type-badge.training { background: #d97706; }
+
+.absence-days {
+    font-size: 12px;
+    color: var(--color-text-maxcontrast);
+}
 
 </style>
