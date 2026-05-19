@@ -1,11 +1,10 @@
 {
     "hashes": {
-        "CHANGELOG.md": "0187a98631f6e43b5a48f77e028b01306b1946f531e5fe3ae10c3d4ccf2d0d51146a0cda3bed6a40ea8d598da61df13e298dd0ffa2ab78295b3ad74c2cf4df45",
+        "CHANGELOG.md": "30b25d4087654cde4aa7a388c5b58ea8f4ab447e5d88413478b71bedc22d74d3a09b7cbdd8aa73409792d3d25a6b714d5a5f745cfbcb2b76ade78bbb4a6517bc",
         "LICENSE": "3568a76677f3d55dbbc7fc33c4073b4714cc6f68d92cd842a9ca2b230e8bd2140e59c3fc3cce34be34ffed78d75ab6e9d991ba59bf7c4addde7fb96648d3375d",
         "README.md": "e1ea095e791e588f038d999d22a190ec267b1146f4fbfa5582b2b18faf21b1a8f55c41258df708a4b7639d03a695afcdf753ce6107f0d5074c61f6f36dae7175",
-        "appinfo\/info.xml": "69ed991f3aef1c47f0d338d1b3e15ceb0df593437e3df7eab14099abaddb4f41a9e74de49f02c2b0eaf05c5ca46d011a01de13d66470f72c2b03861b039a8545",
+        "appinfo\/info.xml": "71122dd000b6ff777eada08a187284c23397204981ccd11716a8b9bb23bd6d50d33b95696cfca7cb990c00b0021762747eeb3b02e654e475dcd14a00cc1bae8e",
         "appinfo\/routes.php": "3d1ef3833bbf2b613e81b5c31189870b797e8d68f4f399f638db42df8dba1d0f0043e1a9e8f92c7ba91c612c7aea6ef027b0ec22654d39cc24eb3e48ef27c3ad",
-        "css\/main.scss": "afe82451350c77c9db12161c11ab5d928093afc916a47cfb524fbe9bad1d719ea10c80ca4d588a885de68cf3ee5a2a5d1593341443d8fac65c4a481d247a8e9f",
         "img\/app-dark.svg": "d7eae0ce39e99f05f315a4f0c2387a8d4987d9bb4bf498bbc89e3844c2f76d485c12fd191a9c327fd76066fe8d393fb73b4c00c7f174ff217127c3d0967239c1",
         "img\/app.svg": "72157d282e54255774f345423a59f021ab4b6d73610526f33ade8db8ded3122c87fc0653bca6f57614a8f2e0ff79083ed66b29b49376f8b1c2e5242de68cf1a6",
         "js\/worktime-0ff2bc999243ffb40f4e.js": "8919e937f47a9e3fbbd31d9938ce82f28a9dfdafc62cc1ff981f752c26401567da6bab14026c1bb1e18fe01e46411482c2446236d4645ba0434305a8872e6e25",
@@ -25,7 +24,7 @@
         "lib\/Controller\/BaseController.php": "18bad75ac8ceb908f88147d1bd3c34deae5197f3752f7026ffd9e97eb16550c0785d5feda22d56e4b7c4b1f2b3483aea22f493ee3f5f046d095348f592decb3d",
         "lib\/Controller\/EmployeeController.php": "4fb605c3ba54a31314f543ddd71a14015a1474c5c62d811694a4e5d6ba61545c877b00c037321184609ab3ab9eba30e5b7fdabd6326400a423dd108101f3906f",
         "lib\/Controller\/HolidayController.php": "09ed547bcb414b9601b7fa7f149cc6308cb3a7af5f2abb0d23805e98d95cd5bdffd98ce43b338b1d660dbe6161d4a582a10d5b37ad816508470ce0613ef4395a",
-        "lib\/Controller\/PageController.php": "dc5c6e8771bcecc50b70305f20c84b40f0b5ed0b89f591cbde2916da71179f96d6a64da4b920c703f8ec97cfc0fdd38f124df5a69a1bba9c4189d087226816ad",
+        "lib\/Controller\/PageController.php": "7ce669fd8b1808f17517c86b6865b4aa09d55f29aa3cdfdc11a709ca65ae6736613a272c93770af80062dad0f1f3e6524d19966df1c182006e6148ace70c165b",
         "lib\/Controller\/ProjectController.php": "704e7be07bc59bac23aff222d322553257653095b8900a20f96174bce8ac15025e062b80b6f9005597b50c03ed94500363045c80d5318f8bf8f0e65852fc187f",
         "lib\/Controller\/ReportController.php": "147e0bde9453f930a4b603873c73750bd7a12b210bd14597020389424da405561f9d60add2b323bd0d2598850171a8b16e34487821b575696e39422c1756e9f0",
         "lib\/Controller\/SettingsController.php": "7228d97293cdf624b60441f0c3af2dddf2924aebb4117c704c4c440b2418621fae372c634f8499f212275d74ba8e4890f3df2a01984f3f16e8e8731025103bf8",
@@ -166,6 +165,6 @@
         "vendor\/tecnickcom\/tcpdf\/tools\/convert_fonts_examples.txt": "c4c8e617248924852aca34f4d0030377ca451e2e5de775ddc4d5cef353af1e7d2061c7ef7bf038a7fb9f9d4149acef8101d4e1fef168deb48c61a0eefe859227",
         "vendor\/tecnickcom\/tcpdf\/tools\/tcpdf_addfont.php": "f94b7d68e38f4def7f079efea17bdffae67f0ddfd92ff579d7d36967eef326329562e23786b9ad664281b63c9853b7ef750adfa7c856a0d7bbe511be850fbf30"
     },
-    "signature": "JcrAa7T+qtNy6cKSAPy9TPGEdnd0KGGtMaCPVOTcUtqqNWdOeHve\/dnCaBHYF9MFxXgvMkG\/LKEMVSPfnEyo\/SYQyxqQmbAZYMA6BHEmjUB4QBhm\/v2bYmBUTw7J7V3\/r7zsX\/qaJmTyE+tBEt2UtibQRp0Fx5VpEvYzUr9Ff1RW8wN6vKOMvf8QvXXF1W3esG0nCrDEkDp4uWUbOOcI9ZjdvCo2AomXLivXyMEJL4P1XgFggFjpSO41rcCA1epxE\/qpUtsOi8WjmJcNds5Y0JmFDPHUlZZdleYF2tjL8B4ik6PsXxIAQ6MSwUVikpzAQJHM9PO2yVVVMJ5SYGEN0w==",
+    "signature": "siddiiaB66zLO6RDMC\/uMJlBgJYpeLUPftz\/XS+88B2ngT0VL6onmO7yeNaRZfsQ6HVfv4v7KMoszOdJeSj9a4zixbmY0H9wtHiK8wiNtgRv0zJmq\/sl5K2Qk0IfU3UoFNegKT4kTTpWjc7VO6AJG3lqtlbFTGxe+6uQd4EGHJT2pTozPHQyAWFJywaEYyJu59v1akcp2jE+2XEMN31mwqX7l75A+g1twihYpbzo9jlnI\/pxljVKxhP0c+u2OqXiXAL9vvYYWyndw1TDmnmrrWyIfwtLgUMqfjnu5+xEvkniLIUyQ6tSYrv05A+EOSljHnE11+TsI1O3FrRQTBJDOA==",
     "certificate": "-----BEGIN CERTIFICATE-----\r\nMIIDAzCCAesCAhLvMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNVBAYTAkRFMRswGQYD\r\nVQQIDBJCYWRlbi1XdWVydHRlbWJlcmcxFzAVBgNVBAoMDk5leHRjbG91ZCBHbWJI\r\nMTYwNAYDVQQDDC1OZXh0Y2xvdWQgQ29kZSBTaWduaW5nIEludGVybWVkaWF0ZSBB\r\ndXRob3JpdHkwHhcNMjYwMjA2MTgwNzAyWhcNMzYwNTE0MTgwNzAyWjATMREwDwYD\r\nVQQDDAh3b3JrdGltZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL\/b\r\n9iUR\/hnnlbkchImfamKpEfnMyIiM6Ewe58W3JrJGA6pycVkamLyeUEcaRMbaZmbK\r\n5oosZ8g\/mVjLSZcAbM8F2rV4pOsSD6ToJ7S419gCHYBMVsm9HDdYbej65DXXqOJn\r\nVV4xfdj8KSaxsgH\/1aVWvKBil8sjLiBUEIHdOCytY3EEzISn8p+Ma5cUC+1Bf9kh\r\nffY5i0YvZ38R8cdI0SeraLmHBpUy4m91P7Kg03uZspiWwYZBupTZxhlBAawKU\/Za\r\nxcViP7+JY8p4lll0io1Q1ViXPnFcj8C9uvnU43k13wRbAWqYV8pUEQcKKbA60Gk\/\r\nZB+Z4b1l+5V0Sp1a0NUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAgOYI54EXGsPe\r\n3aXvprtL4CvR33fEBJguelgz4pqrxSQRgnxJySB6Fo+ocj7wxQt0\/\/sw4bds60cH\r\n82rC6uF23lA7GE0\/sdHQPrc9UW\/C93oU5pgC54CKWUMqUBgWiBjTe4tStf5gE0C1\r\n5Jad2eMKpEnNO8x7v+OnxOzJYhUZvbN0E3UM5NVjzcZV\/lsVQxnmhtXkd4dJ6twy\r\n+QAQlmifHcw4beyvF1A4e1Hwcc4\/b9O64RdI\/oZ\/ehU41uP5zdF61B6A6cF+IbS+\r\nUdTPcyqRqEsFQRw52JpSdkKnFtG76Dg8rD0o5PyrmKOtHMnssPdJicehEoFe144e\r\nOdhkeyiR8w==\r\n-----END CERTIFICATE-----"
 }
