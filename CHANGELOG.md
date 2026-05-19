@@ -7,6 +7,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-05-19
+
+### Fixed
+- **Nicht-existierende CSS-Datei (#170)**: `Util::addStyle` für `css/main.css` aus dem PageController entfernt — die Datei existierte nicht (CSS wird von webpack ins JS-Bundle gebündelt). Im Browser-Konsolen-Log keine MIME-Type-Fehlermeldung mehr.
+
+### Changed
+- **App Store Screenshots aktualisiert**: Alle 6 Screenshots durch frische Captures mit sauberen Demo-Daten ersetzt. Zusätzlich neues Audit-Log-Screenshot.
+- **App-Beschreibung erweitert**: info.xml beschreibt jetzt die Features aus v0.6.x und v0.7.x (Audit-Log, Jahresübertrag, kontextuelle Hilfe, HR-Manager-Rolle, Mehrsprachigkeit).
+
 ## [0.7.1] - 2026-05-17
 
 ### Fixed
