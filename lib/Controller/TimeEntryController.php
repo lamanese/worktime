@@ -336,6 +336,10 @@ class TimeEntryController extends BaseController {
 
     #[NoAdminRequired]
     public function suggestBreak(string $startTime, string $endTime): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         $breakMinutes = $this->timeEntryService->suggestBreak($startTime, $endTime);
 
         return $this->successResponse(['breakMinutes' => $breakMinutes]);
