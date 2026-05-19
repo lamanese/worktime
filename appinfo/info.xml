@@ -10,18 +10,36 @@
 
 Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland.
 
-## Features
+## Erfassung & Berechnung
 
 - **Zeiterfassung** mit Start, Ende und Pause
 - **Automatische Pausenberechnung** nach §4 ArbZG
-- **Überstundenkonto** mit Soll/Ist-Vergleich
+- **Überstundenkonto** mit Soll/Ist-Vergleich und Eintrittsdatum-Berücksichtigung
 - **Projektbezogene Erfassung** für bessere Auswertung
-- **Urlaubsverwaltung** mit Resturlaub-Anzeige
-- **Abwesenheiten** (Urlaub, Krankheit, Sonderurlaub, Freizeitausgleich)
 - **Deutsche Feiertage** automatisch nach Bundesland
+
+## Urlaub & Abwesenheiten
+
+- **Urlaubsverwaltung** mit Quoten-Validierung und Resturlaub-Anzeige
+- **Abwesenheiten**: Urlaub, Krankheit, Sonderurlaub, Freizeitausgleich
+- **Jahresübertrag** für Überstunden und Resturlaub vom Vorjahr — automatisch und manuell korrigierbar
+
+## Reporting & Team
+
 - **Monatsübersicht** mit PDF-Export
-- **Team-Übersicht** für Vorgesetzte
-- **Genehmigungsworkflow** für Abwesenheiten
+- **Team-Übersicht** für Vorgesetzte und HR-Manager
+- **Jahresübersicht** mit allen Mitarbeitern und Übertragswerten
+- **Audit-Log** für vollständiges Änderungsprotokoll (Admin/HR)
+
+## Workflow & Genehmigung
+
+- **Rollenbasierte Berechtigungen** (Admin, HR-Manager, Supervisor, Employee)
+- **Genehmigungsworkflow** für Abwesenheiten mit eingebetteter Zeitanzeige
+- **Kontextuelle Hilfe** mit Info-Icons an allen relevanten Stellen
+
+## Internationalisierung
+
+- **Mehrsprachig**: Deutsch und Englisch
 
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
@@ -45,6 +63,7 @@ Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-monthly-report.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-absences.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-approval-workflow.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-audit-log.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-settings.png</screenshot>
 
     <dependencies>
