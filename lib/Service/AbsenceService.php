@@ -84,8 +84,16 @@ class AbsenceService {
         string $currentUserId = '',
         float $scope = 1.0
     ): Absence {
-        $startDateObj = new DateTime($startDate);
-        $endDateObj = new DateTime($endDate);
+        $startDateObj = DateTime::createFromFormat('Y-m-d', $startDate);
+        $endDateObj = DateTime::createFromFormat('Y-m-d', $endDate);
+        if ($startDateObj === false) {
+            throw new ValidationException(['startDate' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        if ($endDateObj === false) {
+            throw new ValidationException(['endDate' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        $startDateObj->setTime(0, 0, 0);
+        $endDateObj->setTime(0, 0, 0);
 
         // Validate
         $errors = $this->validate($employeeId, $type, $startDateObj, $endDateObj, null, $scope);
@@ -166,8 +174,16 @@ class AbsenceService {
             throw new ForbiddenException('Cannot edit cancelled absences');
         }
 
-        $startDateObj = new DateTime($startDate);
-        $endDateObj = new DateTime($endDate);
+        $startDateObj = DateTime::createFromFormat('Y-m-d', $startDate);
+        $endDateObj = DateTime::createFromFormat('Y-m-d', $endDate);
+        if ($startDateObj === false) {
+            throw new ValidationException(['startDate' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        if ($endDateObj === false) {
+            throw new ValidationException(['endDate' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        $startDateObj->setTime(0, 0, 0);
+        $endDateObj->setTime(0, 0, 0);
 
         // Validate basic rules
         $errors = $this->validate($absence->getEmployeeId(), $type, $startDateObj, $endDateObj, $id, $scope);

@@ -93,7 +93,11 @@ class TimeEntryService {
         ?string $description = null,
         string $currentUserId = ''
     ): TimeEntry {
-        $dateObj = new DateTime($date);
+        $dateObj = DateTime::createFromFormat('Y-m-d', $date);
+        if ($dateObj === false) {
+            throw new ValidationException(['date' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        $dateObj->setTime(0, 0, 0);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
 
@@ -153,7 +157,11 @@ class TimeEntryService {
         $entry = $this->find($id);
         $oldValues = $entry->jsonSerialize();
 
-        $dateObj = new DateTime($date);
+        $dateObj = DateTime::createFromFormat('Y-m-d', $date);
+        if ($dateObj === false) {
+            throw new ValidationException(['date' => ['Ungültiges Datumsformat (erwartet: JJJJ-MM-TT)']]);
+        }
+        $dateObj->setTime(0, 0, 0);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
 
