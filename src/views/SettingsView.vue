@@ -163,7 +163,7 @@
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
                         @update:checked="saveSettingBool('approval_required')">
-                        {{ t('worktime', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, müssen Vorgesetzte die Zeiteinträge freigeben. Ohne Genehmigung fließen die Stunden nicht in die Überstundenberechnung ein.') }}</InfoIcon>
+                        {{ t('worktime', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
             </NcSettingsSection>
@@ -199,7 +199,7 @@
                 :name="t('worktime', 'PDF-Archivierung')"
                 :description="t('worktime', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
                 <div class="form-group">
-                    <label>{{ t('worktime', 'Archiv-Ordner') }} <InfoIcon>{{ t('worktime', 'Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff.') }}</InfoIcon></label>
+                    <label>{{ t('worktime', 'Archiv-Ordner') }} <InfoIcon>{{ t('worktime', 'Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.') }}</InfoIcon></label>
                     <div class="folder-picker">
                         <NcButton type="secondary" @click="openFolderPicker">
                             <template #icon>
