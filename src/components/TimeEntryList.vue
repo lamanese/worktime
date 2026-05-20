@@ -10,7 +10,7 @@
                     <th>{{ t('worktime', 'Arbeitszeit') }}</th>
                     <th>{{ t('worktime', 'Projekt') }}</th>
                     <th>{{ t('worktime', 'Beschreibung') }}</th>
-                    <th>{{ t('worktime', 'Status') }}</th>
+                    <th v-if="approvalRequired">{{ t('worktime', 'Status') }}</th>
                     <th v-if="!readonly">{{ t('worktime', 'Aktionen') }}</th>
                 </tr>
             </thead>
@@ -29,7 +29,7 @@
                     <!-- Absence -->
                     <tr v-if="item._type === 'absence'" class="absence-row">
                         <td>{{ formatDateFull(item.date) }}</td>
-                        <td :colspan="readonly ? 7 : 8" class="absence-cell">
+                        <td :colspan="spanCols" class="absence-cell">
                             <span class="absence-type-badge" :class="item.absenceType">
                                 {{ item.typeName }}
                             </span>
@@ -127,8 +127,17 @@ export default {
     computed: {
         ...mapGetters('projects', ['activeProjects']),
         ...mapGetters('holidays', ['isHoliday']),
+        ...mapGetters('permissions', ['approvalRequired']),
         projects() {
             return this.activeProjects
+        },
+        // Spalten nach der Datums-Spalte: Beginn, Ende, Pause, Arbeitszeit, Projekt, Beschreibung (6)
+        // + Status (nur wenn Genehmigung aktiv) + Aktionen (nur wenn nicht readonly)
+        spanCols() {
+            let n = 6
+            if (this.approvalRequired) n += 1
+            if (!this.readonly) n += 1
+            return n
         },
         hasAbsencesOrHolidays() {
             return this.absences.length > 0 || this.holidays.length > 0

@@ -9,7 +9,7 @@
             <td>{{ formatMinutes(entry.workMinutes) }}</td>
             <td>{{ getProjectName(entry.projectId) }}</td>
             <td class="description-cell">{{ entry.description || '-' }}</td>
-            <td>
+            <td v-if="approvalRequired">
                 <span class="status-badge" :class="entry.status">
                     {{ getStatusLabel(entry.status) }}
                 </span>
@@ -90,7 +90,7 @@
                     :placeholder="t('worktime', 'Beschreibung')"
                     @keydown="onKeydown">
             </td>
-            <td></td>
+            <td v-if="approvalRequired"></td>
             <td class="actions">
                 <NcButton type="primary"
                     :disabled="!isValid"
@@ -176,6 +176,7 @@ export default {
     },
     computed: {
         ...mapGetters('employees', ['currentEmployee']),
+        ...mapGetters('permissions', ['approvalRequired']),
         rowClasses() {
             return {
                 'editing': this.mode !== 'view',

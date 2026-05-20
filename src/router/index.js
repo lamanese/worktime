@@ -52,7 +52,7 @@ const routes = [
 		path: '/approvals',
 		name: 'approvals',
 		component: ApprovalOverviewView,
-		meta: { requiresAdminOrHr: true },
+		meta: { requiresAdminOrHr: true, requiresApproval: true },
 	},
 	{
 		path: '/my-settings',
@@ -89,6 +89,9 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
 	const perms = store.getters['permissions/permissions']
 
+	if (to.meta.requiresApproval && !store.getters['permissions/approvalRequired']) {
+		return next('/')
+	}
 	if (to.meta.requiresSettings && !perms.canManageSettings) {
 		return next('/')
 	}
