@@ -3,7 +3,7 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Monatsübersicht') }}</h2>
             <div class="header-actions">
-                <NcButton v-if="hasSubmittableEntries"
+                <NcButton v-if="approvalRequired && hasSubmittableEntries"
                     type="primary"
                     @click="confirmSubmitMonth">
                     <template #icon>
@@ -11,7 +11,7 @@
                     </template>
                     {{ t('worktime', 'Monat einreichen') }}
                 </NcButton>
-                <span v-else-if="allEntriesSubmitted && report?.timeEntries?.length > 0" class="status-info">
+                <span v-else-if="approvalRequired && allEntriesSubmitted && report?.timeEntries?.length > 0" class="status-info">
                     <CheckIcon :size="20" />
                     {{ t('worktime', 'Eingereicht') }}
                 </span>
@@ -145,7 +145,7 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('permissions', ['employeeId']),
+        ...mapGetters('permissions', ['employeeId', 'approvalRequired']),
         hasSubmittableEntries() {
             if (!this.report?.timeEntries) return false
             return this.report.timeEntries.some(e => e.status === 'draft' || e.status === 'rejected')

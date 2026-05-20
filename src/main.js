@@ -17,6 +17,10 @@ const permissions = loadState('worktime', 'permissions', {})
 // Initialize permissions in store
 store.dispatch('permissions/initFromInitialState', permissions)
 
+// Whether the approval workflow is active for this instance
+const approvalRequired = loadState('worktime', 'approvalRequired', true)
+store.dispatch('permissions/setApprovalRequired', approvalRequired)
+
 // Restore last view from localStorage (if not already on a valid route)
 const savedView = localStorage.getItem('worktime_last_view')
 if (savedView && savedView !== '/' && router.currentRoute.path === '/') {
