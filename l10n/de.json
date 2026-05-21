@@ -1,6 +1,12 @@
 {
 	"translations": {
 		"WorkTime": "WorkTime",
+		"Genehmigung zurücknehmen": "Genehmigung zurücknehmen",
+		"Genehmigung zurücknehmen für {name}": "Genehmigung zurücknehmen für {name}",
+		"Die genehmigten Zeiteinträge dieses Monats werden zur Korrektur wieder auf den Status Entwurf gesetzt und müssen anschließend erneut eingereicht und genehmigt werden. Der Vorgang wird im Audit-Log festgehalten.": "Die genehmigten Zeiteinträge dieses Monats werden zur Korrektur wieder auf den Status Entwurf gesetzt und müssen anschließend erneut eingereicht und genehmigt werden. Der Vorgang wird im Audit-Log festgehalten.",
+		"Grund für die Rücknahme": "Grund für die Rücknahme",
+		"{count} Einträge zur Korrektur freigegeben": "{count} Einträge zur Korrektur freigegeben",
+		"Fehler beim Zurücknehmen der Genehmigung": "Fehler beim Zurücknehmen der Genehmigung",
 		"Time tracking for employees": "Arbeitszeiterfassung für Mitarbeiter",
 		"Zeiterfassung": "Zeiterfassung",
 		"Monatsübersicht": "Monatsübersicht",
