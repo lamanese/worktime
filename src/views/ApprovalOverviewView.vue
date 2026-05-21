@@ -96,8 +96,8 @@
             </table>
         </div>
 
-        <!-- Zeiteinträge Übersicht -->
-        <div class="report-section">
+        <!-- Zeiteinträge Übersicht (nur bei aktiviertem Genehmigungs-Workflow) -->
+        <div v-if="approvalRequired" class="report-section">
             <h3>{{ t('worktime', 'Zeiteinträge') }}</h3>
 
             <NcLoadingIcon v-if="loading" :size="44" />
@@ -337,6 +337,7 @@ export default {
     },
     computed: {
         ...mapGetters('projects', ['getProjectById']),
+        ...mapGetters('permissions', ['approvalRequired']),
         filteredEmployees() {
             if (!this.statusFilter) {
                 return this.employees

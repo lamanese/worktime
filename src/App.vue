@@ -57,7 +57,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="(isAdmin || isHrManager) && hasEmployees && approvalRequired"
+				v-if="(isAdmin || isHrManager) && hasEmployees"
 				:name="t('worktime', 'Genehmigungen')"
 				to="/approvals">
 				<template #icon>
@@ -171,7 +171,7 @@ export default {
 		ShieldIcon,
 	},
 	computed: {
-		...mapGetters('permissions', ['isEmployee', 'isAdmin', 'isHrManager', 'hasEmployees', 'canManageSettings', 'canApprove', 'approvalRequired']),
+		...mapGetters('permissions', ['isEmployee', 'isAdmin', 'isHrManager', 'hasEmployees', 'canManageSettings', 'canApprove']),
 	},
 	created() {
 		this.initializeApp()
