@@ -182,7 +182,17 @@
                                 </template>
                                 {{ t('worktime', 'Genehmigen') }}
                             </NcButton>
-                            <span v-else class="no-action">-</span>
+                            <NcButton v-if="item.monthStatus.approved > 0"
+                                type="tertiary"
+                                :disabled="reopeningEmployee === item.employee.id"
+                                @click="openReopenModal(item.employee)">
+                                <template #icon>
+                                    <NcLoadingIcon v-if="reopeningEmployee === item.employee.id" :size="20" />
+                                    <RestoreIcon v-else :size="20" />
+                                </template>
+                                {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                            </NcButton>
+                            <span v-if="!item.monthStatus.canApprove && item.monthStatus.approved === 0" class="no-action">-</span>
                         </td>
                     </tr>
                     <tr v-if="expandedEmployeeId === item.employee.id"
@@ -269,6 +279,36 @@
                 </template>
             </NcEmptyContent>
         </div>
+
+        <!-- Genehmigung zurücknehmen: Begründung (Pflicht) -->
+        <NcModal v-if="showReopenModal"
+            :name="t('worktime', 'Genehmigung zurücknehmen')"
+            @close="closeReopenModal">
+            <div class="reopen-modal">
+                <h3>{{ t('worktime', 'Genehmigung zurücknehmen für {name}', { name: reopenTarget && reopenTarget.fullName }) }}</h3>
+                <p class="reopen-modal__hint">
+                    {{ t('worktime', 'Die genehmigten Zeiteinträge dieses Monats werden zur Korrektur wieder auf den Status Entwurf gesetzt und müssen anschließend erneut eingereicht und genehmigt werden. Der Vorgang wird im Audit-Log festgehalten.') }}
+                </p>
+                <div class="form-group">
+                    <label>{{ t('worktime', 'Begründung (Pflicht)') }}</label>
+                    <input v-model="reopenReason"
+                        type="text"
+                        :placeholder="t('worktime', 'Grund für die Rücknahme')"
+                        class="input-field"
+                        required>
+                </div>
+                <div class="form-actions">
+                    <NcButton type="tertiary" @click="closeReopenModal">
+                        {{ t('worktime', 'Abbrechen') }}
+                    </NcButton>
+                    <NcButton type="primary"
+                        :disabled="!reopenReason.trim() || reopeningEmployee !== null"
+                        @click="submitReopen">
+                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                    </NcButton>
+                </div>
+            </div>
+        </NcModal>
     </div>
 </template>
 
@@ -278,12 +318,14 @@ import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
+import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDownIcon from 'vue-material-design-icons/ChevronDown.vue'
 import FileDocumentIcon from 'vue-material-design-icons/FileDocument.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import { mapGetters } from 'vuex'
 import MonthPicker from '../components/MonthPicker.vue'
 import ReportService from '../services/ReportService.js'
@@ -304,12 +346,14 @@ export default {
         NcAvatar,
         NcButton,
         NcSelect,
+        NcModal,
         AccountGroupIcon,
         CheckIcon,
         CloseIcon,
         ChevronRightIcon,
         ChevronDownIcon,
         FileDocumentIcon,
+        RestoreIcon,
         MonthPicker,
     },
     data() {
@@ -321,6 +365,10 @@ export default {
             informationalAbsences: [],
             loading: false,
             approvingEmployee: null,
+            reopeningEmployee: null,
+            showReopenModal: false,
+            reopenTarget: null,
+            reopenReason: '',
             processingAbsence: null,
             statusFilter: null,
             expandedEmployeeId: null,
@@ -489,6 +537,36 @@ export default {
                 showError(t('worktime', 'Fehler beim Genehmigen'))
             } finally {
                 this.approvingEmployee = null
+            }
+        },
+        openReopenModal(employee) {
+            this.reopenTarget = employee
+            this.reopenReason = ''
+            this.showReopenModal = true
+        },
+        closeReopenModal() {
+            this.showReopenModal = false
+            this.reopenTarget = null
+            this.reopenReason = ''
+        },
+        async submitReopen() {
+            if (!this.reopenTarget || !this.reopenReason.trim()) {
+                return
+            }
+            const employeeId = this.reopenTarget.id
+            this.reopeningEmployee = employeeId
+            try {
+                const result = await TimeEntryService.reopenMonth(employeeId, this.year, this.month, this.reopenReason.trim())
+                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
+                this.closeReopenModal()
+                this.$delete(this.detailEntries, employeeId)
+                this.$delete(this.detailAbsences, employeeId)
+                await this.loadData()
+            } catch (error) {
+                console.error('Failed to reopen month:', error)
+                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
+            } finally {
+                this.reopeningEmployee = null
             }
         },
         async approveAbsence(absenceId) {
@@ -836,6 +914,29 @@ export default {
 .absence-days {
     font-size: 12px;
     color: var(--color-text-maxcontrast);
+}
+
+.reopen-modal {
+    padding: 20px 24px 24px;
+}
+
+.reopen-modal__hint {
+    color: var(--color-text-maxcontrast);
+    margin-bottom: 16px;
+}
+
+.reopen-modal .form-group {
+    margin-bottom: 16px;
+}
+
+.reopen-modal .input-field {
+    width: 100%;
+}
+
+.reopen-modal .form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
 </style>
