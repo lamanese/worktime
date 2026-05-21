@@ -452,6 +452,8 @@ class TimeEntryService {
                 $entry->setStatus(TimeEntry::STATUS_DRAFT);
                 $entry->setApprovedAt(null);
                 $entry->setApprovedBy(null);
+                $entry->setSubmittedAt(null);
+                $entry->setSubmittedBy(null);
                 $entry->setUpdatedAt($now);
                 $this->timeEntryMapper->update($entry);
 
