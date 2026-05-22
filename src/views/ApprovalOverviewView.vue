@@ -428,6 +428,7 @@ export default {
                 if (r.status === 'rejected') {
                     const names = ['getAllEmployeesStatus', 'getPending', 'getInformational']
                     console.error(`Failed: ${names[i]}`, r.reason)
+                    showError(t('worktime', 'Fehler beim Laden der Genehmigungsdaten'))
                 }
             })
             this.loading = false
