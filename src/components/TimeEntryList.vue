@@ -42,7 +42,7 @@
                     <!-- Holiday -->
                     <tr v-else-if="item._type === 'holiday'" class="holiday-row">
                         <td>{{ formatDateFull(item.date) }}</td>
-                        <td :colspan="readonly ? 7 : 8" class="holiday-cell">
+                        <td :colspan="spanCols" class="holiday-cell">
                             {{ item.name }}
                         </td>
                     </tr>
