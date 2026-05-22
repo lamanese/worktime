@@ -101,6 +101,10 @@ class ReportController extends BaseController {
             return $error;
         }
 
+        if ($month < 1 || $month > 12 || $year < 2000 || $year > 2100) {
+            return $this->successResponse(['error' => 'Invalid year or month'], 400);
+        }
+
         if (!$this->permissionService->canViewEmployee($this->userId, $employeeId)) {
             return $this->forbiddenResponse();
         }
