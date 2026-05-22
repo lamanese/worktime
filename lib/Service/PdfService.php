@@ -463,12 +463,15 @@ class PdfService {
         $archivePath = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_PATH);
 
         // Build folder path: {archivePath}/{Jahr}/{Nachname_Vorname}/
+        // Sanitize employee names to prevent path traversal via special chars
+        $lastName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß\-]/', '_', $employee->getLastName());
+        $firstName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß\-]/', '_', $employee->getFirstName());
         $folderPath = sprintf(
             '%s/%d/%s_%s',
             trim($archivePath, '/'),
             $year,
-            $employee->getLastName(),
-            $employee->getFirstName()
+            $lastName,
+            $firstName
         );
 
         // Build filename: Arbeitszeitnachweis_{YYYY-MM}.pdf
