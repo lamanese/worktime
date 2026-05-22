@@ -7,6 +7,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-05-22
+
+### Added
+- **Genehmigungs-Workflow optional schaltbar (#177)**: Der Schalter `approval_required` ist jetzt wirksam. Bei deaktivierter Genehmigung werden Einreichen-Button, Status-Spalte/-Badges und der Zeiteinträge-Abschnitt der Genehmigungsübersicht ausgeblendet. Stundenzählung bleibt statusunabhängig. Default = bisheriges Verhalten.
+- **Genehmigten Monat wieder öffnen (#178, #179)**: Admin, HR-Manager und Vorgesetzte (`canApprove`) können einen genehmigten Monat zur Korrektur zurück auf Entwurf setzen. Begründung ist Pflicht, jede Rücknahme wird im Audit-Log (`reopen`) protokolliert.
+
+### Fixed
+- **Urlaubs-Genehmigung bleibt erreichbar wenn Workflow aus (#184)**: Bei deaktiviertem Genehmigungs-Workflow blieb auch die Urlaubs-/Abwesenheits-Genehmigung verborgen. Navigation und Route bleiben jetzt immer erreichbar, nur der Zeiteinträge-Abschnitt wird ausgeblendet.
+- **Hilfetexte zu Genehmigung und PDF-Archivierung korrigiert (#183)**: Der Tooltip am Genehmigungs-Schalter behauptete fälschlich, ohne Genehmigung flössen Stunden nicht in die Überstunden ein. Text korrigiert, PDF-Archivierungs-Hilfe ergänzt (alle 4 l10n-Dateien).
+
 ## [0.7.2] - 2026-05-19
 
 ### Fixed

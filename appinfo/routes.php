@@ -11,6 +11,7 @@ return [
         ['name' => 'time_entry#suggestBreak', 'url' => '/api/time-entries/suggest-break', 'verb' => 'POST'],
         ['name' => 'time_entry#submitMonth', 'url' => '/api/time-entries/submit-month', 'verb' => 'POST'],
         ['name' => 'time_entry#approveMonth', 'url' => '/api/time-entries/approve-month', 'verb' => 'POST'],
+        ['name' => 'time_entry#reopenMonth', 'url' => '/api/time-entries/reopen-month', 'verb' => 'POST'],
         ['name' => 'time_entry#monthlyStats', 'url' => '/api/time-entries/stats/monthly', 'verb' => 'GET'],
         ['name' => 'time_entry#index', 'url' => '/api/time-entries', 'verb' => 'GET'],
         ['name' => 'time_entry#create', 'url' => '/api/time-entries', 'verb' => 'POST'],

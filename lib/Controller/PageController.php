@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\WorkTime\Controller;
 
 use OCA\WorkTime\AppInfo\Application;
+use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\PermissionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -18,6 +19,7 @@ class PageController extends Controller {
         IRequest $request,
         private ?string $userId,
         private PermissionService $permissionService,
+        private CompanySettingsService $settingsService,
         private IInitialState $initialState,
     ) {
         parent::__construct(Application::APP_ID, $request);
@@ -35,6 +37,9 @@ class PageController extends Controller {
             $permissions = $this->permissionService->getPermissionInfo($this->userId);
             $this->initialState->provideInitialState('permissions', $permissions);
         }
+
+        // Whether the approval workflow is active for this instance
+        $this->initialState->provideInitialState('approvalRequired', $this->settingsService->isApprovalRequired());
 
         return new TemplateResponse(
             Application::APP_ID,

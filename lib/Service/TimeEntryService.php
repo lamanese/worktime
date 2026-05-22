@@ -429,6 +429,53 @@ class TimeEntryService {
     }
 
     /**
+     * Reopen an approved month for correction: approved entries go back to draft.
+     * A reason is mandatory and recorded in the audit log.
+     *
+     * @return array{reopened: int, skipped: int}
+     * @throws ValidationException
+     */
+    public function reopenMonth(int $employeeId, int $year, int $month, string $reason, string $currentUserId = ''): array {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::fromSingleError('reason', 'Begründung erforderlich');
+        }
+
+        $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
+        $reopened = 0;
+        $skipped = 0;
+        $now = new DateTime();
+
+        foreach ($entries as $entry) {
+            if ($entry->getStatus() === TimeEntry::STATUS_APPROVED) {
+                $oldValues = $entry->jsonSerialize();
+                $entry->setStatus(TimeEntry::STATUS_DRAFT);
+                $entry->setApprovedAt(null);
+                $entry->setApprovedBy(null);
+                $entry->setSubmittedAt(null);
+                $entry->setSubmittedBy(null);
+                $entry->setUpdatedAt($now);
+                $this->timeEntryMapper->update($entry);
+
+                if ($currentUserId) {
+                    $newValues = $entry->jsonSerialize();
+                    $newValues['reason'] = $reason;
+                    $this->auditLogService->log($currentUserId, 'reopen', 'time_entry', $entry->getId(), $oldValues, $newValues);
+                }
+
+                $reopened++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        return [
+            'reopened' => $reopened,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
      * Calculate suggested break time based on German labor law (§4 ArbZG)
      *
      * Rules:

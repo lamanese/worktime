@@ -283,6 +283,29 @@ class TimeEntryController extends BaseController {
         ]);
     }
 
+    #[NoAdminRequired]
+    public function reopenMonth(int $employeeId, int $year, int $month, string $reason = ''): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canApprove($this->userId, $employeeId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $result = $this->timeEntryService->reopenMonth($employeeId, $year, $month, $reason, $this->userId);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+
+        return $this->successResponse([
+            'status' => 'success',
+            'reopened' => $result['reopened'],
+            'skipped' => $result['skipped'],
+        ]);
+    }
+
     /**
      * Queue a PDF archive job for background processing
      */

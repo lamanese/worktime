@@ -16,10 +16,12 @@ const state = {
     },
     loading: false,
     loaded: false,
+    approvalRequired: true,
 }
 
 const getters = {
     permissions: (state) => state.permissions,
+    approvalRequired: (state) => state.approvalRequired,
     isAdmin: (state) => state.permissions.isAdmin,
     isHrManager: (state) => state.permissions.isHrManager,
     isSupervisor: (state) => state.permissions.isSupervisor,
@@ -43,6 +45,9 @@ const mutations = {
     SET_LOADING(state, loading) {
         state.loading = loading
     },
+    SET_APPROVAL_REQUIRED(state, approvalRequired) {
+        state.approvalRequired = approvalRequired
+    },
 }
 
 const actions = {
@@ -60,6 +65,10 @@ const actions = {
 
     initFromInitialState({ commit }, permissions) {
         commit('SET_PERMISSIONS', permissions)
+    },
+
+    setApprovalRequired({ commit }, approvalRequired) {
+        commit('SET_APPROVAL_REQUIRED', approvalRequired)
     },
 }
 
