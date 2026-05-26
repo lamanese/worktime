@@ -509,6 +509,11 @@ OC.L10N.register(
     "Genehmigung deaktivieren" : "Genehmigung deaktivieren",
     "Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden." : "Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.",
     "Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden." : "Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.",
-    "Fortfahren" : "Fortfahren"
+    "Fortfahren" : "Fortfahren",
+    "HR-Manager entfernen" : "HR-Manager entfernen",
+    "{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?" : "{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?",
+    "{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?" : "{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?",
+    "Feiertage neu erstellen" : "Feiertage neu erstellen",
+    "Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten." : "Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten."
 },
 "nplurals=2; plural=(n != 1);");
