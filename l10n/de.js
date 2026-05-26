@@ -488,6 +488,7 @@ OC.L10N.register(
     "%1$s hat Zeiteinträge für %2$s zur Genehmigung eingereicht" : "%1$s hat Zeiteinträge für %2$s zur Genehmigung eingereicht",
     "Deine Zeiteinträge für %s wurden genehmigt" : "Deine Zeiteinträge für %s wurden genehmigt",
     "Deine Zeiteinträge für %s wurden abgelehnt" : "Deine Zeiteinträge für %s wurden abgelehnt",
+    "Die Genehmigung deiner Zeiteinträge für %s wurde zurückgenommen. Bitte erneut einreichen." : "Die Genehmigung deiner Zeiteinträge für %s wurde zurückgenommen. Bitte erneut einreichen.",
     "Zukünftige Einträge sind nicht erlaubt" : "Zukünftige Einträge sind nicht erlaubt",
     "Ungültiges Zeitformat" : "Ungültiges Zeitformat",
     "Maximale tägliche Arbeitszeit (%s Std.) überschritten" : "Maximale tägliche Arbeitszeit (%s Std.) überschritten",

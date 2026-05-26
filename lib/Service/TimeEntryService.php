@@ -471,6 +471,10 @@ class TimeEntryService {
             }
         }
 
+        if ($reopened > 0) {
+            $this->notificationService->notifyTimeEntriesReopened($employeeId, $year, $month);
+        }
+
         return [
             'reopened' => $reopened,
             'skipped' => $skipped,
