@@ -502,6 +502,13 @@ OC.L10N.register(
     "Gültig-ab darf frühestens der 1. des aktuellen Monats sein" : "Valid-from must be no earlier than the 1st of the current month",
     "Ein Profil mit diesem Gültig-ab Datum existiert bereits" : "A profile with this valid-from date already exists",
     "Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)" : "Maximum daily working time is %s hours (see settings)",
-    "Begründung erforderlich" : "Reason required"
+    "Begründung erforderlich" : "Reason required",
+    "Genehmigungs-Workflow" : "Approval Workflow",
+    "Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden." : "Controls company-wide whether recorded times must be approved by supervisors. This setting affects all employees.",
+    "Genehmigung aktivieren" : "Enable approval",
+    "Genehmigung deaktivieren" : "Disable approval",
+    "Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden." : "From now on, times must be submitted and approved by supervisors.",
+    "Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden." : "The approval step is removed for all employees. Recorded times then apply directly. Already approved entries remain locked and cannot be reopened while approval is off.",
+    "Fortfahren" : "Continue"
 },
 "nplurals=2; plural=(n != 1);");

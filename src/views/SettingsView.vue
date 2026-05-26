@@ -160,9 +160,14 @@
                         {{ t('worktime', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('worktime', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+            </NcSettingsSection>
+
+            <NcSettingsSection v-if="canManageSettings"
+                :name="t('worktime', 'Genehmigungs-Workflow')"
+                :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
-                        @update:checked="saveSettingBool('approval_required')">
+                        @update:checked="confirmApprovalToggle">
                         {{ t('worktime', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
@@ -815,6 +820,37 @@ export default {
             } catch (error) {
                 showErrorMessage(error.message)
             }
+        },
+        confirmApprovalToggle(newValue) {
+            const title = newValue
+                ? this.t('worktime', 'Genehmigung aktivieren')
+                : this.t('worktime', 'Genehmigung deaktivieren')
+            const message = newValue
+                ? this.t('worktime', 'Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.')
+                : this.t('worktime', 'Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.')
+
+            const dialog = new DialogBuilder()
+                .setName(title)
+                .setText(message)
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {
+                            this.settings.approval_required = !newValue
+                        },
+                    },
+                    {
+                        label: this.t('worktime', 'Fortfahren'),
+                        type: 'primary',
+                        callback: () => {
+                            this.saveSettingBool('approval_required')
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
         },
         async generateHolidays() {
             try {
