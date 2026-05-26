@@ -635,6 +635,7 @@ export default {
             editingProject: null,
             availablePrincipals: [],
             hrManagers: [],
+            previousHrManagers: [],
             // Holiday management
             holidays: [],
             loadingHolidays: false,
@@ -852,7 +853,29 @@ export default {
 
             dialog.show()
         },
-        async generateHolidays() {
+        generateHolidays() {
+            const dialog = new DialogBuilder()
+                .setName(this.t('worktime', 'Feiertage neu erstellen'))
+                .setText(this.t('worktime', 'Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {},
+                    },
+                    {
+                        label: this.t('worktime', 'Fortfahren'),
+                        type: 'primary',
+                        callback: () => {
+                            this.runGenerateHolidays()
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
+        },
+        async runGenerateHolidays() {
             try {
                 const result = await this.generateAllHolidays(this.holidayYear)
                 showSuccessMessage(
@@ -929,16 +952,53 @@ export default {
                 ])
                 this.availablePrincipals = principals
                 this.hrManagers = managers
+                this.previousHrManagers = [...managers]
             } catch (error) {
                 console.error('Failed to load HR managers:', error)
             }
         },
-        async saveHrManagers() {
+        saveHrManagers() {
+            const removed = this.previousHrManagers.filter(id => !this.hrManagers.includes(id))
+            if (removed.length === 0) {
+                this.persistHrManagers()
+                return
+            }
+
+            const names = removed
+                .map(id => this.principalOptions.find(p => p.id === id)?.label || id)
+                .join(', ')
+
+            const dialog = new DialogBuilder()
+                .setName(this.t('worktime', 'HR-Manager entfernen'))
+                .setText(this.t('worktime', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names }))
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {
+                            this.hrManagers = [...this.previousHrManagers]
+                        },
+                    },
+                    {
+                        label: this.t('worktime', 'Entfernen'),
+                        type: 'error',
+                        callback: () => {
+                            this.persistHrManagers()
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
+        },
+        async persistHrManagers() {
             try {
                 await SettingsService.setHrManagers(this.hrManagers)
+                this.previousHrManagers = [...this.hrManagers]
                 showSuccessMessage(this.t('worktime', 'HR-Manager gespeichert'))
             } catch (error) {
                 showErrorMessage(error.message)
+                this.hrManagers = [...this.previousHrManagers]
             }
         },
         async openFolderPicker() {
