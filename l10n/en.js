@@ -488,6 +488,7 @@ OC.L10N.register(
     "%1$s hat Zeiteinträge für %2$s zur Genehmigung eingereicht" : "%1$s submitted time entries for %2$s for approval",
     "Deine Zeiteinträge für %s wurden genehmigt" : "Your time entries for %s have been approved",
     "Deine Zeiteinträge für %s wurden abgelehnt" : "Your time entries for %s have been rejected",
+    "Die Genehmigung deiner Zeiteinträge für %s wurde zurückgenommen. Bitte erneut einreichen." : "The approval of your time entries for %s has been revoked. Please submit again.",
     "Zukünftige Einträge sind nicht erlaubt" : "Future entries are not allowed",
     "Ungültiges Zeitformat" : "Invalid time format",
     "Maximale tägliche Arbeitszeit (%s Std.) überschritten" : "Maximum daily working time (%s hours) exceeded",

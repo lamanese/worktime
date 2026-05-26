@@ -134,6 +134,15 @@ class Notifier implements INotifier {
 				);
 				break;
 
+			case 'time_entries_reopened':
+				$notification->setParsedSubject(
+					$l->t(
+						'Die Genehmigung deiner Zeiteinträge für %s wurde zurückgenommen. Bitte erneut einreichen.',
+						[$params['monthYear']]
+					)
+				);
+				break;
+
 			default:
 				throw new UnknownNotificationException();
 		}
