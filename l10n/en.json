@@ -511,6 +511,7 @@
 		"Fortfahren": "Continue",
 		"HR-Manager entfernen": "Remove HR Manager",
 		"{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?": "{names} will lose HR manager rights (manage employees, approve times). Continue?",
+		"{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?": "{names} will lose HR manager rights (manage employees, approve times). Continue?",
 		"Feiertage neu erstellen": "Regenerate public holidays",
 		"Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.": "The automatically generated public holidays for {year} are recreated for all federal states. Manually created holidays are preserved."
 	},

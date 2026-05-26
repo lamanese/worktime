@@ -968,9 +968,13 @@ export default {
                 .map(id => this.principalOptions.find(p => p.id === id)?.label || id)
                 .join(', ')
 
+            const text = removed.length === 1
+                ? this.t('worktime', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+                : this.t('worktime', '{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+
             const dialog = new DialogBuilder()
                 .setName(this.t('worktime', 'HR-Manager entfernen'))
-                .setText(this.t('worktime', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names }))
+                .setText(text)
                 .setButtons([
                     {
                         label: this.t('worktime', 'Abbrechen'),
