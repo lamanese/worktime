@@ -8,6 +8,8 @@ use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Service\AbsenceService;
 use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\PermissionService;
+use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\WorkTime\Service\YearlyCarryoverService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -20,6 +22,8 @@ class AbsenceController extends BaseController {
         private AbsenceService $absenceService,
         private EmployeeService $employeeService,
         private PermissionService $permissionService,
+        private WorkScheduleService $workScheduleService,
+        private YearlyCarryoverService $carryoverService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -274,8 +278,22 @@ class AbsenceController extends BaseController {
         }
 
         try {
-            $employee = $this->employeeService->find($employeeId);
-            $stats = $this->absenceService->getVacationStats($employeeId, $year, $employee->getVacationDays());
+            if ($year === 0) {
+                $year = (int)(new \DateTime())->format('Y');
+            }
+
+            // Schedule-aware base entitlement + previous-year carryover,
+            // consistent with the monthly/yearly report (ReportController).
+            $baseEntitlement = $this->workScheduleService->getVacationDaysForYear($employeeId, $year);
+            $carryover = $this->carryoverService->getVacationCarryoverDays($employeeId, $year);
+
+            $stats = $this->absenceService->getVacationStats(
+                $employeeId,
+                $year,
+                $baseEntitlement + (int)round($carryover)
+            );
+            $stats['entitlement'] = $baseEntitlement;
+            $stats['carryover'] = $carryover;
 
             return $this->successResponse($stats);
         } catch (\Exception $e) {

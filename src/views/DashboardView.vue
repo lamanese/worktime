@@ -12,6 +12,10 @@
                         <span class="stat-label">{{ t('worktime', 'Anspruch') }}</span>
                         <span class="stat-value">{{ vacationStats.entitlement }} {{ t('worktime', 'Tage') }}</span>
                     </div>
+                    <div v-if="vacationStats.carryover" class="stat-row">
+                        <span class="stat-label">{{ t('worktime', 'Übertrag Vorjahr') }}</span>
+                        <span class="stat-value">{{ vacationStats.carryover }} {{ t('worktime', 'Tage') }}</span>
+                    </div>
                     <div class="stat-row">
                         <span class="stat-label">{{ t('worktime', 'Genommen') }}</span>
                         <span class="stat-value">{{ vacationStats.taken }} {{ t('worktime', 'Tage') }}</span>
@@ -93,6 +97,7 @@ export default {
             carryoverMinutes: 0,
             vacationStats: {
                 entitlement: 0,
+                carryover: 0,
                 taken: 0,
                 pending: 0,
                 remaining: 0,
@@ -168,7 +173,8 @@ export default {
 
                 if (vacationStats) {
                     this.vacationStats = {
-                        entitlement: vacationStats.total || 0,
+                        entitlement: vacationStats.entitlement ?? vacationStats.total ?? 0,
+                        carryover: vacationStats.carryover || 0,
                         taken: vacationStats.used || 0,
                         pending: vacationStats.pending || 0,
                         remaining: vacationStats.remaining || 0,
