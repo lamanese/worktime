@@ -155,11 +155,6 @@ export default {
             },
         },
     },
-    mounted() {
-        if (this.employeeId) {
-            this.loadData()
-        }
-    },
     methods: {
         async loadData() {
             if (!this.employeeId) return
