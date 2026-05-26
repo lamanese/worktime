@@ -501,7 +501,14 @@
 		"Gültig-ab darf frühestens der 1. des aktuellen Monats sein": "Gültig-ab darf frühestens der 1. des aktuellen Monats sein",
 		"Ein Profil mit diesem Gültig-ab Datum existiert bereits": "Ein Profil mit diesem Gültig-ab Datum existiert bereits",
 		"Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)": "Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)",
-		"Begründung erforderlich": "Begründung erforderlich"
+		"Begründung erforderlich": "Begründung erforderlich",
+		"Genehmigungs-Workflow": "Genehmigungs-Workflow",
+		"Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.": "Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.",
+		"Genehmigung aktivieren": "Genehmigung aktivieren",
+		"Genehmigung deaktivieren": "Genehmigung deaktivieren",
+		"Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.": "Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.",
+		"Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.": "Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.",
+		"Fortfahren": "Fortfahren"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
