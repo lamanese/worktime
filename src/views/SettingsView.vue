@@ -160,9 +160,14 @@
                         {{ t('worktime', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('worktime', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+            </NcSettingsSection>
+
+            <NcSettingsSection v-if="canManageSettings"
+                :name="t('worktime', 'Genehmigungs-Workflow')"
+                :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
-                        @update:checked="saveSettingBool('approval_required')">
+                        @update:checked="confirmApprovalToggle">
                         {{ t('worktime', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
@@ -630,6 +635,7 @@ export default {
             editingProject: null,
             availablePrincipals: [],
             hrManagers: [],
+            previousHrManagers: [],
             // Holiday management
             holidays: [],
             loadingHolidays: false,
@@ -816,7 +822,60 @@ export default {
                 showErrorMessage(error.message)
             }
         },
-        async generateHolidays() {
+        confirmApprovalToggle(newValue) {
+            const title = newValue
+                ? this.t('worktime', 'Genehmigung aktivieren')
+                : this.t('worktime', 'Genehmigung deaktivieren')
+            const message = newValue
+                ? this.t('worktime', 'Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.')
+                : this.t('worktime', 'Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.')
+
+            const dialog = new DialogBuilder()
+                .setName(title)
+                .setText(message)
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {
+                            this.settings.approval_required = !newValue
+                        },
+                    },
+                    {
+                        label: this.t('worktime', 'Fortfahren'),
+                        type: 'primary',
+                        callback: () => {
+                            this.saveSettingBool('approval_required')
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
+        },
+        generateHolidays() {
+            const dialog = new DialogBuilder()
+                .setName(this.t('worktime', 'Feiertage neu erstellen'))
+                .setText(this.t('worktime', 'Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {},
+                    },
+                    {
+                        label: this.t('worktime', 'Fortfahren'),
+                        type: 'primary',
+                        callback: () => {
+                            this.runGenerateHolidays()
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
+        },
+        async runGenerateHolidays() {
             try {
                 const result = await this.generateAllHolidays(this.holidayYear)
                 showSuccessMessage(
@@ -893,16 +952,57 @@ export default {
                 ])
                 this.availablePrincipals = principals
                 this.hrManagers = managers
+                this.previousHrManagers = [...managers]
             } catch (error) {
                 console.error('Failed to load HR managers:', error)
             }
         },
-        async saveHrManagers() {
+        saveHrManagers() {
+            const removed = this.previousHrManagers.filter(id => !this.hrManagers.includes(id))
+            if (removed.length === 0) {
+                this.persistHrManagers()
+                return
+            }
+
+            const names = removed
+                .map(id => this.principalOptions.find(p => p.id === id)?.label || id)
+                .join(', ')
+
+            const text = removed.length === 1
+                ? this.t('worktime', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+                : this.t('worktime', '{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+
+            const dialog = new DialogBuilder()
+                .setName(this.t('worktime', 'HR-Manager entfernen'))
+                .setText(text)
+                .setButtons([
+                    {
+                        label: this.t('worktime', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {
+                            this.hrManagers = [...this.previousHrManagers]
+                        },
+                    },
+                    {
+                        label: this.t('worktime', 'Entfernen'),
+                        type: 'error',
+                        callback: () => {
+                            this.persistHrManagers()
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
+        },
+        async persistHrManagers() {
             try {
                 await SettingsService.setHrManagers(this.hrManagers)
+                this.previousHrManagers = [...this.hrManagers]
                 showSuccessMessage(this.t('worktime', 'HR-Manager gespeichert'))
             } catch (error) {
                 showErrorMessage(error.message)
+                this.hrManagers = [...this.previousHrManagers]
             }
         },
         async openFolderPicker() {

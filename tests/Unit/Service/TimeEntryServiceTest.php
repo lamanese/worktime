@@ -5,26 +5,44 @@ declare(strict_types=1);
 namespace OCA\WorkTime\Tests\Unit\Service;
 
 use DateTime;
+use OCA\WorkTime\Db\AbsenceMapper;
 use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Db\CompanySettingMapper;
+use OCA\WorkTime\Db\EmployeeMapper;
 use OCA\WorkTime\Db\TimeEntry;
 use OCA\WorkTime\Db\TimeEntryMapper;
+use OCA\WorkTime\Notification\NotificationService;
 use OCA\WorkTime\Service\AuditLogService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\ValidationException;
+use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class TimeEntryServiceTest extends TestCase {
 
     private TimeEntryService $service;
     private TimeEntryMapper $timeEntryMapper;
     private CompanySettingMapper $settingsMapper;
+    private EmployeeMapper $employeeMapper;
+    private AbsenceMapper $absenceMapper;
     private AuditLogService $auditLogService;
+    private NotificationService $notificationService;
+    private LoggerInterface $logger;
+    private IL10N $l;
 
     protected function setUp(): void {
         $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
         $this->settingsMapper = $this->createMock(CompanySettingMapper::class);
+        $this->employeeMapper = $this->createMock(EmployeeMapper::class);
+        $this->absenceMapper = $this->createMock(AbsenceMapper::class);
         $this->auditLogService = $this->createMock(AuditLogService::class);
+        $this->notificationService = $this->createMock(NotificationService::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->l = $this->createMock(IL10N::class);
+        $this->l->method('t')->willReturnCallback(
+            fn(string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
+        );
 
         // Default settings
         $this->settingsMapper->method('getValueAsInt')
@@ -55,7 +73,12 @@ class TimeEntryServiceTest extends TestCase {
         $this->service = new TimeEntryService(
             $this->timeEntryMapper,
             $this->settingsMapper,
-            $this->auditLogService
+            $this->employeeMapper,
+            $this->absenceMapper,
+            $this->auditLogService,
+            $this->notificationService,
+            $this->logger,
+            $this->l
         );
     }
 

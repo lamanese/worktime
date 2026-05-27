@@ -101,6 +101,10 @@ class NotificationService {
 		$this->sendTimeEntryDecisionNotification($employeeId, $year, $month, 'time_entries_rejected');
 	}
 
+	public function notifyTimeEntriesReopened(int $employeeId, int $year, int $month): void {
+		$this->sendTimeEntryDecisionNotification($employeeId, $year, $month, 'time_entries_reopened');
+	}
+
 	private function sendSupervisorAbsenceNotification(Absence $absence, string $subject): void {
 		try {
 			$employee = $this->employeeMapper->find($absence->getEmployeeId());

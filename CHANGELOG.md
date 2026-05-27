@@ -7,6 +7,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-26
+
+### Added
+- **Benachrichtigung bei Rücknahme der Genehmigung (#187)**: Wird die Genehmigung eines Monats zurückgenommen, erhält der betroffene Mitarbeiter eine Nextcloud-Benachrichtigung („Die Genehmigung deiner Zeiteinträge für … wurde zurückgenommen. Bitte erneut einreichen.").
+- **Eigener Abschnitt „Genehmigungs-Workflow" mit Konsequenzen-Bestätigung (#188)**: Der Schalter „Genehmigung erforderlich" ist aus den Arbeitszeit-Regeln in einen eigenen Abschnitt mit Beschreibung gezogen. Beim Umschalten erscheint ein Bestätigungsdialog, der die firmenweiten Folgen erklärt; bei Abbruch bleibt der alte Zustand erhalten.
+- **Bestätigung für folgenreiche Einstellungen (#189)**: Das Entfernen eines HR-Managers fragt jetzt mit Konsequenz-Hinweis nach (Rechteverlust), und das automatische Generieren der Feiertage zeigt vorab einen Hinweisdialog (alle Bundesländer werden neu erzeugt, manuelle Feiertage bleiben erhalten).
+
+### Fixed
+- **Resturlaub-Übertrag im Mitarbeiter-Dashboard (#176)**: Der Resturlaub-Übertrag aus dem Vorjahr wird jetzt im Dashboard-Urlaubskonto als eigene Position „Übertrag Vorjahr" ausgewiesen und in „Verbleibend" eingerechnet (analog zum Überstunden-Übertrag und konsistent zum Bericht).
+- **Backend-Texte übersetzbar (#192)**: Benachrichtigungs-Subjects und serverseitige Validierungs-Fehlermeldungen laufen jetzt über die Übersetzungsschicht (IL10N) und erscheinen in der Sprache des jeweiligen Nutzers statt fest auf Deutsch.
+
 ## [0.7.3] - 2026-05-22
 
 ### Added
