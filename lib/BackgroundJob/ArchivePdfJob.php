@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\WorkTime\BackgroundJob;
 
 use DateTime;
+use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\ArchiveQueue;
 use OCA\WorkTime\Db\ArchiveQueueMapper;
 use OCA\WorkTime\Db\CompanySetting;
@@ -226,6 +227,13 @@ class ArchivePdfJob extends TimedJob {
                 }
 
                 $absenceDays += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays);
+
+                // Compensatory time (Freizeitausgleich) keeps the target and is not credited
+                // as work, so it is counted as an absence day but NOT deducted from the target
+                // minutes -> the overtime balance decreases by the daily target (#186).
+                if ($absence->getType() === Absence::TYPE_COMPENSATORY) {
+                    continue;
+                }
 
                 // Calculate actual absence minutes per day from schedule
                 $current = clone $absenceStart;

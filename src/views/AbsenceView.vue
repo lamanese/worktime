@@ -130,7 +130,7 @@
                     <span class="legend-color type-compensatory"></span>
                     <div class="legend-text">
                         <strong>{{ t('worktime', 'Freizeitausgleich') }}</strong>
-                        <span>{{ t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Soll-Stunden.') }}</span>
+                        <span>{{ t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') }}</span>
                     </div>
                 </div>
             </div>

@@ -89,7 +89,7 @@ export default {
 				child_sick: { label: t('worktime', 'Kind krank'), description: t('worktime', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') },
 				training: { label: t('worktime', 'Fortbildung'), description: t('worktime', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') },
 				special: { label: t('worktime', 'Sonderurlaub'), description: t('worktime', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') },
-				compensatory: { label: t('worktime', 'Freizeitausgleich'), description: t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Soll-Stunden.') },
+				compensatory: { label: t('worktime', 'Freizeitausgleich'), description: t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') },
 				unpaid: { label: t('worktime', 'Unbezahlter Urlaub'), description: t('worktime', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') },
 			}
 			// Privilegierte User (Admin/HR/Supervisor) sehen immer die volle Legende

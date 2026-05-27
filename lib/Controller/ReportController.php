@@ -426,9 +426,11 @@ class ReportController extends BaseController {
      * - Overtime = Actual - proportional target (based on working days up to today)
      *
      * Absence types:
-     * - Paid (vacation, sick, child_sick, special, training, compensatory):
+     * - Paid (vacation, sick, child_sick, special, training):
      *   Credited as work time (added to Ist)
      * - Unpaid: Reduces target (Soll), not credited as work time
+     * - Compensatory (Freizeitausgleich): keeps the target and is NOT credited to Ist,
+     *   so the overtime balance decreases by one daily target per FZA day
      */
 
     /**
@@ -552,22 +554,29 @@ class ReportController extends BaseController {
         // dailyMinutes approximation for display
         $dailyMinutes = $workingDaysMonth > 0 ? (int)round($monthlyTargetMinutes / $workingDaysMonth) : 0;
 
-        // Process absences: separate paid vs unpaid/compensatory
+        // Process absences: paid (credit Ist) vs. target-reducing (Soll) vs. compensatory.
         $paidAbsenceMinutesMonth = 0;
         $paidAbsenceDaysMonth = 0;
         $targetReductionMinutesMonth = 0;
         $targetReductionDaysMonth = 0;
+        $compensatoryDaysMonth = 0;
 
         $paidAbsenceMinutesUntilToday = 0;
         $paidAbsenceDaysUntilToday = 0;
         $targetReductionMinutesUntilToday = 0;
         $targetReductionDaysUntilToday = 0;
+        $compensatoryDaysUntilToday = 0;
 
-        // Types that reduce target (Soll) instead of crediting work time (Ist).
-        // Compensatory time (FZA) is intentionally NOT here — it should credit Ist-Stunden
-        // so that accumulated overtime decreases when FZA is taken.
+        // Types that reduce the target (Soll) instead of crediting work time (Ist).
         $targetReductionTypes = [
             \OCA\WorkTime\Db\Absence::TYPE_UNPAID,
+        ];
+
+        // Compensatory time (Freizeitausgleich) is neither credited to the Ist nor
+        // deducted from the Soll: the day stays a target day with no work credited, so
+        // the overtime balance drops by one daily target when FZA is taken (#149, #186).
+        $overtimeConsumingTypes = [
+            \OCA\WorkTime\Db\Absence::TYPE_COMPENSATORY,
         ];
 
         foreach ($absences as $absence) {
@@ -589,6 +598,9 @@ class ReportController extends BaseController {
                     if (in_array($absence->getType(), $targetReductionTypes, true)) {
                         $targetReductionDaysMonth += $effectiveDays;
                         $targetReductionMinutesMonth += $absenceMinutes;
+                    } elseif (in_array($absence->getType(), $overtimeConsumingTypes, true)) {
+                        // FZA: counted as an absence day, but not credited to the Ist.
+                        $compensatoryDaysMonth += $effectiveDays;
                     } else {
                         $paidAbsenceDaysMonth += $effectiveDays;
                         $paidAbsenceMinutesMonth += $absenceMinutes;
@@ -607,6 +619,9 @@ class ReportController extends BaseController {
                     if (in_array($absence->getType(), $targetReductionTypes, true)) {
                         $targetReductionDaysUntilToday += $effectiveDaysUntilToday;
                         $targetReductionMinutesUntilToday += $absenceMinutesUntilToday;
+                    } elseif (in_array($absence->getType(), $overtimeConsumingTypes, true)) {
+                        // FZA: not credited to the Ist -> overtime decreases by the daily target.
+                        $compensatoryDaysUntilToday += $effectiveDaysUntilToday;
                     } else {
                         $paidAbsenceDaysUntilToday += $effectiveDaysUntilToday;
                         $paidAbsenceMinutesUntilToday += $absenceMinutesUntilToday;
@@ -615,7 +630,7 @@ class ReportController extends BaseController {
             }
         }
 
-        // Adjust targets for unpaid leave and compensatory time
+        // Adjust targets for unpaid leave (compensatory time deliberately keeps the target).
         $adjustedMonthlyTargetMinutes = $monthlyTargetMinutes - $targetReductionMinutesMonth;
         $adjustedProportionalTargetMinutes = $proportionalTargetMinutes - $targetReductionMinutesUntilToday;
 
@@ -638,8 +653,9 @@ class ReportController extends BaseController {
             'workingDaysUntilToday' => $workingDaysUntilToday,
             'holidayCount' => count($holidays),
             'paidAbsenceDays' => $paidAbsenceDaysMonth,
-            'targetReductionDays' => $targetReductionDaysMonth,  // Unpaid + Compensatory
-            'absenceDays' => $paidAbsenceDaysMonth + $targetReductionDaysMonth,
+            'targetReductionDays' => $targetReductionDaysMonth,  // Unpaid leave
+            'compensatoryDays' => $compensatoryDaysMonth,
+            'absenceDays' => $paidAbsenceDaysMonth + $targetReductionDaysMonth + $compensatoryDaysMonth,
             'dailyMinutes' => $dailyMinutes,
 
             // Target values
