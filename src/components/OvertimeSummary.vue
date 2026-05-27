@@ -57,6 +57,10 @@
                     <span>{{ t('worktime', 'Bezahlte Abwesenheiten ({count} Tage)', { count: statistics.paidAbsenceDays }) }}</span>
                     <span class="detail-value">+{{ formatMinutes(statistics.paidAbsenceMinutes) }}</span>
                 </div>
+                <div v-if="statistics.compensatoryDays > 0" class="detail-row info">
+                    <span>{{ t('worktime', 'Freizeitausgleich ({count} Tage, nicht gutgeschrieben)', { count: statistics.compensatoryDays }) }} <InfoIcon>{{ t('worktime', 'Freizeitausgleich wird nicht als Arbeitszeit gutgeschrieben. Das Soll bleibt bestehen, dadurch sinken die Überstunden.') }}</InfoIcon></span>
+                    <span class="detail-value"></span>
+                </div>
                 <div class="detail-row detail-row--total">
                     <span>{{ t('worktime', 'Ist') }}</span>
                     <span class="detail-value">{{ formatMinutes(actualMinutes) }}</span>
