@@ -7,6 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-27
+
+### Fixed
+- **Freizeitausgleich senkt jetzt die Überstunden (#186)**: Ein Freizeitausgleich-Tag wurde als Arbeitszeit gutgeschrieben, während das Soll voll bestehen blieb. Beide Effekte hoben sich auf, der Überstunden-Saldo blieb unverändert. Jetzt bleibt der FZA-Tag im Soll und wird nicht ins Ist gerechnet, dadurch sinkt der Saldo um genau die Tagessollzeit. Korrigiert in beiden Berechnungspfaden (Monatsbericht und archivierte PDFs). Die Aufschlüsselung der Monatsübersicht weist den Freizeitausgleich zusätzlich als eigene Zeile aus.
+
 ## [0.8.0] - 2026-05-26
 
 ### Added
