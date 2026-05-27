@@ -105,40 +105,44 @@ class Notifier implements INotifier {
 				break;
 
 			case 'time_entries_submitted':
+				$monthYear = $this->formatMonthYear($languageCode, (int)$params['year'], (int)$params['month']);
 				$notification->setParsedSubject(
 					$l->t(
 						'%1$s hat Zeiteinträge für %2$s zur Genehmigung eingereicht',
 						[
 							$params['employeeName'],
-							$params['monthYear'],
+							$monthYear,
 						]
 					)
 				);
 				break;
 
 			case 'time_entries_approved':
+				$monthYear = $this->formatMonthYear($languageCode, (int)$params['year'], (int)$params['month']);
 				$notification->setParsedSubject(
 					$l->t(
 						'Deine Zeiteinträge für %s wurden genehmigt',
-						[$params['monthYear']]
+						[$monthYear]
 					)
 				);
 				break;
 
 			case 'time_entries_rejected':
+				$monthYear = $this->formatMonthYear($languageCode, (int)$params['year'], (int)$params['month']);
 				$notification->setParsedSubject(
 					$l->t(
 						'Deine Zeiteinträge für %s wurden abgelehnt',
-						[$params['monthYear']]
+						[$monthYear]
 					)
 				);
 				break;
 
 			case 'time_entries_reopened':
+				$monthYear = $this->formatMonthYear($languageCode, (int)$params['year'], (int)$params['month']);
 				$notification->setParsedSubject(
 					$l->t(
 						'Die Genehmigung deiner Zeiteinträge für %s wurde zurückgenommen. Bitte erneut einreichen.',
-						[$params['monthYear']]
+						[$monthYear]
 					)
 				);
 				break;
@@ -155,5 +159,23 @@ class Notifier implements INotifier {
 		);
 
 		return $notification;
+	}
+
+	private function formatMonthYear(string $languageCode, int $year, int $month): string {
+		try {
+			$formatter = new \IntlDateFormatter(
+				$languageCode,
+				\IntlDateFormatter::NONE,
+				\IntlDateFormatter::NONE,
+				null,
+				\IntlDateFormatter::GREGORIAN,
+				'MMMM yyyy'
+			);
+			$date = (new \DateTime())->setDate($year, $month, 1);
+			$result = $formatter->format($date);
+			return $result !== false ? $result : sprintf('%d/%d', $month, $year);
+		} catch (\Throwable $e) {
+			return sprintf('%d/%d', $month, $year);
+		}
 	}
 }

@@ -13,13 +13,6 @@ use Psr\Log\LoggerInterface;
 
 class NotificationService {
 
-	private const MONTH_NAMES = [
-		1 => 'Januar', 2 => 'Februar', 3 => 'März',
-		4 => 'April', 5 => 'Mai', 6 => 'Juni',
-		7 => 'Juli', 8 => 'August', 9 => 'September',
-		10 => 'Oktober', 11 => 'November', 12 => 'Dezember',
-	];
-
 	public function __construct(
 		private INotificationManager $notificationManager,
 		private EmployeeMapper $employeeMapper,
@@ -76,11 +69,10 @@ class NotificationService {
 				return;
 			}
 
-			$monthYear = self::MONTH_NAMES[$month] . ' ' . $year;
-
 			$notification = $this->createNotification('time_entries_submitted', $supervisorUserId, [
 				'employeeName' => $employee->getFullName(),
-				'monthYear' => $monthYear,
+				'month' => $month,
+				'year' => $year,
 			]);
 			$notification->setObject('time_entry', $employeeId . '-' . $year . '-' . $month);
 
@@ -153,10 +145,10 @@ class NotificationService {
 	private function sendTimeEntryDecisionNotification(int $employeeId, int $year, int $month, string $subject): void {
 		try {
 			$employee = $this->employeeMapper->find($employeeId);
-			$monthYear = self::MONTH_NAMES[$month] . ' ' . $year;
 
 			$notification = $this->createNotification($subject, $employee->getUserId(), [
-				'monthYear' => $monthYear,
+				'month' => $month,
+				'year' => $year,
 			]);
 			$notification->setObject('time_entry', $employeeId . '-' . $year . '-' . $month);
 
