@@ -21,15 +21,6 @@
 
 			<NcAppNavigationItem
 				v-if="isEmployee"
-				:name="t('worktime', 'Monatsübersicht')"
-				to="/report">
-				<template #icon>
-					<ChartIcon :size="20" />
-				</template>
-			</NcAppNavigationItem>
-
-			<NcAppNavigationItem
-				v-if="isEmployee"
 				:name="t('worktime', 'Abwesenheitsübersicht')"
 				to="/absence-overview">
 				<template #icon>
@@ -127,7 +118,6 @@ import NcAppContent from '@nextcloud/vue/dist/Components/NcAppContent.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import ClockIcon from 'vue-material-design-icons/Clock.vue'
-import ChartIcon from 'vue-material-design-icons/ChartBar.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import CalendarMultipleIcon from 'vue-material-design-icons/CalendarMultiple.vue'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
@@ -148,7 +138,6 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		ClockIcon,
-		ChartIcon,
 		CalendarIcon,
 		CalendarMultipleIcon,
 		AccountGroupIcon,

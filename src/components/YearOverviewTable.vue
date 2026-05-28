@@ -38,11 +38,15 @@
                     :key="m.month"
                     :class="{ 'current-month': isCurrentMonth(m.month), 'future-month': isFutureMonth(m.month) }">
                     <td>
-                        <router-link v-if="!isFutureMonth(m.month)"
-                            :to="'/report?year=' + year + '&month=' + m.month"
-                            class="month-link">
+                        <a v-if="!isFutureMonth(m.month)"
+                            class="month-link"
+                            role="button"
+                            tabindex="0"
+                            @click="$emit('select-month', m.month)"
+                            @keydown.enter="$emit('select-month', m.month)"
+                            @keydown.space.prevent="$emit('select-month', m.month)">
                             {{ getMonthName(m.month) }}
-                        </router-link>
+                        </a>
                         <span v-else>{{ getMonthName(m.month) }}</span>
                     </td>
                     <td class="text-right">
@@ -247,11 +251,19 @@ export default {
     color: var(--color-main-text);
     text-decoration: none;
     font-weight: 400;
+    cursor: pointer;
 }
 
-.month-link:hover {
+.month-link:hover,
+.month-link:focus-visible {
     color: var(--color-primary-element);
     text-decoration: underline;
+}
+
+.month-link:focus-visible {
+    outline: 2px solid var(--color-primary-element);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .current-month {
