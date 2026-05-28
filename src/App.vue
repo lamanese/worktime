@@ -3,16 +3,6 @@
 		<NcAppNavigation>
 			<NcAppNavigationItem
 				v-if="isEmployee"
-				:name="t('worktime', 'Übersicht')"
-				to="/"
-				:exact="true">
-				<template #icon>
-					<ViewDashboardIcon :size="20" />
-				</template>
-			</NcAppNavigationItem>
-
-			<NcAppNavigationItem
-				v-if="isEmployee"
 				:name="t('worktime', 'Zeiterfassung')"
 				to="/tracking">
 				<template #icon>
@@ -136,7 +126,6 @@ import NcAppNavigationItem from '@nextcloud/vue/dist/Components/NcAppNavigationI
 import NcAppContent from '@nextcloud/vue/dist/Components/NcAppContent.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import ViewDashboardIcon from 'vue-material-design-icons/ViewDashboard.vue'
 import ClockIcon from 'vue-material-design-icons/Clock.vue'
 import ChartIcon from 'vue-material-design-icons/ChartBar.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
@@ -158,7 +147,6 @@ export default {
 		NcAppContent,
 		NcButton,
 		NcEmptyContent,
-		ViewDashboardIcon,
 		ClockIcon,
 		ChartIcon,
 		CalendarIcon,

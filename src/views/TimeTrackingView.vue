@@ -19,6 +19,7 @@
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
             :overtime-minutes="statistics.overtimeMinutes"
+            :vacation-remaining="vacationRemaining"
             :statistics="statistics" />
 
         <NcLoadingIcon v-if="loading" :size="44" />
@@ -43,6 +44,7 @@ import MonthPicker from '../components/MonthPicker.vue'
 import OvertimeSummary from '../components/OvertimeSummary.vue'
 import TimeEntryList from '../components/TimeEntryList.vue'
 import ReportService from '../services/ReportService.js'
+import AbsenceService from '../services/AbsenceService.js'
 
 export default {
     name: 'TimeTrackingView',
@@ -59,6 +61,7 @@ export default {
             statistics: null,
             reportAbsences: [],
             reportHolidays: [],
+            vacationRemaining: null,
         }
     },
     computed: {
@@ -88,6 +91,7 @@ export default {
             if (!this.employeeId) return
             await this.fetchTimeEntries()
             await this.loadStatistics()
+            await this.loadVacationStats()
         },
         async loadStatistics() {
             if (!this.employeeId) return
@@ -102,6 +106,15 @@ export default {
                 this.reportHolidays = report.holidays || []
             } catch (error) {
                 console.error('Failed to load statistics:', error)
+            }
+        },
+        async loadVacationStats() {
+            if (!this.employeeId) return
+            try {
+                const stats = await AbsenceService.getVacationStats(this.employeeId, this.selectedMonth.year)
+                this.vacationRemaining = stats?.remaining ?? null
+            } catch (error) {
+                console.error('Failed to load vacation stats:', error)
             }
         },
         onMonthChange({ year, month }) {

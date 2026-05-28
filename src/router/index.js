@@ -2,7 +2,6 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import store from '../store/index.js'
 
-import DashboardView from '../views/DashboardView.vue'
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
 import AbsenceOverviewView from '../views/AbsenceOverviewView.vue'
@@ -18,8 +17,7 @@ Vue.use(VueRouter)
 const routes = [
 	{
 		path: '/',
-		name: 'dashboard',
-		component: DashboardView,
+		redirect: '/tracking',
 	},
 	{
 		path: '/tracking',
@@ -72,10 +70,10 @@ const routes = [
 		component: AuditView,
 		meta: { requiresAdminOrHr: true },
 	},
-	// Fallback: unbekannte Routes -> Dashboard
+	// Fallback: unbekannte Routes -> Zeiterfassung
 	{
 		path: '*',
-		redirect: '/',
+		redirect: '/tracking',
 	},
 ]
 

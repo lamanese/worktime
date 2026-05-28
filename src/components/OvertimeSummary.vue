@@ -9,6 +9,10 @@
                 <span class="label">{{ t('worktime', 'Ist') }}</span>
                 <span class="value">{{ formatMinutes(actualMinutes) }}</span>
             </div>
+            <div v-if="vacationRemaining !== null" class="overtime-summary__item">
+                <span class="label">{{ t('worktime', 'Urlaub übrig') }}</span>
+                <span class="value">{{ vacationRemaining }} {{ t('worktime', 'Tage') }}</span>
+            </div>
             <div class="overtime-summary__item overtime-summary__item--highlight"
                 :class="{ positive: overtimeMinutes > 0, negative: overtimeMinutes < 0 }">
                 <span class="label">{{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }} <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis heute berechnet. Noch nicht erfasste Arbeitstage erscheinen als Minusstunden.') }}</InfoIcon></span>
@@ -97,6 +101,10 @@ export default {
         overtimeMinutes: {
             type: Number,
             default: 0,
+        },
+        vacationRemaining: {
+            type: Number,
+            default: null,
         },
         statistics: {
             type: Object,

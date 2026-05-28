@@ -100,6 +100,16 @@
                 {{ t('worktime', 'Für diesen Monat liegen keine Daten vor.') }}
             </template>
         </NcEmptyContent>
+
+        <div v-if="!loading && employeeId" class="report-section year-overview-section">
+            <YearOverviewTable :months="yearlyMonths"
+                :year="year"
+                :min-year="minYear"
+                :max-year="maxYear"
+                :carryover-minutes="carryoverMinutes"
+                @previous="changeYear(-1)"
+                @next="changeYear(1)" />
+        </div>
     </div>
 </template>
 
@@ -116,6 +126,7 @@ import { mapGetters } from 'vuex'
 import MonthPicker from '../components/MonthPicker.vue'
 import OvertimeSummary from '../components/OvertimeSummary.vue'
 import TimeEntryList from '../components/TimeEntryList.vue'
+import YearOverviewTable from '../components/YearOverviewTable.vue'
 import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import { getCurrentYear, getCurrentMonth } from '../utils/dateUtils.js'
@@ -135,6 +146,7 @@ export default {
         MonthPicker,
         OvertimeSummary,
         TimeEntryList,
+        YearOverviewTable,
     },
     data() {
         return {
@@ -142,10 +154,22 @@ export default {
             month: getCurrentMonth(),
             report: null,
             loading: false,
+            yearlyMonths: [],
+            carryoverMinutes: 0,
         }
     },
     computed: {
         ...mapGetters('permissions', ['employeeId', 'approvalRequired']),
+        ...mapGetters('employees', ['currentEmployee']),
+        minYear() {
+            if (this.currentEmployee?.entryDate) {
+                return new Date(this.currentEmployee.entryDate).getFullYear()
+            }
+            return getCurrentYear()
+        },
+        maxYear() {
+            return getCurrentYear() + 1
+        },
         hasSubmittableEntries() {
             if (!this.report?.timeEntries) return false
             return this.report.timeEntries.some(e => e.status === 'draft' || e.status === 'rejected')
@@ -160,13 +184,36 @@ export default {
             immediate: true,
             handler() {
                 if (this.employeeId) {
+                    this.applyRouteQuery()
                     this.loadReport()
+                    this.loadOvertime()
                 }
             },
+        },
+        '$route.query'() {
+            if (this.employeeId && this.applyRouteQuery()) {
+                this.loadReport()
+                this.loadOvertime()
+            }
         },
     },
     methods: {
         getAbsenceTypeLabel,
+        applyRouteQuery() {
+            const q = this.$route.query
+            let changed = false
+            const qYear = parseInt(q.year, 10)
+            const qMonth = parseInt(q.month, 10)
+            if (qYear && qYear !== this.year) {
+                this.year = qYear
+                changed = true
+            }
+            if (qMonth && qMonth !== this.month) {
+                this.month = qMonth
+                changed = true
+            }
+            return changed
+        },
         async loadReport() {
             if (!this.employeeId) return
             this.loading = true
@@ -179,10 +226,28 @@ export default {
                 this.loading = false
             }
         },
+        async loadOvertime() {
+            if (!this.employeeId) return
+            try {
+                const overtime = await ReportService.getOvertime(this.employeeId, this.year)
+                this.yearlyMonths = overtime?.monthly || []
+                this.carryoverMinutes = overtime?.carryoverMinutes || 0
+            } catch (error) {
+                console.error('Failed to load yearly overview:', error)
+            }
+        },
+        async changeYear(delta) {
+            this.year += delta
+            await Promise.all([this.loadReport(), this.loadOvertime()])
+        },
         onMonthChange({ year, month }) {
+            const yearChanged = year !== this.year
             this.year = year
             this.month = month
             this.loadReport()
+            if (yearChanged) {
+                this.loadOvertime()
+            }
         },
         formatDate(date) {
             return formatDate(date)
@@ -340,5 +405,11 @@ export default {
     font-weight: 500;
 }
 
-
+.year-overview-section {
+    margin-top: 24px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 20px;
+}
 </style>
