@@ -298,10 +298,12 @@ export default {
         async loadData() {
             if (!this.employeeId) return
             this.overviewYear = this.selectedMonth.year
-            await this.fetchTimeEntries()
-            await this.loadStatistics()
-            await this.loadVacationStats()
-            await this.loadOvertime()
+            await Promise.all([
+                this.fetchTimeEntries(),
+                this.loadStatistics(),
+                this.loadVacationStats(),
+                this.loadOvertime(),
+            ])
         },
         async loadOvertime() {
             if (!this.employeeId) return
