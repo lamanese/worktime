@@ -276,9 +276,6 @@ export default {
 
 .total-row td {
     border-top: 2px solid var(--color-border);
-}
-
-.total-row td {
     border-bottom: none;
 }
 
