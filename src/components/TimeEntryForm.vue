@@ -189,8 +189,8 @@ export default {
                 SettingsService.get('min_break_minutes_6h'),
                 SettingsService.get('min_break_minutes_9h'),
             ])
-            if (b6h !== undefined) this.break6h = parseInt(b6h)
-            if (b9h !== undefined) this.break9h = parseInt(b9h)
+            if (b6h !== undefined) this.break6h = parseInt(b6h, 10)
+            if (b9h !== undefined) this.break9h = parseInt(b9h, 10)
             // Pause neu berechnen mit geladenen Settings
             this.onTimeChange()
         } catch (e) {
