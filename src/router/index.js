@@ -5,7 +5,6 @@ import store from '../store/index.js'
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
 import AbsenceOverviewView from '../views/AbsenceOverviewView.vue'
-import MonthlyReportView from '../views/MonthlyReportView.vue'
 import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
 import MySettingsView from '../views/MySettingsView.vue'
@@ -28,11 +27,6 @@ const routes = [
 		path: '/absences',
 		name: 'absences',
 		component: AbsenceView,
-	},
-	{
-		path: '/report',
-		name: 'report',
-		component: MonthlyReportView,
 	},
 	{
 		path: '/absence-overview',
