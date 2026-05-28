@@ -1,8 +1,8 @@
 <template>
-    <div class="time-entry-form">
-        <h3>{{ isEdit ? t('worktime', 'Eintrag bearbeiten') : t('worktime', 'Neuer Eintrag') }}</h3>
+    <div class="time-entry-form" :class="{ embedded }">
+        <h3 v-if="!embedded">{{ isEdit ? t('worktime', 'Eintrag bearbeiten') : t('worktime', 'Neuer Eintrag') }}</h3>
 
-        <div class="form-group">
+        <div v-if="!embedded" class="form-group">
             <label for="date">{{ t('worktime', 'Datum') }}</label>
             <NcDateTimePicker id="date"
                 v-model="form.date"
@@ -97,6 +97,14 @@ export default {
         entry: {
             type: Object,
             default: null,
+        },
+        presetDate: {
+            type: [String, Date],
+            default: null,
+        },
+        embedded: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
@@ -198,7 +206,7 @@ export default {
             const defaultStart = this.currentEmployee?.defaultStartTime || '08:00'
             const defaultEnd = this.currentEmployee?.defaultEndTime || '17:00'
             this.form = {
-                date: new Date(),
+                date: this.presetDate ? new Date(this.presetDate) : new Date(),
                 startTime: defaultStart,
                 endTime: defaultEnd,
                 breakMinutes: 30,
@@ -250,6 +258,10 @@ export default {
 <style scoped>
 .time-entry-form {
     padding: 16px;
+}
+
+.time-entry-form.embedded {
+    padding: 0;
 }
 
 .time-entry-form h3 {
