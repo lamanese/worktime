@@ -78,11 +78,9 @@ export default {
                 cells.push({ num: prevDays - i, out: true, clickable: false })
             }
 
-            // In-month days
+            // In-month days (alle anklickbar – auch Wochenende/Feiertag bebuchbar)
             for (const day of this.days) {
-                const hasData = day.entries.length > 0 || !!day.absence || !!day.holiday
-                const clickable = !day.isWeekend || hasData
-                cells.push({ num: day.day, day, clickable })
+                cells.push({ num: day.day, day, clickable: true })
             }
 
             // Trailing days (next month, out) to complete the last week
@@ -118,8 +116,6 @@ export default {
             if (cell.out) return 'out'
             const classes = []
             if (cell.day.isWeekend) classes.push('we')
-            if (cell.day.holiday) classes.push('ho')
-            else if (cell.day.absence) classes.push(this.absenceColorClass(cell.day.absence.type) + '-bg')
             if (cell.day.date === this.selectedDate) classes.push('sel')
             return classes
         },
@@ -192,23 +188,6 @@ export default {
 
 .cell.we {
     background: var(--color-background-hover);
-    cursor: default;
-}
-
-.cell.ho {
-    background: #fbf2e3;
-}
-
-.cell.vacation-bg {
-    background: #e8f6ec;
-}
-
-.cell.sick-bg {
-    background: #fbebeb;
-}
-
-.cell.other-bg {
-    background: var(--color-primary-element-light);
 }
 
 .cell.sel {
@@ -238,15 +217,15 @@ export default {
 }
 
 .cell .mi.vacation {
-    color: #2a8a44;
+    color: #4a9d63;
 }
 
 .cell .mi.sick {
-    color: #c0322d;
+    color: #cc4b42;
 }
 
 .cell .mi.h {
-    color: #a9710c;
+    color: #c98b3a;
 }
 
 .cell .mi.other {
@@ -276,15 +255,15 @@ export default {
 }
 
 .dot.vacation {
-    background: #46ba61;
+    background: #4a9d63;
 }
 
 .dot.sick {
-    background: #e9322d;
+    background: #cc4b42;
 }
 
 .dot.holiday {
-    background: #e8a33d;
+    background: #c98b3a;
 }
 
 .dot.other {

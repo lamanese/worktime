@@ -3,73 +3,66 @@
         <h3 class="dp-title">{{ dayTitle }}</h3>
         <p class="dp-sub">{{ subtitle }}</p>
 
-        <!-- Holiday -->
-        <template v-if="day.holiday">
-            <div class="dp-note holiday">
-                <CalendarStarIcon :size="20" />
-                {{ t('worktime', 'Feiertag') }}: {{ day.holiday.name }}
-            </div>
-            <p class="dp-hint">
-                {{ t('worktime', 'Feiertage werden automatisch aus dem Bundesland berechnet und zählen nicht aufs Soll.') }}
-            </p>
-        </template>
-
-        <!-- Absence -->
+        <!-- Kontext-Hinweis: Feiertag / Abwesenheit (Erfassen bleibt möglich) -->
+        <div v-if="day.holiday" class="dp-note holiday">
+            <CalendarStarIcon :size="18" />
+            {{ t('worktime', 'Feiertag') }}: {{ day.holiday.name }}
+        </div>
         <template v-else-if="day.absence">
             <div class="dp-note" :class="absenceColorClass(day.absence.type)">
                 {{ day.absence.typeName }}<span v-if="day.absence.scope < 1"> ({{ scopeLabel }})</span>
             </div>
-            <NcButton type="secondary" wide @click="goToAbsence">
+            <NcButton type="tertiary" class="dp-open-abs" @click="goToAbsence">
                 {{ t('worktime', 'In „Abwesenheit" öffnen') }}
             </NcButton>
         </template>
 
-        <!-- Normal day: entries + add/edit -->
+        <!-- Erfassung: immer möglich (auch an Feiertag/Wochenende/Abwesenheit) -->
+        <div v-if="formMode" class="dp-form">
+            <TimeEntryForm embedded
+                :entry="editingEntry"
+                :preset-date="day.date"
+                @saved="onSaved"
+                @cancel="closeForm" />
+        </div>
         <template v-else>
-            <div v-if="formMode" class="dp-form">
-                <TimeEntryForm embedded
-                    :entry="editingEntry"
-                    :preset-date="day.date"
-                    @saved="onSaved"
-                    @cancel="closeForm" />
-            </div>
-            <template v-else>
-                <ul v-if="day.entries.length" class="dp-entries">
-                    <li v-for="entry in day.entries" :key="entry.id" class="dp-entry">
-                        <div class="dp-entry-main">
-                            <div class="dp-entry-time">{{ entry.startTime }} – {{ entry.endTime }}</div>
-                            <div class="dp-entry-meta">
-                                <span>{{ hoursLabel(entry.workMinutes) }}</span>
+            <ul v-if="day.entries.length" class="dp-entries">
+                <li v-for="entry in day.entries" :key="entry.id" class="dp-entry">
+                    <div class="dp-entry-main">
+                        <div class="dp-entry-time">{{ entry.startTime }} – {{ entry.endTime }}</div>
+                        <div class="dp-entry-meta">
+                            <span>{{ hoursLabel(entry.workMinutes) }}</span>
+                            <span class="dp-dot-sep">·</span>
+                            <span>{{ t('worktime', '{min} Min Pause', { min: entry.breakMinutes }) }}</span>
+                            <template v-if="projectName(entry.projectId)">
                                 <span class="dp-dot-sep">·</span>
-                                <span>{{ t('worktime', '{min} Min Pause', { min: entry.breakMinutes }) }}</span>
-                                <template v-if="projectName(entry.projectId)">
-                                    <span class="dp-dot-sep">·</span>
-                                    <span>{{ projectName(entry.projectId) }}</span>
-                                </template>
-                            </div>
-                            <div v-if="entry.description" class="dp-entry-desc">{{ entry.description }}</div>
+                                <span>{{ projectName(entry.projectId) }}</span>
+                            </template>
                         </div>
-                        <div class="dp-entry-actions">
-                            <NcButton type="tertiary"
-                                :aria-label="t('worktime', 'Bearbeiten')"
-                                @click="startEdit(entry)">
-                                <template #icon><PencilIcon :size="18" /></template>
-                            </NcButton>
-                            <NcButton type="tertiary"
-                                :aria-label="t('worktime', 'Löschen')"
-                                @click="confirmDelete(entry)">
-                                <template #icon><DeleteIcon :size="18" /></template>
-                            </NcButton>
-                        </div>
-                    </li>
-                </ul>
-                <p v-else class="dp-empty">{{ t('worktime', 'Noch nichts erfasst.') }}</p>
+                        <div v-if="entry.description" class="dp-entry-desc">{{ entry.description }}</div>
+                    </div>
+                    <div class="dp-entry-actions">
+                        <NcButton type="tertiary"
+                            :aria-label="t('worktime', 'Bearbeiten')"
+                            @click="startEdit(entry)">
+                            <template #icon><PencilIcon :size="18" /></template>
+                        </NcButton>
+                        <NcButton type="tertiary"
+                            :aria-label="t('worktime', 'Löschen')"
+                            @click="confirmDelete(entry)">
+                            <template #icon><DeleteIcon :size="18" /></template>
+                        </NcButton>
+                    </div>
+                </li>
+            </ul>
+            <p v-else-if="!day.holiday && !day.absence" class="dp-empty">
+                {{ t('worktime', 'Noch nichts erfasst.') }}
+            </p>
 
-                <NcButton type="primary" wide class="dp-add" @click="startAdd">
-                    <template #icon><PlusIcon :size="20" /></template>
-                    {{ t('worktime', 'Eintrag hinzufügen') }}
-                </NcButton>
-            </template>
+            <NcButton type="primary" wide class="dp-add" @click="startAdd">
+                <template #icon><PlusIcon :size="20" /></template>
+                {{ t('worktime', 'Eintrag hinzufügen') }}
+            </NcButton>
         </template>
     </div>
 </template>
@@ -118,13 +111,10 @@ export default {
             return formatDateWithWeekday(this.day.date)
         },
         subtitle() {
-            if (this.day.holiday || this.day.absence) {
-                return this.t('worktime', 'Tag ausgewählt')
-            }
             if (this.day.entries.length) {
                 return this.t('worktime', 'Erfasst: {hours}', { hours: this.hoursLabel(this.day.totalMinutes) })
             }
-            return this.t('worktime', 'Tag ausgewählt · noch nichts erfasst')
+            return this.t('worktime', 'Tag ausgewählt')
         },
         scopeLabel() {
             const scope = this.day.absence?.scope ?? 1
@@ -224,29 +214,27 @@ export default {
 }
 
 .dp-note.holiday {
-    background: #fbf2e3;
-    color: #a9710c;
+    background: var(--color-background-hover);
+    color: #c98b3a;
 }
 
 .dp-note.vacation {
-    background: #e8f6ec;
-    color: #2a8a44;
+    background: var(--color-background-hover);
+    color: #4a9d63;
 }
 
 .dp-note.sick {
-    background: #fbebeb;
-    color: #c0322d;
+    background: var(--color-background-hover);
+    color: #cc4b42;
 }
 
 .dp-note.other {
-    background: var(--color-primary-element-light);
+    background: var(--color-background-hover);
     color: var(--color-primary-element);
 }
 
-.dp-hint {
-    color: var(--color-text-maxcontrast);
-    font-size: 13px;
-    margin: 0;
+.dp-open-abs {
+    margin: -4px 0 12px;
 }
 
 .dp-entries {

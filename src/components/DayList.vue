@@ -7,53 +7,45 @@
             <div class="dl-r">{{ t('worktime', 'Stunden') }}</div>
         </div>
         <div class="dl-body">
-            <template v-for="row in rows">
-                <!-- Weekend group -->
-                <div v-if="row.type === 'weekend'" :key="row.key" class="dl-day weekend">
-                    <div class="dl-d">{{ row.label }}</div>
-                    <div class="dl-mut">{{ t('worktime', 'Wochenende') }}</div>
-                    <div></div>
-                    <div></div>
+            <div v-for="day in days"
+                :key="day.date"
+                class="dl-day"
+                :class="{ sel: day.date === selectedDate, weekend: day.isWeekend, empty: !day.entries.length }"
+                tabindex="0"
+                role="button"
+                @click="$emit('select', day.date)"
+                @keydown.enter="$emit('select', day.date)"
+                @keydown.space.prevent="$emit('select', day.date)">
+                <div class="dl-d">
+                    {{ weekday(day) }} {{ pad(day.day) }}.
+                    <small>{{ monthShort }}</small>
                 </div>
 
-                <!-- Day -->
-                <div v-else
-                    :key="row.key"
-                    class="dl-day"
-                    :class="[dayStateClass(row.day), { sel: row.day.date === selectedDate, weekend: row.day.isWeekend }]"
-                    tabindex="0"
-                    role="button"
-                    @click="$emit('select', row.day.date)"
-                    @keydown.enter="$emit('select', row.day.date)"
-                    @keydown.space.prevent="$emit('select', row.day.date)">
-                    <div class="dl-d">
-                        {{ weekday(row.day) }} {{ pad(row.day.day) }}.
-                        <small>{{ monthShort }}</small>
-                    </div>
-
-                    <div class="dl-mid">
-                        <template v-if="row.day.holiday">
-                            <span class="dl-tag"><span class="dot holiday" /> {{ row.day.holiday.name }}</span>
-                        </template>
-                        <template v-else-if="row.day.absence">
-                            <span class="dl-tag">
-                                <span class="dot" :class="absenceColorClass(row.day.absence.type)" />
-                                {{ row.day.absence.typeName }}
-                            </span>
-                        </template>
-                        <template v-else-if="row.day.entries.length">
-                            <span class="dl-times">{{ row.day.firstStart }} – {{ row.day.lastEnd }}</span>
-                            <span v-if="row.day.entries.length > 1" class="dl-count">
-                                {{ t('worktime', '{n} Einträge', { n: row.day.entries.length }) }}
-                            </span>
-                        </template>
-                        <span v-else class="dl-mut">{{ t('worktime', '— noch nichts erfasst —') }}</span>
-                    </div>
-
-                    <div class="dl-r dl-pause">{{ pauseLabel(row.day) }}</div>
-                    <div class="dl-r dl-hh" :class="{ 'dl-mut': !row.day.entries.length }">{{ hoursLabel(row.day) }}</div>
+                <div class="dl-mid">
+                    <template v-if="day.entries.length">
+                        <span v-if="day.holiday || day.absence"
+                            class="dot"
+                            :class="day.holiday ? 'holiday' : absenceColorClass(day.absence.type)" />
+                        <span class="dl-times">{{ day.firstStart }} – {{ day.lastEnd }}</span>
+                        <span v-if="day.entries.length > 1" class="dl-count">
+                            {{ t('worktime', '{n} Einträge', { n: day.entries.length }) }}
+                        </span>
+                    </template>
+                    <template v-else-if="day.holiday">
+                        <span class="dl-tag"><span class="dot holiday" /> {{ day.holiday.name }}</span>
+                    </template>
+                    <template v-else-if="day.absence">
+                        <span class="dl-tag">
+                            <span class="dot" :class="absenceColorClass(day.absence.type)" />
+                            {{ day.absence.typeName }}
+                        </span>
+                    </template>
+                    <span v-else class="dl-mut">–</span>
                 </div>
-            </template>
+
+                <div class="dl-r dl-pause">{{ pauseLabel(day) }}</div>
+                <div class="dl-r dl-hh" :class="{ 'dl-mut': !day.entries.length }">{{ hoursLabel(day) }}</div>
+            </div>
         </div>
     </div>
 </template>
@@ -83,31 +75,6 @@ export default {
         monthShort() {
             return this.month ? getMonthNameShort(this.month) : ''
         },
-        rows() {
-            const rows = []
-            let weekendGroup = []
-            const flushWeekend = () => {
-                if (!weekendGroup.length) return
-                const first = weekendGroup[0]
-                const last = weekendGroup[weekendGroup.length - 1]
-                const label = weekendGroup.length === 1
-                    ? `${this.weekday(first)} ${this.pad(first.day)}.`
-                    : `${this.weekday(first)} ${this.pad(first.day)}. / ${this.weekday(last)} ${this.pad(last.day)}.`
-                rows.push({ type: 'weekend', key: 'we-' + first.date, label })
-                weekendGroup = []
-            }
-            for (const day of this.days) {
-                const empty = !day.entries.length && !day.absence && !day.holiday
-                if (day.isWeekend && empty) {
-                    weekendGroup.push(day)
-                    continue
-                }
-                flushWeekend()
-                rows.push({ type: 'day', key: day.date, day })
-            }
-            flushWeekend()
-            return rows
-        },
     },
     methods: {
         pad(n) {
@@ -115,11 +82,6 @@ export default {
         },
         weekday(day) {
             return getDayName(day.dayOfWeek)
-        },
-        dayStateClass(day) {
-            if (day.holiday) return 'ho'
-            if (day.absence) return this.absenceColorClass(day.absence.type) + '-bg'
-            return ''
         },
         absenceColorClass(type) {
             if (type === 'vacation') return 'vacation'
@@ -189,37 +151,25 @@ export default {
     background: var(--color-primary-element-light);
 }
 
-.dl-day.weekend {
-    background: var(--color-background-hover);
+/* Leere Tage (inkl. Wochenende/Feiertag ohne Eintrag) dezent und kompakt */
+.dl-day.empty {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    font-size: 13px;
+}
+
+.dl-day.empty .dl-d,
+.dl-day.empty .dl-mid {
     color: var(--color-text-maxcontrast);
-    cursor: default;
 }
 
-.dl-day.weekend:hover {
+.dl-day.empty.weekend {
     background: var(--color-background-hover);
 }
 
-.dl-day.ho {
-    background: #fbf2e3;
-}
-
-.dl-day.vacation-bg {
-    background: #e8f6ec;
-}
-
-.dl-day.sick-bg {
-    background: #fbebeb;
-}
-
-.dl-day.other-bg {
+.dl-day.empty.weekend.sel,
+.dl-day.empty.sel {
     background: var(--color-primary-element-light);
-}
-
-.dl-day.ho.sel,
-.dl-day.vacation-bg.sel,
-.dl-day.sick-bg.sel,
-.dl-day.other-bg.sel {
-    box-shadow: inset 3px 0 0 var(--color-primary-element);
 }
 
 .dl-d {
@@ -235,6 +185,9 @@ export default {
 
 .dl-mid {
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .dl-times {
@@ -242,7 +195,6 @@ export default {
 }
 
 .dl-count {
-    margin-left: 8px;
     font-size: 11.5px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
@@ -260,8 +212,6 @@ export default {
 
 .dl-mut {
     color: var(--color-text-maxcontrast);
-    font-style: italic;
-    font-size: 13px;
 }
 
 .dl-r {
@@ -279,23 +229,23 @@ export default {
 }
 
 .dot {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
     display: inline-block;
 }
 
 .dot.vacation {
-    background: #46ba61;
+    background: #4a9d63;
 }
 
 .dot.sick {
-    background: #e9322d;
+    background: #cc4b42;
 }
 
 .dot.holiday {
-    background: #e8a33d;
+    background: #c98b3a;
 }
 
 .dot.other {
