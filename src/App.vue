@@ -183,3 +183,12 @@ export default {
 	padding: 40px;
 }
 </style>
+
+<!-- Globale Abwesenheits-/Feiertags-Farben (geteilt von DayList, MonthCalendar, DayDetailPanel) -->
+<style>
+:root {
+	--wt-vacation: #4a9d63;
+	--wt-sick: #cc4b42;
+	--wt-holiday: #c98b3a;
+}
+</style>

@@ -484,12 +484,12 @@ export default {
 
 .month-badge.submitted {
     background: var(--color-background-hover);
-    color: #c98b3a;
+    color: var(--wt-holiday);
 }
 
 .month-badge.approved {
     background: var(--color-background-hover);
-    color: #4a9d63;
+    color: var(--wt-vacation);
 }
 
 .lock-banner {
@@ -503,7 +503,7 @@ export default {
     margin-bottom: 16px;
     font-size: 14px;
     font-weight: 600;
-    color: #4a9d63;
+    color: var(--wt-vacation);
 }
 
 .zlayout {

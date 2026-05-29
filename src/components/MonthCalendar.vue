@@ -35,6 +35,7 @@
 <script>
 import { getDaysInMonth } from '../utils/dateUtils.js'
 import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { getAbsenceColorClass } from '../utils/formatters.js'
 
 export default {
     name: 'MonthCalendar',
@@ -104,18 +105,15 @@ export default {
         shortName(name) {
             return name.length > 11 ? name.slice(0, 9) + '.' : name
         },
-        absenceColorClass(type) {
-            if (type === 'vacation') return 'vacation'
-            if (type === 'sick' || type === 'child_sick') return 'sick'
-            return 'other'
-        },
+        absenceColorClass: getAbsenceColorClass,
         absMiClass(type) {
-            return this.absenceColorClass(type)
+            return getAbsenceColorClass(type)
         },
         cellClasses(cell) {
             if (cell.out) return 'out'
             const classes = []
             if (cell.day.isWeekend) classes.push('we')
+            if (cell.day.isToday) classes.push('today')
             if (cell.day.date === this.selectedDate) classes.push('sel')
             return classes
         },
@@ -196,6 +194,11 @@ export default {
     background: var(--color-primary-element-light);
 }
 
+.cell.today .n {
+    color: var(--color-primary-element);
+    font-weight: 700;
+}
+
 .cell .n {
     font-weight: 600;
 }
@@ -217,15 +220,15 @@ export default {
 }
 
 .cell .mi.vacation {
-    color: #4a9d63;
+    color: var(--wt-vacation);
 }
 
 .cell .mi.sick {
-    color: #cc4b42;
+    color: var(--wt-sick);
 }
 
 .cell .mi.h {
-    color: #c98b3a;
+    color: var(--wt-holiday);
 }
 
 .cell .mi.other {
@@ -255,15 +258,15 @@ export default {
 }
 
 .dot.vacation {
-    background: #4a9d63;
+    background: var(--wt-vacation);
 }
 
 .dot.sick {
-    background: #cc4b42;
+    background: var(--wt-sick);
 }
 
 .dot.holiday {
-    background: #c98b3a;
+    background: var(--wt-holiday);
 }
 
 .dot.other {

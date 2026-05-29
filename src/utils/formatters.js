@@ -53,6 +53,18 @@ export function getAbsenceTypeLabel(type) {
 }
 
 /**
+ * Map an absence type to a color class (vacation / sick / other).
+ * Shared by DayList, MonthCalendar and DayDetailPanel.
+ * @param {string} type - Absence type
+ * @returns {string}
+ */
+export function getAbsenceColorClass(type) {
+    if (type === 'vacation') return 'vacation'
+    if (type === 'sick' || type === 'child_sick') return 'sick'
+    return 'other'
+}
+
+/**
  * Format a date for display
  * @param {string|Date} date
  * @param {string} format - 'short' (DD.MM.), 'medium' (DD.MM.YYYY), 'long' (DD. MMMM YYYY)
@@ -163,6 +175,7 @@ export default {
     formatHoursDecimal,
     getStatusLabel,
     getAbsenceTypeLabel,
+    getAbsenceColorClass,
     formatDate,
     formatDateRange,
     getStatusClass,

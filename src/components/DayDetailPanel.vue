@@ -82,6 +82,7 @@ import { mapActions } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import { formatDateWithWeekday } from '../utils/dateUtils.js'
 import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { getAbsenceColorClass } from '../utils/formatters.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 
 export default {
@@ -158,11 +159,7 @@ export default {
             const project = this.projects.find(p => p.id === projectId)
             return project?.name || project?.displayName || ''
         },
-        absenceColorClass(type) {
-            if (type === 'vacation') return 'vacation'
-            if (type === 'sick' || type === 'child_sick') return 'sick'
-            return 'other'
-        },
+        absenceColorClass: getAbsenceColorClass,
         startAdd() {
             this.editingEntry = null
             this.formMode = 'add'
@@ -234,17 +231,17 @@ export default {
 
 .dp-note.holiday {
     background: var(--color-background-hover);
-    color: #c98b3a;
+    color: var(--wt-holiday);
 }
 
 .dp-note.vacation {
     background: var(--color-background-hover);
-    color: #4a9d63;
+    color: var(--wt-vacation);
 }
 
 .dp-note.sick {
     background: var(--color-background-hover);
-    color: #cc4b42;
+    color: var(--wt-sick);
 }
 
 .dp-note.other {
