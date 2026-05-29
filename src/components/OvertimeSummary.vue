@@ -1,33 +1,49 @@
 <template>
     <div class="overtime-summary">
-        <div class="overtime-summary__row">
-            <div class="overtime-summary__item">
-                <span class="label">{{ t('worktime', 'Soll') }}</span>
-                <span class="value">{{ formatMinutes(targetMinutes) }}</span>
+        <div class="kpi-cards" :class="{ 'kpi-cards--two': vacationRemaining === null }">
+            <!-- Soll / Ist -->
+            <div class="kpi-card kpi-card--main">
+                <div class="kpi-card__head">
+                    <span class="kpi-lab">{{ t('worktime', 'Soll / Ist · {month}', { month: monthLabel }) }}</span>
+                    <NcButton v-if="statistics"
+                        type="tertiary"
+                        :aria-label="t('worktime', 'Berechnung anzeigen')"
+                        @click="showDetails = !showDetails">
+                        <template #icon>
+                            <ChevronUp v-if="showDetails" :size="20" />
+                            <ChevronDown v-else :size="20" />
+                        </template>
+                    </NcButton>
+                </div>
+                <div class="kpi-pm">
+                    <span class="kpi-num">{{ hoursLabel(actualMinutes) }} h <small>/ {{ hoursLabel(monthSoll) }} h Soll</small></span>
+                    <span class="kpi-pct">{{ percent }} %</span>
+                </div>
+                <div class="kpi-bar"><span :style="{ width: barWidth + '%' }" /></div>
+                <div class="kpi-bf">
+                    <span>{{ t('worktime', 'noch {hours} h bis Monatssoll', { hours: hoursLabel(remaining) }) }}</span>
+                    <span :class="pacingPositive ? 'pos' : 'neg'">{{ pacingLabel }}</span>
+                </div>
             </div>
-            <div class="overtime-summary__item">
-                <span class="label">{{ t('worktime', 'Ist') }}</span>
-                <span class="value">{{ formatMinutes(actualMinutes) }}</span>
+
+            <!-- Urlaub -->
+            <div v-if="vacationRemaining !== null" class="kpi-card">
+                <div class="kpi-lab">{{ t('worktime', 'Urlaub {year}', { year }) }}</div>
+                <div class="kpi-num pos">{{ vacationRemaining }} <small>{{ t('worktime', 'Tage übrig') }}</small></div>
+                <div v-if="vacationSub" class="kpi-sub">{{ vacationSub }}</div>
             </div>
-            <div v-if="vacationRemaining !== null" class="overtime-summary__item">
-                <span class="label">{{ t('worktime', 'Urlaub übrig') }}</span>
-                <span class="value">{{ vacationRemaining }} {{ t('worktime', 'Tage') }}</span>
+
+            <!-- Überstunden -->
+            <div class="kpi-card">
+                <div class="kpi-lab">
+                    {{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}
+                    <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis heute berechnet. Noch nicht erfasste Arbeitstage erscheinen als Minusstunden.') }}</InfoIcon>
+                </div>
+                <div class="kpi-num" :class="{ pos: overtimeMinutes > 0, neg: overtimeMinutes < 0 }">
+                    {{ overtimeMinutes > 0 ? '+' : '' }}{{ absHoursLabel(overtimeMinutes) }} <small>h</small>
+                </div>
+                <div class="kpi-sub">{{ t('worktime', 'Stand heute') }}</div>
             </div>
-            <div class="overtime-summary__item overtime-summary__item--highlight"
-                :class="{ positive: overtimeMinutes > 0, negative: overtimeMinutes < 0 }">
-                <span class="label">{{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }} <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis heute berechnet. Noch nicht erfasste Arbeitstage erscheinen als Minusstunden.') }}</InfoIcon></span>
-                <span class="value">{{ formatMinutes(Math.abs(overtimeMinutes)) }}</span>
-            </div>
-            <NcButton v-if="statistics"
-                type="tertiary"
-                class="overtime-summary__toggle"
-                :aria-label="t('worktime', 'Berechnung anzeigen')"
-                @click="showDetails = !showDetails">
-                <template #icon>
-                    <ChevronUp v-if="showDetails" :size="20" />
-                    <ChevronDown v-else :size="20" />
-                </template>
-            </NcButton>
         </div>
 
         <div v-if="showDetails && statistics" class="overtime-details">
@@ -46,7 +62,7 @@
                     <span class="detail-value">-{{ formatMinutes(statistics.monthlyTargetMinutes - statistics.targetMinutes) }}</span>
                 </div>
                 <div class="detail-row detail-row--total">
-                    <span>{{ t('worktime', 'Soll') }}</span>
+                    <span>{{ t('worktime', 'Soll (anteilig bis heute)') }}</span>
                     <span class="detail-value">{{ formatMinutes(targetMinutes) }}</span>
                 </div>
             </div>
@@ -79,6 +95,7 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import { formatMinutesWithUnit } from '../utils/timeUtils.js'
+import { getMonthName, getLocale } from '../utils/dateUtils.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 export default {
@@ -106,6 +123,22 @@ export default {
             type: Number,
             default: null,
         },
+        vacationCarryover: {
+            type: Number,
+            default: 0,
+        },
+        vacationTotal: {
+            type: Number,
+            default: null,
+        },
+        year: {
+            type: Number,
+            default: null,
+        },
+        month: {
+            type: Number,
+            default: null,
+        },
         statistics: {
             type: Object,
             default: null,
@@ -116,9 +149,53 @@ export default {
             showDetails: false,
         }
     },
+    computed: {
+        monthLabel() {
+            if (!this.month || !this.year) return ''
+            return `${getMonthName(this.month)} ${this.year}`
+        },
+        // Volles Monatssoll (nach Reduktion), nicht das anteilige
+        monthSoll() {
+            return this.statistics?.targetMinutes ?? 0
+        },
+        percent() {
+            if (!this.monthSoll) return 0
+            return Math.round((this.actualMinutes / this.monthSoll) * 100)
+        },
+        barWidth() {
+            return Math.min(100, Math.max(0, this.percent))
+        },
+        remaining() {
+            return Math.max(0, this.monthSoll - this.actualMinutes)
+        },
+        pacingPositive() {
+            return this.overtimeMinutes >= 0
+        },
+        pacingLabel() {
+            if (this.pacingPositive) {
+                return this.t('worktime', 'anteilig: im Plan')
+            }
+            return this.t('worktime', '{hours} h unter Plan', { hours: this.absHoursLabel(this.overtimeMinutes) })
+        },
+        vacationSub() {
+            if (this.vacationCarryover > 0) {
+                return this.t('worktime', 'inkl. {days} Tage Übertrag', { days: this.vacationCarryover })
+            }
+            if (this.vacationTotal !== null) {
+                return this.t('worktime', 'von {days} Tagen', { days: this.vacationTotal })
+            }
+            return ''
+        },
+    },
     methods: {
         formatMinutes(minutes) {
             return formatMinutesWithUnit(minutes)
+        },
+        hoursLabel(minutes) {
+            return (minutes / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        },
+        absHoursLabel(minutes) {
+            return (Math.abs(minutes) / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
         },
     },
 }
@@ -126,59 +203,132 @@ export default {
 
 <style scoped>
 .overtime-summary {
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
     margin-bottom: 24px;
 }
 
-.overtime-summary__row {
-    display: flex;
-    gap: 24px;
-    padding: 16px;
-    align-items: center;
+.kpi-cards {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
 }
 
-.overtime-summary__item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+.kpi-cards--two {
+    grid-template-columns: 2fr 1fr;
 }
 
-.overtime-summary__item .label {
-    font-size: 15px;
+.kpi-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 14px 16px;
+}
+
+.kpi-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.kpi-card__head .button-vue {
+    margin: -6px -6px 0 0;
+}
+
+.kpi-lab {
+    font-size: 12px;
+    font-weight: 600;
     color: var(--color-text-maxcontrast);
 }
 
-.overtime-summary__item .value {
-    font-size: 15px;
-    font-weight: 600;
+.kpi-num {
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 7px;
     font-variant-numeric: tabular-nums;
 }
 
-.overtime-summary__item--highlight.positive .value {
+.kpi-num small {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+}
+
+.kpi-num.pos {
     color: var(--color-success-text);
 }
 
-.overtime-summary__item--highlight.negative .value {
+.kpi-num.neg {
     color: var(--color-error-text);
 }
 
-.overtime-summary__toggle {
-    margin-left: auto;
+.kpi-sub {
+    font-size: 12.5px;
+    color: var(--color-text-maxcontrast);
+    margin-top: 6px;
+}
+
+.kpi-pm {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 4px 0 8px;
+}
+
+.kpi-pm .kpi-num {
+    font-size: 23px;
+    margin-top: 0;
+}
+
+.kpi-pct {
+    font-weight: 700;
+    color: var(--color-primary-element);
+    font-size: 14px;
+}
+
+.kpi-bar {
+    height: 10px;
+    border-radius: var(--border-radius-element, 8px);
+    background: var(--color-background-dark);
+    overflow: hidden;
+}
+
+.kpi-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: var(--border-radius-element, 8px);
+    background: var(--color-primary-element);
+}
+
+.kpi-bf {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--color-text-maxcontrast);
+    margin-top: 6px;
+}
+
+.kpi-bf .pos {
+    color: var(--color-success-text);
+    font-weight: 600;
+}
+
+.kpi-bf .neg {
+    color: var(--color-error-text);
+    font-weight: 600;
 }
 
 .overtime-details {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
-    padding: 12px 16px 16px;
-    border-top: 1px solid var(--color-border);
+    padding: 16px;
+    margin-top: 12px;
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
     align-items: stretch;
 }
 
 .overtime-details__section {
-    padding: 0;
     display: flex;
     flex-direction: column;
 }
@@ -226,6 +376,4 @@ export default {
 .detail-value {
     font-variant-numeric: tabular-nums;
 }
-
-
 </style>
