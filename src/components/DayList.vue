@@ -10,7 +10,7 @@
             <div v-for="day in days"
                 :key="day.date"
                 class="dl-day"
-                :class="{ sel: day.date === selectedDate, weekend: day.isWeekend, empty: !day.entries.length }"
+                :class="{ sel: day.date === selectedDate, weekend: day.isWeekend, empty: !day.entries.length, today: day.isToday }"
                 tabindex="0"
                 role="button"
                 @click="$emit('select', day.date)"
@@ -53,6 +53,7 @@
 <script>
 import { getDayName, getMonthNameShort } from '../utils/dateUtils.js'
 import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { getAbsenceColorClass } from '../utils/formatters.js'
 
 export default {
     name: 'DayList',
@@ -83,11 +84,7 @@ export default {
         weekday(day) {
             return getDayName(day.dayOfWeek)
         },
-        absenceColorClass(type) {
-            if (type === 'vacation') return 'vacation'
-            if (type === 'sick' || type === 'child_sick') return 'sick'
-            return 'other'
-        },
+        absenceColorClass: getAbsenceColorClass,
         pauseLabel(day) {
             if (!day.entries.length) return ''
             const total = day.entries.reduce((sum, e) => sum + (e.breakMinutes || 0), 0)
@@ -149,6 +146,16 @@ export default {
 
 .dl-day.sel {
     background: var(--color-primary-element-light);
+}
+
+.dl-day.today .dl-d {
+    color: var(--color-primary-element);
+}
+
+.dl-day.today .dl-d::after {
+    content: "•";
+    margin-left: 5px;
+    color: var(--color-primary-element);
 }
 
 /* Leere Tage (inkl. Wochenende/Feiertag ohne Eintrag) dezent und kompakt */
@@ -237,15 +244,15 @@ export default {
 }
 
 .dot.vacation {
-    background: #4a9d63;
+    background: var(--wt-vacation);
 }
 
 .dot.sick {
-    background: #cc4b42;
+    background: var(--wt-sick);
 }
 
 .dot.holiday {
-    background: #c98b3a;
+    background: var(--wt-holiday);
 }
 
 .dot.other {

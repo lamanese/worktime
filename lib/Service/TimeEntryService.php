@@ -177,6 +177,11 @@ class TimeEntryService {
             throw ValidationException::fromSingleError('status', 'Cannot edit approved time entries');
         }
 
+        // Cannot edit submitted entries (awaiting approval; HR uses reopen/reject)
+        if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
+            throw ValidationException::fromSingleError('status', 'Cannot edit submitted time entries');
+        }
+
         // Calculate work minutes
         $workMinutes = $this->calculateWorkMinutes($startTimeObj, $endTimeObj, $breakMinutes);
 
@@ -213,6 +218,11 @@ class TimeEntryService {
         // Cannot delete approved entries
         if ($entry->getStatus() === TimeEntry::STATUS_APPROVED) {
             throw new ForbiddenException('Cannot delete approved time entries');
+        }
+
+        // Cannot delete submitted entries (awaiting approval; HR uses reopen/reject)
+        if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
+            throw new ForbiddenException('Cannot delete submitted time entries');
         }
 
         // Audit log

@@ -41,7 +41,7 @@
                         </div>
                         <div v-if="entry.description" class="dp-entry-desc">{{ entry.description }}</div>
                     </div>
-                    <div class="dp-entry-actions">
+                    <div v-if="!readonly" class="dp-entry-actions">
                         <NcButton type="tertiary"
                             :aria-label="t('worktime', 'Bearbeiten')"
                             @click="startEdit(entry)">
@@ -55,11 +55,15 @@
                     </div>
                 </li>
             </ul>
-            <p v-else-if="!day.holiday && !day.absence" class="dp-empty">
+            <p v-else-if="!day.holiday && !day.absence && !readonly" class="dp-empty">
                 {{ t('worktime', 'Noch nichts erfasst.') }}
             </p>
 
-            <NcButton type="primary" wide class="dp-add" @click="startAdd">
+            <div v-if="readonly" class="dp-locked">
+                <LockIcon :size="16" />
+                {{ lockedMessage }}
+            </div>
+            <NcButton v-else type="primary" wide class="dp-add" @click="startAdd">
                 <template #icon><PlusIcon :size="20" /></template>
                 {{ t('worktime', 'Eintrag hinzufügen') }}
             </NcButton>
@@ -72,11 +76,13 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
+import LockIcon from 'vue-material-design-icons/Lock.vue'
 import CalendarStarIcon from 'vue-material-design-icons/CalendarStar.vue'
 import { mapActions } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import { formatDateWithWeekday } from '../utils/dateUtils.js'
 import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { getAbsenceColorClass } from '../utils/formatters.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 
 export default {
@@ -86,6 +92,7 @@ export default {
         PlusIcon,
         PencilIcon,
         DeleteIcon,
+        LockIcon,
         CalendarStarIcon,
         TimeEntryForm,
     },
@@ -97,6 +104,10 @@ export default {
         projects: {
             type: Array,
             default: () => [],
+        },
+        monthStatus: {
+            type: String,
+            default: null,
         },
     },
     emits: ['refresh'],
@@ -122,6 +133,15 @@ export default {
                 ? this.t('worktime', 'Halber Tag')
                 : this.t('worktime', '{scope} Tage', { scope })
         },
+        readonly() {
+            return this.monthStatus === 'submitted' || this.monthStatus === 'approved'
+        },
+        lockedMessage() {
+            if (this.monthStatus === 'approved') {
+                return this.t('worktime', 'Monat genehmigt – gesperrt. Korrektur nur durch HR.')
+            }
+            return this.t('worktime', 'Eingereicht – Bearbeitung erst nach Genehmigung oder Ablehnung möglich.')
+        },
     },
     watch: {
         // Beim Wechsel des ausgewählten Tages offene Formulare schließen
@@ -139,11 +159,7 @@ export default {
             const project = this.projects.find(p => p.id === projectId)
             return project?.name || project?.displayName || ''
         },
-        absenceColorClass(type) {
-            if (type === 'vacation') return 'vacation'
-            if (type === 'sick' || type === 'child_sick') return 'sick'
-            return 'other'
-        },
+        absenceColorClass: getAbsenceColorClass,
         startAdd() {
             this.editingEntry = null
             this.formMode = 'add'
@@ -215,17 +231,17 @@ export default {
 
 .dp-note.holiday {
     background: var(--color-background-hover);
-    color: #c98b3a;
+    color: var(--wt-holiday);
 }
 
 .dp-note.vacation {
     background: var(--color-background-hover);
-    color: #4a9d63;
+    color: var(--wt-vacation);
 }
 
 .dp-note.sick {
     background: var(--color-background-hover);
-    color: #cc4b42;
+    color: var(--wt-sick);
 }
 
 .dp-note.other {
@@ -297,5 +313,16 @@ export default {
 
 .dp-form {
     margin-top: 4px;
+}
+
+.dp-locked {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-background-hover);
+    border-radius: var(--border-radius);
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--color-text-maxcontrast);
 }
 </style>
