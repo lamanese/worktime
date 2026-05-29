@@ -1,6 +1,6 @@
 <template>
     <div class="overtime-summary">
-        <div class="kpi-cards">
+        <div class="kpi-cards" :class="{ 'kpi-cards--two': vacationRemaining === null }">
             <!-- Soll / Ist -->
             <div class="kpi-card kpi-card--main">
                 <div class="kpi-card__head">
@@ -19,7 +19,7 @@
                     <span class="kpi-num">{{ hoursLabel(actualMinutes) }} h <small>/ {{ hoursLabel(monthSoll) }} h Soll</small></span>
                     <span class="kpi-pct">{{ percent }} %</span>
                 </div>
-                <div class="kpi-bar"><i :style="{ width: barWidth + '%' }" /></div>
+                <div class="kpi-bar"><span :style="{ width: barWidth + '%' }" /></div>
                 <div class="kpi-bf">
                     <span>{{ t('worktime', 'noch {hours} h bis Monatssoll', { hours: hoursLabel(remaining) }) }}</span>
                     <span :class="pacingPositive ? 'pos' : 'neg'">{{ pacingLabel }}</span>
@@ -216,6 +216,10 @@ export default {
     gap: 12px;
 }
 
+.kpi-cards--two {
+    grid-template-columns: 2fr 1fr;
+}
+
 .kpi-card {
     background: var(--color-main-background);
     border: 1px solid var(--color-border-dark, var(--color-border));
@@ -292,7 +296,7 @@ export default {
     overflow: hidden;
 }
 
-.kpi-bar > i {
+.kpi-bar > span {
     display: block;
     height: 100%;
     border-radius: var(--border-radius-element, 8px);
