@@ -51,6 +51,10 @@
             :actual-minutes="statistics.actualMinutes"
             :overtime-minutes="statistics.overtimeMinutes"
             :vacation-remaining="vacationRemaining"
+            :vacation-carryover="vacationCarryover"
+            :vacation-total="vacationTotal"
+            :year="selectedMonth.year"
+            :month="selectedMonth.month"
             :statistics="statistics" />
 
         <NcLoadingIcon v-if="loading" :size="44" />
@@ -163,6 +167,8 @@ export default {
             reportAbsences: [],
             reportHolidays: [],
             vacationRemaining: null,
+            vacationCarryover: 0,
+            vacationTotal: null,
             yearlyMonths: [],
             carryoverMinutes: 0,
             overviewYear: getCurrentYear(),
@@ -356,6 +362,8 @@ export default {
             try {
                 const stats = await AbsenceService.getVacationStats(this.employeeId, this.selectedMonth.year)
                 this.vacationRemaining = stats?.remaining ?? null
+                this.vacationCarryover = Math.round(stats?.carryover ?? 0)
+                this.vacationTotal = stats?.total ?? null
             } catch (error) {
                 console.error('Failed to load vacation stats:', error)
             }
@@ -435,7 +443,7 @@ export default {
 .layout-seg {
     display: flex;
     background: var(--color-background-dark);
-    border-radius: 9999px;
+    border-radius: var(--border-radius-element, 8px);
     padding: 3px;
 }
 
@@ -446,7 +454,7 @@ export default {
     background: none;
     border: none;
     padding: 6px 14px;
-    border-radius: 9999px;
+    border-radius: var(--border-radius-element, 8px);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -465,7 +473,7 @@ export default {
     gap: 7px;
     font-size: 12.5px;
     font-weight: 600;
-    border-radius: 9999px;
+    border-radius: var(--border-radius-element, 8px);
     padding: 5px 12px;
 }
 
@@ -497,7 +505,7 @@ export default {
     align-items: center;
     gap: 10px;
     background: var(--color-background-hover);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: var(--border-radius);
     padding: 11px 15px;
     margin-bottom: 16px;
@@ -525,7 +533,7 @@ export default {
     position: sticky;
     top: 8px;
     background: var(--color-main-background);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: var(--border-radius-large, 12px);
     padding: 18px;
 }
@@ -541,7 +549,7 @@ export default {
 .year-overview-card {
     margin-top: 12px;
     background: var(--color-main-background);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: 16px;
     padding: 20px;
 }

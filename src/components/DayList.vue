@@ -119,7 +119,7 @@ export default {
 }
 
 .dl-body {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: var(--border-radius);
     overflow: hidden;
 }
@@ -206,7 +206,7 @@ export default {
     font-weight: 600;
     color: var(--color-text-maxcontrast);
     background: var(--color-background-dark);
-    border-radius: 9999px;
+    border-radius: var(--border-radius-element, 8px);
     padding: 2px 8px;
 }
 
