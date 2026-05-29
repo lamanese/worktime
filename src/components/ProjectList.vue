@@ -186,8 +186,8 @@ td.actions-col {
 }
 
 .status-badge.inactive {
-    background: var(--color-text-maxcontrast);
-    color: white;
+    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
 }
 
 .billable-badge {
