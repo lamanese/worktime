@@ -1,8 +1,17 @@
 <template>
     <div class="absence-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Abwesenheiten') }}</h2>
-            <NcButton type="primary" @click="startCreate">
+            <h2>{{ t('worktime', 'Abwesenheit') }}</h2>
+            <div class="seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+                <button class="seg-btn" :class="{ active: tab === 'konto' }" @click="tab = 'konto'">
+                    {{ t('worktime', 'Mein Konto') }}
+                </button>
+                <button class="seg-btn" :class="{ active: tab === 'team' }" @click="switchToTeam">
+                    {{ t('worktime', 'Team') }}
+                </button>
+            </div>
+            <div class="header-spacer" />
+            <NcButton v-if="tab === 'konto'" type="primary" @click="startCreate">
                 <template #icon>
                     <PlusIcon :size="20" />
                 </template>
@@ -10,130 +19,166 @@
             </NcButton>
         </div>
 
-        <div v-if="vacationStats" class="vacation-stats">
-            <h3>{{ t('worktime', 'Urlaubsübersicht') }} {{ currentYear }}</h3>
-            <div class="stats-row">
-                <div class="stat">
-                    <span class="label">{{ t('worktime', 'Gesamt') }}</span>
-                    <span class="value">{{ vacationStats.total }} {{ t('worktime', 'Tage') }}</span>
+        <!-- ============ MEIN KONTO ============ -->
+        <div v-show="tab === 'konto'">
+            <section v-if="vacationStats" class="acard-section">
+                <h3>{{ t('worktime', 'Urlaubskonto {year}', { year: currentYear }) }}</h3>
+                <div class="acards acards--4">
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Anspruch') }}</div>
+                        <div class="acard__val">{{ vacationBase }}</div>
+                    </div>
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Übertrag Vorjahr') }}</div>
+                        <div class="acard__val">{{ vacationCarryover }}</div>
+                    </div>
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Genommen') }}</div>
+                        <div class="acard__val">{{ vacationStats.used }}</div>
+                        <div v-if="vacationStats.pending > 0" class="acard__sub">
+                            {{ t('worktime', '+ {days} beantragt', { days: vacationStats.pending }) }}
+                        </div>
+                    </div>
+                    <div class="acard acard--hl">
+                        <div class="acard__lab">{{ t('worktime', 'Verbleibend') }}</div>
+                        <div class="acard__val acard__val--pos">{{ vacationStats.remaining }}</div>
+                    </div>
                 </div>
-                <div class="stat">
-                    <span class="label">{{ t('worktime', 'Genommen') }}</span>
-                    <span class="value">{{ vacationStats.used }} {{ t('worktime', 'Tage') }}</span>
+            </section>
+
+            <section v-if="overtime" class="acard-section">
+                <h3>{{ t('worktime', 'Überstunden {year}', { year: currentYear }) }}</h3>
+                <div class="acards acards--3">
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Saldo') }}</div>
+                        <div class="acard__val" :class="overtimeValClass(overtimeSaldoMin)">{{ signedHours(overtimeSaldoMin) }}</div>
+                    </div>
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Freizeitausgleich genommen') }}</div>
+                        <div class="acard__val">{{ compensatoryDays }} {{ t('worktime', 'Tage') }}</div>
+                    </div>
+                    <div class="acard">
+                        <div class="acard__lab">{{ t('worktime', 'Übertrag Vorjahr') }}</div>
+                        <div class="acard__val" :class="overtimeValClass(overtimeCarryMin)">{{ signedHours(overtimeCarryMin) }}</div>
+                    </div>
                 </div>
-                <div class="stat">
-                    <span class="label">{{ t('worktime', 'Ausstehend') }}</span>
-                    <span class="value">{{ vacationStats.pending }} {{ t('worktime', 'Tage') }}</span>
-                </div>
-                <div class="stat highlight">
-                    <span class="label">{{ t('worktime', 'Verbleibend') }}</span>
-                    <span class="value">{{ vacationStats.remaining }} {{ t('worktime', 'Tage') }}</span>
+                <p class="acard-hint">
+                    {{ t('worktime', 'Freizeitausgleich wird als Abwesenheit eingetragen und reduziert die Überstunden automatisch.') }}
+                </p>
+            </section>
+
+            <h3 class="list-title">{{ t('worktime', 'Meine Abwesenheiten') }}</h3>
+            <NcLoadingIcon v-if="loading" :size="44" />
+            <table v-else-if="absences.length > 0 || isCreating" class="absence-table">
+                <thead>
+                    <tr>
+                        <th>{{ t('worktime', 'Zeitraum') }}</th>
+                        <th>{{ t('worktime', 'Art') }}</th>
+                        <th>{{ t('worktime', 'Tage') }}</th>
+                        <th>{{ t('worktime', 'Bemerkung') }}</th>
+                        <th>{{ t('worktime', 'Status') }}</th>
+                        <th>{{ t('worktime', 'Aktionen') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <AbsenceRow
+                        v-if="isCreating"
+                        :absence="null"
+                        mode="create"
+                        :absence-types="absenceTypes"
+                        :vacation-stats="vacationStats"
+                        @save="onCreate"
+                        @cancel="cancelCreate" />
+                    <AbsenceRow
+                        v-for="absence in sortedAbsences"
+                        :key="absence.id"
+                        :absence="absence"
+                        :mode="editingId === absence.id ? 'edit' : 'view'"
+                        :absence-types="absenceTypes"
+                        :vacation-stats="vacationStats"
+                        @edit="startEdit(absence.id)"
+                        @save="onUpdate"
+                        @cancel="cancelEdit"
+                        @remove="confirmRemove" />
+                </tbody>
+            </table>
+            <NcEmptyContent v-else :name="t('worktime', 'Keine Abwesenheiten')">
+                <template #icon>
+                    <CalendarIcon />
+                </template>
+                <template #description>
+                    {{ t('worktime', 'Sie haben noch keine Abwesenheiten eingetragen.') }}
+                </template>
+            </NcEmptyContent>
+
+            <div class="absence-legend">
+                <h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
+                <div class="legend-grid">
+                    <div class="legend-item">
+                        <span class="legend-color type-vacation" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Urlaub') }}</strong>
+                            <span>{{ t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-sick" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Krankheit') }}</strong>
+                            <span>{{ t('worktime', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-child_sick" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Kind krank') }}</strong>
+                            <span>{{ t('worktime', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-special" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Sonderurlaub') }}</strong>
+                            <span>{{ t('worktime', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-training" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Fortbildung') }}</strong>
+                            <span>{{ t('worktime', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-unpaid" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Unbezahlter Urlaub') }}</strong>
+                            <span>{{ t('worktime', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') }}</span>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color type-compensatory" />
+                        <div class="legend-text">
+                            <strong>{{ t('worktime', 'Freizeitausgleich') }}</strong>
+                            <span>{{ t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <NcLoadingIcon v-if="loading" :size="44" />
-
-        <table v-else-if="absences.length > 0 || isCreating" class="absence-table">
-            <thead>
-                <tr>
-                    <th>{{ t('worktime', 'Zeitraum') }}</th>
-                    <th>{{ t('worktime', 'Art') }}</th>
-                    <th>{{ t('worktime', 'Tage') }}</th>
-                    <th>{{ t('worktime', 'Bemerkung') }}</th>
-                    <th>{{ t('worktime', 'Status') }}</th>
-                    <th>{{ t('worktime', 'Aktionen') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Create Row -->
-                <AbsenceRow
-                    v-if="isCreating"
-                    :absence="null"
-                    mode="create"
-                    :absence-types="absenceTypes"
-                    :vacation-stats="vacationStats"
-                    @save="onCreate"
-                    @cancel="cancelCreate" />
-
-                <!-- Existing Absences -->
-                <AbsenceRow
-                    v-for="absence in sortedAbsences"
-                    :key="absence.id"
-                    :absence="absence"
-                    :mode="editingId === absence.id ? 'edit' : 'view'"
-                    :absence-types="absenceTypes"
-                    :vacation-stats="vacationStats"
-                    @edit="startEdit(absence.id)"
-                    @save="onUpdate"
-                    @cancel="cancelEdit"
-                    @remove="confirmRemove" />
-            </tbody>
-        </table>
-
-        <NcEmptyContent v-else
-            :name="t('worktime', 'Keine Abwesenheiten')">
-            <template #icon>
-                <CalendarIcon />
-            </template>
-            <template #description>
-                {{ t('worktime', 'Sie haben noch keine Abwesenheiten eingetragen.') }}
-            </template>
-        </NcEmptyContent>
-
-        <div class="absence-legend">
-            <h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
-            <div class="legend-grid">
-                <div class="legend-item">
-                    <span class="legend-color type-vacation"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Urlaub') }}</strong>
-                        <span>{{ t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-sick"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Krankheit') }}</strong>
-                        <span>{{ t('worktime', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-child_sick"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Kind krank') }}</strong>
-                        <span>{{ t('worktime', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-special"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Sonderurlaub') }}</strong>
-                        <span>{{ t('worktime', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-training"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Fortbildung') }}</strong>
-                        <span>{{ t('worktime', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-unpaid"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Unbezahlter Urlaub') }}</strong>
-                        <span>{{ t('worktime', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') }}</span>
-                    </div>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color type-compensatory"></span>
-                    <div class="legend-text">
-                        <strong>{{ t('worktime', 'Freizeitausgleich') }}</strong>
-                        <span>{{ t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') }}</span>
-                    </div>
-                </div>
+        <!-- ============ TEAM ============ -->
+        <div v-show="tab === 'team'">
+            <div class="team-head">
+                <MonthPicker :year="teamMonth.year" :month="teamMonth.month" @update="onTeamMonthChange" />
             </div>
+            <NcLoadingIcon v-if="teamLoading" :size="44" />
+            <AbsenceTimeline v-else
+                :employees="teamOverview"
+                :year="teamMonth.year"
+                :month="teamMonth.month"
+                :holidays="teamHolidays"
+                :show-full-legend="isPrivileged" />
         </div>
     </div>
 </template>
@@ -146,8 +191,13 @@ import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import { mapGetters, mapActions } from 'vuex'
 import AbsenceRow from '../components/AbsenceRow.vue'
-import { getCurrentYear } from '../utils/dateUtils.js'
+import MonthPicker from '../components/MonthPicker.vue'
+import AbsenceTimeline from '../components/AbsenceTimeline.vue'
+import { getCurrentYear, getCurrentMonth, getLocale } from '../utils/dateUtils.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
+import ReportService from '../services/ReportService.js'
+import AbsenceService from '../services/AbsenceService.js'
+import HolidayService from '../services/HolidayService.js'
 
 export default {
     name: 'AbsenceView',
@@ -158,19 +208,49 @@ export default {
         PlusIcon,
         CalendarIcon,
         AbsenceRow,
+        MonthPicker,
+        AbsenceTimeline,
     },
     data() {
         return {
+            tab: 'konto',
             currentYear: getCurrentYear(),
             editingId: null,
             isCreating: false,
+            overtime: null,
+            teamMonth: { year: getCurrentYear(), month: getCurrentMonth() },
+            teamOverview: [],
+            teamHolidays: [],
+            teamLoading: false,
+            teamLoaded: false,
         }
     },
     computed: {
         ...mapGetters('absences', ['absences', 'absenceTypes', 'vacationStats', 'loading']),
-        ...mapGetters('permissions', ['employeeId']),
+        ...mapGetters('permissions', ['employeeId', 'isAdmin', 'isHrManager', 'canApprove']),
+        isPrivileged() {
+            return this.isAdmin || this.isHrManager || this.canApprove
+        },
         sortedAbsences() {
             return [...this.absences].sort((a, b) => b.startDate.localeCompare(a.startDate))
+        },
+        vacationCarryover() {
+            return Math.round(this.vacationStats?.carryover ?? 0)
+        },
+        vacationBase() {
+            if (!this.vacationStats) return 0
+            return Math.round((this.vacationStats.total ?? 0) - (this.vacationStats.carryover ?? 0))
+        },
+        overtimeSaldoMin() {
+            return this.overtime?.totalOvertimeMinutes ?? 0
+        },
+        overtimeCarryMin() {
+            return this.overtime?.carryoverMinutes ?? 0
+        },
+        compensatoryDays() {
+            return this.absences
+                .filter(a => a.type === 'compensatory' && a.status === 'approved')
+                .reduce((sum, a) => sum + (Number(a.days) || 0), 0)
         },
     },
     watch: {
@@ -182,9 +262,6 @@ export default {
                 }
             },
         },
-    },
-    mounted() {
-        this.$store.dispatch('absences/fetchAbsenceTypes')
     },
     methods: {
         ...mapActions('absences', [
@@ -199,7 +276,52 @@ export default {
             await Promise.all([
                 this.fetchAbsences(this.currentYear),
                 this.fetchVacationStats(this.currentYear),
+                this.loadOvertime(),
             ])
+        },
+        async loadOvertime() {
+            if (!this.employeeId) return
+            try {
+                this.overtime = await ReportService.getOvertime(this.employeeId, this.currentYear)
+            } catch (error) {
+                console.error('Failed to load overtime stats:', error)
+            }
+        },
+        switchToTeam() {
+            this.tab = 'team'
+            if (!this.teamLoaded) {
+                this.loadTeam()
+            }
+        },
+        onTeamMonthChange({ year, month }) {
+            this.teamMonth = { year, month }
+            this.loadTeam()
+        },
+        async loadTeam() {
+            this.teamLoading = true
+            try {
+                const [overviewRes, holidaysRes] = await Promise.all([
+                    AbsenceService.getOverview(this.teamMonth.year, this.teamMonth.month),
+                    HolidayService.getByYear(this.teamMonth.year),
+                ])
+                this.teamOverview = Array.isArray(overviewRes) ? overviewRes : (overviewRes?.data || [])
+                const holidayData = Array.isArray(holidaysRes) ? holidaysRes : (holidaysRes?.data || [])
+                this.teamHolidays = holidayData.map(h => ({ date: h.date, name: h.name }))
+                this.teamLoaded = true
+            } catch (error) {
+                console.error('Failed to load absence overview', error)
+                this.teamOverview = []
+            } finally {
+                this.teamLoading = false
+            }
+        },
+        overtimeValClass(minutes) {
+            return { 'acard__val--pos': minutes > 0, 'acard__val--neg': minutes < 0 }
+        },
+        signedHours(minutes) {
+            const hours = (Math.abs(minutes) / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            const sign = minutes < 0 ? '−' : '+'
+            return `${sign}${hours} h`
         },
         startCreate() {
             this.editingId = null
@@ -238,8 +360,6 @@ export default {
             }
         },
         async confirmRemove(absence) {
-            // Genehmigte Urlaube/Sonderurlaube bleiben mit Status "Storniert" in der Liste (Audit-Trail)
-            // Pending, rejected und Krankheit werden komplett geloescht
             const shouldCancel = absence.status === 'approved'
                 && absence.type !== 'sick' && absence.type !== 'child_sick'
 
@@ -283,8 +403,8 @@ export default {
 
 .view-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 16px;
     margin-bottom: 20px;
 }
 
@@ -292,46 +412,113 @@ export default {
     margin: 0;
 }
 
-.vacation-stats {
-    margin-bottom: 24px;
-    padding: 20px;
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
+.header-spacer {
+    flex: 1;
 }
 
-.vacation-stats h3 {
-    margin: 0 0 12px 0;
+/* Segment-Umschalter (NC-Control-Form, konsistent mit Zeiten) */
+.seg {
+    display: flex;
+    background: var(--color-background-dark);
+    border-radius: var(--border-radius-element, 8px);
+    padding: 3px;
+}
+
+.seg-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    background: none;
+    border: none;
+    padding: 6px 16px;
+    border-radius: var(--border-radius-element, 8px);
+    cursor: pointer;
+}
+
+.seg-btn.active {
+    background: var(--color-main-background);
+    color: var(--color-primary-element);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Stat-Cards (konsistent mit KPI-Cards) */
+.acard-section {
+    margin-bottom: 20px;
+}
+
+.acard-section h3 {
     font-size: 15px;
     font-weight: 600;
+    margin: 0 0 12px;
 }
 
-.stats-row {
-    display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
+.acards {
+    display: grid;
+    gap: 12px;
 }
 
-.stat {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+.acards--4 {
+    grid-template-columns: repeat(4, 1fr);
 }
 
-.stat .label {
+.acards--3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.acard {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 14px 16px;
+}
+
+.acard--hl {
+    border-color: var(--wt-vacation, #4a9d63);
+}
+
+.acard__lab {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+}
+
+.acard__val {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.acard__val--pos {
+    color: var(--color-success-text);
+}
+
+.acard__val--neg {
+    color: var(--color-error-text);
+}
+
+.acard__sub {
+    font-size: 12.5px;
+    color: var(--color-text-maxcontrast);
+    margin-top: 4px;
+}
+
+.acard-hint {
+    margin-top: 10px;
     font-size: 13px;
     color: var(--color-text-maxcontrast);
 }
 
-.stat .value {
+.list-title {
     font-size: 15px;
     font-weight: 600;
-    font-variant-numeric: tabular-nums;
+    margin: 4px 0 12px;
 }
 
-.stat.highlight .value {
-    color: var(--color-success-text);
-    font-weight: 600;
+.team-head {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
 }
 
 .absence-table {
@@ -349,7 +536,7 @@ export default {
     font-size: 15px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    border-bottom: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .absence-table td {
@@ -389,9 +576,9 @@ export default {
     margin-top: 3px;
 }
 
-.type-vacation { background-color: #0082c9; }
-.type-sick { background-color: #e74c3c; }
-.type-child_sick { background-color: #f39c12; }
+.type-vacation { background-color: #4a9d63; }
+.type-sick { background-color: #cc4b42; }
+.type-child_sick { background-color: #e0863a; }
 .type-special { background-color: #9b59b6; }
 .type-training { background-color: #2ecc71; }
 .type-unpaid { background-color: #34495e; }

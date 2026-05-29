@@ -4,7 +4,6 @@ import store from '../store/index.js'
 
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
-import AbsenceOverviewView from '../views/AbsenceOverviewView.vue'
 import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
 import MySettingsView from '../views/MySettingsView.vue'
@@ -29,10 +28,9 @@ const routes = [
 		component: AbsenceView,
 	},
 	{
+		// Zusammengeführt in Abwesenheit → Team-Tab
 		path: '/absence-overview',
-		name: 'absence-overview',
-		component: AbsenceOverviewView,
-		meta: { requiresEmployee: true },
+		redirect: '/absences',
 	},
 	{
 		path: '/team',
