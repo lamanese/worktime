@@ -40,7 +40,7 @@
                     <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis heute berechnet. Noch nicht erfasste Arbeitstage erscheinen als Minusstunden.') }}</InfoIcon>
                 </div>
                 <div class="kpi-num" :class="{ pos: overtimeMinutes > 0, neg: overtimeMinutes < 0 }">
-                    {{ overtimeMinutes > 0 ? '+' : '' }}{{ signedHoursLabel(overtimeMinutes) }} <small>h</small>
+                    {{ overtimeMinutes > 0 ? '+' : '' }}{{ absHoursLabel(overtimeMinutes) }} <small>h</small>
                 </div>
                 <div class="kpi-sub">{{ t('worktime', 'Stand heute') }}</div>
             </div>
@@ -95,12 +95,8 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import { formatMinutesWithUnit } from '../utils/timeUtils.js'
-import { getMonthName } from '../utils/dateUtils.js'
+import { getMonthName, getLocale } from '../utils/dateUtils.js'
 import InfoIcon from '../components/InfoIcon.vue'
-
-function locale() {
-    return document.documentElement.lang || navigator.language || 'de-DE'
-}
 
 export default {
     name: 'OvertimeSummary',
@@ -179,7 +175,7 @@ export default {
             if (this.pacingPositive) {
                 return this.t('worktime', 'anteilig: im Plan')
             }
-            return this.t('worktime', '{hours} h unter Plan', { hours: this.signedHoursLabel(Math.abs(this.overtimeMinutes)) })
+            return this.t('worktime', '{hours} h unter Plan', { hours: this.absHoursLabel(this.overtimeMinutes) })
         },
         vacationSub() {
             if (this.vacationCarryover > 0) {
@@ -196,10 +192,10 @@ export default {
             return formatMinutesWithUnit(minutes)
         },
         hoursLabel(minutes) {
-            return (minutes / 60).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            return (minutes / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
         },
-        signedHoursLabel(minutes) {
-            return (Math.abs(minutes) / 60).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        absHoursLabel(minutes) {
+            return (Math.abs(minutes) / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
         },
     },
 }
