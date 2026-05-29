@@ -197,10 +197,6 @@ export default {
         hasSubmittableEntries() {
             return this.timeEntries.some(e => e.status === 'draft' || e.status === 'rejected')
         },
-        allEntriesSubmitted() {
-            return this.timeEntries.length > 0
-                && this.timeEntries.every(e => e.status !== 'draft' && e.status !== 'rejected')
-        },
         monthStatus() {
             if (!this.approvalRequired) return null
             const entries = this.timeEntries
