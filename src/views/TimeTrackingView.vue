@@ -17,7 +17,11 @@
                         {{ t('worktime', 'Kalender') }}
                     </button>
                 </div>
-                <NcButton v-if="approvalRequired && hasSubmittableEntries"
+                <span v-if="monthStatus" class="month-badge" :class="monthStatus">
+                    <span class="badge-dot" />
+                    {{ monthStatusLabel }}
+                </span>
+                <NcButton v-if="approvalRequired && monthStatus === 'draft' && hasSubmittableEntries"
                     type="secondary"
                     @click="confirmSubmitMonth">
                     <template #icon>
@@ -25,10 +29,6 @@
                     </template>
                     {{ t('worktime', 'Monat einreichen') }}
                 </NcButton>
-                <span v-else-if="approvalRequired && allEntriesSubmitted" class="status-info">
-                    <CheckIcon :size="20" />
-                    {{ t('worktime', 'Eingereicht') }}
-                </span>
                 <NcButton type="secondary" @click="downloadPdf">
                     <template #icon>
                         <DownloadIcon :size="20" />
@@ -39,6 +39,11 @@
                     :month="selectedMonth.month"
                     @update="onMonthChange" />
             </div>
+        </div>
+
+        <div v-if="locked" class="lock-banner">
+            <LockIcon :size="20" />
+            {{ t('worktime', 'Monat genehmigt – Einträge gesperrt. Korrektur nur durch HR.') }}
         </div>
 
         <OvertimeSummary v-if="statistics"
@@ -68,6 +73,7 @@
             <div v-if="!isNarrow && selectedDay" class="zlayout-panel card">
                 <DayDetailPanel :day="selectedDay"
                     :projects="projects"
+                    :month-status="monthStatus"
                     @refresh="loadData" />
             </div>
         </div>
@@ -98,6 +104,7 @@
             <div class="modal-panel">
                 <DayDetailPanel :day="selectedDay"
                     :projects="projects"
+                    :month-status="monthStatus"
                     @refresh="loadData" />
             </div>
         </NcModal>
@@ -109,7 +116,7 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import SendIcon from 'vue-material-design-icons/Send.vue'
-import CheckIcon from 'vue-material-design-icons/Check.vue'
+import LockIcon from 'vue-material-design-icons/Lock.vue'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
@@ -137,7 +144,7 @@ export default {
         NcLoadingIcon,
         NcModal,
         SendIcon,
-        CheckIcon,
+        LockIcon,
         DownloadIcon,
         ChevronDown,
         ChevronUp,
@@ -193,6 +200,24 @@ export default {
         allEntriesSubmitted() {
             return this.timeEntries.length > 0
                 && this.timeEntries.every(e => e.status !== 'draft' && e.status !== 'rejected')
+        },
+        monthStatus() {
+            if (!this.approvalRequired) return null
+            const entries = this.timeEntries
+            if (!entries.length) return 'draft'
+            if (entries.every(e => e.status === 'approved')) return 'approved'
+            if (entries.every(e => e.status !== 'draft' && e.status !== 'rejected')) return 'submitted'
+            return 'draft'
+        },
+        locked() {
+            return this.monthStatus === 'approved'
+        },
+        monthStatusLabel() {
+            return {
+                draft: this.t('worktime', 'Entwurf'),
+                submitted: this.t('worktime', 'Eingereicht – wartet auf Genehmigung'),
+                approved: this.t('worktime', 'Genehmigt'),
+            }[this.monthStatus] || ''
         },
         absenceByDate() {
             const map = {}
@@ -438,12 +463,51 @@ export default {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-.status-info {
+.month-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 5px 12px;
+}
+
+.month-badge .badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+}
+
+.month-badge.draft {
+    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+}
+
+.month-badge.submitted {
+    background: var(--color-background-hover);
+    color: #c98b3a;
+}
+
+.month-badge.approved {
+    background: var(--color-background-hover);
+    color: #4a9d63;
+}
+
+.lock-banner {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--color-success-text);
-    font-weight: 500;
+    gap: 10px;
+    background: var(--color-background-hover);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 11px 15px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a9d63;
 }
 
 .zlayout {
