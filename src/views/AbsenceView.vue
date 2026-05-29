@@ -263,9 +263,6 @@ export default {
             },
         },
     },
-    mounted() {
-        this.$store.dispatch('absences/fetchAbsenceTypes')
-    },
     methods: {
         ...mapActions('absences', [
             'fetchAbsences',
