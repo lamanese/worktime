@@ -184,4 +184,9 @@ export default {
 	--wt-unpaid: #6b7280;
 	--wt-special: #0891b2;
 }
+
+/* Trenner zwischen NcSettingsSection-Themen kräftiger (Default --color-border ist kaum sichtbar) */
+.settings-section:not(:last-child) {
+	border-bottom-color: var(--color-border-dark, var(--color-border)) !important;
+}
 </style>

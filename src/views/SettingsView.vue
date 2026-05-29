@@ -1570,7 +1570,7 @@ export default {
     padding: 8px 10px;
     border-bottom: 1px solid var(--color-border);
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 .carryover-table th {
