@@ -45,46 +45,46 @@
 
         <div v-else class="audit-card">
             <table class="audit-table">
-            <thead>
-                <tr>
-                    <th>{{ t('worktime', 'Zeitpunkt') }}</th>
-                    <th>{{ t('worktime', 'Benutzer') }}</th>
-                    <th>{{ t('worktime', 'Aktion') }}</th>
-                    <th>{{ t('worktime', 'Typ') }}</th>
-                    <th>{{ t('worktime', 'ID') }}</th>
-                    <th>{{ t('worktime', 'Änderung') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="entry in entries" :key="entry.id" class="audit-row">
-                    <td class="nowrap">{{ formatDateTime(entry.createdAt) }}</td>
-                    <td>{{ entry.userId }}</td>
-                    <td>
-                        <span class="action-badge" :class="'action-' + entry.action">
-                            {{ translateAction(entry.action) }}
-                        </span>
-                    </td>
-                    <td>{{ translateEntityType(entry.entityType) }}</td>
-                    <td>{{ entry.entityId || '-' }}</td>
-                    <td class="diff-cell">
-                        <template v-if="entry.action === 'update'">
-                            <div v-for="d in updateDiff(entry)" :key="d.key" class="diff-item">
-                                <span class="diff-key">{{ d.key }}:</span>
-                                <span class="diff-old-val">{{ d.old }}</span>
-                                <span class="diff-arrow">→</span>
-                                <span class="diff-new-val">{{ d.new }}</span>
-                            </div>
-                        </template>
-                        <span v-else-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
-                            {{ formatValues(entry.oldValues) }}
-                        </span>
-                        <span v-else-if="entry.action === 'create' && entry.newValues" class="diff-new">
-                            {{ formatValues(entry.newValues) }}
-                        </span>
-                        <span v-else>-</span>
-                    </td>
-                </tr>
-            </tbody>
+                <thead>
+                    <tr>
+                        <th>{{ t('worktime', 'Zeitpunkt') }}</th>
+                        <th>{{ t('worktime', 'Benutzer') }}</th>
+                        <th>{{ t('worktime', 'Aktion') }}</th>
+                        <th>{{ t('worktime', 'Typ') }}</th>
+                        <th>{{ t('worktime', 'ID') }}</th>
+                        <th>{{ t('worktime', 'Änderung') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="entry in entries" :key="entry.id" class="audit-row">
+                        <td class="nowrap">{{ formatDateTime(entry.createdAt) }}</td>
+                        <td>{{ entry.userId }}</td>
+                        <td>
+                            <span class="action-badge" :class="'action-' + entry.action">
+                                {{ translateAction(entry.action) }}
+                            </span>
+                        </td>
+                        <td>{{ translateEntityType(entry.entityType) }}</td>
+                        <td>{{ entry.entityId || '-' }}</td>
+                        <td class="diff-cell">
+                            <template v-if="entry.action === 'update'">
+                                <div v-for="d in updateDiff(entry)" :key="d.key" class="diff-item">
+                                    <span class="diff-key">{{ d.key }}:</span>
+                                    <span class="diff-old-val">{{ d.old }}</span>
+                                    <span class="diff-arrow">→</span>
+                                    <span class="diff-new-val">{{ d.new }}</span>
+                                </div>
+                            </template>
+                            <span v-else-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
+                                {{ formatValues(entry.oldValues) }}
+                            </span>
+                            <span v-else-if="entry.action === 'create' && entry.newValues" class="diff-new">
+                                {{ formatValues(entry.newValues) }}
+                            </span>
+                            <span v-else>-</span>
+                        </td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
