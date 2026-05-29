@@ -179,5 +179,9 @@ export default {
 	--wt-vacation: #4a9d63;
 	--wt-sick: #cc4b42;
 	--wt-holiday: #c98b3a;
+	--wt-child-sick: #d4763a;
+	--wt-compensatory: #7c3aed;
+	--wt-unpaid: #6b7280;
+	--wt-special: #0891b2;
 }
 </style>

@@ -907,10 +907,10 @@ export default {
 
 .absence-type-badge.vacation { background: var(--wt-vacation, #4a9d63); }
 .absence-type-badge.sick { background: var(--wt-sick, #cc4b42); }
-.absence-type-badge.child_sick { background: #d4763a; }
-.absence-type-badge.compensatory { background: #7c3aed; }
-.absence-type-badge.unpaid { background: #6b7280; }
-.absence-type-badge.special { background: #0891b2; }
+.absence-type-badge.child_sick { background: var(--wt-child-sick, #d4763a); }
+.absence-type-badge.compensatory { background: var(--wt-compensatory, #7c3aed); }
+.absence-type-badge.unpaid { background: var(--wt-unpaid, #6b7280); }
+.absence-type-badge.special { background: var(--wt-special, #0891b2); }
 .absence-type-badge.training { background: var(--wt-holiday, #c98b3a); }
 
 .absence-days {
