@@ -2,11 +2,8 @@
     <div class="my-settings-view">
         <h2>{{ t('worktime', 'Meine Einstellungen') }}</h2>
 
-        <div class="settings-section">
-            <h3>{{ t('worktime', 'Standard-Arbeitszeiten') }}</h3>
-            <p class="settings-description">
-                {{ t('worktime', 'Diese Zeiten werden beim Anlegen neuer Zeiteinträge vorausgefüllt.') }}
-            </p>
+        <NcSettingsSection :name="t('worktime', 'Standard-Arbeitszeiten')"
+            :description="t('worktime', 'Diese Zeiten werden beim Anlegen neuer Zeiteinträge vorausgefüllt.')">
 
             <div class="settings-form">
                 <div class="form-row">
@@ -40,13 +37,10 @@
                     {{ t('worktime', 'Leer lassen für Standardwerte (08:00 - 17:00).') }}
                 </p>
             </div>
-        </div>
+        </NcSettingsSection>
 
-        <div class="settings-section">
-            <h3>{{ t('worktime', 'Datenschutz') }}</h3>
-            <p class="settings-description">
-                {{ t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.') }}
-            </p>
+        <NcSettingsSection :name="t('worktime', 'Datenschutz')"
+            :description="t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.')">
 
             <div class="settings-form">
                 <div class="form-group">
@@ -82,12 +76,13 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </NcSettingsSection>
     </div>
 </template>
 
 <script>
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -97,6 +92,7 @@ export default {
     components: {
         InfoIcon,
         NcLoadingIcon,
+        NcSettingsSection,
     },
     data() {
         return {
@@ -215,28 +211,8 @@ export default {
     margin: 0 0 24px 0;
 }
 
-.settings-section {
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
-    padding: 20px;
-}
-
-.settings-section + .settings-section {
-    margin-top: 24px;
-}
-
-.settings-section h3 {
-    margin: 0 0 8px 0;
-}
-
-.settings-description {
-    color: var(--color-text-maxcontrast);
-    margin: 0 0 20px 0;
-}
-
 .settings-form {
-    margin-top: 16px;
+    margin-top: 8px;
 }
 
 .form-row {

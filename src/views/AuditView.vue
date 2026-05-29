@@ -43,7 +43,8 @@
             </template>
         </NcEmptyContent>
 
-        <table v-else class="audit-table">
+        <div v-else class="audit-card">
+            <table class="audit-table">
             <thead>
                 <tr>
                     <th>{{ t('worktime', 'Zeitpunkt') }}</th>
@@ -84,7 +85,8 @@
                     </td>
                 </tr>
             </tbody>
-        </table>
+            </table>
+        </div>
 
         <p v-if="entries.length >= 200" class="limit-hint">
             {{ t('worktime', 'Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken.') }}
@@ -218,7 +220,16 @@ export default {
 <style scoped>
 .audit-view {
     padding: 20px;
+    padding-left: 50px;
     max-width: 1400px;
+}
+
+.audit-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 8px 16px;
+    overflow-x: auto;
 }
 
 .view-header {
@@ -250,8 +261,9 @@ export default {
 .audit-table th {
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
     font-weight: 600;
+    color: var(--color-text-maxcontrast);
     white-space: nowrap;
 }
 
@@ -277,12 +289,12 @@ export default {
     font-weight: 500;
 }
 
-.action-create { background: #16a34a; color: #fff; }
-.action-update { background: #2563eb; color: #fff; }
-.action-delete { background: #dc2626; color: #fff; }
-.action-submit { background: #d97706; color: #fff; }
-.action-approve { background: #16a34a; color: #fff; }
-.action-reject { background: #dc2626; color: #fff; }
+.action-create { background: var(--wt-vacation, #4a9d63); color: #fff; }
+.action-update { background: var(--color-primary-element, #2563eb); color: #fff; }
+.action-delete { background: var(--wt-sick, #cc4b42); color: #fff; }
+.action-submit { background: var(--wt-holiday, #c98b3a); color: #fff; }
+.action-approve { background: var(--wt-vacation, #4a9d63); color: #fff; }
+.action-reject { background: var(--wt-sick, #cc4b42); color: #fff; }
 
 .diff-cell {
     max-width: 500px;
@@ -292,13 +304,13 @@ export default {
 
 .diff-old {
     display: block;
-    color: #b91c1c;
+    color: var(--color-error-text);
     text-decoration: line-through;
 }
 
 .diff-new {
     display: block;
-    color: #15803d;
+    color: var(--color-success-text);
 }
 
 .diff-item {
@@ -311,31 +323,31 @@ export default {
 
 .diff-key {
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--color-main-text);
     white-space: nowrap;
 }
 
 .diff-old-val {
-    color: #b91c1c;
+    color: var(--color-error-text);
     text-decoration: line-through;
 }
 
 .diff-arrow {
-    color: #555;
+    color: var(--color-text-maxcontrast);
 }
 
 .diff-new-val {
-    color: #15803d;
+    color: var(--color-success-text);
 }
 
 .loading-hint {
     padding: 20px;
-    color: #555;
+    color: var(--color-text-maxcontrast);
 }
 
 .limit-hint {
     margin-top: 12px;
     font-size: 0.85em;
-    color: #555;
+    color: var(--color-text-maxcontrast);
 }
 </style>
