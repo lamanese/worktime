@@ -203,8 +203,8 @@ export default {
 /* Member card – same pattern as dashboard-card / stat-card */
 .member-card {
     background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
     padding: 20px;
     overflow-x: auto;
 }
@@ -239,7 +239,7 @@ table {
     font-size: 13px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    border-bottom: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
     white-space: nowrap;
 }
 
@@ -303,11 +303,11 @@ table {
 }
 
 .status-approved {
-    color: #2d8c3c;
+    color: var(--wt-vacation, #4a9d63);
 }
 
 .status-submitted {
-    color: #c98a07;
+    color: var(--wt-holiday, #c98b3a);
 }
 
 .status-submitted.clickable {
@@ -319,7 +319,7 @@ table {
 }
 
 .status-rejected {
-    color: #c9302c;
+    color: var(--wt-sick, #cc4b42);
 }
 
 .muted {

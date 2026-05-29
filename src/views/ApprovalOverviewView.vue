@@ -630,16 +630,18 @@ export default {
 }
 
 .report-section {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 16px 20px;
 }
 
 .report-section h3 {
-    margin: 0 0 12px 0;
-    font-size: 15px;
+    margin: 0 0 14px 0;
+    font-size: 17px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--color-main-text);
 }
 
 .approval-table-wrapper {
@@ -662,7 +664,7 @@ export default {
     font-size: 15px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    border-bottom: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .approval-table td {
@@ -903,13 +905,13 @@ export default {
     background: #2563eb;
 }
 
-.absence-type-badge.vacation { background: #16a34a; }
-.absence-type-badge.sick { background: #dc2626; }
-.absence-type-badge.child_sick { background: #ea580c; }
+.absence-type-badge.vacation { background: var(--wt-vacation, #4a9d63); }
+.absence-type-badge.sick { background: var(--wt-sick, #cc4b42); }
+.absence-type-badge.child_sick { background: #d4763a; }
 .absence-type-badge.compensatory { background: #7c3aed; }
 .absence-type-badge.unpaid { background: #6b7280; }
 .absence-type-badge.special { background: #0891b2; }
-.absence-type-badge.training { background: #d97706; }
+.absence-type-badge.training { background: var(--wt-holiday, #c98b3a); }
 
 .absence-days {
     font-size: 12px;
