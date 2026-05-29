@@ -881,7 +881,7 @@ export default {
 }
 
 .detail-absence-row {
-    background: #f0f7ff;
+    background: var(--color-background-hover);
 }
 
 .absence-date-cell {
