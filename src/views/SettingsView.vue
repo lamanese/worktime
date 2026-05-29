@@ -1441,7 +1441,8 @@ export default {
 
 .holiday-table th {
     font-weight: 600;
-    background: var(--color-background-hover);
+    color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .holiday-table td.actions {
@@ -1576,6 +1577,7 @@ export default {
     font-weight: 600;
     font-size: 13px;
     color: var(--color-text-maxcontrast);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .carryover-input {

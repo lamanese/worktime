@@ -137,7 +137,7 @@ export default {
     font-weight: 600;
     color: var(--color-text-maxcontrast);
     font-size: 0.9em;
-    background: var(--color-background-dark);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .employees-table tbody tr:hover {
@@ -172,7 +172,7 @@ td.actions-col {
 }
 
 .status-badge.active {
-    background: #2e7d32;
+    background: var(--wt-vacation, #4a9d63);
     color: white;
 }
 
