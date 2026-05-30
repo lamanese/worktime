@@ -46,15 +46,13 @@
                 <div class="form-group">
                     <label for="absenceVisibility">{{ t('worktime', 'Abwesenheiten sichtbar für') }}</label>
                     <div class="visibility-row">
-                        <select id="absenceVisibility"
-                            v-model="form.absenceVisibility"
-                            class="visibility-select"
+                        <NcSelect id="absenceVisibility"
+                            v-model="selectedVisibility"
+                            :options="visibilityOptions"
+                            :clearable="false"
                             :disabled="savingVisibility"
-                            @change="saveVisibility">
-                            <option value="none">{{ t('worktime', 'Niemand') }}</option>
-                            <option value="team">{{ t('worktime', 'Mein Team') }}</option>
-                            <option value="all">{{ t('worktime', 'Alle Mitarbeiter') }}</option>
-                        </select>
+                            class="visibility-select"
+                            @input="saveVisibility" />
                         <NcLoadingIcon v-if="savingVisibility" :size="20" />
                         <span v-if="visibilitySaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
                     </div>
@@ -63,14 +61,13 @@
                 <div v-if="form.absenceVisibility !== 'none'" class="form-group">
                     <label for="absenceDetail">{{ t('worktime', 'Detailgrad') }} <InfoIcon>{{ t('worktime', 'Legt fest, ob Kollegen in der Abwesenheitsübersicht Ihren Abwesenheitsgrund sehen (z.B. Urlaub) oder nur Abwesend. Vorgesetzte und HR sehen immer den Grund.') }}</InfoIcon></label>
                     <div class="visibility-row">
-                        <select id="absenceDetail"
-                            v-model="form.absenceDetail"
-                            class="visibility-select"
+                        <NcSelect id="absenceDetail"
+                            v-model="selectedDetail"
+                            :options="detailOptions"
+                            :clearable="false"
                             :disabled="savingDetail"
-                            @change="saveDetail">
-                            <option value="hidden">{{ t('worktime', 'Nur \"Abwesend\" anzeigen') }}</option>
-                            <option value="detailed">{{ t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, ...)') }}</option>
-                        </select>
+                            class="visibility-select"
+                            @input="saveDetail" />
                         <NcLoadingIcon v-if="savingDetail" :size="20" />
                         <span v-if="detailSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
                     </div>
@@ -83,6 +80,7 @@
 <script>
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
+import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -93,6 +91,7 @@ export default {
         InfoIcon,
         NcLoadingIcon,
         NcSettingsSection,
+        NcSelect,
     },
     data() {
         return {
@@ -118,6 +117,35 @@ export default {
     },
     computed: {
         ...mapGetters('employees', ['currentEmployee']),
+        visibilityOptions() {
+            return [
+                { id: 'none', label: this.t('worktime', 'Niemand') },
+                { id: 'team', label: this.t('worktime', 'Mein Team') },
+                { id: 'all', label: this.t('worktime', 'Alle Mitarbeiter') },
+            ]
+        },
+        detailOptions() {
+            return [
+                { id: 'hidden', label: this.t('worktime', 'Nur „Abwesend" anzeigen') },
+                { id: 'detailed', label: this.t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, …)') },
+            ]
+        },
+        selectedVisibility: {
+            get() {
+                return this.visibilityOptions.find(o => o.id === this.form.absenceVisibility) || null
+            },
+            set(value) {
+                this.form.absenceVisibility = value?.id || 'none'
+            },
+        },
+        selectedDetail: {
+            get() {
+                return this.detailOptions.find(o => o.id === this.form.absenceDetail) || null
+            },
+            set(value) {
+                this.form.absenceDetail = value?.id || 'hidden'
+            },
+        },
     },
     watch: {
         currentEmployee: {
@@ -258,11 +286,7 @@ export default {
 }
 
 .visibility-select {
-    width: 16rem;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background: var(--color-main-background);
+    min-width: 16rem;
 }
 
 .saved-hint {
