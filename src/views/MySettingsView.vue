@@ -158,7 +158,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions('employees', ['updateMyDefaults', 'fetchCurrentEmployee']),
+        ...mapActions('employees', ['updateMyDefaults']),
         loadFromEmployee(employee) {
             this.form.defaultStartTime = employee.defaultStartTime || '08:00'
             this.form.defaultEndTime = employee.defaultEndTime || '17:00'
