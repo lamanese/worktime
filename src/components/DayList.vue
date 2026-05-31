@@ -6,7 +6,8 @@
             <div class="dl-r">{{ t('worktime', 'Pause') }}</div>
             <div class="dl-r">{{ t('worktime', 'Stunden') }}</div>
         </div>
-        <div class="dl-body">
+        <!-- Wrapper-Div bleibt, damit .dl-day:first-child den obersten Trennstrich entfernt -->
+        <div>
             <div v-for="day in days"
                 :key="day.date"
                 class="dl-day"
@@ -17,7 +18,8 @@
                 @keydown.enter="$emit('select', day.date)"
                 @keydown.space.prevent="$emit('select', day.date)">
                 <div class="dl-d">
-                    {{ weekday(day) }} {{ pad(day.day) }}.
+                    <span>{{ weekday(day) }} {{ pad(day.day) }}.</span>
+                    <span v-if="day.isToday" class="today-badge">{{ t('worktime', 'Heute') }}</span>
                     <small>{{ monthShort }}</small>
                 </div>
 
@@ -101,6 +103,11 @@ export default {
 <style scoped>
 .day-list {
     font-size: 14px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 14px 0 0;
+    overflow: hidden;
 }
 
 .dl-head,
@@ -112,16 +119,11 @@ export default {
 }
 
 .dl-head {
-    padding: 0 14px 7px;
+    padding: 0 14px 10px;
     font-size: 12px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-}
-
-.dl-body {
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius);
-    overflow: hidden;
+    border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 }
 
 .dl-day {
@@ -152,10 +154,18 @@ export default {
     color: var(--color-primary-element);
 }
 
-.dl-day.today .dl-d::after {
-    content: "•";
-    margin-left: 5px;
-    color: var(--color-primary-element);
+.today-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--color-primary-element);
+    color: var(--color-primary-element-text, #ffffff);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-radius: var(--border-radius-element, 6px);
+    vertical-align: middle;
+    text-transform: uppercase;
 }
 
 /* Leere Tage (inkl. Wochenende/Feiertag ohne Eintrag) dezent und kompakt */

@@ -522,7 +522,8 @@
 		"Pausenregelung": "Break Rules",
 		"PDF-Archiv": "PDF Archive",
 		"Inhaltsübersicht": "Table of contents",
-		"Inhalt": "Contents"
+		"Inhalt": "Contents",
+		"Heute": "Today"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
