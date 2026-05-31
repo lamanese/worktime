@@ -5,8 +5,17 @@
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <div v-else class="settings-content">
+            <nav v-if="tocSections.length > 1" class="settings-toc" :aria-label="t('worktime', 'Inhaltsübersicht')">
+                <a v-for="s in tocSections" :key="s.id"
+                    :href="'#' + s.id"
+                    class="toc-chip"
+                    @click.prevent="scrollToSection(s.id)">
+                    {{ s.label }}
+                </a>
+            </nav>
+
             <NcSettingsSection v-if="canManageEmployees"
-                :name="t('worktime', 'Mitarbeiterverwaltung')">
+                id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiterverwaltung')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewEmployeeForm">
                         <template #icon>
@@ -32,7 +41,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageProjects"
-                :name="t('worktime', 'Projektverwaltung')">
+                id="sec-projekte" :name="t('worktime', 'Projektverwaltung')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewProjectForm">
                         <template #icon>
@@ -58,7 +67,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Berechtigungen')">
+                id="sec-berechtigungen" :name="t('worktime', 'Berechtigungen')">
                 <div class="form-group">
                     <label>{{ t('worktime', 'HR-Manager') }} <InfoIcon>{{ t('worktime', 'Admin: Volle Rechte (automatisch). HR-Manager: Mitarbeiter verwalten und Anträge genehmigen (manuell zuweisen). Vorgesetzter: Genehmigt Zeiten seines Teams (automatisch). Mitarbeiter: Eigene Zeiten erfassen (automatisch).') }}</InfoIcon></label>
                     <NcSelect
@@ -82,7 +91,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Firmendaten')">
+                id="sec-firmendaten" :name="t('worktime', 'Firmendaten')">
                 <div class="form-group">
                     <label for="companyName">{{ t('worktime', 'Firmenname') }}</label>
                     <input id="companyName"
@@ -101,7 +110,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Standardwerte')">
+                id="sec-standardwerte" :name="t('worktime', 'Standardwerte')">
                 <div class="form-row">
                     <div class="form-group">
                         <label for="weeklyHours">{{ t('worktime', 'Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diese Wochenstunden voreingestellt. Sie können im Mitarbeiterprofil individuell angepasst werden.') }}</InfoIcon></label>
@@ -127,7 +136,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Arbeitszeit-Regeln')">
+                id="sec-arbeitszeit" :name="t('worktime', 'Arbeitszeit-Regeln')">
                 <div class="form-group">
                     <label for="maxDailyHours">{{ t('worktime', 'Maximale tägliche Arbeitszeit (Stunden)') }} <InfoIcon>{{ t('worktime', 'Wenn ein Zeiteintrag diesen Wert überschreitet, wird eine Warnung angezeigt. Nach §3 ArbZG sind maximal 10 Stunden erlaubt.') }}</InfoIcon></label>
                     <input id="maxDailyHours"
@@ -163,7 +172,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Genehmigungs-Workflow')"
+                id="sec-genehmigung" :name="t('worktime', 'Genehmigungs-Workflow')"
                 :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
@@ -174,7 +183,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Pausenregelung (§4 ArbZG)')"
+                id="sec-pausen" :name="t('worktime', 'Pausenregelung (§4 ArbZG)')"
                 :description="t('worktime', 'Mindestpause gemäß deutschem Arbeitszeitgesetz')">
                 <div class="form-row">
                     <div class="form-group">
@@ -201,7 +210,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'PDF-Archivierung')"
+                id="sec-pdf" :name="t('worktime', 'PDF-Archivierung')"
                 :description="t('worktime', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
                 <div class="form-group">
                     <label>{{ t('worktime', 'Archiv-Ordner') }} <InfoIcon>{{ t('worktime', 'Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.') }}</InfoIcon></label>
@@ -226,7 +235,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
-                :name="t('worktime', 'Sondertage')"
+                id="sec-sondertage" :name="t('worktime', 'Sondertage')"
                 :description="t('worktime', 'Definieren Sie, ob Heiligabend und Silvester als halbe Arbeitstage gelten.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.christmas_eve_half_day"
@@ -246,7 +255,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageHolidays"
-                :name="t('worktime', 'Feiertage verwalten')"
+                id="sec-feiertage" :name="t('worktime', 'Feiertage verwalten')"
                 :description="t('worktime', 'Feiertage anzeigen, hinzufügen, bearbeiten und löschen.')">
                 <div class="form-row holiday-filters">
                     <div class="form-group">
@@ -417,7 +426,7 @@
                 </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageEmployees"
-                :name="t('worktime', 'Jahresübertrag')"
+                id="sec-jahresuebertrag" :name="t('worktime', 'Jahresübertrag')"
                 :description="t('worktime', 'Überstunden und Resturlaub aus dem Vorjahr händisch übertragen. Durchgeführte Überträge sind verbindlich und unveränderbar.')">
                 <div class="form-row">
                     <div class="form-group">
@@ -762,6 +771,22 @@ export default {
             }
             return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
         },
+        tocSections() {
+            return [
+                { id: 'sec-mitarbeiter', label: this.t('worktime', 'Mitarbeiter'), visible: this.canManageEmployees },
+                { id: 'sec-projekte', label: this.t('worktime', 'Projekte'), visible: this.canManageProjects },
+                { id: 'sec-berechtigungen', label: this.t('worktime', 'Berechtigungen'), visible: this.canManageSettings },
+                { id: 'sec-firmendaten', label: this.t('worktime', 'Firmendaten'), visible: this.canManageSettings },
+                { id: 'sec-standardwerte', label: this.t('worktime', 'Standardwerte'), visible: this.canManageSettings },
+                { id: 'sec-arbeitszeit', label: this.t('worktime', 'Arbeitszeit-Regeln'), visible: this.canManageSettings },
+                { id: 'sec-genehmigung', label: this.t('worktime', 'Genehmigung'), visible: this.canManageSettings },
+                { id: 'sec-pausen', label: this.t('worktime', 'Pausenregelung'), visible: this.canManageSettings },
+                { id: 'sec-pdf', label: this.t('worktime', 'PDF-Archiv'), visible: this.canManageSettings },
+                { id: 'sec-sondertage', label: this.t('worktime', 'Sondertage'), visible: this.canManageSettings },
+                { id: 'sec-feiertage', label: this.t('worktime', 'Feiertage'), visible: this.canManageHolidays },
+                { id: 'sec-jahresuebertrag', label: this.t('worktime', 'Jahresübertrag'), visible: this.canManageEmployees },
+            ].filter(s => s.visible)
+        },
     },
     created() {
         this.loadSettings()
@@ -786,6 +811,31 @@ export default {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
+        scrollToSection(id) {
+            const el = document.getElementById(id)
+            if (!el) return
+            // Nächsten scrollbaren Vorfahren finden (in NC: .app-content)
+            let scroller = el.parentElement
+            while (scroller && scroller !== document.body) {
+                const s = getComputedStyle(scroller)
+                if (scroller.scrollHeight > scroller.clientHeight
+                    && (s.overflowY === 'auto' || s.overflowY === 'scroll')) {
+                    break
+                }
+                scroller = scroller.parentElement
+            }
+            if (!scroller || scroller === document.body) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                return
+            }
+            const toc = this.$el.querySelector('.settings-toc')
+            const offset = (toc?.getBoundingClientRect().height ?? 60) + 12
+            const top = el.getBoundingClientRect().top
+                - scroller.getBoundingClientRect().top
+                + scroller.scrollTop
+                - offset
+            scroller.scrollTo({ top, behavior: 'smooth' })
+        },
         async loadSettings() {
             this.loading = true
             try {
@@ -1347,6 +1397,49 @@ export default {
     padding: 20px;
     padding-left: 50px;
     max-width: 800px;
+}
+
+/* Inhaltsübersicht – sticky horizontaler TOC am Seitenkopf */
+.settings-toc {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 0;
+    margin-bottom: 12px;
+    background: var(--color-main-background);
+    border-bottom: 1px solid var(--color-border-dark, var(--color-border));
+}
+
+.toc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: var(--border-radius-element, 8px);
+    background: var(--color-background-hover);
+    color: var(--color-main-text);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+
+.toc-chip:hover,
+.toc-chip:focus-visible {
+    background: var(--color-background-dark);
+    outline: none;
+}
+
+/* Anker-Offset, damit die sticky TOC die Sektionen nicht überdeckt */
+.settings-content :deep([id^="sec-"]) {
+    scroll-margin-top: 100px;
+}
+
+/* Genug Scroll-Platz, damit auch die letzten Sektionen unter die sticky TOC andocken können */
+.settings-content {
+    padding-bottom: 60vh;
 }
 
 .settings-view h2 {
