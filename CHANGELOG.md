@@ -7,6 +7,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+- **Sticky Inhaltsübersicht (Anker-Chips) in System-Einstellungen (#222)**: Horizontale TOC-Leiste am Seitenkopf mit einem Chip pro sichtbarer Sektion (rollenabhängig). Klick scrollt smooth zur Sektion; Offset wird dynamisch aus der TOC-Höhe berechnet. Reine Navigations-/Optik-Änderung ohne Funktionsauswirkung.
+
 ## [0.8.1] - 2026-05-27
 
 ### Fixed
