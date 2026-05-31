@@ -17,7 +17,8 @@
                 @keydown.enter="$emit('select', day.date)"
                 @keydown.space.prevent="$emit('select', day.date)">
                 <div class="dl-d">
-                    {{ weekday(day) }} {{ pad(day.day) }}.
+                    <span>{{ weekday(day) }} {{ pad(day.day) }}.</span>
+                    <span v-if="day.isToday" class="today-badge">{{ t('worktime', 'Heute') }}</span>
                     <small>{{ monthShort }}</small>
                 </div>
 
@@ -150,6 +151,20 @@ export default {
 
 .dl-day.today .dl-d {
     color: var(--color-primary-element);
+}
+
+.today-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--color-primary-element);
+    color: var(--color-primary-element-text, #ffffff);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-radius: var(--border-radius-element, 6px);
+    vertical-align: middle;
+    text-transform: uppercase;
 }
 
 /* Leere Tage (inkl. Wochenende/Feiertag ohne Eintrag) dezent und kompakt */

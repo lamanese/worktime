@@ -523,6 +523,7 @@ OC.L10N.register(
     "Pausenregelung" : "Pausenregelung",
     "PDF-Archiv" : "PDF-Archiv",
     "Inhaltsübersicht" : "Inhaltsübersicht",
-    "Inhalt" : "Inhalt"
+    "Inhalt" : "Inhalt",
+    "Heute" : "Heute"
 },
 "nplurals=2; plural=(n != 1);");
