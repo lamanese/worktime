@@ -6,7 +6,8 @@
             <div class="dl-r">{{ t('worktime', 'Pause') }}</div>
             <div class="dl-r">{{ t('worktime', 'Stunden') }}</div>
         </div>
-        <div class="dl-body">
+        <!-- Wrapper-Div bleibt, damit .dl-day:first-child den obersten Trennstrich entfernt -->
+        <div>
             <div v-for="day in days"
                 :key="day.date"
                 class="dl-day"
