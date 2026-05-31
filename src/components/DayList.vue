@@ -152,12 +152,6 @@ export default {
     color: var(--color-primary-element);
 }
 
-.dl-day.today .dl-d::after {
-    content: "•";
-    margin-left: 5px;
-    color: var(--color-primary-element);
-}
-
 /* Leere Tage (inkl. Wochenende/Feiertag ohne Eintrag) dezent und kompakt */
 .dl-day.empty {
     padding-top: 8px;
