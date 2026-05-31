@@ -5,17 +5,18 @@
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <div v-else class="settings-content">
-            <nav v-if="tocSections.length > 1" class="settings-toc" :aria-label="t('worktime', 'Inhaltsübersicht')">
-                <h3 class="settings-toc__label">{{ t('worktime', 'Inhalt') }}</h3>
-                <div class="settings-toc__chips">
+            <NcSettingsSection v-if="tocSections.length > 1"
+                id="sec-inhalt"
+                :name="t('worktime', 'Inhalt')">
+                <nav class="settings-toc__chips" :aria-label="t('worktime', 'Inhaltsübersicht')">
                     <a v-for="s in tocSections" :key="s.id"
                         :href="'#' + s.id"
                         class="toc-chip"
                         @click.prevent="scrollToSection(s.id)">
                         {{ s.label }}
                     </a>
-                </div>
-            </nav>
+                </nav>
+            </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageEmployees"
                 id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiterverwaltung')">
@@ -831,8 +832,7 @@ export default {
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 return
             }
-            const toc = this.$el.querySelector('.settings-toc')
-            const offset = (toc?.getBoundingClientRect().height ?? 60) + 12
+            const offset = 16
             const top = el.getBoundingClientRect().top
                 - scroller.getBoundingClientRect().top
                 + scroller.scrollTop
@@ -1402,27 +1402,7 @@ export default {
     max-width: 800px;
 }
 
-/* Inhaltsübersicht – sticky Card mit Label + gleichmäßige Chip-Spalten */
-.settings-toc {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    padding: 12px 16px 14px;
-    margin-bottom: 18px;
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius-large, 12px);
-}
-
-.settings-toc__label {
-    margin: 0 0 10px 0;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: var(--color-text-maxcontrast);
-}
-
+/* Inhaltsübersicht – Chip-Grid in der "Inhalt"-Sektion */
 .settings-toc__chips {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1448,16 +1428,6 @@ export default {
 .toc-chip:focus-visible {
     background: var(--color-background-dark);
     outline: none;
-}
-
-/* Anker-Offset, damit die sticky TOC die Sektionen nicht überdeckt */
-.settings-content :deep([id^="sec-"]) {
-    scroll-margin-top: 100px;
-}
-
-/* Genug Scroll-Platz, damit auch die letzten Sektionen unter die sticky TOC andocken können */
-.settings-content {
-    padding-bottom: 60vh;
 }
 
 .settings-view h2 {
