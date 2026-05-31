@@ -5,14 +5,18 @@
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <div v-else class="settings-content">
-            <nav v-if="tocSections.length > 1" class="settings-toc" :aria-label="t('worktime', 'Inhaltsübersicht')">
-                <a v-for="s in tocSections" :key="s.id"
-                    :href="'#' + s.id"
-                    class="toc-chip"
-                    @click.prevent="scrollToSection(s.id)">
-                    {{ s.label }}
-                </a>
-            </nav>
+            <NcSettingsSection v-if="tocSections.length > 1"
+                id="sec-inhalt"
+                :name="t('worktime', 'Inhalt')">
+                <nav class="settings-toc__chips" :aria-label="t('worktime', 'Inhaltsübersicht')">
+                    <a v-for="s in tocSections" :key="s.id"
+                        :href="'#' + s.id"
+                        class="toc-chip"
+                        @click.prevent="scrollToSection(s.id)">
+                        {{ s.label }}
+                    </a>
+                </nav>
+            </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageEmployees"
                 id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiterverwaltung')">
@@ -828,8 +832,7 @@ export default {
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 return
             }
-            const toc = this.$el.querySelector('.settings-toc')
-            const offset = (toc?.getBoundingClientRect().height ?? 60) + 12
+            const offset = 16
             const top = el.getBoundingClientRect().top
                 - scroller.getBoundingClientRect().top
                 + scroller.scrollTop
@@ -1399,30 +1402,25 @@ export default {
     max-width: 800px;
 }
 
-/* Inhaltsübersicht – sticky horizontaler TOC am Seitenkopf */
-.settings-toc {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    display: flex;
-    flex-wrap: wrap;
+/* Inhaltsübersicht – Chip-Grid in der "Inhalt"-Sektion */
+.settings-toc__chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 6px;
-    padding: 10px 0;
-    margin-bottom: 12px;
-    background: var(--color-main-background);
-    border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 }
 
 .toc-chip {
     display: inline-flex;
     align-items: center;
-    padding: 5px 12px;
+    justify-content: center;
+    padding: 6px 12px;
     border-radius: var(--border-radius-element, 8px);
     background: var(--color-background-hover);
     color: var(--color-main-text);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
+    text-align: center;
     transition: background-color 0.15s;
 }
 
@@ -1430,16 +1428,6 @@ export default {
 .toc-chip:focus-visible {
     background: var(--color-background-dark);
     outline: none;
-}
-
-/* Anker-Offset, damit die sticky TOC die Sektionen nicht überdeckt */
-.settings-content :deep([id^="sec-"]) {
-    scroll-margin-top: 100px;
-}
-
-/* Genug Scroll-Platz, damit auch die letzten Sektionen unter die sticky TOC andocken können */
-.settings-content {
-    padding-bottom: 60vh;
 }
 
 .settings-view h2 {
