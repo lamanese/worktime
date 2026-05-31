@@ -129,8 +129,8 @@ export default {
 <style scoped>
 .month-cal.card {
     background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
     padding: 16px;
 }
 

@@ -101,6 +101,11 @@ export default {
 <style scoped>
 .day-list {
     font-size: 14px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 14px 0 0;
+    overflow: hidden;
 }
 
 .dl-head,
@@ -112,16 +117,11 @@ export default {
 }
 
 .dl-head {
-    padding: 0 14px 7px;
+    padding: 0 14px 10px;
     font-size: 12px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-}
-
-.dl-body {
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius);
-    overflow: hidden;
+    border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 }
 
 .dl-day {
