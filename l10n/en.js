@@ -522,6 +522,7 @@ OC.L10N.register(
     "Genehmigung" : "Approval",
     "Pausenregelung" : "Break Rules",
     "PDF-Archiv" : "PDF Archive",
-    "Inhaltsübersicht" : "Table of contents"
+    "Inhaltsübersicht" : "Table of contents",
+    "Inhalt" : "Contents"
 },
 "nplurals=2; plural=(n != 1);");

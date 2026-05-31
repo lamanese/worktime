@@ -6,12 +6,15 @@
 
         <div v-else class="settings-content">
             <nav v-if="tocSections.length > 1" class="settings-toc" :aria-label="t('worktime', 'Inhaltsübersicht')">
-                <a v-for="s in tocSections" :key="s.id"
-                    :href="'#' + s.id"
-                    class="toc-chip"
-                    @click.prevent="scrollToSection(s.id)">
-                    {{ s.label }}
-                </a>
+                <h3 class="settings-toc__label">{{ t('worktime', 'Inhalt') }}</h3>
+                <div class="settings-toc__chips">
+                    <a v-for="s in tocSections" :key="s.id"
+                        :href="'#' + s.id"
+                        class="toc-chip"
+                        @click.prevent="scrollToSection(s.id)">
+                        {{ s.label }}
+                    </a>
+                </div>
             </nav>
 
             <NcSettingsSection v-if="canManageEmployees"
@@ -1399,30 +1402,45 @@ export default {
     max-width: 800px;
 }
 
-/* Inhaltsübersicht – sticky horizontaler TOC am Seitenkopf */
+/* Inhaltsübersicht – sticky Card mit Label + gleichmäßige Chip-Spalten */
 .settings-toc {
     position: sticky;
     top: 0;
     z-index: 5;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 10px 0;
-    margin-bottom: 12px;
+    padding: 12px 16px 14px;
+    margin-bottom: 18px;
     background: var(--color-main-background);
-    border-bottom: 1px solid var(--color-border-dark, var(--color-border));
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+}
+
+.settings-toc__label {
+    margin: 0 0 10px 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--color-text-maxcontrast);
+}
+
+.settings-toc__chips {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
 }
 
 .toc-chip {
     display: inline-flex;
     align-items: center;
-    padding: 5px 12px;
+    justify-content: center;
+    padding: 6px 12px;
     border-radius: var(--border-radius-element, 8px);
     background: var(--color-background-hover);
     color: var(--color-main-text);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
+    text-align: center;
     transition: background-color 0.15s;
 }
 
