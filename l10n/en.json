@@ -523,7 +523,15 @@
 		"PDF-Archiv": "PDF Archive",
 		"Inhaltsübersicht": "Table of contents",
 		"Inhalt": "Contents",
-		"Heute": "Today"
+		"Heute": "Today",
+		"Jahr": "Year",
+		"Jetzt": "Now",
+		"Soll / Ist · {year}": "Target / Actual · {year}",
+		"noch {hours} h bis Jahressoll": "{hours} h to annual target",
+		"Klick auf einen Monat öffnet ihn in der Liste-Ansicht.": "Click a month to open it in the list view.",
+		"Gesamt bis heute": "Total to date",
+		"PDF Monatsbericht": "PDF monthly report",
+		"Weitere Aktionen": "More actions"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

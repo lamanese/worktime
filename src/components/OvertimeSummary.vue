@@ -4,8 +4,8 @@
             <!-- Soll / Ist -->
             <div class="kpi-card kpi-card--main">
                 <div class="kpi-card__head">
-                    <span class="kpi-lab">{{ t('worktime', 'Soll / Ist · {month}', { month: monthLabel }) }}</span>
-                    <NcButton v-if="statistics"
+                    <span class="kpi-lab">{{ headLabel }}</span>
+                    <NcButton v-if="statistics && period === 'month'"
                         type="tertiary"
                         :aria-label="t('worktime', 'Berechnung anzeigen')"
                         @click="showDetails = !showDetails">
@@ -16,12 +16,12 @@
                     </NcButton>
                 </div>
                 <div class="kpi-pm">
-                    <span class="kpi-num">{{ hoursLabel(actualMinutes) }} h <small>/ {{ hoursLabel(monthSoll) }} h Soll</small></span>
+                    <span class="kpi-num">{{ hoursLabel(actualMinutes) }} h <small>/ {{ hoursLabel(periodSoll) }} h Soll</small></span>
                     <span class="kpi-pct">{{ percent }} %</span>
                 </div>
                 <div class="kpi-bar"><span :style="{ width: barWidth + '%' }" /></div>
                 <div class="kpi-bf">
-                    <span>{{ t('worktime', 'noch {hours} h bis Monatssoll', { hours: hoursLabel(remaining) }) }}</span>
+                    <span>{{ remainingLabel }}</span>
                     <span :class="pacingPositive ? 'pos' : 'neg'">{{ pacingLabel }}</span>
                 </div>
             </div>
@@ -143,6 +143,11 @@ export default {
             type: Object,
             default: null,
         },
+        period: {
+            type: String,
+            default: 'month',
+            validator: v => ['month', 'year'].includes(v),
+        },
     },
     data() {
         return {
@@ -154,19 +159,32 @@ export default {
             if (!this.month || !this.year) return ''
             return `${getMonthName(this.month)} ${this.year}`
         },
-        // Volles Monatssoll (nach Reduktion), nicht das anteilige
-        monthSoll() {
+        headLabel() {
+            if (this.period === 'year') {
+                return this.t('worktime', 'Soll / Ist · {year}', { year: this.year })
+            }
+            return this.t('worktime', 'Soll / Ist · {month}', { month: this.monthLabel })
+        },
+        // Volles Periodensoll (Monat: aus statistics, Jahr: aus prop)
+        periodSoll() {
+            if (this.period === 'year') return this.targetMinutes
             return this.statistics?.targetMinutes ?? 0
         },
         percent() {
-            if (!this.monthSoll) return 0
-            return Math.round((this.actualMinutes / this.monthSoll) * 100)
+            if (!this.periodSoll) return 0
+            return Math.round((this.actualMinutes / this.periodSoll) * 100)
         },
         barWidth() {
             return Math.min(100, Math.max(0, this.percent))
         },
         remaining() {
-            return Math.max(0, this.monthSoll - this.actualMinutes)
+            return Math.max(0, this.periodSoll - this.actualMinutes)
+        },
+        remainingLabel() {
+            if (this.period === 'year') {
+                return this.t('worktime', 'noch {hours} h bis Jahressoll', { hours: this.hoursLabel(this.remaining) })
+            }
+            return this.t('worktime', 'noch {hours} h bis Monatssoll', { hours: this.hoursLabel(this.remaining) })
         },
         pacingPositive() {
             return this.overtimeMinutes >= 0

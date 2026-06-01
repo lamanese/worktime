@@ -2,6 +2,7 @@
     <div class="year-picker">
         <NcButton type="tertiary"
             :aria-label="t('worktime', 'Vorheriges Jahr')"
+            :disabled="min !== null && year <= min"
             @click="$emit('update', year - 1)">
             <template #icon>
                 <ChevronLeft :size="20" />
@@ -14,6 +15,7 @@
 
         <NcButton type="tertiary"
             :aria-label="t('worktime', 'Nächstes Jahr')"
+            :disabled="max !== null && year >= max"
             @click="$emit('update', year + 1)">
             <template #icon>
                 <ChevronRight :size="20" />
@@ -38,6 +40,14 @@ export default {
         year: {
             type: Number,
             required: true,
+        },
+        min: {
+            type: Number,
+            default: null,
+        },
+        max: {
+            type: Number,
+            default: null,
         },
     },
 }
