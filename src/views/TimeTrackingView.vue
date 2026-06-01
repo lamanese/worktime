@@ -2,38 +2,39 @@
     <div class="time-tracking-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
-            <div class="header-actions">
-                <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
-                    <button class="seg-btn"
-                        :class="{ active: layoutMode === 'list' }"
-                        @click="setLayout('list')">
-                        <FormatListBulletedIcon :size="18" />
-                        {{ t('worktime', 'Liste') }}
-                    </button>
-                    <button class="seg-btn"
-                        :class="{ active: layoutMode === 'calendar' }"
-                        @click="setLayout('calendar')">
-                        <CalendarIcon :size="18" />
-                        {{ t('worktime', 'Kalender') }}
-                    </button>
-                    <button class="seg-btn"
-                        :class="{ active: layoutMode === 'year' }"
-                        @click="setLayout('year')">
-                        <ChartBarIcon :size="18" />
-                        {{ t('worktime', 'Jahr') }}
-                    </button>
-                </div>
 
-                <MonthPicker v-if="!isYearMode"
-                    :year="selectedMonth.year"
-                    :month="selectedMonth.month"
-                    @update="onMonthChange" />
-                <YearPicker v-else
-                    :year="overviewYear"
-                    :min="minYear"
-                    :max="maxYear"
-                    @update="onYearChange" />
+            <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+                <button class="seg-btn"
+                    :class="{ active: layoutMode === 'list' }"
+                    @click="setLayout('list')">
+                    <FormatListBulletedIcon :size="18" />
+                    {{ t('worktime', 'Liste') }}
+                </button>
+                <button class="seg-btn"
+                    :class="{ active: layoutMode === 'calendar' }"
+                    @click="setLayout('calendar')">
+                    <CalendarIcon :size="18" />
+                    {{ t('worktime', 'Kalender') }}
+                </button>
+                <button class="seg-btn"
+                    :class="{ active: layoutMode === 'year' }"
+                    @click="setLayout('year')">
+                    <ChartBarIcon :size="18" />
+                    {{ t('worktime', 'Jahr') }}
+                </button>
+            </div>
 
+            <MonthPicker v-if="!isYearMode"
+                :year="selectedMonth.year"
+                :month="selectedMonth.month"
+                @update="onMonthChange" />
+            <YearPicker v-else
+                :year="overviewYear"
+                :min="minYear"
+                :max="maxYear"
+                @update="onYearChange" />
+
+            <div class="header-actions__right">
                 <span v-if="monthStatus && !isYearMode" class="month-badge" :class="monthStatus">
                     <span class="badge-dot" />
                     {{ monthStatusLabel }}
@@ -468,7 +469,6 @@ export default {
 
 .view-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
     flex-wrap: wrap;
@@ -479,15 +479,11 @@ export default {
     margin: 0;
 }
 
-.header-actions {
+.header-actions__right {
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 16px;
-}
-
-.header-actions :deep(.month-picker),
-.header-actions :deep(.year-picker) {
-    margin-left: auto;
 }
 
 .layout-seg {
