@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Service;
@@ -96,8 +101,8 @@ class TimeEntryService {
         string $currentUserId = ''
     ): TimeEntry {
         $dateObj = new DateTime($date);
-        $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
-        $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
+        $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
+        $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $employeeId);
@@ -156,8 +161,8 @@ class TimeEntryService {
         $oldValues = $entry->jsonSerialize();
 
         $dateObj = new DateTime($date);
-        $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
-        $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
+        $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
+        $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $entry->getEmployeeId());
