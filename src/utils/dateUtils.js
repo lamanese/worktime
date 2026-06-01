@@ -4,7 +4,7 @@ import { translate as t } from '@nextcloud/l10n'
  * Get the user's locale from Nextcloud (falls back to navigator or 'de-DE')
  * @returns {string}
  */
-function getLocale() {
+export function getLocale() {
     return document.documentElement.lang || navigator.language || 'de-DE'
 }
 

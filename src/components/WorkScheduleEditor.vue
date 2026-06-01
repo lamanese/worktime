@@ -356,7 +356,7 @@ export default {
     font-weight: 600;
     color: var(--color-text-maxcontrast);
     font-size: 0.9em;
-    background: var(--color-background-dark);
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .text-right {
@@ -449,8 +449,8 @@ td.actions-col {
 }
 
 .input-error {
-    border-color: #dc2626 !important;
-    background-color: #fef2f2 !important;
+    border-color: var(--color-error, #dc2626) !important;
+    background-color: var(--color-error-element-light, #fef2f2) !important;
 }
 
 .form-actions {

@@ -2,11 +2,8 @@
     <div class="my-settings-view">
         <h2>{{ t('worktime', 'Meine Einstellungen') }}</h2>
 
-        <div class="settings-section">
-            <h3>{{ t('worktime', 'Standard-Arbeitszeiten') }}</h3>
-            <p class="settings-description">
-                {{ t('worktime', 'Diese Zeiten werden beim Anlegen neuer Zeiteinträge vorausgefüllt.') }}
-            </p>
+        <NcSettingsSection :name="t('worktime', 'Standard-Arbeitszeiten')"
+            :description="t('worktime', 'Diese Zeiten werden beim Anlegen neuer Zeiteinträge vorausgefüllt.')">
 
             <div class="settings-form">
                 <div class="form-row">
@@ -40,27 +37,22 @@
                     {{ t('worktime', 'Leer lassen für Standardwerte (08:00 - 17:00).') }}
                 </p>
             </div>
-        </div>
+        </NcSettingsSection>
 
-        <div class="settings-section">
-            <h3>{{ t('worktime', 'Datenschutz') }}</h3>
-            <p class="settings-description">
-                {{ t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.') }}
-            </p>
+        <NcSettingsSection :name="t('worktime', 'Datenschutz')"
+            :description="t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.')">
 
             <div class="settings-form">
                 <div class="form-group">
                     <label for="absenceVisibility">{{ t('worktime', 'Abwesenheiten sichtbar für') }}</label>
                     <div class="visibility-row">
-                        <select id="absenceVisibility"
-                            v-model="form.absenceVisibility"
-                            class="visibility-select"
+                        <NcSelect id="absenceVisibility"
+                            v-model="selectedVisibility"
+                            :options="visibilityOptions"
+                            :clearable="false"
                             :disabled="savingVisibility"
-                            @change="saveVisibility">
-                            <option value="none">{{ t('worktime', 'Niemand') }}</option>
-                            <option value="team">{{ t('worktime', 'Mein Team') }}</option>
-                            <option value="all">{{ t('worktime', 'Alle Mitarbeiter') }}</option>
-                        </select>
+                            class="visibility-select"
+                            @input="saveVisibility" />
                         <NcLoadingIcon v-if="savingVisibility" :size="20" />
                         <span v-if="visibilitySaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
                     </div>
@@ -69,25 +61,26 @@
                 <div v-if="form.absenceVisibility !== 'none'" class="form-group">
                     <label for="absenceDetail">{{ t('worktime', 'Detailgrad') }} <InfoIcon>{{ t('worktime', 'Legt fest, ob Kollegen in der Abwesenheitsübersicht Ihren Abwesenheitsgrund sehen (z.B. Urlaub) oder nur Abwesend. Vorgesetzte und HR sehen immer den Grund.') }}</InfoIcon></label>
                     <div class="visibility-row">
-                        <select id="absenceDetail"
-                            v-model="form.absenceDetail"
-                            class="visibility-select"
+                        <NcSelect id="absenceDetail"
+                            v-model="selectedDetail"
+                            :options="detailOptions"
+                            :clearable="false"
                             :disabled="savingDetail"
-                            @change="saveDetail">
-                            <option value="hidden">{{ t('worktime', 'Nur \"Abwesend\" anzeigen') }}</option>
-                            <option value="detailed">{{ t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, ...)') }}</option>
-                        </select>
+                            class="visibility-select"
+                            @input="saveDetail" />
                         <NcLoadingIcon v-if="savingDetail" :size="20" />
                         <span v-if="detailSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </NcSettingsSection>
     </div>
 </template>
 
 <script>
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.js'
+import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -97,6 +90,8 @@ export default {
     components: {
         InfoIcon,
         NcLoadingIcon,
+        NcSettingsSection,
+        NcSelect,
     },
     data() {
         return {
@@ -122,6 +117,35 @@ export default {
     },
     computed: {
         ...mapGetters('employees', ['currentEmployee']),
+        visibilityOptions() {
+            return [
+                { id: 'none', label: this.t('worktime', 'Niemand') },
+                { id: 'team', label: this.t('worktime', 'Mein Team') },
+                { id: 'all', label: this.t('worktime', 'Alle Mitarbeiter') },
+            ]
+        },
+        detailOptions() {
+            return [
+                { id: 'hidden', label: this.t('worktime', 'Nur „Abwesend" anzeigen') },
+                { id: 'detailed', label: this.t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, …)') },
+            ]
+        },
+        selectedVisibility: {
+            get() {
+                return this.visibilityOptions.find(o => o.id === this.form.absenceVisibility) || null
+            },
+            set(value) {
+                this.form.absenceVisibility = value?.id || 'none'
+            },
+        },
+        selectedDetail: {
+            get() {
+                return this.detailOptions.find(o => o.id === this.form.absenceDetail) || null
+            },
+            set(value) {
+                this.form.absenceDetail = value?.id || 'hidden'
+            },
+        },
     },
     watch: {
         currentEmployee: {
@@ -134,7 +158,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions('employees', ['updateMyDefaults', 'fetchCurrentEmployee']),
+        ...mapActions('employees', ['updateMyDefaults']),
         loadFromEmployee(employee) {
             this.form.defaultStartTime = employee.defaultStartTime || '08:00'
             this.form.defaultEndTime = employee.defaultEndTime || '17:00'
@@ -215,28 +239,8 @@ export default {
     margin: 0 0 24px 0;
 }
 
-.settings-section {
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-large);
-    padding: 20px;
-}
-
-.settings-section + .settings-section {
-    margin-top: 24px;
-}
-
-.settings-section h3 {
-    margin: 0 0 8px 0;
-}
-
-.settings-description {
-    color: var(--color-text-maxcontrast);
-    margin: 0 0 20px 0;
-}
-
 .settings-form {
-    margin-top: 16px;
+    margin-top: 8px;
 }
 
 .form-row {
@@ -282,11 +286,7 @@ export default {
 }
 
 .visibility-select {
-    width: 16rem;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background: var(--color-main-background);
+    min-width: 16rem;
 }
 
 .saved-hint {

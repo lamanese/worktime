@@ -2,7 +2,7 @@
  * Composable for month navigation logic.
  *
  * Provides reactive state and methods for navigating between months,
- * commonly used in TimeTrackingView and MonthlyReportView.
+ * commonly used in TimeTrackingView.
  */
 
 import { ref, computed, watch } from 'vue'

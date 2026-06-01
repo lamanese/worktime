@@ -3,16 +3,6 @@
 		<NcAppNavigation>
 			<NcAppNavigationItem
 				v-if="isEmployee"
-				:name="t('worktime', 'Übersicht')"
-				to="/"
-				:exact="true">
-				<template #icon>
-					<ViewDashboardIcon :size="20" />
-				</template>
-			</NcAppNavigationItem>
-
-			<NcAppNavigationItem
-				v-if="isEmployee"
 				:name="t('worktime', 'Zeiterfassung')"
 				to="/tracking">
 				<template #icon>
@@ -26,24 +16,6 @@
 				to="/absences">
 				<template #icon>
 					<CalendarIcon :size="20" />
-				</template>
-			</NcAppNavigationItem>
-
-			<NcAppNavigationItem
-				v-if="isEmployee"
-				:name="t('worktime', 'Monatsübersicht')"
-				to="/report">
-				<template #icon>
-					<ChartIcon :size="20" />
-				</template>
-			</NcAppNavigationItem>
-
-			<NcAppNavigationItem
-				v-if="isEmployee"
-				:name="t('worktime', 'Abwesenheitsübersicht')"
-				to="/absence-overview">
-				<template #icon>
-					<CalendarMultipleIcon :size="20" />
 				</template>
 			</NcAppNavigationItem>
 
@@ -136,11 +108,8 @@ import NcAppNavigationItem from '@nextcloud/vue/dist/Components/NcAppNavigationI
 import NcAppContent from '@nextcloud/vue/dist/Components/NcAppContent.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import ViewDashboardIcon from 'vue-material-design-icons/ViewDashboard.vue'
 import ClockIcon from 'vue-material-design-icons/Clock.vue'
-import ChartIcon from 'vue-material-design-icons/ChartBar.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
-import CalendarMultipleIcon from 'vue-material-design-icons/CalendarMultiple.vue'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
 import CheckDecagramIcon from 'vue-material-design-icons/CheckDecagram.vue'
 import CogIcon from 'vue-material-design-icons/Cog.vue'
@@ -158,11 +127,8 @@ export default {
 		NcAppContent,
 		NcButton,
 		NcEmptyContent,
-		ViewDashboardIcon,
 		ClockIcon,
-		ChartIcon,
 		CalendarIcon,
-		CalendarMultipleIcon,
 		AccountGroupIcon,
 		CheckDecagramIcon,
 		CogIcon,
@@ -204,5 +170,23 @@ export default {
 	align-items: center;
 	height: 100%;
 	padding: 40px;
+}
+</style>
+
+<!-- Globale Abwesenheits-/Feiertags-Farben (geteilt von DayList, MonthCalendar, DayDetailPanel) -->
+<style>
+:root {
+	--wt-vacation: #4a9d63;
+	--wt-sick: #cc4b42;
+	--wt-holiday: #c98b3a;
+	--wt-child-sick: #d4763a;
+	--wt-compensatory: #7c3aed;
+	--wt-unpaid: #6b7280;
+	--wt-special: #0891b2;
+}
+
+/* Trenner zwischen NcSettingsSection-Themen kräftiger (Default --color-border ist kaum sichtbar) */
+.settings-section:not(:last-child) {
+	border-bottom-color: var(--color-border-dark, var(--color-border)) !important;
 }
 </style>

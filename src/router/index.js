@@ -2,11 +2,8 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import store from '../store/index.js'
 
-import DashboardView from '../views/DashboardView.vue'
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
-import AbsenceOverviewView from '../views/AbsenceOverviewView.vue'
-import MonthlyReportView from '../views/MonthlyReportView.vue'
 import TeamView from '../views/TeamView.vue'
 import ApprovalOverviewView from '../views/ApprovalOverviewView.vue'
 import MySettingsView from '../views/MySettingsView.vue'
@@ -18,8 +15,7 @@ Vue.use(VueRouter)
 const routes = [
 	{
 		path: '/',
-		name: 'dashboard',
-		component: DashboardView,
+		redirect: '/tracking',
 	},
 	{
 		path: '/tracking',
@@ -32,15 +28,9 @@ const routes = [
 		component: AbsenceView,
 	},
 	{
-		path: '/report',
-		name: 'report',
-		component: MonthlyReportView,
-	},
-	{
+		// Zusammengeführt in Abwesenheit → Team-Tab
 		path: '/absence-overview',
-		name: 'absence-overview',
-		component: AbsenceOverviewView,
-		meta: { requiresEmployee: true },
+		redirect: '/absences',
 	},
 	{
 		path: '/team',
@@ -72,10 +62,10 @@ const routes = [
 		component: AuditView,
 		meta: { requiresAdminOrHr: true },
 	},
-	// Fallback: unbekannte Routes -> Dashboard
+	// Fallback: unbekannte Routes -> Zeiterfassung
 	{
 		path: '*',
-		redirect: '/',
+		redirect: '/tracking',
 	},
 ]
 
