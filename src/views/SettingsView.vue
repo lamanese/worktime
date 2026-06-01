@@ -6,8 +6,8 @@
 
         <div v-else class="settings-layout">
             <nav class="settings-nav" :aria-label="t('worktime', 'Einstellungs-Navigation')">
-                <template v-for="group in navGroups">
-                    <div v-if="group.items.length" :key="group.label" class="settings-nav-group">
+                <template v-for="group in navGroups" :key="group.label">
+                    <div v-if="group.items.length" class="settings-nav-group">
                         {{ group.label }}
                     </div>
                     <button v-for="item in group.items"
