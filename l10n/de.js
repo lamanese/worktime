@@ -524,6 +524,14 @@ OC.L10N.register(
     "PDF-Archiv" : "PDF-Archiv",
     "Inhaltsübersicht" : "Inhaltsübersicht",
     "Inhalt" : "Inhalt",
-    "Heute" : "Heute"
+    "Heute" : "Heute",
+    "Jahr" : "Jahr",
+    "Jetzt" : "Jetzt",
+    "Soll / Ist · {year}" : "Soll / Ist · {year}",
+    "noch {hours} h bis Jahressoll" : "noch {hours} h bis Jahressoll",
+    "Klick auf einen Monat öffnet ihn in der Liste-Ansicht." : "Klick auf einen Monat öffnet ihn in der Liste-Ansicht.",
+    "Gesamt bis heute" : "Gesamt bis heute",
+    "PDF Monatsbericht" : "PDF Monatsbericht",
+    "Weitere Aktionen" : "Weitere Aktionen"
 },
 "nplurals=2; plural=(n != 1);");

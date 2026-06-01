@@ -16,12 +16,28 @@
                         <CalendarIcon :size="18" />
                         {{ t('worktime', 'Kalender') }}
                     </button>
+                    <button class="seg-btn"
+                        :class="{ active: layoutMode === 'year' }"
+                        @click="setLayout('year')">
+                        <ChartBarIcon :size="18" />
+                        {{ t('worktime', 'Jahr') }}
+                    </button>
                 </div>
-                <span v-if="monthStatus" class="month-badge" :class="monthStatus">
+
+                <MonthPicker v-if="!isYearMode"
+                    :year="selectedMonth.year"
+                    :month="selectedMonth.month"
+                    @update="onMonthChange" />
+                <YearPicker v-else
+                    :year="overviewYear"
+                    @update="onYearChange" />
+
+                <span v-if="monthStatus && !isYearMode" class="month-badge" :class="monthStatus">
                     <span class="badge-dot" />
                     {{ monthStatusLabel }}
                 </span>
-                <NcButton v-if="approvalRequired && monthStatus === 'draft' && hasSubmittableEntries"
+
+                <NcButton v-if="!isYearMode && approvalRequired && monthStatus === 'draft' && hasSubmittableEntries"
                     type="secondary"
                     @click="confirmSubmitMonth">
                     <template #icon>
@@ -29,24 +45,25 @@
                     </template>
                     {{ t('worktime', 'Monat einreichen') }}
                 </NcButton>
-                <NcButton type="secondary" @click="downloadPdf">
-                    <template #icon>
-                        <DownloadIcon :size="20" />
-                    </template>
-                    {{ t('worktime', 'PDF herunterladen') }}
-                </NcButton>
-                <MonthPicker :year="selectedMonth.year"
-                    :month="selectedMonth.month"
-                    @update="onMonthChange" />
+
+                <NcActions v-if="!isYearMode" :aria-label="t('worktime', 'Weitere Aktionen')">
+                    <NcActionButton @click="downloadPdf">
+                        <template #icon>
+                            <DownloadIcon :size="20" />
+                        </template>
+                        {{ t('worktime', 'PDF Monatsbericht') }}
+                    </NcActionButton>
+                </NcActions>
             </div>
         </div>
 
-        <div v-if="locked" class="lock-banner">
+        <div v-if="locked && !isYearMode" class="lock-banner">
             <LockIcon :size="20" />
             {{ t('worktime', 'Monat genehmigt – Einträge gesperrt. Korrektur nur durch HR.') }}
         </div>
 
-        <OvertimeSummary v-if="statistics"
+        <!-- KPI-Leiste: monatlich (statistics) oder jährlich (yearAggregates) -->
+        <OvertimeSummary v-if="!isYearMode && statistics"
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
             :overtime-minutes="statistics.overtimeMinutes"
@@ -56,9 +73,26 @@
             :year="selectedMonth.year"
             :month="selectedMonth.month"
             :statistics="statistics" />
+        <OvertimeSummary v-else-if="isYearMode"
+            period="year"
+            :target-minutes="yearTargetMinutes"
+            :actual-minutes="yearActualMinutes"
+            :overtime-minutes="yearOvertimeMinutes"
+            :vacation-remaining="vacationRemaining"
+            :vacation-carryover="vacationCarryover"
+            :vacation-total="vacationTotal"
+            :year="overviewYear" />
 
         <NcLoadingIcon v-if="loading" :size="44" />
 
+        <!-- Jahresansicht: Tabelle als Vollbreiten-Card -->
+        <YearOverviewTable v-else-if="isYearMode"
+            :months="yearlyMonths"
+            :year="overviewYear"
+            :carryover-minutes="carryoverMinutes"
+            @select-month="selectMonth" />
+
+        <!-- Monatsansicht: Liste/Kalender + Detail-Panel -->
         <div v-else class="zlayout" :class="{ narrow: isNarrow }">
             <div class="zlayout-main">
                 <DayList v-if="effectiveLayout === 'list'"
@@ -82,26 +116,6 @@
             </div>
         </div>
 
-        <div class="year-overview-block">
-            <NcButton type="tertiary" @click="showYearOverview = !showYearOverview">
-                <template #icon>
-                    <ChevronUp v-if="showYearOverview" :size="20" />
-                    <ChevronDown v-else :size="20" />
-                </template>
-                {{ t('worktime', 'Jahresübersicht') }}
-            </NcButton>
-            <div v-if="showYearOverview" class="year-overview-card">
-                <YearOverviewTable :months="yearlyMonths"
-                    :year="overviewYear"
-                    :min-year="minYear"
-                    :max-year="maxYear"
-                    :carryover-minutes="carryoverMinutes"
-                    @previous="changeOverviewYear(-1)"
-                    @next="changeOverviewYear(1)"
-                    @select-month="selectMonth" />
-            </div>
-        </div>
-
         <NcModal v-if="isNarrow && showDayModal && selectedDay"
             size="small"
             @close="showDayModal = false">
@@ -117,21 +131,23 @@
 
 <script>
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import NcActions from '@nextcloud/vue/dist/Components/NcActions.js'
+import NcActionButton from '@nextcloud/vue/dist/Components/NcActionButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import SendIcon from 'vue-material-design-icons/Send.vue'
 import LockIcon from 'vue-material-design-icons/Lock.vue'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
+import ChartBarIcon from 'vue-material-design-icons/ChartBar.vue'
 import { mapGetters, mapActions, mapState } from 'vuex'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import { confirmAction } from '../utils/errorHandler.js'
 import { getCurrentYear, getCurrentMonth, getMonthDays, getToday, formatDateISO } from '../utils/dateUtils.js'
 import { getAbsenceTypeLabel } from '../utils/formatters.js'
 import MonthPicker from '../components/MonthPicker.vue'
+import YearPicker from '../components/YearPicker.vue'
 import OvertimeSummary from '../components/OvertimeSummary.vue'
 import YearOverviewTable from '../components/YearOverviewTable.vue'
 import DayList from '../components/DayList.vue'
@@ -145,16 +161,18 @@ export default {
     name: 'TimeTrackingView',
     components: {
         NcButton,
+        NcActions,
+        NcActionButton,
         NcLoadingIcon,
         NcModal,
         SendIcon,
         LockIcon,
         DownloadIcon,
-        ChevronDown,
-        ChevronUp,
         FormatListBulletedIcon,
         CalendarIcon,
+        ChartBarIcon,
         MonthPicker,
+        YearPicker,
         OvertimeSummary,
         YearOverviewTable,
         DayList,
@@ -172,8 +190,9 @@ export default {
             yearlyMonths: [],
             carryoverMinutes: 0,
             overviewYear: getCurrentYear(),
-            showYearOverview: false,
-            layoutMode: localStorage.getItem('worktime_tracking_layout') || 'list',
+            layoutMode: (['list', 'calendar', 'year'].includes(localStorage.getItem('worktime_tracking_layout'))
+                ? localStorage.getItem('worktime_tracking_layout')
+                : 'list'),
             selectedDate: null,
             isNarrow: false,
             showDayModal: false,
@@ -189,7 +208,29 @@ export default {
             return this.activeProjects
         },
         effectiveLayout() {
+            if (this.layoutMode === 'year') return 'year'
             return this.isNarrow ? 'list' : this.layoutMode
+        },
+        isYearMode() {
+            return this.layoutMode === 'year'
+        },
+        yearTargetMinutes() {
+            return this.pastYearlyMonths.reduce((sum, m) => sum + (m.targetMinutes || 0), 0)
+        },
+        yearActualMinutes() {
+            return this.pastYearlyMonths.reduce((sum, m) => sum + (m.actualMinutes || 0), 0)
+        },
+        yearOvertimeMinutes() {
+            return this.pastYearlyMonths.reduce((sum, m) => sum + (m.overtimeMinutes || 0), 0) + (this.carryoverMinutes || 0)
+        },
+        pastYearlyMonths() {
+            const cY = getCurrentYear()
+            const cM = getCurrentMonth()
+            return this.yearlyMonths.filter(m => {
+                if (this.overviewYear < cY) return true
+                if (this.overviewYear > cY) return false
+                return m.month <= cM
+            })
         },
         minYear() {
             if (this.currentEmployee?.entryDate) {
@@ -315,6 +356,14 @@ export default {
         setLayout(mode) {
             this.layoutMode = mode
             localStorage.setItem('worktime_tracking_layout', mode)
+            if (mode === 'year') {
+                this.overviewYear = this.selectedMonth.year
+                this.loadOvertime()
+            }
+        },
+        onYearChange(year) {
+            this.overviewYear = year
+            this.loadOvertime()
         },
         onSelectDay(date) {
             this.selectedDate = date
@@ -371,11 +420,9 @@ export default {
         onMonthChange({ year, month }) {
             this.setSelectedMonth({ year, month })
         },
-        changeOverviewYear(delta) {
-            this.overviewYear += delta
-            this.loadOvertime()
-        },
         selectMonth(month) {
+            this.layoutMode = 'list'
+            localStorage.setItem('worktime_tracking_layout', 'list')
             this.setSelectedMonth({ year: this.overviewYear, month })
         },
         downloadPdf() {
@@ -436,7 +483,8 @@ export default {
     gap: 16px;
 }
 
-.header-actions :deep(.month-picker) {
+.header-actions :deep(.month-picker),
+.header-actions :deep(.year-picker) {
     margin-left: auto;
 }
 
@@ -540,17 +588,5 @@ export default {
 
 .modal-panel {
     padding: 22px;
-}
-
-.year-overview-block {
-    margin-top: 24px;
-}
-
-.year-overview-card {
-    margin-top: 12px;
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: 16px;
-    padding: 20px;
 }
 </style>
