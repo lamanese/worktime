@@ -112,11 +112,19 @@ class HolidayController extends BaseController {
 
     #[NoAdminRequired]
     public function federalStates(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         return $this->successResponse($this->holidayService->getFederalStates());
     }
 
     #[NoAdminRequired]
     public function easter(int $year): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         $easterSunday = $this->holidayService->calculateEasterSunday($year);
 
         return $this->successResponse([
