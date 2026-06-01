@@ -7,8 +7,26 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-01
+
 ### Added
-- **Sticky Inhaltsübersicht (Anker-Chips) in System-Einstellungen (#222)**: Horizontale TOC-Leiste am Seitenkopf mit einem Chip pro sichtbarer Sektion (rollenabhängig). Klick scrollt smooth zur Sektion; Offset wird dynamisch aus der TOC-Höhe berechnet. Reine Navigations-/Optik-Änderung ohne Funktionsauswirkung.
+- **Sidebar-Navigation in System-Einstellungen (#237)**: Statt langer Scrollseite mit Inhaltsübersicht-TOC zeigt die Settings-View jetzt links eine Sidebar mit gruppierten Sektionen (Team · Firma · Abläufe · Kalender) und rechts nur die ausgewählte Sektion. Aktive Sektion persistiert im URL-Hash (`?sec=…`) für Bookmarks und Browser-Back. Mobile: Sidebar fällt unter den Content. Pattern entspricht NCs eigener Server-Settings-UI.
+- **Jahresansicht in Zeiterfassung (#235)**: Der Ansichts-Toggle in der Zeiterfassung erhält einen dritten Modus „Jahr" neben „Liste" und „Kalender". Zeigt eine Monatstabelle mit Soll/Ist/Überstunden, hebt den aktuellen Monat mit „Jetzt"-Pille hervor und springt per Klick auf einen vergangenen Monat zurück in die Liste-Ansicht. KPI-Leiste oben aggregiert auf Jahres-Soll/Ist/Überstunden und Urlaub.
+- **Sticky Inhaltsübersicht (Anker-Chips) in System-Einstellungen (#222)**: Horizontale TOC-Leiste am Seitenkopf (in 0.9.0 durch die Sidebar-Navigation ersetzt).
+
+### Changed
+- **DayList und MonthCalendar in einheitlicher Card-Optik (#233)**: Tagesliste und Monatskalender erhalten denselben Card-Rahmen (`--color-border-dark`, `--border-radius-large`) wie KPI-Leiste und Detail-Panel. Der Tagesheader sitzt jetzt innerhalb der Card statt freistehend darüber.
+- **„Heute"-Pille in DayList (#233)**: Der aktuelle Tag wird durch eine kleine blaue „Heute"-Pille markiert, statt durch einen fehlplatzierten Bullet.
+- **Stabiler MonthPicker in Zeiterfassung (#235)**: Der Monatswähler bleibt beim Durchsteppen durch Monate an fester Position, auch wenn sich der Status-Badge (Entwurf/Eingereicht/Genehmigt) und der „Monat einreichen"-Button ein- und ausblenden. Liegt nun direkt neben dem Ansichts-Toggle.
+- **PDF-Download in NcActions-Overflow-Menü (#235)**: Der PDF-Download-Button wird ins Drei-Punkte-Menü rechts oben verschoben, um die Toolbar zu entlasten.
+- **NcSelect in Persönlichen Einstellungen (#227)**: Die Sichtbarkeit-Dropdowns in „Meine Einstellungen" nutzen NcSelect statt nativer Browser-Selects, einheitlich mit dem Rest der App.
+- **Stärkere Eingabe-Borders in System-Einstellungen (#237)**: Text- und Zahlen-Inputs erhalten einen kräftigeren Border (`--color-border-dark` statt blasser NC-Default), um Lesbarkeit zu verbessern.
+- **Firmendaten + Standardwerte zusammengeführt (#237)**: Die separate Standardwerte-Sektion mit nur zwei Feldern entfällt; Wochenstunden und Urlaubstage wandern als „Standard-Wochenstunden" und „Standard-Urlaubstage" in die Firmendaten-Sektion.
+- **Naming-Konsistenz Sidebar/Headline (#237)**: Section-Überschriften wurden auf die Sidebar-Labels gekürzt („Mitarbeiterverwaltung" → „Mitarbeiter", „Genehmigungs-Workflow" → „Genehmigung", „PDF-Archivierung" → „PDF-Archiv").
+- **App-Store-Screenshots auf neuen UI-Stand (#241)**: Alle Screenshots in `appinfo/info.xml` und im `screenshots/`-Ordner aktualisiert. Neuer Jahr-Tab-Screenshot ergänzt, veraltete Übersichts-/Monatsbericht-Screenshots entfernt.
+
+### Fixed
+- **YearPicker mit min/max-Bounds**: Die Jahresansicht-Pfeile werden an den Jahresgrenzen (frühestes Eintrittsjahr, aktuelles Jahr + 1) deaktiviert.
 
 ## [0.8.1] - 2026-05-27
 

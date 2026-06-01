@@ -1,9 +1,9 @@
 {
     "hashes": {
-        "CHANGELOG.md": "b7d7ded1a050cfd466a61d8ebae4bd4d07b34ac8c01c2a543bde497d1cc060d864ab0f4544fed424f698a0b57ac4586cf43752a63765dab07617369c9d4c15bd",
+        "CHANGELOG.md": "421b15150597318e9b7d74c05d5b69d6716b0ba34e483f00b4e5e603f5c222941fcb2748b0a4dbdf971efa39cf0dc76ec436d6b1e0e5da0a5c11b8e35b8c1f41",
         "LICENSE": "3568a76677f3d55dbbc7fc33c4073b4714cc6f68d92cd842a9ca2b230e8bd2140e59c3fc3cce34be34ffed78d75ab6e9d991ba59bf7c4addde7fb96648d3375d",
         "README.md": "e1ea095e791e588f038d999d22a190ec267b1146f4fbfa5582b2b18faf21b1a8f55c41258df708a4b7639d03a695afcdf753ce6107f0d5074c61f6f36dae7175",
-        "appinfo\/info.xml": "3b1ad3d4904106bd8e8be1b8982ace826fb77c1aa284f541501dcc3c67fc7e1cac980c998e7b82436f52a41c895713c84d75c5c5a7f600fbad7b7cdcd786f3a7",
+        "appinfo\/info.xml": "b72c66f9f63c14c03da1a73d1b068ec16d9934cd0f792267d00eda9f49a7f84fb2891ec70c3b8570d027bf124623f224994d256d1a0a81f2303d8d0983a29108",
         "appinfo\/routes.php": "0ba9849eb58b6c543e728fe186b74ac28669b4b81360ada40eead09c7493491f21bcea69892fa34124d350e13df9b949d76155047a1b4dbabdb1a259f8439124",
         "img\/app-dark.svg": "d7eae0ce39e99f05f315a4f0c2387a8d4987d9bb4bf498bbc89e3844c2f76d485c12fd191a9c327fd76066fe8d393fb73b4c00c7f174ff217127c3d0967239c1",
         "img\/app.svg": "72157d282e54255774f345423a59f021ab4b6d73610526f33ade8db8ded3122c87fc0653bca6f57614a8f2e0ff79083ed66b29b49376f8b1c2e5242de68cf1a6",
@@ -11,11 +11,11 @@
         "js\/worktime-77507593b9bfa9302d42.js": "c16a07bab3c297fc203f0bde33d93550e2fcd23d4e3540a3a3e2b983da279c4df00eec57510274705a68556272df7c7e778e1308da57a73b340847e789cc88f2",
         "js\/worktime-82addcdce74730982a1f.js": "a1865b6de411fe8d8933ba0c3e8d39f0e67a2959c151234323842b760ad2801f0c1dbc8334acb4c925279589a33b8a5ce014b328ff19e21c00a77425780d8c67",
         "js\/worktime-bb925ce5892833269128.js": "077d0c60600243e06db556b986cac9daf98a5cd136186f0feee702ae18abff4dc756ec287d8e34e334325ef12a2a4bdc051b8b24d40d558ee86397fd9ee2c99c",
-        "js\/worktime-main.js": "9235d7e7f2bdc30bba0802e78017e459d49e620a985252698cadff82dda0f69051d66f49aec1398128582e39e24c9d91b8f0b36e2a1a1f3e81ca47dc823a206c",
-        "l10n\/de.js": "a0107b1596338d9969c5555744108d2bccd5a3ee9224eb38ea46a5b73d876916c654cd62a5c67a08aee066effb1b1b9355d2579230407a41ee6beb5df07a90c8",
-        "l10n\/de.json": "517eaa40be8a21455563052db5ad67fa0d46eb562dbd779ccd9ef1112035abfd622b00c5febe6c018ac0ed5fb4f68c9e56bc64b368bec1e1a642a92ffd7c897d",
-        "l10n\/en.js": "8f2e511b9f8148ed6061ce00bbf8dd5dbd64004455321d81b88649b9acd1050705b68dbcdae8e2ade29a68252024a9c8d1da138b8befc2d2e39ff0023262484f",
-        "l10n\/en.json": "aec54f8749dde66845612761aef83815ba0bec8b46fce38b8673209c3edb0605b187d080152ce7c235c13afb5312933a78510dcdb39e1af5b3fa53f160922ea5",
+        "js\/worktime-main.js": "c234192252992848fb9cf22a3d32318d747bc35c0e2a3d26bd3b0f5f812c4e3d27508bdfb519b16b230c7e3b4240e0e979faa6cb35050cb19e9161a21a024f53",
+        "l10n\/de.js": "07fbbd677dfa1815c7b1ddb28abe48310028b6d72a7264b44444aab9947151bc49af46d4c1228a01603a713d9008ad20bc14283ef0c9043f76c15e82c472859e",
+        "l10n\/de.json": "a5877ed193e96031d77ecbed9e44f54766c32e429c28bc0a023ff237c7cde13c6261284d5dafd1e4da46d37575d10870dd2bfd3fa863a98c01e8159414f2659e",
+        "l10n\/en.js": "91b38325283ed61cd39160d83fa3b87bc76e68f630b47b6d78b05c7f0f0c9a367121a4e69927b31349c09858eb50d0a9453355652a7bb3e5b47c065f8d775d09",
+        "l10n\/en.json": "05aa1538dbfc3f3337892f5857993b09eb812d121b526ccf7dda126943599909ae5a97426ed147998e2e1335a451296b601a77cdddaa919319be2d5275f3cd4d",
         "lib\/AppInfo\/Application.php": "6f205ad1f1ef261bc43de6d5fbfca672758da33fd4ef632d7b2562238f413a870f62f6af771528e32834baceb1a32043765d4cc4c634aa7072b457dae4af1028",
         "lib\/BackgroundJob\/.gitkeep": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
         "lib\/BackgroundJob\/ArchivePdfJob.php": "714bc313a18f44e7784141aa462b0d404c76154e6fc50024fc70da5f6637cb8de62827ece7d15d0c58c8405d47da618e5e6eb54fae08ec0144a5e6a231ef1988",
@@ -83,7 +83,7 @@
         "lib\/Service\/PdfService.php": "45640e8cfd9be33e53744ee7b8a090a1ce3c7503eed5ee3b966944dfd9664d7735d7b8490e2554204456d134ceca7d14a127b69f6322d0933723995278d72dcd",
         "lib\/Service\/PermissionService.php": "4b0a1f45d8fbb65c6dad561d4911325c1b440a3b6c0db1d064a09ed39cb24f0a6a148c6d377ac2c1b8d4811a0d5bdf5f30cc05e0a7f5b63e1b6dbb33bf4dc2d8",
         "lib\/Service\/ProjectService.php": "525ae15dc7645f49d501ec83d971dbe54e7cc3b4b8223479176af5f08b365528fb3d4af5dc6dcbd78d21db6e4c05d48f85caad74a655d5a6dd30c06bc27a077c",
-        "lib\/Service\/TimeEntryService.php": "6e775f50604143411ebb51cf0e0b00118bcae19b877285538ffc2c23892979cddf2e03891020089e8e2b92990117d55d53c2dfa503ce1aa315e1ef3ca6e5f722",
+        "lib\/Service\/TimeEntryService.php": "c25b73de27470791fe5460fb66c7493430135fcd9bf06a5ed0f9b12f5f13846ee1ef7cf3ea832e2e662c12b6dbf0fcd3313dd1183240d2f2c042e2301eae880a",
         "lib\/Service\/ValidationException.php": "2f4ce83e6caf71e04115b0996c14a3fb7588912db60e805e58e4f718eb7c79155c4f751a19408b2013a4a73ea14725fead4fb2a1bb5c182a2d52d8aa2396f43f",
         "lib\/Service\/WorkScheduleService.php": "131ef20accb95f3a9b6c52c1a878ef837dead84cc0f56330e6a8c94487b2e7cb34fea4a70e9a2f51b9be7a60b8a9289a185e8823c794272b621a2eab59b413d9",
         "lib\/Service\/YearlyCarryoverService.php": "1047493ce5f2e54ede2005ed03693aad5f17f505efdd060ed4a7e89222ac6bc48f9efd4988dddd9f09571f564dd25e7a97c92fb5ca973401d0accce8db95446e",
@@ -165,6 +165,6 @@
         "vendor\/tecnickcom\/tcpdf\/tools\/convert_fonts_examples.txt": "c4c8e617248924852aca34f4d0030377ca451e2e5de775ddc4d5cef353af1e7d2061c7ef7bf038a7fb9f9d4149acef8101d4e1fef168deb48c61a0eefe859227",
         "vendor\/tecnickcom\/tcpdf\/tools\/tcpdf_addfont.php": "f94b7d68e38f4def7f079efea17bdffae67f0ddfd92ff579d7d36967eef326329562e23786b9ad664281b63c9853b7ef750adfa7c856a0d7bbe511be850fbf30"
     },
-    "signature": "AqIhlaxpY3yxXL5AfQN5wwe+txI+9r5ct+bva6YK8kNij+MHpulB8r7hiNgC71Y+R06tbMNLrF5Dz5+8qVdrBmwdAVRvHOV+yn8vBlRnlo2DHKIyuM2\/LVNeGwJuNkZ2E6LyrVHNMUQos+Tdq8p4RVVvLXEtIUNc0Xv8ICnvlcxIy5SJSmJC669hLwLwsd2CNTuqmpbWUuLyZSTfSLt0Mi5mmNseHAreY7wk6tT7n+hf5lY9GPThdE1cKQ2UVZWD3m2984b0lxg0jgbdxskNlWjGtI1mHuNZ\/NFGcKnoq51RKfK+wYsUm6b7Hekfq0V257BfeBtAITNBaaH0q4Piqg==",
+    "signature": "KMbONafqIoxceIEzuss+erPFYnw6TcwGyLEKckljum5cjEIfbLrmDqAsRAkPiGJprbLJsKyvZwAxfArNOGDhEqX1t0eQK0nzioyoD\/8MLDuqNPyYQJmhn3IIwMnR4eC+\/p6phoK8BWCMAiZNMdkPyNyduZ+yI3GN35jMsWhO4hFdeLV\/S4ySU1Z12MicpWwW\/kMeuwrd0AQhF08SUEyv+hb5JDnhbB0ihyZRC09rgYiDvXhhEqAoKhUpCxUQNwCOpIEsnQgUF0bMRWtVtppeLT0sJRtiw0Kd6Ews9RxGDSJVOPViCsyvcsorNayp6g9O2aTdMdMju7oJ0OlT\/usbIQ==",
     "certificate": "-----BEGIN CERTIFICATE-----\r\nMIIDAzCCAesCAhLvMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNVBAYTAkRFMRswGQYD\r\nVQQIDBJCYWRlbi1XdWVydHRlbWJlcmcxFzAVBgNVBAoMDk5leHRjbG91ZCBHbWJI\r\nMTYwNAYDVQQDDC1OZXh0Y2xvdWQgQ29kZSBTaWduaW5nIEludGVybWVkaWF0ZSBB\r\ndXRob3JpdHkwHhcNMjYwMjA2MTgwNzAyWhcNMzYwNTE0MTgwNzAyWjATMREwDwYD\r\nVQQDDAh3b3JrdGltZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL\/b\r\n9iUR\/hnnlbkchImfamKpEfnMyIiM6Ewe58W3JrJGA6pycVkamLyeUEcaRMbaZmbK\r\n5oosZ8g\/mVjLSZcAbM8F2rV4pOsSD6ToJ7S419gCHYBMVsm9HDdYbej65DXXqOJn\r\nVV4xfdj8KSaxsgH\/1aVWvKBil8sjLiBUEIHdOCytY3EEzISn8p+Ma5cUC+1Bf9kh\r\nffY5i0YvZ38R8cdI0SeraLmHBpUy4m91P7Kg03uZspiWwYZBupTZxhlBAawKU\/Za\r\nxcViP7+JY8p4lll0io1Q1ViXPnFcj8C9uvnU43k13wRbAWqYV8pUEQcKKbA60Gk\/\r\nZB+Z4b1l+5V0Sp1a0NUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAgOYI54EXGsPe\r\n3aXvprtL4CvR33fEBJguelgz4pqrxSQRgnxJySB6Fo+ocj7wxQt0\/\/sw4bds60cH\r\n82rC6uF23lA7GE0\/sdHQPrc9UW\/C93oU5pgC54CKWUMqUBgWiBjTe4tStf5gE0C1\r\n5Jad2eMKpEnNO8x7v+OnxOzJYhUZvbN0E3UM5NVjzcZV\/lsVQxnmhtXkd4dJ6twy\r\n+QAQlmifHcw4beyvF1A4e1Hwcc4\/b9O64RdI\/oZ\/ehU41uP5zdF61B6A6cF+IbS+\r\nUdTPcyqRqEsFQRw52JpSdkKnFtG76Dg8rD0o5PyrmKOtHMnssPdJicehEoFe144e\r\nOdhkeyiR8w==\r\n-----END CERTIFICATE-----"
 }
