@@ -25,7 +25,7 @@
 
             <NcSettingsSection v-if="canManageEmployees"
                 v-show="activeSection === 'sec-mitarbeiter'"
-                id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiterverwaltung')">
+                id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiter')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewEmployeeForm">
                         <template #icon>
@@ -52,7 +52,7 @@
 
             <NcSettingsSection v-if="canManageProjects"
                 v-show="activeSection === 'sec-projekte'"
-                id="sec-projekte" :name="t('worktime', 'Projektverwaltung')">
+                id="sec-projekte" :name="t('worktime', 'Projekte')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewProjectForm">
                         <template #icon>
@@ -104,7 +104,8 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-firmendaten'"
-                id="sec-firmendaten" :name="t('worktime', 'Firmendaten')">
+                id="sec-firmendaten" :name="t('worktime', 'Firmendaten')"
+                :description="t('worktime', 'Stammdaten und Standardwerte, die für neue Mitarbeiter vorausgewählt werden.')">
                 <div class="form-group">
                     <label for="companyName">{{ t('worktime', 'Firmenname') }}</label>
                     <input id="companyName"
@@ -120,14 +121,9 @@
                         :options="federalStateOptions"
                         @input="saveSetting('default_federal_state')" />
                 </div>
-            </NcSettingsSection>
-
-            <NcSettingsSection v-if="canManageSettings"
-                v-show="activeSection === 'sec-standardwerte'"
-                id="sec-standardwerte" :name="t('worktime', 'Standardwerte')">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="weeklyHours">{{ t('worktime', 'Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diese Wochenstunden voreingestellt. Sie können im Mitarbeiterprofil individuell angepasst werden.') }}</InfoIcon></label>
+                        <label for="weeklyHours">{{ t('worktime', 'Standard-Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diese Wochenstunden voreingestellt. Sie können im Mitarbeiterprofil individuell angepasst werden.') }}</InfoIcon></label>
                         <input id="weeklyHours"
                             v-model.number="settings.default_weekly_hours"
                             type="number"
@@ -137,7 +133,7 @@
                             @change="saveSetting('default_weekly_hours')">
                     </div>
                     <div class="form-group">
-                        <label for="vacationDays">{{ t('worktime', 'Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diesen Urlaubsanspruch voreingestellt. Der tatsächliche Anspruch wird im Mitarbeiterprofil festgelegt.') }}</InfoIcon></label>
+                        <label for="vacationDays">{{ t('worktime', 'Standard-Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diesen Urlaubsanspruch voreingestellt. Der tatsächliche Anspruch wird im Mitarbeiterprofil festgelegt.') }}</InfoIcon></label>
                         <input id="vacationDays"
                             v-model.number="settings.default_vacation_days"
                             type="number"
@@ -188,7 +184,7 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-genehmigung'"
-                id="sec-genehmigung" :name="t('worktime', 'Genehmigungs-Workflow')"
+                id="sec-genehmigung" :name="t('worktime', 'Genehmigung')"
                 :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
@@ -228,7 +224,7 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-pdf'"
-                id="sec-pdf" :name="t('worktime', 'PDF-Archivierung')"
+                id="sec-pdf" :name="t('worktime', 'PDF-Archiv')"
                 :description="t('worktime', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
                 <div class="form-group">
                     <label>{{ t('worktime', 'Archiv-Ordner') }} <InfoIcon>{{ t('worktime', 'Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.') }}</InfoIcon></label>
@@ -613,7 +609,6 @@ import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
 import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
@@ -662,7 +657,6 @@ export default {
         ChevronDown,
         KeyVariant,
         OfficeBuilding,
-        Cog,
         ClockCheckOutline,
         CheckDecagram,
         CoffeeOutline,
@@ -824,7 +818,6 @@ export default {
                 ]),
                 group(this.t('worktime', 'Firma'), [
                     { id: 'sec-firmendaten', label: this.t('worktime', 'Firmendaten'), icon: 'OfficeBuilding', visible: this.canManageSettings },
-                    { id: 'sec-standardwerte', label: this.t('worktime', 'Standardwerte'), icon: 'Cog', visible: this.canManageSettings },
                     { id: 'sec-arbeitszeit', label: this.t('worktime', 'Arbeitszeit-Regeln'), icon: 'ClockCheckOutline', visible: this.canManageSettings },
                 ]),
                 group(this.t('worktime', 'Abläufe'), [
@@ -1499,11 +1492,8 @@ export default {
     top: 0;
     display: flex;
     flex-direction: column;
-    padding: 6px;
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius-large, 12px);
-    overflow: hidden;
+    padding: 0 16px 0 0;
+    border-right: 1px solid var(--color-border-dark, var(--color-border));
 }
 
 .settings-nav-group {
@@ -1512,11 +1502,15 @@ export default {
     letter-spacing: 0.5px;
     text-transform: uppercase;
     color: var(--color-text-maxcontrast);
-    padding: 12px 12px 4px;
+    padding: 16px 12px 6px;
+    border-top: 1px solid var(--color-border-dark, var(--color-border));
+    margin-top: 8px;
 }
 
 .settings-nav-group:first-child {
-    padding-top: 4px;
+    padding-top: 0;
+    border-top: none;
+    margin-top: 0;
 }
 
 .settings-nav-item {
