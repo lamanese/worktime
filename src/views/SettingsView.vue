@@ -1471,6 +1471,29 @@ export default {
     align-items: start;
 }
 
+/* Sektion ist im Sidebar-Layout immer allein sichtbar – Trenner unten weg */
+.settings-content :deep(.settings-section) {
+    border-bottom: none !important;
+    padding-bottom: 0;
+}
+
+/* Stärkere Eingabe-Borders – NC-Default ist zu blass */
+.settings-content :deep(input[type="text"]),
+.settings-content :deep(input[type="number"]),
+.settings-content :deep(input[type="date"]),
+.settings-content :deep(input[type="time"]),
+.settings-content :deep(textarea) {
+    border: 1px solid var(--color-border-dark, var(--color-border));
+}
+
+.settings-content :deep(input[type="text"]:focus),
+.settings-content :deep(input[type="number"]:focus),
+.settings-content :deep(input[type="date"]:focus),
+.settings-content :deep(input[type="time"]:focus),
+.settings-content :deep(textarea:focus) {
+    border-color: var(--color-primary-element);
+}
+
 .settings-nav {
     position: sticky;
     top: 0;
