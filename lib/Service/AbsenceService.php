@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Service;
@@ -513,12 +518,13 @@ class AbsenceService {
         $result = [];
 
         foreach ($allEmployees as $employee) {
-            // Skip if employee is the current user (they see their own absences in their own view)
-            // Actually, include them — they should see themselves in the overview too
-
             if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $supervisorEmployeeId)) {
                 continue;
             }
+
+            $isTeamMember = $supervisorEmployeeId !== null
+                && $employee->getSupervisorId() === $supervisorEmployeeId;
+            $unmasked = $isPrivileged || $isTeamMember;
 
             $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
 
@@ -527,8 +533,7 @@ class AbsenceService {
             foreach ($absences as $absence) {
                 $data = $absence->jsonSerialize();
 
-                // Mask types for non-privileged users based on employee's detail setting
-                if (!$isPrivileged && $detail !== 'detailed') {
+                if (!$unmasked && $detail !== 'detailed') {
                     $data['type'] = 'absent';
                     $data['typeName'] = 'Abwesend';
                 }
@@ -553,13 +558,18 @@ class AbsenceService {
      * Check if an employee's absences should be visible to the current user.
      */
     private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): bool {
-        // Privileged users (Admin, HR, Supervisor for their team) always see everyone
+        // Admin/HR see all employees
         if ($isPrivileged) {
             return true;
         }
 
         // Own entry is always visible
         if ($currentEmployeeId !== null && $employee->getId() === $currentEmployeeId) {
+            return true;
+        }
+
+        // Supervisors see their own team members regardless of per-employee visibility setting
+        if ($supervisorEmployeeId !== null && $employee->getSupervisorId() === $supervisorEmployeeId) {
             return true;
         }
 
