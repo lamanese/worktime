@@ -4,21 +4,27 @@
 
         <NcLoadingIcon v-if="loading" :size="44" />
 
-        <div v-else class="settings-content">
-            <NcSettingsSection v-if="tocSections.length > 1"
-                id="sec-inhalt"
-                :name="t('worktime', 'Inhalt')">
-                <nav class="settings-toc__chips" :aria-label="t('worktime', 'Inhaltsübersicht')">
-                    <a v-for="s in tocSections" :key="s.id"
-                        :href="'#' + s.id"
-                        class="toc-chip"
-                        @click.prevent="scrollToSection(s.id)">
-                        {{ s.label }}
-                    </a>
-                </nav>
-            </NcSettingsSection>
+        <div v-else class="settings-layout">
+            <nav class="settings-nav" :aria-label="t('worktime', 'Einstellungs-Navigation')">
+                <template v-for="group in navGroups">
+                    <div v-if="group.items.length" :key="group.label" class="settings-nav-group">
+                        {{ group.label }}
+                    </div>
+                    <button v-for="item in group.items"
+                        :key="item.id"
+                        class="settings-nav-item"
+                        :class="{ active: activeSection === item.id }"
+                        @click="setActiveSection(item.id)">
+                        <component :is="item.icon" :size="18" />
+                        {{ item.label }}
+                    </button>
+                </template>
+            </nav>
+
+            <div class="settings-content">
 
             <NcSettingsSection v-if="canManageEmployees"
+                v-show="activeSection === 'sec-mitarbeiter'"
                 id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiterverwaltung')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewEmployeeForm">
@@ -45,6 +51,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageProjects"
+                v-show="activeSection === 'sec-projekte'"
                 id="sec-projekte" :name="t('worktime', 'Projektverwaltung')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewProjectForm">
@@ -71,6 +78,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-berechtigungen'"
                 id="sec-berechtigungen" :name="t('worktime', 'Berechtigungen')">
                 <div class="form-group">
                     <label>{{ t('worktime', 'HR-Manager') }} <InfoIcon>{{ t('worktime', 'Admin: Volle Rechte (automatisch). HR-Manager: Mitarbeiter verwalten und Anträge genehmigen (manuell zuweisen). Vorgesetzter: Genehmigt Zeiten seines Teams (automatisch). Mitarbeiter: Eigene Zeiten erfassen (automatisch).') }}</InfoIcon></label>
@@ -95,6 +103,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-firmendaten'"
                 id="sec-firmendaten" :name="t('worktime', 'Firmendaten')">
                 <div class="form-group">
                     <label for="companyName">{{ t('worktime', 'Firmenname') }}</label>
@@ -114,6 +123,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-standardwerte'"
                 id="sec-standardwerte" :name="t('worktime', 'Standardwerte')">
                 <div class="form-row">
                     <div class="form-group">
@@ -140,6 +150,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-arbeitszeit'"
                 id="sec-arbeitszeit" :name="t('worktime', 'Arbeitszeit-Regeln')">
                 <div class="form-group">
                     <label for="maxDailyHours">{{ t('worktime', 'Maximale tägliche Arbeitszeit (Stunden)') }} <InfoIcon>{{ t('worktime', 'Wenn ein Zeiteintrag diesen Wert überschreitet, wird eine Warnung angezeigt. Nach §3 ArbZG sind maximal 10 Stunden erlaubt.') }}</InfoIcon></label>
@@ -176,6 +187,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-genehmigung'"
                 id="sec-genehmigung" :name="t('worktime', 'Genehmigungs-Workflow')"
                 :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
@@ -187,6 +199,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-pausen'"
                 id="sec-pausen" :name="t('worktime', 'Pausenregelung (§4 ArbZG)')"
                 :description="t('worktime', 'Mindestpause gemäß deutschem Arbeitszeitgesetz')">
                 <div class="form-row">
@@ -214,6 +227,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-pdf'"
                 id="sec-pdf" :name="t('worktime', 'PDF-Archivierung')"
                 :description="t('worktime', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
                 <div class="form-group">
@@ -239,6 +253,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-sondertage'"
                 id="sec-sondertage" :name="t('worktime', 'Sondertage')"
                 :description="t('worktime', 'Definieren Sie, ob Heiligabend und Silvester als halbe Arbeitstage gelten.')">
                 <div class="form-group">
@@ -259,6 +274,7 @@
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageHolidays"
+                v-show="activeSection === 'sec-feiertage'"
                 id="sec-feiertage" :name="t('worktime', 'Feiertage verwalten')"
                 :description="t('worktime', 'Feiertage anzeigen, hinzufügen, bearbeiten und löschen.')">
                 <div class="form-row holiday-filters">
@@ -430,6 +446,7 @@
                 </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageEmployees"
+                v-show="activeSection === 'sec-jahresuebertrag'"
                 id="sec-jahresuebertrag" :name="t('worktime', 'Jahresübertrag')"
                 :description="t('worktime', 'Überstunden und Resturlaub aus dem Vorjahr händisch übertragen. Durchgeführte Überträge sind verbindlich und unveränderbar.')">
                 <div class="form-row">
@@ -571,6 +588,7 @@
                 </NcModal>
             </NcSettingsSection>
 
+            </div>
         </div>
     </div>
 </template>
@@ -593,6 +611,16 @@ import Close from 'vue-material-design-icons/Close.vue'
 import CalendarBlank from 'vue-material-design-icons/CalendarBlank.vue'
 import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
+import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
+import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
+import Cog from 'vue-material-design-icons/Cog.vue'
+import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
+import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
+import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
+import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
+import StarOutline from 'vue-material-design-icons/StarOutline.vue'
+import CalendarStar from 'vue-material-design-icons/CalendarStar.vue'
+import SwapHorizontalBold from 'vue-material-design-icons/SwapHorizontalBold.vue'
 import { getFilePickerBuilder, FilePickerType, DialogBuilder } from '@nextcloud/dialogs'
 import { mapGetters, mapActions } from 'vuex'
 import SettingsService from '../services/SettingsService.js'
@@ -632,6 +660,16 @@ export default {
         CalendarBlank,
         ChevronRight,
         ChevronDown,
+        KeyVariant,
+        OfficeBuilding,
+        Cog,
+        ClockCheckOutline,
+        CheckDecagram,
+        CoffeeOutline,
+        FilePdfBox,
+        StarOutline,
+        CalendarStar,
+        SwapHorizontalBold,
         EmployeeForm,
         EmployeeList,
         ProjectForm,
@@ -641,6 +679,7 @@ export default {
         return {
             loading: false,
             settings: {},
+            activeSection: null,
             holidayYear: getCurrentYear(),
             showEmployeeForm: false,
             editingEmployee: null,
@@ -775,21 +814,33 @@ export default {
             }
             return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
         },
-        tocSections() {
+        navGroups() {
+            const group = (label, items) => ({ label, items: items.filter(i => i.visible) })
             return [
-                { id: 'sec-mitarbeiter', label: this.t('worktime', 'Mitarbeiter'), visible: this.canManageEmployees },
-                { id: 'sec-projekte', label: this.t('worktime', 'Projekte'), visible: this.canManageProjects },
-                { id: 'sec-berechtigungen', label: this.t('worktime', 'Berechtigungen'), visible: this.canManageSettings },
-                { id: 'sec-firmendaten', label: this.t('worktime', 'Firmendaten'), visible: this.canManageSettings },
-                { id: 'sec-standardwerte', label: this.t('worktime', 'Standardwerte'), visible: this.canManageSettings },
-                { id: 'sec-arbeitszeit', label: this.t('worktime', 'Arbeitszeit-Regeln'), visible: this.canManageSettings },
-                { id: 'sec-genehmigung', label: this.t('worktime', 'Genehmigung'), visible: this.canManageSettings },
-                { id: 'sec-pausen', label: this.t('worktime', 'Pausenregelung'), visible: this.canManageSettings },
-                { id: 'sec-pdf', label: this.t('worktime', 'PDF-Archiv'), visible: this.canManageSettings },
-                { id: 'sec-sondertage', label: this.t('worktime', 'Sondertage'), visible: this.canManageSettings },
-                { id: 'sec-feiertage', label: this.t('worktime', 'Feiertage'), visible: this.canManageHolidays },
-                { id: 'sec-jahresuebertrag', label: this.t('worktime', 'Jahresübertrag'), visible: this.canManageEmployees },
-            ].filter(s => s.visible)
+                group(this.t('worktime', 'Team'), [
+                    { id: 'sec-mitarbeiter', label: this.t('worktime', 'Mitarbeiter'), icon: 'AccountGroup', visible: this.canManageEmployees },
+                    { id: 'sec-projekte', label: this.t('worktime', 'Projekte'), icon: 'Folder', visible: this.canManageProjects },
+                    { id: 'sec-berechtigungen', label: this.t('worktime', 'Berechtigungen'), icon: 'KeyVariant', visible: this.canManageSettings },
+                ]),
+                group(this.t('worktime', 'Firma'), [
+                    { id: 'sec-firmendaten', label: this.t('worktime', 'Firmendaten'), icon: 'OfficeBuilding', visible: this.canManageSettings },
+                    { id: 'sec-standardwerte', label: this.t('worktime', 'Standardwerte'), icon: 'Cog', visible: this.canManageSettings },
+                    { id: 'sec-arbeitszeit', label: this.t('worktime', 'Arbeitszeit-Regeln'), icon: 'ClockCheckOutline', visible: this.canManageSettings },
+                ]),
+                group(this.t('worktime', 'Abläufe'), [
+                    { id: 'sec-genehmigung', label: this.t('worktime', 'Genehmigung'), icon: 'CheckDecagram', visible: this.canManageSettings },
+                    { id: 'sec-pausen', label: this.t('worktime', 'Pausenregelung'), icon: 'CoffeeOutline', visible: this.canManageSettings },
+                    { id: 'sec-pdf', label: this.t('worktime', 'PDF-Archiv'), icon: 'FilePdfBox', visible: this.canManageSettings },
+                ]),
+                group(this.t('worktime', 'Kalender'), [
+                    { id: 'sec-sondertage', label: this.t('worktime', 'Sondertage'), icon: 'StarOutline', visible: this.canManageSettings },
+                    { id: 'sec-feiertage', label: this.t('worktime', 'Feiertage'), icon: 'CalendarStar', visible: this.canManageHolidays },
+                    { id: 'sec-jahresuebertrag', label: this.t('worktime', 'Jahresübertrag'), icon: 'SwapHorizontalBold', visible: this.canManageEmployees },
+                ]),
+            ]
+        },
+        availableSectionIds() {
+            return this.navGroups.flatMap(g => g.items.map(i => i.id))
         },
     },
     created() {
@@ -810,34 +861,41 @@ export default {
         if (this.canManageEmployees) {
             this.loadCarryovers()
         }
+        this.initActiveSection()
+    },
+    watch: {
+        availableSectionIds: {
+            immediate: false,
+            handler(ids) {
+                if (!this.activeSection || !ids.includes(this.activeSection)) {
+                    this.activeSection = ids[0] || null
+                }
+            },
+        },
     },
     methods: {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
-        scrollToSection(id) {
-            const el = document.getElementById(id)
-            if (!el) return
-            // Nächsten scrollbaren Vorfahren finden (in NC: .app-content)
-            let scroller = el.parentElement
-            while (scroller && scroller !== document.body) {
-                const s = getComputedStyle(scroller)
-                if (scroller.scrollHeight > scroller.clientHeight
-                    && (s.overflowY === 'auto' || s.overflowY === 'scroll')) {
-                    break
+        setActiveSection(id) {
+            this.activeSection = id
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+                const target = '#/settings?sec=' + encodeURIComponent(id)
+                if (window.location.hash !== target) {
+                    window.history.replaceState(null, '', target)
                 }
-                scroller = scroller.parentElement
             }
-            if (!scroller || scroller === document.body) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                return
+        },
+        initActiveSection() {
+            const hash = window.location.hash || ''
+            const match = hash.match(/sec=([^&]+)/)
+            const fromUrl = match ? decodeURIComponent(match[1]) : null
+            const ids = this.availableSectionIds
+            if (fromUrl && ids.includes(fromUrl)) {
+                this.activeSection = fromUrl
+            } else if (ids.length) {
+                this.activeSection = ids[0]
             }
-            const offset = 16
-            const top = el.getBoundingClientRect().top
-                - scroller.getBoundingClientRect().top
-                + scroller.scrollTop
-                - offset
-            scroller.scrollTo({ top, behavior: 'smooth' })
         },
         async loadSettings() {
             this.loading = true
@@ -1399,39 +1457,92 @@ export default {
 .settings-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 800px;
-}
-
-/* Inhaltsübersicht – Chip-Grid in der "Inhalt"-Sektion */
-.settings-toc__chips {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 6px;
-}
-
-.toc-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px 12px;
-    border-radius: var(--border-radius-element, 8px);
-    background: var(--color-background-hover);
-    color: var(--color-main-text);
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none;
-    text-align: center;
-    transition: background-color 0.15s;
-}
-
-.toc-chip:hover,
-.toc-chip:focus-visible {
-    background: var(--color-background-dark);
-    outline: none;
+    max-width: 1100px;
 }
 
 .settings-view h2 {
     margin: 0 0 20px 0;
+}
+
+.settings-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.settings-nav {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    overflow: hidden;
+}
+
+.settings-nav-group {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--color-text-maxcontrast);
+    padding: 12px 12px 4px;
+}
+
+.settings-nav-group:first-child {
+    padding-top: 4px;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: none;
+    background: none;
+    color: var(--color-main-text);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    border-radius: var(--border-radius-element, 8px);
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.15s;
+}
+
+.settings-nav-item :deep(.material-design-icon) {
+    color: var(--color-text-maxcontrast);
+}
+
+.settings-nav-item:hover {
+    background: var(--color-background-hover);
+}
+
+.settings-nav-item.active {
+    background: var(--color-primary-element-light);
+    color: var(--color-primary-element);
+    font-weight: 600;
+}
+
+.settings-nav-item.active :deep(.material-design-icon) {
+    color: var(--color-primary-element);
+}
+
+.settings-nav-item:focus-visible {
+    outline: 2px solid var(--color-primary-element);
+    outline-offset: -2px;
+}
+
+@media (max-width: 900px) {
+    .settings-layout {
+        grid-template-columns: 1fr;
+    }
+    .settings-nav {
+        position: static;
+    }
 }
 
 .section-header-actions {
