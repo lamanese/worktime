@@ -245,10 +245,11 @@ class TimeEntryMapper extends QBMapper {
         $qb = $this->db->getQueryBuilder();
 
         // Subquery to get employee IDs supervised by the given supervisor
+        $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
         $subQb = $this->db->getQueryBuilder();
         $subQb->select('id')
             ->from('wt_employees')
-            ->where($subQb->expr()->eq('supervisor_id', $subQb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT)));
+            ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
         $qb->select('*')
             ->from($this->getTableName())
