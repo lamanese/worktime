@@ -7,6 +7,20 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-06-01
+
+### Security
+- **Supervisor sieht nur sein eigenes Team in der Abwesenheitsübersicht (#244)**: Vorher behandelte `AbsenceController::overview()` jeden Supervisor pauschal als privilegiert, sodass `isEmployeeVisibleInOverview()` automatisch alle Mitarbeiter freigab. Supervisoren sahen damit Abwesenheiten ALLER Mitarbeiter, nicht nur ihres Teams — DSGVO-relevant, weil Abwesenheits-Typen Krankheits-Info durchscheinen lassen können. Jetzt: Admin/HR sehen weiterhin alle Mitarbeiter unmaskiert; Supervisoren sehen nur Mitarbeiter, deren `supervisor_id` mit ihrer eigenen Employee-ID übereinstimmt, mit Klartext-Typen nur für die eigenen Team-Mitglieder. Fremde Sichten greifen wie bisher auf die per-Employee-Sichtbarkeitsregel zurück.
+
+### Fixed
+- **TypeError bei ungültigem Zeitformat in Zeiteinträgen (#245)**: `DateTime::createFromFormat()` liefert bei ungültigem Format `false` — das wurde ungesichert an `validate(?DateTime)` durchgereicht und ergab unter `declare(strict_types=1)` einen `TypeError` statt einer sauberen `ValidationException`. `?: null`-Guard + Skip-Branch für `checkOverlap()` behoben.
+- **TypeError bei unvollständigen Abwesenheits-Daten in der Tageliste (#245)**: Wenn die API eine Abwesenheit ohne `startDate`/`endDate` liefert, crashte die Tageliste mit `TypeError` auf `absence.startDate.split('-')`. Null-Guard ergänzt.
+
+### Changed
+- **package.json mit info.xml synchronisiert (#246)**: `package.json` und `package-lock.json` standen nach dem 0.9.0-Release auf 0.8.1. Jetzt konsistent mit `info.xml`, damit Tools und der `/release`-Skill korrekte Vorgängerversion sehen.
+- **SPDX-Lizenz-Header in allen PHP-Dateien (#248)**: Allen 67 PHP-Dateien in `lib/` wurde der NC-Standard-Header (`SPDX-FileCopyrightText` + `SPDX-License-Identifier: AGPL-3.0-or-later`) hinzugefügt. App-Lizenz bleibt AGPL-3.0-or-later wie in `info.xml`; das schließt die Convention-Lücke für Auditoren und Forks.
+- **Integrity-sauberes Upgrade**: Der `CleanupExtraFiles`-Repair-Step räumt jetzt auch veraltete `worktime-<hash>.js`-Bundle-Dateien aus früheren Releases weg. NC kopiert beim App-Update zwar neue Dateien rein, löscht aber keine alten — bei jedem Upgrade blieben sonst stale `.js` / `.js.map` / `.js.LICENSE.txt` aus der Vorversion liegen, die der Integrity-Check als `EXTRA_FILE` flagged hat. Beim ersten Lauf werden alle `worktime-*`-Bundles entfernt, die nicht in der aktuellen `signature.json` stehen.
+
 ## [0.9.0] - 2026-06-01
 
 ### Added
