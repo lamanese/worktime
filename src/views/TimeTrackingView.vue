@@ -30,6 +30,8 @@
                     @update="onMonthChange" />
                 <YearPicker v-else
                     :year="overviewYear"
+                    :min="minYear"
+                    :max="maxYear"
                     @update="onYearChange" />
 
                 <span v-if="monthStatus && !isYearMode" class="month-badge" :class="monthStatus">
@@ -362,7 +364,7 @@ export default {
             }
         },
         onYearChange(year) {
-            this.overviewYear = year
+            this.overviewYear = Math.min(this.maxYear, Math.max(this.minYear, year))
             this.loadOvertime()
         },
         onSelectDay(date) {
