@@ -107,10 +107,12 @@ class TimeEntryService {
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $employeeId);
 
-        // Check for overlapping entries
-        $overlapError = $this->checkOverlap($employeeId, $dateObj, $startTimeObj, $endTimeObj);
-        if ($overlapError) {
-            $errors['overlap'] = [$overlapError];
+        // Check for overlapping entries (only when times are valid)
+        if ($startTimeObj !== null && $endTimeObj !== null) {
+            $overlapError = $this->checkOverlap($employeeId, $dateObj, $startTimeObj, $endTimeObj);
+            if ($overlapError) {
+                $errors['overlap'] = [$overlapError];
+            }
         }
 
         if (!empty($errors)) {
@@ -167,10 +169,12 @@ class TimeEntryService {
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $entry->getEmployeeId());
 
-        // Check for overlapping entries (exclude current entry)
-        $overlapError = $this->checkOverlap($entry->getEmployeeId(), $dateObj, $startTimeObj, $endTimeObj, $id);
-        if ($overlapError) {
-            $errors['overlap'] = [$overlapError];
+        // Check for overlapping entries (exclude current entry; only when times are valid)
+        if ($startTimeObj !== null && $endTimeObj !== null) {
+            $overlapError = $this->checkOverlap($entry->getEmployeeId(), $dateObj, $startTimeObj, $endTimeObj, $id);
+            if ($overlapError) {
+                $errors['overlap'] = [$overlapError];
+            }
         }
 
         if (!empty($errors)) {
