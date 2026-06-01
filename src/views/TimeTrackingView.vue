@@ -269,6 +269,7 @@ export default {
             const map = {}
             const { year, month } = this.selectedMonth
             for (const absence of this.reportAbsences) {
+                if (!absence.startDate || !absence.endDate) continue
                 const [sy, sm, sd] = absence.startDate.split('-').map(Number)
                 const [ey, em, ed] = absence.endDate.split('-').map(Number)
                 const start = new Date(sy, sm - 1, sd)

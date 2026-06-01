@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Controller;
@@ -314,16 +319,16 @@ class AbsenceController extends BaseController {
             $month = (int)date('n');
         }
 
-        $isPrivileged = $this->permissionService->canManageEmployees($this->userId)
-            || $this->permissionService->isSupervisor($this->userId);
+        // Admin/HR see everything unmasked across all employees.
+        // Supervisors only see their own team (employees whose supervisorId matches them)
+        // and only their team unmasked. Everyone else falls back to per-employee visibility rules.
+        $isPrivileged = $this->permissionService->canManageEmployees($this->userId);
+        $isSupervisor = $this->permissionService->isSupervisor($this->userId);
 
         $currentEmployee = $this->permissionService->getEmployeeForUser($this->userId);
         $currentEmployeeId = $currentEmployee?->getId();
 
-        // Supervisors are privileged only for their team — but for simplicity
-        // we treat them as privileged here (they see all, sensitive types unmasked for their team).
-        // Admin/HR see everything unmasked.
-        $supervisorEmployeeId = $currentEmployeeId;
+        $supervisorEmployeeId = $isSupervisor ? $currentEmployeeId : null;
 
         $overview = $this->absenceService->getAbsenceOverview(
             $year,
