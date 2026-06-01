@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Db;
@@ -231,10 +236,11 @@ class AbsenceMapper extends QBMapper {
         // If supervisorEmployeeId > 0, filter by supervisor's team
         // If 0, return all pending (for Admin/HR)
         if ($supervisorEmployeeId > 0) {
+            $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
                 ->from('wt_employees')
-                ->where($subQb->expr()->eq('supervisor_id', $subQb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT)));
+                ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
         }
@@ -265,10 +271,11 @@ class AbsenceMapper extends QBMapper {
             ->andWhere($qb->expr()->gte('end_date', $qb->createNamedParameter($today)));
 
         if ($supervisorEmployeeId > 0) {
+            $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
                 ->from('wt_employees')
-                ->where($subQb->expr()->eq('supervisor_id', $subQb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT)));
+                ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
         }

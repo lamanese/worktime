@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Controller;
@@ -359,6 +364,10 @@ class TimeEntryController extends BaseController {
 
     #[NoAdminRequired]
     public function suggestBreak(string $startTime, string $endTime): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         $breakMinutes = $this->timeEntryService->suggestBreak($startTime, $endTime);
 
         return $this->successResponse(['breakMinutes' => $breakMinutes]);

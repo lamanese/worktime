@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Service;
@@ -96,16 +101,18 @@ class TimeEntryService {
         string $currentUserId = ''
     ): TimeEntry {
         $dateObj = new DateTime($date);
-        $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
-        $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
+        $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
+        $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $employeeId);
 
-        // Check for overlapping entries
-        $overlapError = $this->checkOverlap($employeeId, $dateObj, $startTimeObj, $endTimeObj);
-        if ($overlapError) {
-            $errors['overlap'] = [$overlapError];
+        // Check for overlapping entries (only when times are valid)
+        if ($startTimeObj !== null && $endTimeObj !== null) {
+            $overlapError = $this->checkOverlap($employeeId, $dateObj, $startTimeObj, $endTimeObj);
+            if ($overlapError) {
+                $errors['overlap'] = [$overlapError];
+            }
         }
 
         if (!empty($errors)) {
@@ -156,16 +163,18 @@ class TimeEntryService {
         $oldValues = $entry->jsonSerialize();
 
         $dateObj = new DateTime($date);
-        $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
-        $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
+        $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
+        $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 
         // Validate (including absence conflict check)
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $entry->getEmployeeId());
 
-        // Check for overlapping entries (exclude current entry)
-        $overlapError = $this->checkOverlap($entry->getEmployeeId(), $dateObj, $startTimeObj, $endTimeObj, $id);
-        if ($overlapError) {
-            $errors['overlap'] = [$overlapError];
+        // Check for overlapping entries (exclude current entry; only when times are valid)
+        if ($startTimeObj !== null && $endTimeObj !== null) {
+            $overlapError = $this->checkOverlap($entry->getEmployeeId(), $dateObj, $startTimeObj, $endTimeObj, $id);
+            if ($overlapError) {
+                $errors['overlap'] = [$overlapError];
+            }
         }
 
         if (!empty($errors)) {

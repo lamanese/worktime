@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Axel Deffner <axel@cpcmomentum.com>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 declare(strict_types=1);
 
 namespace OCA\WorkTime\Controller;
@@ -107,11 +112,19 @@ class HolidayController extends BaseController {
 
     #[NoAdminRequired]
     public function federalStates(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         return $this->successResponse($this->holidayService->getFederalStates());
     }
 
     #[NoAdminRequired]
     public function easter(int $year): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
         $easterSunday = $this->holidayService->calculateEasterSunday($year);
 
         return $this->successResponse([
