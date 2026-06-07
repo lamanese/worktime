@@ -348,8 +348,6 @@ export default {
                     lastName: this.form.lastName.trim(),
                     email: this.form.email.trim() || null,
                     personnelNumber: this.form.personnelNumber.trim() || null,
-                    weeklyHours: this.form.weeklyHours,
-                    vacationDays: this.form.vacationDays,
                     workingDaysPerWeek: this.form.workingDaysPerWeek,
                     supervisorId: this.form.supervisorId,
                     federalState: this.form.federalState,
@@ -361,6 +359,8 @@ export default {
                 if (this.isEdit) {
                     await this.updateEmployee({ id: this.employee.id, data })
                 } else {
+                    data.weeklyHours = this.form.weeklyHours
+                    data.vacationDays = this.form.vacationDays
                     await this.createEmployee(data)
                 }
 
