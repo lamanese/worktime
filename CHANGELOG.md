@@ -7,6 +7,18 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-06-07
+
+### Added
+- **Tschechische Übersetzung (#258)**: Community-Beitrag von @mysticNicoCZ, deckt rund 94 % der Oberflächentexte ab. Der Plural-Header wurde auf das korrekte tschechische Schema (`nplurals=3`) gesetzt (#260).
+
+### Fixed
+- **Mitarbeiterübersicht zeigt das heute gültige Arbeitszeitprofil (#202)**: Wochenstunden und Urlaubstage in der Übersicht stammten aus einem zwischengespeicherten Wert, der an das Profil mit dem neuesten Gültig-ab-Datum gekoppelt war. Ein zukünftig datiertes Profil überschrieb damit die Anzeige, sodass die Übersicht (z. B. 40 Std.) vom tatsächlich gültigen Profil (z. B. 31,5 Std.) abweichen konnte. Das Arbeitszeitprofil ist jetzt die alleinige Quelle: Übersicht, Team-Ansicht und Bearbeiten-Dialog leiten die Werte live aus dem heute gültigen Profil ab. Im Bearbeiten-Dialog werden Wochenstunden und Urlaubstage wieder angezeigt (schreibgeschützt, mit Verweis aufs Arbeitszeitprofil).
+- **PDF-Export: lange Bemerkungen brechen sauber um (#203)**: In den Tabellen für Zeiteinträge und Abwesenheiten wurden lange Bemerkungen abgeschnitten und sprengten das Layout. Die Zellen nutzen jetzt dynamische Zeilenhöhen, das Tabellenraster bleibt konsistent.
+
+### Changed
+- **Aktive-Profil-Auflösung als Batch-Query (#202)**: Mitarbeiterlisten lösen das gültige Profil in einer einzigen Abfrage auf (kein N+1 mehr). `EmployeeService::update()` nimmt Wochenstunden und Urlaubstage nicht mehr entgegen — diese Werte gehören ausschließlich zum Arbeitszeitprofil.
+
 ## [0.9.1] - 2026-06-01
 
 ### Security
