@@ -12,6 +12,7 @@ namespace OCA\WorkTime\Service;
 use DateTime;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\EmployeeMapper;
+use OCA\WorkTime\Db\WorkSchedule;
 use OCA\WorkTime\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserManager;
@@ -22,6 +23,7 @@ class EmployeeService {
     public function __construct(
         private EmployeeMapper $employeeMapper,
         private WorkScheduleMapper $workScheduleMapper,
+        private WorkScheduleService $workScheduleService,
         private AuditLogService $auditLogService,
         private IUserManager $userManager,
         private LoggerInterface $logger,
@@ -29,17 +31,75 @@ class EmployeeService {
     }
 
     /**
+     * Copy the weeklyHours and vacationDays from a work schedule onto the
+     * employee. The work schedule is the single source of truth for these
+     * values; the entity is mutated in memory only and never persisted here.
+     */
+    private function applyScheduleValues(Employee $employee, WorkSchedule $schedule): Employee {
+        $employee->setWeeklyHours((string)$schedule->getWeeklyHours());
+        $employee->setVacationDays($schedule->getVacationDays());
+        return $employee;
+    }
+
+    /**
+     * Surface the weeklyHours and vacationDays from the work schedule that is
+     * active today, so the employee overview always matches the currently
+     * valid profile.
+     */
+    private function withActiveSchedule(Employee $employee): Employee {
+        return $this->applyScheduleValues(
+            $employee,
+            $this->workScheduleService->getScheduleForDate($employee->getId(), new DateTime()),
+        );
+    }
+
+    /**
+     * Batch variant of {@see withActiveSchedule}: resolves the active schedule
+     * for all employees in a single query instead of one lookup per employee.
+     *
+     * @param Employee[] $employees
+     * @return Employee[]
+     */
+    private function withActiveScheduleEach(array $employees): array {
+        if (empty($employees)) {
+            return [];
+        }
+
+        $ids = array_map(static fn (Employee $e): int => $e->getId(), $employees);
+        $active = $this->workScheduleMapper->findActiveForEmployees($ids, new DateTime());
+
+        return array_map(
+            fn (Employee $e): Employee => isset($active[$e->getId()])
+                ? $this->applyScheduleValues($e, $active[$e->getId()])
+                : $this->withActiveSchedule($e), // schedule-less employee: use default fallback
+            $employees,
+        );
+    }
+
+    /**
+     * Enrich a list of employees obtained elsewhere (e.g. via PermissionService)
+     * with the weeklyHours/vacationDays of their currently-active schedule, so
+     * callers that bypass the find* methods still get the live values.
+     *
+     * @param Employee[] $employees
+     * @return Employee[]
+     */
+    public function applyActiveSchedules(array $employees): array {
+        return $this->withActiveScheduleEach($employees);
+    }
+
+    /**
      * @return Employee[]
      */
     public function findAll(): array {
-        return $this->employeeMapper->findAll();
+        return $this->withActiveScheduleEach($this->employeeMapper->findAll());
     }
 
     /**
      * @return Employee[]
      */
     public function findAllActive(): array {
-        return $this->employeeMapper->findAllActive();
+        return $this->withActiveScheduleEach($this->employeeMapper->findAllActive());
     }
 
     /**
@@ -47,7 +107,7 @@ class EmployeeService {
      */
     public function find(int $id): Employee {
         try {
-            return $this->employeeMapper->find($id);
+            return $this->withActiveSchedule($this->employeeMapper->find($id));
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Employee not found');
         }
@@ -58,7 +118,7 @@ class EmployeeService {
      */
     public function findByUserId(string $userId): Employee {
         try {
-            return $this->employeeMapper->findByUserId($userId);
+            return $this->withActiveSchedule($this->employeeMapper->findByUserId($userId));
         } catch (DoesNotExistException $e) {
             throw new NotFoundException('Employee not found for user');
         }
@@ -68,7 +128,7 @@ class EmployeeService {
      * @return Employee[]
      */
     public function findBySupervisor(int $supervisorId): array {
-        return $this->employeeMapper->findBySupervisor($supervisorId);
+        return $this->withActiveScheduleEach($this->employeeMapper->findBySupervisor($supervisorId));
     }
 
     /**
@@ -142,8 +202,6 @@ class EmployeeService {
         string $lastName,
         ?string $email = null,
         ?string $personnelNumber = null,
-        float $weeklyHours = 40.0,
-        int $vacationDays = 30,
         ?int $supervisorId = null,
         string $federalState = 'BY',
         ?string $entryDate = null,
@@ -166,12 +224,14 @@ class EmployeeService {
             throw ValidationException::fromSingleError('supervisorId', 'Employee cannot be their own supervisor');
         }
 
+        // weeklyHours and vacationDays are intentionally not set here: they are
+        // owned by the work schedule profile and synced via
+        // WorkScheduleService::syncEmployeeFromActiveSchedule. Surfacing them on
+        // read happens in withActiveSchedule().
         $employee->setFirstName($firstName);
         $employee->setLastName($lastName);
         $employee->setEmail($email);
         $employee->setPersonnelNumber($personnelNumber);
-        $employee->setWeeklyHours((string)$weeklyHours);
-        $employee->setVacationDays($vacationDays);
         $employee->setSupervisorId($supervisorId);
         $employee->setWorkingDaysPerWeek(max(1, min(7, $workingDaysPerWeek)));
         $employee->setFederalState($federalState);
@@ -182,7 +242,7 @@ class EmployeeService {
         $employee->setIsActive($isActive);
         $employee->setUpdatedAt(new DateTime());
 
-        $employee = $this->employeeMapper->update($employee);
+        $employee = $this->withActiveSchedule($this->employeeMapper->update($employee));
 
         // Audit log
         if ($currentUserId) {

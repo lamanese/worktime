@@ -37,7 +37,9 @@ class EmployeeController extends BaseController {
             $employees = $this->employeeService->findAll();
         } else {
             // Regular users can only see their team or themselves
-            $employees = $this->permissionService->getTeamMembers($this->userId);
+            $employees = $this->employeeService->applyActiveSchedules(
+                $this->permissionService->getTeamMembers($this->userId)
+            );
         }
 
         return $this->successResponse($employees);
@@ -126,8 +128,6 @@ class EmployeeController extends BaseController {
         string $lastName,
         ?string $email = null,
         ?string $personnelNumber = null,
-        float $weeklyHours = 40.0,
-        int $vacationDays = 30,
         ?int $supervisorId = null,
         string $federalState = 'BY',
         ?string $entryDate = null,
@@ -150,8 +150,6 @@ class EmployeeController extends BaseController {
                 $lastName,
                 $email,
                 $personnelNumber,
-                $weeklyHours,
-                $vacationDays,
                 $supervisorId,
                 $federalState,
                 $entryDate,
@@ -191,7 +189,9 @@ class EmployeeController extends BaseController {
             return $authError;
         }
 
-        $teamMembers = $this->permissionService->getTeamMembers($this->userId);
+        $teamMembers = $this->employeeService->applyActiveSchedules(
+            $this->permissionService->getTeamMembers($this->userId)
+        );
 
         return $this->successResponse($teamMembers);
     }
