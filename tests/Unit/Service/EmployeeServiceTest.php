@@ -98,15 +98,19 @@ class EmployeeServiceTest extends TestCase {
         $this->assertSame(31.5, (float)$employee->getWeeklyHours());
     }
 
-    public function testFindAllAppliesActiveScheduleToEachEmployee(): void {
+    public function testFindAllAppliesActiveScheduleToEachEmployeeViaBatchQuery(): void {
         $this->employeeMapper->method('findAll')->willReturn([
             $this->makeEmployee(1, '40.00', 30),
             $this->makeEmployee(2, '40.00', 30),
         ]);
-        $this->workScheduleService->method('getScheduleForDate')
-            ->willReturnCallback(fn (int $id): WorkSchedule => $id === 1
-                ? $this->makeSchedule(6.3, 28)   // 31.5h
-                : $this->makeSchedule(8.0, 30));  // 40h
+        // A single batch query resolves the active schedule for every employee.
+        $this->workScheduleMapper->expects($this->once())
+            ->method('findActiveForEmployees')
+            ->with([1, 2], $this->isInstanceOf(DateTime::class))
+            ->willReturn([
+                1 => $this->makeSchedule(6.3, 28),   // 31.5h
+                2 => $this->makeSchedule(8.0, 30),    // 40h
+            ]);
 
         $employees = $this->service->findAll();
 
@@ -114,5 +118,21 @@ class EmployeeServiceTest extends TestCase {
         $this->assertSame(28, $employees[0]->getVacationDays());
         $this->assertSame(40.0, (float)$employees[1]->getWeeklyHours());
         $this->assertSame(30, $employees[1]->getVacationDays());
+    }
+
+    public function testApplyActiveSchedulesEnrichesExternallyFetchedEmployees(): void {
+        // Employees obtained via PermissionService (team view) must also be
+        // enriched with the active schedule values.
+        $this->workScheduleMapper->expects($this->once())
+            ->method('findActiveForEmployees')
+            ->with([3], $this->isInstanceOf(DateTime::class))
+            ->willReturn([3 => $this->makeSchedule(6.3, 28)]);
+
+        $result = $this->service->applyActiveSchedules([
+            $this->makeEmployee(3, '40.00', 30),
+        ]);
+
+        $this->assertSame(31.5, (float)$result[0]->getWeeklyHours());
+        $this->assertSame(28, $result[0]->getVacationDays());
     }
 }
