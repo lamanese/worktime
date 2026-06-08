@@ -1,7 +1,7 @@
 <template>
     <div class="overtime-summary">
         <div class="kpi-cards" :class="{ 'kpi-cards--two': vacationRemaining === null }">
-            <!-- Soll / Ist -->
+            <!-- Ist / Soll -->
             <div class="kpi-card kpi-card--main">
                 <div class="kpi-card__head">
                     <span class="kpi-lab">{{ headLabel }}</span>
@@ -161,9 +161,9 @@ export default {
         },
         headLabel() {
             if (this.period === 'year') {
-                return this.t('worktime', 'Soll / Ist · {year}', { year: this.year })
+                return this.t('worktime', 'Ist / Soll · {year}', { year: this.year })
             }
-            return this.t('worktime', 'Soll / Ist · {month}', { month: this.monthLabel })
+            return this.t('worktime', 'Ist / Soll · {month}', { month: this.monthLabel })
         },
         // Volles Periodensoll (Monat: aus statistics, Jahr: aus prop)
         periodSoll() {
