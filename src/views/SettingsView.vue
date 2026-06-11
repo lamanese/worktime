@@ -625,7 +625,7 @@ import EmployeeList from '../components/EmployeeList.vue'
 import ProjectForm from '../components/ProjectForm.vue'
 import ProjectList from '../components/ProjectList.vue'
 import { showSuccessMessage, showErrorMessage } from '../utils/errorHandler.js'
-import { getCurrentYear, getLocale } from '../utils/dateUtils.js'
+import { getCurrentYear, getLocale, formatDateISO } from '../utils/dateUtils.js'
 import YearlyCarryoverService from '../services/YearlyCarryoverService.js'
 import ReportService from '../services/ReportService.js'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -1189,8 +1189,9 @@ export default {
         },
         async saveHoliday() {
             try {
+                // formatDateISO nutzt lokale Datumsteile statt UTC → kein -1-Tag-Shift in UTC+x (#273).
                 const dateStr = this.holidayFormData.date instanceof Date
-                    ? this.holidayFormData.date.toISOString().split('T')[0]
+                    ? formatDateISO(this.holidayFormData.date)
                     : this.holidayFormData.date
 
                 if (this.editingHoliday) {
