@@ -7,9 +7,22 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-06-12
+
+### Changed
+- **0.9er-Design der Abwesenheiten- und Übersichtsseiten (#251, #252)**: Umfassende UI-Überarbeitung aus dem Design-Feedback. Quick Wins (#263): „Ist/Soll"-Label, gekürzte Hilfetexte, PDF-Icon, klarere Überschriften „Urlaub"/„Überstunden", ausgeblendete Null-Überträge. Schrift/Kontrast kräftiger (#266), markierte Zeile mit Akzent verbunden (#267), Wochentrennung + kompakte Nicht-Arbeitstage (#268), Abwesenheiten mit KPI-Hierarchie, Jahr-Picker und Hover-Aktionen (#269), Abwesenheitskonto als Themen-Boxen + Listen-Karte (#270).
+- **Überstunden-Berechnung & Formate (#251, #252)**: Der laufende Tag zählt erst zum Soll, sobald Zeit erfasst oder eine Abwesenheit eingetragen ist (kein „Morgen-Minus" mehr). Dauer wird am Bildschirm als HH:MM angezeigt (PDF bleibt dezimal), Jahresurlaub als „Rest / Anspruch", Freizeitausgleich als „Tage (≈h)".
+
 ### Fixed
 - **Manuell erfasste Feiertage um einen Tag verschoben (#273)**: Beim Speichern wurde das Datum aus dem Datepicker mit `toISOString()` (UTC) umgewandelt; in Zeitzonen östlich von UTC (z. B. CH/DE) wurde aus der lokalen Mitternacht der Vortag, sodass der Feiertag −1 Tag gespeichert wurde. Das Feiertags-Formular nutzt jetzt das zeitzonensichere `formatDateISO`. Dieselbe Umstellung wurde am Default-`Gültig-ab` im Arbeitszeitprofil-Editor vorgenommen.
 - **Lange Bemerkungen brechen in Abwesenheits- und Genehmigungstabellen um (#275)**: Bemerkungen ohne natürliche Trennzeichen dehnten die Tabellen über ihren Container hinaus (ererbtes `white-space: nowrap`). Anzeigenotiz-Zellen in `AbsenceRow` und `ApprovalOverviewView` bekommen jetzt einen umbrechenden Wrapper (`max-width 22rem`, `white-space: normal`, `overflow-wrap: anywhere`). Die Beschreibungsspalte in der Detail-Tabelle wechselt konsistent von Ellipsis-Abschneiden auf Zeilenumbruch.
+
+### Internationalisierung
+- Fehlende de/en-Übersetzungen für die überarbeiteten Views nachgezogen (#271) und die Locale-Ermittlung auf das zentrale `getLocale()` vereinheitlicht (#272).
+- Hilfetext am Feld „Urlaubstage" von „Restanspruch" auf „Resturlaub" vereinheitlicht (#276).
+
+### Intern
+- CI: `fetch-depth: 0` für die Claude-Review-Workflows, damit der Diff eine Merge-Basis hat (#264).
 
 ## [0.9.2] - 2026-06-07
 
