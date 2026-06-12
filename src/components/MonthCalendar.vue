@@ -34,7 +34,7 @@
 
 <script>
 import { getDaysInMonth } from '../utils/dateUtils.js'
-import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { formatMinutes } from '../utils/timeUtils.js'
 import { getAbsenceColorClass } from '../utils/formatters.js'
 
 export default {
@@ -100,7 +100,7 @@ export default {
     },
     methods: {
         hoursLabel(day) {
-            return formatHoursDecimal(day.totalMinutes)
+            return formatMinutes(day.totalMinutes)
         },
         shortName(name) {
             return name.length > 11 ? name.slice(0, 9) + '.' : name
@@ -145,9 +145,9 @@ export default {
 }
 
 .dow {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
     text-align: center;
     padding: 2px 0;
 }
@@ -212,7 +212,7 @@ export default {
 
 .cell .mi {
     margin-top: auto;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;

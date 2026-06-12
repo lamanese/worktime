@@ -1,7 +1,7 @@
 <template>
     <div class="overtime-summary">
-        <div class="kpi-cards" :class="{ 'kpi-cards--two': vacationRemaining === null }">
-            <!-- Soll / Ist -->
+        <div class="kpi-cards" :class="{ 'kpi-cards--two': vacationTotal === null }">
+            <!-- Ist / Soll -->
             <div class="kpi-card kpi-card--main">
                 <div class="kpi-card__head">
                     <span class="kpi-lab">{{ headLabel }}</span>
@@ -26,10 +26,10 @@
                 </div>
             </div>
 
-            <!-- Urlaub -->
-            <div v-if="vacationRemaining !== null" class="kpi-card">
+            <!-- Urlaub: Rest / Anspruch -->
+            <div v-if="vacationTotal !== null" class="kpi-card">
                 <div class="kpi-lab">{{ t('worktime', 'Urlaub {year}', { year }) }}</div>
-                <div class="kpi-num pos">{{ vacationRemaining }} <small>{{ t('worktime', 'Tage übrig') }}</small></div>
+                <div class="kpi-num pos">{{ vacationRemaining ?? 0 }} <small>/ {{ vacationTotal }} {{ t('worktime', 'Tage übrig') }}</small></div>
                 <div v-if="vacationSub" class="kpi-sub">{{ vacationSub }}</div>
             </div>
 
@@ -37,7 +37,7 @@
             <div class="kpi-card">
                 <div class="kpi-lab">
                     {{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}
-                    <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis heute berechnet. Noch nicht erfasste Arbeitstage erscheinen als Minusstunden.') }}</InfoIcon>
+                    <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis gestern berechnet. Der heutige Tag zählt erst mit, sobald du Zeit erfasst.') }}</InfoIcon>
                 </div>
                 <div class="kpi-num" :class="{ pos: overtimeMinutes > 0, neg: overtimeMinutes < 0 }">
                     {{ overtimeMinutes > 0 ? '+' : '' }}{{ absHoursLabel(overtimeMinutes) }} <small>h</small>
@@ -94,8 +94,8 @@
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
-import { formatMinutesWithUnit } from '../utils/timeUtils.js'
-import { getMonthName, getLocale } from '../utils/dateUtils.js'
+import { formatMinutesWithUnit, formatMinutes as formatHM } from '../utils/timeUtils.js'
+import { getMonthName } from '../utils/dateUtils.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 export default {
@@ -161,9 +161,9 @@ export default {
         },
         headLabel() {
             if (this.period === 'year') {
-                return this.t('worktime', 'Soll / Ist · {year}', { year: this.year })
+                return this.t('worktime', 'Ist / Soll · {year}', { year: this.year })
             }
-            return this.t('worktime', 'Soll / Ist · {month}', { month: this.monthLabel })
+            return this.t('worktime', 'Ist / Soll · {month}', { month: this.monthLabel })
         },
         // Volles Periodensoll (Monat: aus statistics, Jahr: aus prop)
         periodSoll() {
@@ -199,9 +199,6 @@ export default {
             if (this.vacationCarryover > 0) {
                 return this.t('worktime', 'inkl. {days} Tage Übertrag', { days: this.vacationCarryover })
             }
-            if (this.vacationTotal !== null) {
-                return this.t('worktime', 'von {days} Tagen', { days: this.vacationTotal })
-            }
             return ''
         },
     },
@@ -210,10 +207,10 @@ export default {
             return formatMinutesWithUnit(minutes)
         },
         hoursLabel(minutes) {
-            return (minutes / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            return formatHM(minutes)
         },
         absHoursLabel(minutes) {
-            return (Math.abs(minutes) / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            return formatHM(Math.abs(minutes))
         },
     },
 }
@@ -252,9 +249,9 @@ export default {
 }
 
 .kpi-lab {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
 }
 
 .kpi-num {
@@ -268,7 +265,7 @@ export default {
 .kpi-num small {
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
 }
 
 .kpi-num.pos {
@@ -280,7 +277,7 @@ export default {
 }
 
 .kpi-sub {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--color-text-maxcontrast);
     margin-top: 6px;
 }
@@ -320,8 +317,8 @@ export default {
 .kpi-bf {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    color: var(--color-text-maxcontrast);
+    font-size: 13px;
+    color: var(--color-main-text);
     margin-top: 6px;
 }
 
@@ -359,7 +356,7 @@ export default {
     margin: 0 0 8px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }

@@ -11,7 +11,7 @@
             <div v-for="day in days"
                 :key="day.date"
                 class="dl-day"
-                :class="{ sel: day.date === selectedDate, weekend: day.isWeekend, empty: !day.entries.length, today: day.isToday }"
+                :class="{ sel: day.date === selectedDate, weekend: day.isWeekend, empty: !day.entries.length, today: day.isToday, weekstart: isWeekStart(day) }"
                 tabindex="0"
                 role="button"
                 @click="$emit('select', day.date)"
@@ -54,7 +54,7 @@
 
 <script>
 import { getDayName, getMonthNameShort } from '../utils/dateUtils.js'
-import { formatHoursDecimal } from '../utils/timeUtils.js'
+import { formatMinutes } from '../utils/timeUtils.js'
 import { getAbsenceColorClass } from '../utils/formatters.js'
 
 export default {
@@ -86,6 +86,9 @@ export default {
         weekday(day) {
             return getDayName(day.dayOfWeek)
         },
+        isWeekStart(day) {
+            return day.dayOfWeek === 1
+        },
         absenceColorClass: getAbsenceColorClass,
         pauseLabel(day) {
             if (!day.entries.length) return ''
@@ -94,7 +97,7 @@ export default {
         },
         hoursLabel(day) {
             if (!day.entries.length) return '–'
-            return `${formatHoursDecimal(day.totalMinutes)} h`
+            return `${formatMinutes(day.totalMinutes)} h`
         },
     },
 }
@@ -120,9 +123,9 @@ export default {
 
 .dl-head {
     padding: 0 14px 10px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
     border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 }
 
@@ -137,6 +140,11 @@ export default {
     border-top: none;
 }
 
+/* Wochentrennung: kräftigere Linie am Wochenanfang (Montag) */
+.dl-day.weekstart:not(:first-child) {
+    border-top: 2px solid var(--color-border-dark, var(--color-border));
+}
+
 .dl-day:hover {
     background: var(--color-background-hover);
 }
@@ -148,6 +156,7 @@ export default {
 
 .dl-day.sel {
     background: var(--color-primary-element-light);
+    box-shadow: inset 3px 0 0 var(--color-primary-element);
 }
 
 .dl-day.today .dl-d {
@@ -182,6 +191,8 @@ export default {
 
 .dl-day.empty.weekend {
     background: var(--color-background-hover);
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
 .dl-day.empty.weekend.sel,
@@ -195,7 +206,7 @@ export default {
 
 .dl-d small {
     display: block;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--color-text-maxcontrast);
 }
@@ -212,7 +223,7 @@ export default {
 }
 
 .dl-count {
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
     background: var(--color-background-dark);
@@ -236,7 +247,7 @@ export default {
 }
 
 .dl-pause {
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
     font-size: 13px;
 }
 

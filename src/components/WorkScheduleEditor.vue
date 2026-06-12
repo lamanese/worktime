@@ -142,7 +142,7 @@ import Close from 'vue-material-design-icons/Close.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
-import { formatDateISO } from '../utils/dateUtils.js'
+import { formatDateISO, getLocale } from '../utils/dateUtils.js'
 import SettingsService from '../services/SettingsService.js'
 
 export default {
@@ -236,8 +236,7 @@ export default {
         formatDate(dateStr) {
             if (!dateStr) return '-'
             const d = new Date(dateStr + 'T00:00:00')
-            const locale = document.documentElement.lang || navigator.language || 'de-DE'
-            return d.toLocaleDateString(locale)
+            return d.toLocaleDateString(getLocale())
         },
         startCreate() {
             this.editingSchedule = null
@@ -281,7 +280,7 @@ export default {
                 } else {
                     data.validFrom = this.form.validFrom
                         ? formatDateISO(this.form.validFrom)
-                        : new Date().toISOString().slice(0, 10)
+                        : formatDateISO(new Date())
                     await this.createSchedule({
                         employeeId: this.employeeId,
                         data,

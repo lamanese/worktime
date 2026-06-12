@@ -8,7 +8,7 @@
                 {{ translatedTypeName }}
             </td>
             <td>{{ absence.days }}</td>
-            <td>{{ absence.note || '-' }}</td>
+            <td class="note-cell"><span class="note-text">{{ absence.note || '-' }}</span></td>
             <td>
                 <span class="status-badge" :class="absence.status">
                     {{ getStatusLabel(absence.status) }}
@@ -116,7 +116,7 @@ import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js
 import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
 import ContentSaveIcon from 'vue-material-design-icons/ContentSave.vue'
-import { formatDateISO } from '../utils/dateUtils.js'
+import { formatDateISO, getLocale } from '../utils/dateUtils.js'
 import { formatDateWithWeekday, getAbsenceTypeLabel, getStatusLabel } from '../utils/formatters.js'
 
 export default {
@@ -228,8 +228,7 @@ export default {
 
             // Apply scope: e.g., 5 days * 0.5 = 2.5
             const effectiveDays = workingDays * this.form.scope
-            const locale = document.documentElement.lang || navigator.language || 'de-DE'
-            return effectiveDays.toLocaleString(locale, { maximumFractionDigits: 1 })
+            return effectiveDays.toLocaleString(getLocale(), { maximumFractionDigits: 1 })
         },
         estimatedDays() {
             if (!this.form.startDate || !this.form.endDate) return 0
@@ -403,6 +402,15 @@ tr.creating {
     min-width: 10rem;
 }
 
+/* Bemerkung (Anzeige): kappt die Spaltenbreite und bricht lange Texte um,
+   damit die Tabelle nicht über die Kachel hinauswächst (#275). */
+.note-cell .note-text {
+    display: inline-block;
+    max-width: 22rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
 .inline-picker {
     width: 8rem;
 }
@@ -442,6 +450,20 @@ tr.creating {
     justify-content: center;
     gap: 4px;
     white-space: nowrap;
+}
+
+/* Aktions-Icons nur bei Hover/Fokus zeigen — aber nur auf Geräten mit Hover.
+   Touch/Mobile (kein Hover) zeigt sie weiterhin dauerhaft (Accessibility). */
+@media (hover: hover) {
+    .actions-buttons {
+        opacity: 0;
+        transition: opacity 0.1s;
+    }
+
+    tr:hover .actions-buttons,
+    tr:focus-within .actions-buttons {
+        opacity: 1;
+    }
 }
 
 .status-badge {

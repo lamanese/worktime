@@ -11,63 +11,77 @@
                 </button>
             </div>
             <div class="header-spacer" />
-            <NcButton v-if="tab === 'konto'" type="primary" @click="startCreate">
-                <template #icon>
-                    <PlusIcon :size="20" />
-                </template>
-                {{ t('worktime', 'Neue Abwesenheit') }}
-            </NcButton>
         </div>
 
         <!-- ============ MEIN KONTO ============ -->
         <div v-show="tab === 'konto'">
-            <section v-if="vacationStats" class="acard-section">
-                <h3>{{ t('worktime', 'Urlaubskonto {year}', { year: currentYear }) }}</h3>
-                <div class="acards acards--4">
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Anspruch') }}</div>
-                        <div class="acard__val">{{ vacationBase }}</div>
+            <div class="konto-yearbar">
+                <YearPicker :year="currentYear" :max="thisYear" @update="onYearChange" />
+            </div>
+            <div class="konto-stats">
+            <section v-if="vacationStats" class="konto-box">
+                <h3>{{ t('worktime', 'Urlaub') }}</h3>
+                <div class="konto-hero" :class="vacationStats.remaining >= 0 ? 'konto-hero--pos' : 'konto-hero--neg'">
+                    {{ vacationStats.remaining }} <small>/ {{ vacationStats.total }} {{ t('worktime', 'Tage übrig') }}</small>
+                </div>
+                <div class="vac-progress"
+                    role="progressbar"
+                    :aria-valuenow="vacationStats.used"
+                    :aria-valuemin="0"
+                    :aria-valuemax="vacationStats.total">
+                    <div class="vac-progress__fill" :style="{ width: vacationUsedPercent + '%' }" />
+                </div>
+                <div class="konto-barlab">
+                    {{ t('worktime', '{used} von {total} Tagen genommen', { used: vacationStats.used, total: vacationStats.total }) }}
+                </div>
+                <div class="konto-substats">
+                    <div class="substat">
+                        <span class="substat__l">{{ t('worktime', 'Anspruch') }}</span>
+                        <span class="substat__v">{{ vacationBase }}</span>
                     </div>
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Übertrag Vorjahr') }}</div>
-                        <div class="acard__val">{{ vacationCarryover }}</div>
+                    <div class="substat">
+                        <span class="substat__l">{{ t('worktime', 'Genommen') }}</span>
+                        <span class="substat__v">{{ vacationStats.used }}<small v-if="vacationStats.pending > 0"> {{ t('worktime', '+ {days} beantragt', { days: vacationStats.pending }) }}</small></span>
                     </div>
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Genommen') }}</div>
-                        <div class="acard__val">{{ vacationStats.used }}</div>
-                        <div v-if="vacationStats.pending > 0" class="acard__sub">
-                            {{ t('worktime', '+ {days} beantragt', { days: vacationStats.pending }) }}
-                        </div>
-                    </div>
-                    <div class="acard acard--hl">
-                        <div class="acard__lab">{{ t('worktime', 'Verbleibend') }}</div>
-                        <div class="acard__val acard__val--pos">{{ vacationStats.remaining }}</div>
+                    <div class="substat">
+                        <span class="substat__l">{{ t('worktime', 'Übertrag Vorjahr') }}</span>
+                        <span class="substat__v">{{ vacationCarryover !== 0 ? vacationCarryover : '–' }}</span>
                     </div>
                 </div>
             </section>
 
-            <section v-if="overtime" class="acard-section">
-                <h3>{{ t('worktime', 'Überstunden {year}', { year: currentYear }) }}</h3>
-                <div class="acards acards--3">
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Saldo') }}</div>
-                        <div class="acard__val" :class="overtimeValClass(overtimeSaldoMin)">{{ signedHours(overtimeSaldoMin) }}</div>
+            <section v-if="overtime" class="konto-box">
+                <h3>
+                    {{ t('worktime', 'Überstunden') }}
+                    <InfoIcon>{{ t('worktime', 'Freizeitausgleich reduziert die Überstunden automatisch.') }}</InfoIcon>
+                </h3>
+                <div class="konto-hero" :class="overtimeSaldoMin >= 0 ? 'konto-hero--pos' : 'konto-hero--neg'">
+                    {{ signedHours(overtimeSaldoMin) }}
+                </div>
+                <div class="konto-barlab">{{ t('worktime', 'Stand heute') }}</div>
+                <div class="konto-substats">
+                    <div class="substat">
+                        <span class="substat__l">{{ t('worktime', 'Freizeitausgleich') }}</span>
+                        <span class="substat__v">{{ compensatoryDays }} {{ t('worktime', 'Tage') }}<small v-if="compensatoryDays > 0"> (≈{{ compensatoryHoursLabel }})</small></span>
                     </div>
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Freizeitausgleich genommen') }}</div>
-                        <div class="acard__val">{{ compensatoryDays }} {{ t('worktime', 'Tage') }}</div>
-                    </div>
-                    <div class="acard">
-                        <div class="acard__lab">{{ t('worktime', 'Übertrag Vorjahr') }}</div>
-                        <div class="acard__val" :class="overtimeValClass(overtimeCarryMin)">{{ signedHours(overtimeCarryMin) }}</div>
+                    <div class="substat">
+                        <span class="substat__l">{{ t('worktime', 'Übertrag Vorjahr') }}</span>
+                        <span class="substat__v">{{ overtimeCarryMin !== 0 ? signedHours(overtimeCarryMin) : '–' }}</span>
                     </div>
                 </div>
-                <p class="acard-hint">
-                    {{ t('worktime', 'Freizeitausgleich wird als Abwesenheit eingetragen und reduziert die Überstunden automatisch.') }}
-                </p>
             </section>
+            </div>
 
-            <h3 class="list-title">{{ t('worktime', 'Meine Abwesenheiten') }}</h3>
+            <div class="absence-card">
+            <div class="list-head">
+                <h3 class="list-title">{{ t('worktime', 'Meine Abwesenheiten') }}</h3>
+                <NcButton type="primary" @click="startCreate">
+                    <template #icon>
+                        <PlusIcon :size="20" />
+                    </template>
+                    {{ t('worktime', 'Neue Abwesenheit') }}
+                </NcButton>
+            </div>
             <NcLoadingIcon v-if="loading" :size="44" />
             <table v-else-if="absences.length > 0 || isCreating" class="absence-table">
                 <thead>
@@ -110,6 +124,7 @@
                     {{ t('worktime', 'Sie haben noch keine Abwesenheiten eingetragen.') }}
                 </template>
             </NcEmptyContent>
+            </div>
 
             <div class="absence-legend">
                 <h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
@@ -192,8 +207,11 @@ import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import { mapGetters, mapActions } from 'vuex'
 import AbsenceRow from '../components/AbsenceRow.vue'
 import MonthPicker from '../components/MonthPicker.vue'
+import YearPicker from '../components/YearPicker.vue'
 import AbsenceTimeline from '../components/AbsenceTimeline.vue'
-import { getCurrentYear, getCurrentMonth, getLocale } from '../utils/dateUtils.js'
+import InfoIcon from '../components/InfoIcon.vue'
+import { getCurrentYear, getCurrentMonth } from '../utils/dateUtils.js'
+import { formatMinutes } from '../utils/timeUtils.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import ReportService from '../services/ReportService.js'
 import AbsenceService from '../services/AbsenceService.js'
@@ -209,7 +227,9 @@ export default {
         CalendarIcon,
         AbsenceRow,
         MonthPicker,
+        YearPicker,
         AbsenceTimeline,
+        InfoIcon,
     },
     data() {
         return {
@@ -230,6 +250,15 @@ export default {
         ...mapGetters('permissions', ['employeeId', 'isAdmin', 'isHrManager', 'canApprove']),
         isPrivileged() {
             return this.isAdmin || this.isHrManager || this.canApprove
+        },
+        thisYear() {
+            return getCurrentYear()
+        },
+        vacationUsedPercent() {
+            const total = this.vacationStats?.total
+            if (!total || total <= 0) return 0
+            const used = this.vacationStats.used || 0
+            return Math.min(100, Math.max(0, Math.round((used / total) * 100)))
         },
         sortedAbsences() {
             return [...this.absences].sort((a, b) => b.startDate.localeCompare(a.startDate))
@@ -252,6 +281,10 @@ export default {
                 .filter(a => a.type === 'compensatory' && a.status === 'approved')
                 .reduce((sum, a) => sum + (Number(a.days) || 0), 0)
         },
+        compensatoryHoursLabel() {
+            const daily = this.overtime?.dailyMinutes ?? 0
+            return formatMinutes(Math.round(this.compensatoryDays * daily))
+        },
     },
     watch: {
         employeeId: {
@@ -272,6 +305,10 @@ export default {
             'deleteAbsence',
             'cancelAbsence',
         ]),
+        onYearChange(year) {
+            this.currentYear = year
+            this.loadData()
+        },
         async loadData() {
             await Promise.all([
                 this.fetchAbsences(this.currentYear),
@@ -315,13 +352,9 @@ export default {
                 this.teamLoading = false
             }
         },
-        overtimeValClass(minutes) {
-            return { 'acard__val--pos': minutes > 0, 'acard__val--neg': minutes < 0 }
-        },
         signedHours(minutes) {
-            const hours = (Math.abs(minutes) / 60).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
             const sign = minutes < 0 ? '−' : '+'
-            return `${sign}${hours} h`
+            return `${sign}${formatMinutes(Math.abs(minutes))} h`
         },
         startCreate() {
             this.editingId = null
@@ -441,72 +474,131 @@ export default {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
-/* Stat-Cards (konsistent mit KPI-Cards) */
-.acard-section {
-    margin-bottom: 20px;
+.konto-yearbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
 }
 
-.acard-section h3 {
+/* Urlaub- und Überstunden-Box nebeneinander (#252.9), auf schmalen Screens gestapelt */
+.konto-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+}
+
+@media (max-width: 880px) {
+    .konto-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Konto-Box: ein Thema (Urlaub/Überstunden) als eigene Box,
+   Hero-Wert oben + kleine Stützwerte unten (Sprache der Zeiterfassungs-KPI-Cards) */
+.konto-box {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 16px;
+}
+
+.konto-box h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 15px;
     font-weight: 600;
     margin: 0 0 12px;
 }
 
-.acards {
-    display: grid;
-    gap: 12px;
+.konto-hero {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
 
-.acards--4 {
-    grid-template-columns: repeat(4, 1fr);
-}
-
-.acards--3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.acard {
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius-large, 12px);
-    padding: 14px 16px;
-}
-
-.acard--hl {
-    border-color: var(--wt-vacation, #4a9d63);
-}
-
-.acard__lab {
-    font-size: 12px;
+.konto-hero small {
+    font-size: 16px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
 }
 
-.acard__val {
-    font-size: 24px;
-    font-weight: 700;
-    margin-top: 5px;
-    font-variant-numeric: tabular-nums;
-}
+.konto-hero--pos { color: var(--color-success-text); }
+.konto-hero--neg { color: var(--color-error-text); }
 
-.acard__val--pos {
-    color: var(--color-success-text);
-}
-
-.acard__val--neg {
-    color: var(--color-error-text);
-}
-
-.acard__sub {
+.konto-barlab {
     font-size: 12.5px;
     color: var(--color-text-maxcontrast);
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-.acard-hint {
-    margin-top: 10px;
-    font-size: 13px;
+.konto-substats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.substat__l {
+    display: block;
+    font-size: 12.5px;
     color: var(--color-text-maxcontrast);
+}
+
+.substat__v {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+}
+
+.substat__v small {
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--color-text-maxcontrast);
+}
+
+/* Urlaubs-Auslastung als dezente Progressbar (#252.4) */
+.vac-progress {
+    margin-top: 12px;
+    height: 8px;
+    border-radius: var(--border-radius-element, 8px);
+    background: var(--color-background-dark);
+    overflow: hidden;
+}
+
+.vac-progress__fill {
+    height: 100%;
+    border-radius: var(--border-radius-element, 8px);
+    background: var(--wt-vacation, var(--color-primary-element));
+}
+
+/* Abwesenheitsliste als eigene Karte (konsistent zur Zeiterfassungs-Liste),
+   mit klarem Abstand zu den Konto-Boxen darüber */
+.absence-card {
+    margin-top: 24px;
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 8px 16px 16px;
+}
+
+/* Kopfzeile der Abwesenheitsliste mit Aktion (#252.10) */
+.list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 4px 0 12px;
+}
+
+.list-head .list-title {
+    margin: 0;
 }
 
 .list-title {
@@ -535,7 +627,7 @@ export default {
 .absence-table th {
     font-size: 15px;
     font-weight: 600;
-    color: var(--color-text-maxcontrast);
+    color: var(--color-main-text);
     border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
