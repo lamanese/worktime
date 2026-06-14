@@ -7,6 +7,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-06-14
+
+### Fixed
+- **Abweichende Urlaubstage in Team- und Mitarbeiteransicht (#281)**: Der Jahres-Urlaubsanspruch wurde anteilig über alle Arbeitszeitprofile eines Jahres gemittelt. Zusammen mit dem automatisch angelegten Initial-Profil (Default 30 Tage) und einem später mit Startdatum mitten im Jahr gesetzten Profil entstand ein geblendeter Wert (z. B. 30 + 14 → ~21; „bei 30 Tagen geht's", weil 30 dem Default entspricht). Der Anspruch wird jetzt aus dem am Stichtag gültigen Profil genommen (kein Blending), sodass Profil-Editor, Mitarbeiter- und Team-Ansicht denselben Wert zeigen. Bestehende Daten korrigieren sich nach dem Update automatisch. Pro-rata bleibt für die Soll-Stunden erhalten, wo es korrekt ist.
+- **Teilzeit konnte keine ganzen Wochen Urlaub beantragen (#282)**: Die Frontend-Vorab-Prüfung zählte naiv Kalender-Werktage (Mo–Fr) und blockierte das Speichern, sobald diese Zahl den Resturlaub überstieg — bei Teilzeitkräften fälschlich (z. B. 3 Wochen = 15 statt der real abgezogenen 6 Tage). Die unzuverlässige Schätzung blockiert nicht mehr; das Backend prüft autoritativ schedule- und feiertagsgenau und zieht nur die tatsächlichen Arbeitstage ab. Die Quota-Warnung wurde zu einem weichen, korrekt formulierten Hinweis.
+
 ## [0.9.3] - 2026-06-12
 
 ### Changed
