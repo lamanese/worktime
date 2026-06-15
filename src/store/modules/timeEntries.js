@@ -75,7 +75,7 @@ const mutations = {
 
 const actions = {
     async fetchTimeEntries({ commit, state, rootGetters }) {
-        const employeeId = rootGetters['permissions/employeeId']
+        const employeeId = rootGetters['permissions/activeEmployeeId']
         if (!employeeId) return
 
         commit('SET_LOADING', true)
@@ -97,7 +97,7 @@ const actions = {
     },
 
     async createTimeEntry({ commit, rootGetters }, data) {
-        const employeeId = rootGetters['permissions/employeeId']
+        const employeeId = rootGetters['permissions/activeEmployeeId']
         const entry = await TimeEntryService.create({ ...data, employeeId })
         commit('ADD_TIME_ENTRY', entry)
         return entry
@@ -137,7 +137,7 @@ const actions = {
     },
 
     async submitMonth({ dispatch, state, rootGetters }) {
-        const employeeId = rootGetters['permissions/employeeId']
+        const employeeId = rootGetters['permissions/activeEmployeeId']
         const { year, month } = state.selectedMonth
         const result = await TimeEntryService.submitMonth(employeeId, year, month)
         // Reload entries to get updated status
