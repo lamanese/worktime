@@ -7,6 +7,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-15
+
+### Added
+- **HR-Korrekturworkflow für abgeschlossene Monate (#148)**: Mitarbeiter sind in abgeschlossenen Monaten (vollständig genehmigt oder vergangenes Kalenderjahr) für Änderungen an Zeiteinträgen und Abwesenheiten gesperrt – mit klarer Meldung „Dieser Zeitraum ist abgeschlossen. Bitte wende dich an HR.". Admin/HR wechseln über einen neuen **„Korrigieren"-Einstieg** in der Mitarbeiterliste in einen **Korrektur-Modus**: Sie arbeiten im Kontext des Mitarbeiters (Kontext-Banner über allen Ansichten) und dürfen auch abgeschlossene Monate ändern. Jede Korrektur in einem abgeschlossenen Monat erfordert eine **Pflichtbegründung (min. 10 Zeichen)**, die im **Audit-Log** gespeichert wird. Der betroffene Monat wird automatisch **zur erneuten Genehmigung geöffnet**, und der Mitarbeiter wird per **Benachrichtigung inklusive Begründung** informiert.
+
+### Changed
+- App-Store-Screenshot des HR-Korrektur-Modus ergänzt (#293).
+- Verwaisten l10n-String aus der Quota-Umstellung entfernt (#287).
+
 ## [0.9.4] - 2026-06-14
 
 ### Fixed
