@@ -7,7 +7,10 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
-## [0.10.0] - 2026-06-15
+## [0.10.1] - 2026-06-15
+
+### Fixed
+- **Monatssperre griff beim Löschen nicht (#296)**: Das Sperren abgeschlossener Monate (HR-Korrekturworkflow, #148) war beim Anlegen und Ändern aktiv, beim **Löschen** von Zeiteinträgen und Abwesenheiten jedoch nicht – ein abgeschlossener Eintrag konnte ohne Pflichtbegründung und ohne erneutes Öffnen des Monats entfernt werden. Das Löschen prüft jetzt denselben Sperr-Mechanismus: Mitarbeiter werden in abgeschlossenen Monaten blockiert, Admin/HR im Korrektur-Modus müssen eine Begründung (min. 10 Zeichen) angeben, die ins Audit-Log geschrieben wird, und der betroffene Monat wird automatisch zur erneuten Genehmigung geöffnet. Zusätzlich wurde ein Bounds-Guard für die Monatsnamen-Auflösung in den Benachrichtigungen ergänzt.
 
 ### Added
 - **HR-Korrekturworkflow für abgeschlossene Monate (#148)**: Mitarbeiter sind in abgeschlossenen Monaten (vollständig genehmigt oder vergangenes Kalenderjahr) für Änderungen an Zeiteinträgen und Abwesenheiten gesperrt – mit klarer Meldung „Dieser Zeitraum ist abgeschlossen. Bitte wende dich an HR.". Admin/HR wechseln über einen neuen **„Korrigieren"-Einstieg** in der Mitarbeiterliste in einen **Korrektur-Modus**: Sie arbeiten im Kontext des Mitarbeiters (Kontext-Banner über allen Ansichten) und dürfen auch abgeschlossene Monate ändern. Jede Korrektur in einem abgeschlossenen Monat erfordert eine **Pflichtbegründung (min. 10 Zeichen)**, die im **Audit-Log** gespeichert wird. Der betroffene Monat wird automatisch **zur erneuten Genehmigung geöffnet**, und der Mitarbeiter wird per **Benachrichtigung inklusive Begründung** informiert.

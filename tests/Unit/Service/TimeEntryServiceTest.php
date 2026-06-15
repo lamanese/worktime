@@ -15,6 +15,7 @@ use OCA\WorkTime\Notification\NotificationService;
 use OCA\WorkTime\Service\AuditLogService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\ValidationException;
+use OCA\WorkTime\Service\ForbiddenException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -266,5 +267,47 @@ class TimeEntryServiceTest extends TestCase {
     public function testAuditReasonNullWhenNoReason(): void {
         $this->assertNull($this->service->auditReason(null, true, '  '));
         $this->assertNull($this->service->auditReason(null, true, null));
+    }
+
+    // --- #296: delete() respects the closed-month lock ---
+
+    private function makePastYearEntry(): TimeEntry {
+        $entry = new TimeEntry();
+        $entry->setId(99);
+        $entry->setEmployeeId(1);
+        $entry->setDate(new DateTime(((int)(new DateTime())->format('Y') - 1) . '-06-15'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        return $entry;
+    }
+
+    public function testDeleteBlocksEmployeeInLockedMonth(): void {
+        // A DRAFT entry in a past (locked) year must not be deletable without HR override.
+        $this->timeEntryMapper->method('find')->willReturn($this->makePastYearEntry());
+        $this->expectException(ValidationException::class);
+        $this->service->delete(99, 'user1', null, false);
+    }
+
+    public function testDeleteRequiresReasonForHrInLockedMonth(): void {
+        $this->timeEntryMapper->method('find')->willReturn($this->makePastYearEntry());
+        $this->expectException(ValidationException::class);
+        $this->service->delete(99, 'admin', null, true); // override but no reason
+    }
+
+    public function testDeleteApprovedStillBlockedForHrInOpenMonth(): void {
+        // An APPROVED entry in the current (not fully approved → not locked) month
+        // must stay undeletable even for HR — the override only bypasses the block
+        // for closed months. HR should reopen/reject instead.
+        $year = (int)(new DateTime())->format('Y');
+        $entry = new TimeEntry();
+        $entry->setId(99);
+        $entry->setEmployeeId(1);
+        $entry->setDate(new DateTime("$year-" . (new DateTime())->format('m') . '-10'));
+        $entry->setStatus(TimeEntry::STATUS_APPROVED);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        // Month is NOT fully approved → not locked.
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 1, 'rejected' => 0]);
+        $this->expectException(ForbiddenException::class);
+        $this->service->delete(99, 'admin', 'genug lange Begründung', true);
     }
 }

@@ -265,26 +265,44 @@ class TimeEntryService {
 
     /**
      * @throws NotFoundException
+     * @throws ValidationException
+     * @throws ForbiddenException
      */
-    public function delete(int $id, string $currentUserId = ''): void {
+    public function delete(int $id, string $currentUserId = '', ?string $reason = null, bool $allowLockedOverride = false): void {
         $entry = $this->find($id);
 
-        // Cannot delete approved entries
-        if ($entry->getStatus() === TimeEntry::STATUS_APPROVED) {
-            throw new ForbiddenException('Cannot delete approved time entries');
+        // Closed-month rules (#148): block employees, require a reason for HR corrections.
+        $lockedMonths = $this->lockedMonthsInRange($entry->getEmployeeId(), $entry->getDate(), $entry->getDate());
+        $effectiveReason = $this->requireReasonForLockedMonths($lockedMonths, $allowLockedOverride, $reason);
+
+        // Approved/submitted entries cannot be deleted — except by an HR correction
+        // of a CLOSED month (which requires a reason and reopens the month). In open
+        // months the rule applies to everyone (use reopen/reject instead).
+        if (!($allowLockedOverride && !empty($lockedMonths))) {
+            if ($entry->getStatus() === TimeEntry::STATUS_APPROVED) {
+                throw new ForbiddenException('Cannot delete approved time entries');
+            }
+            if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
+                throw new ForbiddenException('Cannot delete submitted time entries');
+            }
         }
 
-        // Cannot delete submitted entries (awaiting approval; HR uses reopen/reject)
-        if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
-            throw new ForbiddenException('Cannot delete submitted time entries');
-        }
-
-        // Audit log
+        // Audit log (record the HR correction reason when present)
         if ($currentUserId) {
-            $this->auditLogService->logDelete($currentUserId, 'time_entry', $entry->getId(), $entry->jsonSerialize());
+            $auditReason = $this->auditReason($effectiveReason, $allowLockedOverride, $reason);
+            $values = $entry->jsonSerialize();
+            if ($auditReason !== null) {
+                $values['reason'] = $auditReason;
+            }
+            $this->auditLogService->logDelete($currentUserId, 'time_entry', $entry->getId(), $values);
         }
 
         $this->timeEntryMapper->delete($entry);
+
+        // HR correction in a closed month: reopen the affected months for re-approval.
+        if ($effectiveReason !== null) {
+            $this->reopenLockedMonths($entry->getEmployeeId(), $lockedMonths, $effectiveReason, $currentUserId);
+        }
     }
 
     /**
