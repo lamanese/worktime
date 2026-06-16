@@ -14,6 +14,7 @@ use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\Holiday;
+use OCA\WorkTime\Db\ProjectMapper;
 use OCA\WorkTime\Db\TimeEntry;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException as FilesNotFoundException;
@@ -30,6 +31,7 @@ class PdfService {
     public function __construct(
         private CompanySettingsService $settingsService,
         private IRootFolder $rootFolder,
+        private ProjectMapper $projectMapper,
     ) {
     }
 
@@ -81,6 +83,179 @@ class PdfService {
         }
 
         return $pdf->Output('', 'S');
+    }
+
+    /**
+     * Generate a project evaluation PDF (#57): individual bookings over a period,
+     * usable as a customer proof. Landscape for the wide table.
+     *
+     * @param string $label Period label (e.g. "06/2026", "Q2 2026", "2026")
+     * @param array<array{date: string, projectName: ?string, customer: ?string, employeeName: ?string, minutes: int, description: ?string, isBillable: bool}> $entries
+     * @param array{totalMinutes: int, billableMinutes: int} $totals
+     * @return string PDF content
+     */
+    public function generateProjectEvaluation(string $label, array $entries, array $totals, array $filter = []): string {
+        $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
+        $pdf->SetCreator('WorkTime Nextcloud App');
+        $pdf->SetAuthor($companyName);
+        $pdf->SetTitle('Projektauswertung');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(true);
+        $pdf->setFooterFont([self::FONT_FAMILY, '', self::FONT_SIZE_SMALL]);
+        $pdf->setFooterMargin(10);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        $pdf->AddPage();
+
+        if ($this->settingsService->getCompanyName()) {
+            $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_TITLE);
+            $pdf->Cell(0, 10, $companyName, 0, 1, 'C');
+            $pdf->Ln(1);
+        }
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_HEADER);
+        $pdf->Cell(0, 8, 'Projektauswertung', 0, 1, 'C');
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(0, 6, $label, 0, 1, 'C');
+        $this->addFilterContext($pdf, $filter);
+        $pdf->Ln(4);
+
+        // Column widths (landscape A4 content width ~267mm)
+        $cols = [
+            ['Datum', 24, 'L'],
+            ['Projekt', 55, 'L'],
+            ['Kunde', 40, 'L'],
+            ['Mitarbeiter', 45, 'L'],
+            ['Stunden', 20, 'R'],
+            ['Tätigkeit', 83, 'L'],
+        ];
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->SetFillColor(240, 240, 240);
+        foreach ($cols as $col) {
+            $pdf->Cell($col[1], 7, $col[0], 1, 0, $col[2], true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        foreach ($entries as $entry) {
+            $date = (new DateTime($entry['date']))->format('d.m.Y');
+            $row = [
+                $date,
+                $entry['projectName'] ?? 'Kein Projekt',
+                $entry['customer'] ?? '',
+                $entry['employeeName'] ?? '',
+                $this->minutesToHours($entry['minutes']),
+                $entry['description'] ?? '',
+            ];
+            foreach ($cols as $i => $col) {
+                $pdf->Cell($col[1], 6, $this->truncate($row[$i], $col[1]), 1, 0, $col[2]);
+            }
+            $pdf->Ln();
+        }
+
+        // Totals
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->Cell(164, 7, 'Gesamt', 1, 0, 'R');
+        $pdf->Cell(20, 7, $this->minutesToHours($totals['totalMinutes']), 1, 0, 'R');
+        $pdf->Cell(83, 7, '', 1, 0, 'L');
+        $pdf->Ln();
+
+        return $pdf->Output('', 'S');
+    }
+
+    /**
+     * Generate an aggregated project evaluation PDF (#57): hours per employee
+     * over a period, for the current selection. Portrait.
+     *
+     * @param array<array{name: string, minutes: int}> $rows
+     * @return string PDF content
+     */
+    public function generateProjectAggregate(string $label, array $rows, int $totalMinutes, array $filter = []): string {
+        $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
+        $pdf->SetCreator('WorkTime Nextcloud App');
+        $pdf->SetAuthor($companyName);
+        $pdf->SetTitle('Projektauswertung');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(true);
+        $pdf->setFooterFont([self::FONT_FAMILY, '', self::FONT_SIZE_SMALL]);
+        $pdf->setFooterMargin(10);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        $pdf->AddPage();
+
+        if ($this->settingsService->getCompanyName()) {
+            $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_TITLE);
+            $pdf->Cell(0, 10, $companyName, 0, 1, 'C');
+            $pdf->Ln(1);
+        }
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_HEADER);
+        $pdf->Cell(0, 8, 'Projektauswertung', 0, 1, 'C');
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(0, 6, $label, 0, 1, 'C');
+        $this->addFilterContext($pdf, $filter);
+        $pdf->Ln(4);
+
+        // Portrait A4 content width ~180mm: 110 + 35 + 35
+        $total = max(1, $totalMinutes);
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell(110, 7, 'Mitarbeiter', 1, 0, 'L', true);
+        $pdf->Cell(35, 7, 'Stunden', 1, 0, 'R', true);
+        $pdf->Cell(35, 7, 'Anteil', 1, 0, 'R', true);
+        $pdf->Ln();
+
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        foreach ($rows as $row) {
+            $pct = round($row['minutes'] / $total * 100);
+            $pdf->Cell(110, 6, $this->truncate($row['name'], 110), 1, 0, 'L');
+            $pdf->Cell(35, 6, $this->minutesToHours($row['minutes']), 1, 0, 'R');
+            $pdf->Cell(35, 6, $pct . ' %', 1, 0, 'R');
+            $pdf->Ln();
+        }
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->Cell(110, 7, 'Gesamt', 1, 0, 'R');
+        $pdf->Cell(35, 7, $this->minutesToHours($totalMinutes), 1, 0, 'R');
+        $pdf->Cell(35, 7, '100 %', 1, 0, 'R');
+        $pdf->Ln();
+
+        return $pdf->Output('', 'S');
+    }
+
+    private function minutesToHours(int $minutes): string {
+        $h = intdiv($minutes, 60);
+        $m = $minutes % 60;
+        return sprintf('%d:%02d', $h, $m);
+    }
+
+    /**
+     * Render the filter context (which projects/employees the report covers)
+     * under the title, so an exported PDF is self-documenting.
+     *
+     * @param array{projects?: string, employees?: string} $filter
+     */
+    private function addFilterContext(TCPDF $pdf, array $filter): void {
+        if (empty($filter)) {
+            return;
+        }
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        $pdf->SetTextColor(90, 90, 90);
+        $pdf->Cell(0, 5, 'Projekte: ' . ($filter['projects'] ?? 'Alle'), 0, 1, 'C');
+        $pdf->Cell(0, 5, 'Mitarbeitende: ' . ($filter['employees'] ?? 'Alle'), 0, 1, 'C');
+        $pdf->SetTextColor(0, 0, 0);
+    }
+
+    private function truncate(string $text, float $widthMm): string {
+        // Rough character budget for the small font at the given column width.
+        $max = (int)max(4, $widthMm / 1.7);
+        if (mb_strlen($text) <= $max) {
+            return $text;
+        }
+        return mb_substr($text, 0, $max - 1) . '…';
     }
 
     /**
@@ -169,6 +344,12 @@ class PdfService {
             $holidayDates[$holiday->getDate()->format('Y-m-d')] = $holiday->getName();
         }
 
+        // Project id -> name lookup (including inactive projects for historical entries).
+        $projectNames = [];
+        foreach ($this->projectMapper->findAll() as $project) {
+            $projectNames[$project->getId()] = $project->getName();
+        }
+
         // Build entries by date
         $entriesByDate = [];
         foreach ($timeEntries as $entry) {
@@ -183,12 +364,13 @@ class PdfService {
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
         $pdf->SetFillColor(230, 230, 230);
 
-        $pdf->Cell(25, 7, 'Datum', 1, 0, 'C', true);
-        $pdf->Cell(15, 7, 'Tag', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'Beginn', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'Ende', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'Pause', 1, 0, 'C', true);
+        $pdf->Cell(22, 7, 'Datum', 1, 0, 'C', true);
+        $pdf->Cell(12, 7, 'Tag', 1, 0, 'C', true);
+        $pdf->Cell(17, 7, 'Beginn', 1, 0, 'C', true);
+        $pdf->Cell(17, 7, 'Ende', 1, 0, 'C', true);
+        $pdf->Cell(17, 7, 'Pause', 1, 0, 'C', true);
         $pdf->Cell(20, 7, 'Arbeitszeit', 1, 0, 'C', true);
+        $pdf->Cell(28, 7, 'Projekt', 1, 0, 'C', true);
         $pdf->Cell(0, 7, 'Bemerkung', 1, 1, 'C', true);
 
         // Table body
@@ -226,6 +408,7 @@ class PdfService {
                         $entry->getEndTime()->format('H:i'),
                         $this->formatMinutes($entry->getBreakMinutes()),
                         $this->formatMinutes($entry->getWorkMinutes()),
+                        $entry->getProjectId() !== null ? ($projectNames[$entry->getProjectId()] ?? '') : '',
                         $entry->getDescription() ?? '',
                         $fill
                     );
@@ -242,6 +425,7 @@ class PdfService {
                     '-',
                     '-',
                     '-',
+                    '',
                     'Feiertag: ' . $holidayDates[$dateStr],
                     $fill
                 );
@@ -251,6 +435,7 @@ class PdfService {
                     $pdf,
                     $dateFormatted,
                     $dayName,
+                    '',
                     '',
                     '',
                     '',
@@ -330,18 +515,20 @@ class PdfService {
         string $end,
         string $break,
         string $work,
+        string $project,
         string $note,
         bool $fill
     ): void {
-        $noteWidth = $this->getNoteCellWidth($pdf, 120.0);
+        $noteWidth = $this->getNoteCellWidth($pdf, 133.0);
         $rowHeight = $this->calculateRowHeight($pdf, $note, $noteWidth);
 
-        $pdf->Cell(25, $rowHeight, $date, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(15, $rowHeight, $day, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(20, $rowHeight, $start, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(20, $rowHeight, $end, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(20, $rowHeight, $break, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(22, $rowHeight, $date, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(12, $rowHeight, $day, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(17, $rowHeight, $start, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(17, $rowHeight, $end, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(17, $rowHeight, $break, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
         $pdf->Cell(20, $rowHeight, $work, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+        $pdf->Cell(28, $rowHeight, $this->truncate($project, 28), 1, 0, 'L', $fill, '', 0, false, 'T', 'M');
         $pdf->MultiCell($noteWidth, $rowHeight, $note, 1, 'L', $fill, 1, '', '', true, 0, false, true, 0, 'M');
     }
 

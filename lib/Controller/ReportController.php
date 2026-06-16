@@ -19,6 +19,7 @@ use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\PermissionService;
+use OCA\WorkTime\Service\ProjectService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\WorkScheduleService;
 use OCA\WorkTime\Service\YearlyCarryoverService;
@@ -46,6 +47,7 @@ class ReportController extends BaseController {
         private PdfService $pdfService,
         private WorkScheduleService $workScheduleService,
         private YearlyCarryoverService $carryoverService,
+        private ProjectService $projectService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -93,6 +95,361 @@ class ReportController extends BaseController {
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
+    }
+
+    /**
+     * Project evaluation (#57): work minutes grouped by project and employee
+     * over a month/quarter/year, for Admin/HR.
+     */
+    #[NoAdminRequired]
+    public function projects(int $year = 0, int $month = 0, string $period = 'month', bool $billableOnly = false): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            [$start, $end, $label] = $this->resolvePeriod($year, $month, $period);
+
+            $aggregates = $this->timeEntryMapper->sumWorkMinutesGroupedByProjectAndEmployee($start, $end);
+
+            // Lookup maps for project metadata and employee names.
+            $projects = [];
+            foreach ($this->projectService->findAll() as $p) {
+                $projects[$p->getId()] = $p;
+            }
+            $employees = [];
+            foreach ($this->employeeService->findAll() as $e) {
+                $employees[$e->getId()] = $e;
+            }
+
+            $rows = [];
+            $totalMinutes = 0;
+            $billableMinutes = 0;
+            $projectIds = [];
+            $employeeIds = [];
+
+            foreach ($aggregates as $agg) {
+                $projectId = $agg['projectId'];
+                $project = $projects[$projectId] ?? null;
+                $isBillable = $project !== null && (bool)$project->getIsBillable();
+
+                if ($billableOnly && !$isBillable) {
+                    continue;
+                }
+
+                $employee = $employees[$agg['employeeId']] ?? null;
+                $minutes = $agg['minutes'];
+
+                $rows[] = [
+                    'projectId' => $projectId,
+                    'projectName' => $project?->getName(),
+                    'projectCode' => $project?->getCode(),
+                    'customer' => $project?->getCustomer(),
+                    'color' => $project?->getColor(),
+                    'isBillable' => $isBillable,
+                    'employeeId' => $agg['employeeId'],
+                    'employeeName' => $employee?->getFullName(),
+                    'minutes' => $minutes,
+                ];
+
+                $totalMinutes += $minutes;
+                if ($isBillable) {
+                    $billableMinutes += $minutes;
+                }
+                if ($projectId > 0) {
+                    $projectIds[$projectId] = true;
+                }
+                $employeeIds[$agg['employeeId']] = true;
+            }
+
+            return $this->successResponse([
+                'period' => [
+                    'year' => $year,
+                    'month' => $month,
+                    'type' => $period,
+                    'label' => $label,
+                    'start' => $start->format('Y-m-d'),
+                    'end' => $end->format('Y-m-d'),
+                ],
+                'totals' => [
+                    'totalMinutes' => $totalMinutes,
+                    'billableMinutes' => $billableMinutes,
+                    'projectCount' => count($projectIds),
+                    'employeeCount' => count($employeeIds),
+                ],
+                'rows' => $rows,
+            ]);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Individual bookings for the period (#57 detail / customer proof).
+     */
+    #[NoAdminRequired]
+    public function projectEntries(int $year = 0, int $month = 0, string $period = 'month', bool $billableOnly = false): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        try {
+            [, , $label, $entries, $totals] = $this->collectProjectEntries($year, $month, $period, $billableOnly);
+            return $this->successResponse([
+                'period' => ['label' => $label],
+                'totals' => $totals,
+                'entries' => $entries,
+            ]);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function projectsCsv(int $year = 0, int $month = 0, string $period = 'month', bool $billableOnly = false, string $projectIds = '', string $employeeIds = '', string $mode = 'detail'): DataDownloadResponse|JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        try {
+            [, , $label, $entries, $totals] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $this->parseIds($projectIds), $this->parseIds($employeeIds));
+
+            if ($mode === 'agg') {
+                $total = max(1, $totals['totalMinutes']);
+                $lines = [implode(';', array_map([$this, 'csvCell'], ['Mitarbeiter', 'Stunden', 'Anteil']))];
+                foreach ($this->aggregateByEmployee($entries) as $row) {
+                    $lines[] = implode(';', array_map([$this, 'csvCell'], [
+                        $row['name'],
+                        $this->minutesToDecimal($row['minutes']),
+                        round($row['minutes'] / $total * 100) . ' %',
+                    ]));
+                }
+            } else {
+                $headers = ['Datum', 'Projekt', 'Projektcode', 'Kunde', 'Mitarbeiter', 'Stunden', 'Tätigkeit'];
+                $lines = [implode(';', array_map([$this, 'csvCell'], $headers))];
+                foreach ($entries as $entry) {
+                    $lines[] = implode(';', array_map([$this, 'csvCell'], [
+                        (new DateTime($entry['date']))->format('d.m.Y'),
+                        $entry['projectName'] ?? 'Kein Projekt',
+                        $entry['projectCode'] ?? '',
+                        $entry['customer'] ?? '',
+                        $entry['employeeName'] ?? '',
+                        $this->minutesToDecimal($entry['minutes']),
+                        $entry['description'] ?? '',
+                    ]));
+                }
+            }
+            // UTF-8 BOM so Excel detects the encoding.
+            $csv = "\xEF\xBB\xBF" . implode("\r\n", $lines) . "\r\n";
+
+            return new DataDownloadResponse($csv, $this->exportFilename($label) . '.csv', 'text/csv; charset=UTF-8');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function projectsPdf(int $year = 0, int $month = 0, string $period = 'month', bool $billableOnly = false, string $projectIds = '', string $employeeIds = '', string $mode = 'detail'): DataDownloadResponse|JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageEmployees($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        try {
+            $pIds = $this->parseIds($projectIds);
+            $eIds = $this->parseIds($employeeIds);
+            [, , $label, $entries, $totals] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
+            $filter = $this->selectionLabels($pIds, $eIds);
+            $pdf = $mode === 'agg'
+                ? $this->pdfService->generateProjectAggregate($label, $this->aggregateByEmployee($entries), $totals['totalMinutes'], $filter)
+                : $this->pdfService->generateProjectEvaluation($label, $entries, $totals, $filter);
+            return new DataDownloadResponse($pdf, $this->exportFilename($label) . '.pdf', 'application/pdf');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Collect individual bookings for the period, enriched with project and
+     * employee metadata. Shared by the JSON, CSV and PDF endpoints.
+     *
+     * @param int[] $projectIds optional filter (empty = all)
+     * @param int[] $employeeIds optional filter (empty = all)
+     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}}
+     */
+    private function collectProjectEntries(int $year, int $month, string $period, bool $billableOnly, array $projectIds = [], array $employeeIds = []): array {
+        [$start, $end, $label] = $this->resolvePeriod($year, $month, $period);
+
+        $projectFilter = array_flip($projectIds);
+        $employeeFilter = array_flip($employeeIds);
+
+        $projects = [];
+        foreach ($this->projectService->findAll() as $p) {
+            $projects[$p->getId()] = $p;
+        }
+        $employees = [];
+        foreach ($this->employeeService->findAll() as $e) {
+            $employees[$e->getId()] = $e;
+        }
+
+        $entries = [];
+        $totalMinutes = 0;
+        $billableMinutes = 0;
+        foreach ($this->timeEntryMapper->findByDateRange($start, $end) as $te) {
+            $projectId = (int)($te->getProjectId() ?? 0);
+            $project = $projects[$projectId] ?? null;
+            $isBillable = $project !== null && (bool)$project->getIsBillable();
+            if ($billableOnly && !$isBillable) {
+                continue;
+            }
+            if (!empty($projectFilter) && !isset($projectFilter[$projectId])) {
+                continue;
+            }
+            if (!empty($employeeFilter) && !isset($employeeFilter[$te->getEmployeeId()])) {
+                continue;
+            }
+            $employee = $employees[$te->getEmployeeId()] ?? null;
+            $minutes = (int)$te->getWorkMinutes();
+            $entries[] = [
+                'id' => $te->getId(),
+                'date' => $te->getDate()->format('Y-m-d'),
+                'projectId' => $projectId,
+                'projectName' => $project?->getName(),
+                'projectCode' => $project?->getCode(),
+                'customer' => $project?->getCustomer(),
+                'color' => $project?->getColor(),
+                'isBillable' => $isBillable,
+                'employeeId' => $te->getEmployeeId(),
+                'employeeName' => $employee?->getFullName(),
+                'minutes' => $minutes,
+                'description' => $te->getDescription(),
+            ];
+            $totalMinutes += $minutes;
+            if ($isBillable) {
+                $billableMinutes += $minutes;
+            }
+        }
+
+        return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes]];
+    }
+
+    /**
+     * Parse a comma-separated list of positive integer IDs from a query param.
+     *
+     * @return int[]
+     */
+    private function parseIds(string $raw): array {
+        if ($raw === '') {
+            return [];
+        }
+        return array_values(array_filter(array_map('intval', explode(',', $raw)), static fn (int $id) => $id > 0));
+    }
+
+    /**
+     * Aggregate enriched entries to hours per employee, sorted by hours desc.
+     *
+     * @param array $entries
+     * @return array<array{name: string, minutes: int}>
+     */
+    private function aggregateByEmployee(array $entries): array {
+        $byEmp = [];
+        foreach ($entries as $e) {
+            $id = $e['employeeId'];
+            if (!isset($byEmp[$id])) {
+                $byEmp[$id] = ['name' => $e['employeeName'] ?? 'Unbekannt', 'minutes' => 0];
+            }
+            $byEmp[$id]['minutes'] += $e['minutes'];
+        }
+        $rows = array_values($byEmp);
+        usort($rows, static fn ($a, $b) => $b['minutes'] - $a['minutes']);
+        return $rows;
+    }
+
+    /**
+     * Human-readable labels for the current selection, for the export header.
+     * Empty id list => "Alle".
+     *
+     * @param int[] $projectIds
+     * @param int[] $employeeIds
+     * @return array{projects: string, employees: string}
+     */
+    private function selectionLabels(array $projectIds, array $employeeIds): array {
+        $projects = 'Alle';
+        if (!empty($projectIds)) {
+            $set = array_flip($projectIds);
+            $names = [];
+            foreach ($this->projectService->findAll() as $p) {
+                if (isset($set[$p->getId()])) {
+                    $names[] = $p->getName();
+                }
+            }
+            $projects = implode(', ', $names);
+        }
+
+        $employees = 'Alle';
+        if (!empty($employeeIds)) {
+            $set = array_flip($employeeIds);
+            $names = [];
+            foreach ($this->employeeService->findAll() as $e) {
+                if (isset($set[$e->getId()])) {
+                    $names[] = $e->getFullName();
+                }
+            }
+            $employees = implode(', ', $names);
+        }
+
+        return ['projects' => $projects, 'employees' => $employees];
+    }
+
+    private function csvCell(string $value): string {
+        return '"' . str_replace('"', '""', $value) . '"';
+    }
+
+    private function minutesToDecimal(int $minutes): string {
+        return number_format($minutes / 60, 2, ',', '');
+    }
+
+    private function exportFilename(string $label): string {
+        return 'Projektauswertung_' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $label);
+    }
+
+    /**
+     * Resolve the date range and a human label for a period selection.
+     *
+     * @return array{0: DateTime, 1: DateTime, 2: string}
+     */
+    private function resolvePeriod(int $year, int $month, string $period): array {
+        if ($period === 'year') {
+            $start = new DateTime("$year-01-01");
+            $end = new DateTime("$year-12-31");
+            return [$start, $end, (string)$year];
+        }
+
+        if ($period === 'quarter') {
+            $quarter = intdiv(max(1, min(12, $month)) - 1, 3); // 0..3
+            $startMonth = $quarter * 3 + 1;
+            $start = new DateTime(sprintf('%d-%02d-01', $year, $startMonth));
+            $end = (clone $start)->modify('+2 months')->modify('last day of this month');
+            return [$start, $end, sprintf('Q%d %d', $quarter + 1, $year)];
+        }
+
+        // default: month
+        $m = max(1, min(12, $month));
+        $months = ['', 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        $start = new DateTime(sprintf('%d-%02d-01', $year, $m));
+        $end = (clone $start)->modify('last day of this month');
+        return [$start, $end, $months[$m] . ' ' . $year];
     }
 
     #[NoAdminRequired]

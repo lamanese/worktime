@@ -105,5 +105,9 @@ return [
         ['name' => 'report#team', 'url' => '/api/reports/team', 'verb' => 'GET'],
         ['name' => 'report#overtime', 'url' => '/api/reports/overtime', 'verb' => 'GET'],
         ['name' => 'report#allEmployeesStatus', 'url' => '/api/reports/all-status', 'verb' => 'GET'],
+        ['name' => 'report#projects', 'url' => '/api/reports/projects', 'verb' => 'GET'],
+        ['name' => 'report#projectEntries', 'url' => '/api/reports/project-entries', 'verb' => 'GET'],
+        ['name' => 'report#projectsCsv', 'url' => '/api/reports/projects-csv', 'verb' => 'GET'],
+        ['name' => 'report#projectsPdf', 'url' => '/api/reports/projects-pdf', 'verb' => 'GET'],
     ]
 ];
