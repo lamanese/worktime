@@ -32,8 +32,15 @@ class ProjectController extends BaseController {
             return $authError;
         }
 
-        // All users can see active projects
-        $projects = $this->projectService->findAllActive();
+        // Users only see the active projects they may book on (#58):
+        // projects open to all employees, plus the ones assigned to them.
+        $employee = $this->permissionService->getEmployeeForUser($this->userId);
+        if ($employee === null) {
+            // No employee record (e.g. a pure admin user): show all active projects.
+            $projects = $this->projectService->findAllActive();
+        } else {
+            $projects = $this->projectService->getProjectsForEmployee($employee->getId());
+        }
 
         return $this->successResponse($projects);
     }
@@ -48,8 +55,13 @@ class ProjectController extends BaseController {
             return $this->forbiddenResponse();
         }
 
-        // Admin/HR can see all projects including inactive
-        $projects = $this->projectService->findAll();
+        // Admin/HR can see all projects including inactive, with their member assignment.
+        $allMemberIds = $this->projectService->getAllMemberIds();
+        $projects = array_map(function ($project) use ($allMemberIds) {
+            $data = $project->jsonSerialize();
+            $data['memberIds'] = $allMemberIds[$project->getId()] ?? [];
+            return $data;
+        }, $this->projectService->findAll());
 
         return $this->successResponse($projects);
     }
@@ -62,7 +74,12 @@ class ProjectController extends BaseController {
 
         try {
             $project = $this->projectService->find($id);
-            return $this->successResponse($project);
+            $data = $project->jsonSerialize();
+            // Member assignment is management data — only expose it to managers.
+            if ($this->permissionService->canManageProjects($this->userId)) {
+                $data['memberIds'] = $this->projectService->getMemberIds($id);
+            }
+            return $this->successResponse($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -76,7 +93,9 @@ class ProjectController extends BaseController {
         ?string $color = null,
         bool $isActive = true,
         bool $isBillable = true,
-        ?string $customer = null
+        ?string $customer = null,
+        bool $allEmployees = true,
+        ?array $memberIds = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -95,10 +114,14 @@ class ProjectController extends BaseController {
                 $isActive,
                 $isBillable,
                 $this->userId,
-                $customer
+                $customer,
+                $allEmployees,
+                $memberIds
             );
 
-            return $this->createdResponse($project);
+            $data = $project->jsonSerialize();
+            $data['memberIds'] = $this->projectService->getMemberIds($project->getId());
+            return $this->createdResponse($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
@@ -113,7 +136,9 @@ class ProjectController extends BaseController {
         ?string $color = null,
         bool $isActive = true,
         bool $isBillable = true,
-        ?string $customer = null
+        ?string $customer = null,
+        bool $allEmployees = true,
+        ?array $memberIds = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -133,10 +158,14 @@ class ProjectController extends BaseController {
                 $isActive,
                 $isBillable,
                 $this->userId,
-                $customer
+                $customer,
+                $allEmployees,
+                $memberIds
             );
 
-            return $this->successResponse($project);
+            $data = $project->jsonSerialize();
+            $data['memberIds'] = $this->projectService->getMemberIds($project->getId());
+            return $this->successResponse($data);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
