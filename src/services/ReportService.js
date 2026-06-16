@@ -92,8 +92,8 @@ export default {
     },
 
     getPdfUrl(employeeId, year, month) {
-        return generateUrl('/apps/worktime/api/reports/pdf') +
-            `?employeeId=${employeeId}&year=${year}&month=${month}`
+        const params = new URLSearchParams({ employeeId, year, month })
+        return generateUrl('/apps/worktime/api/reports/pdf') + '?' + params.toString()
     },
 
     downloadPdf(employeeId, year, month) {
