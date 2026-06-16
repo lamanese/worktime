@@ -7,6 +7,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-16
+
+### Added
+- **Projekt-Auswertung für Admin/HR (#57)**: Eine neue Auswertungsansicht summiert die erfassten Arbeitszeiten je Projekt und Mitarbeiter:in über einen wählbaren Zeitraum. Projekte und Mitarbeitende werden über kompakte Chips (Projektfarbe + Kunde bzw. Initialen) aus- und abgewählt, mit Suche und Top-N-Skalierung für größere Teams. Es gibt eine aggregierte Sicht (Summen) und eine Einzelbuchungssicht, beide sortierbar und im App-Stil als Karten dargestellt. Kennzahlen-Karten (Gesamtzeit, Projekte, Mitarbeitende) fassen den gewählten Zeitraum zusammen. Die Auswertung ist auf Admin/HR beschränkt.
+- **CSV- und PDF-Export der Projekt-Auswertung (#57)**: Beide Ansichten lassen sich als CSV oder PDF exportieren. Der Export folgt der Auswahl und der aktiven Registerkarte (aggregiert oder Einzelbuchungen) und dokumentiert im Kopf, welche Projekte und Mitarbeitenden ausgewertet wurden.
+- **Projekt-Zuordnung pro Mitarbeiter:in (#58)**: Projekte können gezielt einzelnen Mitarbeitenden zur Buchung freigegeben werden – oder per Schalter „für alle freigeben" allen. So sehen Mitarbeitende in der Zeiterfassung nur die für sie relevanten Projekte.
+- **Optionales Kundenfeld an Projekten (#292)**: Projekte können einem Kunden zugeordnet werden. Der Kunde erscheint in der Projekt-Auswertung und als eigene **Projekt-Spalte im monatlichen Arbeitszeitnachweis (PDF)**.
+
+### Fixed
+- **Datum im eingebetteten Bearbeiten-Modus nicht änderbar (#302)**: Beim Bearbeiten eines Zeiteintrags direkt in der Tag-/Tabellenansicht ließ sich das Datum nicht mehr anpassen. Das Datumsfeld ist im eingebetteten Bearbeiten-Modus jetzt editierbar.
+
 ## [0.10.1] - 2026-06-15
 
 ### Fixed
