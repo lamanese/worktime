@@ -269,8 +269,8 @@ class ReportController extends BaseController {
         try {
             $pIds = $this->parseIds($projectIds);
             $eIds = $this->parseIds($employeeIds);
-            [, , $label, $entries, $totals] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
-            $filter = $this->selectionLabels($pIds, $eIds);
+            [, , $label, $entries, $totals, $projects, $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
+            $filter = $this->selectionLabels($pIds, $eIds, $projects, $employees);
             $pdf = $mode === 'agg'
                 ? $this->pdfService->generateProjectAggregate($label, $this->aggregateByEmployee($entries), $totals['totalMinutes'], $filter)
                 : $this->pdfService->generateProjectEvaluation($label, $entries, $totals, $filter);
@@ -286,7 +286,7 @@ class ReportController extends BaseController {
      *
      * @param int[] $projectIds optional filter (empty = all)
      * @param int[] $employeeIds optional filter (empty = all)
-     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}}
+     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}, 5: array<int, \OCA\WorkTime\Db\Project>, 6: array<int, \OCA\WorkTime\Db\Employee>}
      */
     private function collectProjectEntries(int $year, int $month, string $period, bool $billableOnly, array $projectIds = [], array $employeeIds = []): array {
         [$start, $end, $label] = $this->resolvePeriod($year, $month, $period);
@@ -341,7 +341,7 @@ class ReportController extends BaseController {
             }
         }
 
-        return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes]];
+        return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes], $projects, $employees];
     }
 
     /**
@@ -378,38 +378,39 @@ class ReportController extends BaseController {
 
     /**
      * Human-readable labels for the current selection, for the export header.
-     * Empty id list => "Alle".
+     * Empty id list => "Alle". The project/employee maps are reused from
+     * collectProjectEntries() to avoid a second findAll() round-trip (#311).
      *
      * @param int[] $projectIds
      * @param int[] $employeeIds
+     * @param array<int, \OCA\WorkTime\Db\Project> $projects id-keyed map
+     * @param array<int, \OCA\WorkTime\Db\Employee> $employees id-keyed map
      * @return array{projects: string, employees: string}
      */
-    private function selectionLabels(array $projectIds, array $employeeIds): array {
-        $projects = 'Alle';
+    private function selectionLabels(array $projectIds, array $employeeIds, array $projects, array $employees): array {
+        $projectsLabel = 'Alle';
         if (!empty($projectIds)) {
-            $set = array_flip($projectIds);
             $names = [];
-            foreach ($this->projectService->findAll() as $p) {
-                if (isset($set[$p->getId()])) {
-                    $names[] = $p->getName();
+            foreach ($projectIds as $id) {
+                if (isset($projects[$id])) {
+                    $names[] = $projects[$id]->getName();
                 }
             }
-            $projects = implode(', ', $names);
+            $projectsLabel = implode(', ', $names);
         }
 
-        $employees = 'Alle';
+        $employeesLabel = 'Alle';
         if (!empty($employeeIds)) {
-            $set = array_flip($employeeIds);
             $names = [];
-            foreach ($this->employeeService->findAll() as $e) {
-                if (isset($set[$e->getId()])) {
-                    $names[] = $e->getFullName();
+            foreach ($employeeIds as $id) {
+                if (isset($employees[$id])) {
+                    $names[] = $employees[$id]->getFullName();
                 }
             }
-            $employees = implode(', ', $names);
+            $employeesLabel = implode(', ', $names);
         }
 
-        return ['projects' => $projects, 'employees' => $employees];
+        return ['projects' => $projectsLabel, 'employees' => $employeesLabel];
     }
 
     private function csvCell(string $value): string {

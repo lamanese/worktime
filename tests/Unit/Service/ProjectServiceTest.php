@@ -9,6 +9,7 @@ use OCA\WorkTime\Db\ProjectEmployeeMapper;
 use OCA\WorkTime\Db\ProjectMapper;
 use OCA\WorkTime\Service\AuditLogService;
 use OCA\WorkTime\Service\ProjectService;
+use OCA\WorkTime\Service\ValidationException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -75,5 +76,52 @@ class ProjectServiceTest extends TestCase {
         $ids = array_map(static fn (Project $p) => $p->getId(), $result);
 
         $this->assertSame([1, 2], $ids);
+    }
+
+    public function testCreateRejectsEmptyName(): void {
+        // Validation must fail before any insert happens.
+        $this->projectMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create('   ');
+            $this->fail('Expected ValidationException for empty name');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('name', $e->getErrors());
+        }
+    }
+
+    public function testCreateRejectsDuplicateCode(): void {
+        $this->projectMapper->method('existsByCode')->with('DUP', null)->willReturn(true);
+        $this->projectMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create('Gültiger Name', 'DUP');
+            $this->fail('Expected ValidationException for duplicate code');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('code', $e->getErrors());
+        }
+    }
+
+    public function testCreateRejectsTooLongCode(): void {
+        $this->projectMapper->method('existsByCode')->willReturn(false);
+        $this->projectMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create('Gültiger Name', str_repeat('X', 51));
+            $this->fail('Expected ValidationException for code exceeding 50 chars');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('code', $e->getErrors());
+        }
+    }
+
+    public function testDeleteRemovesMembershipsAndProject(): void {
+        $project = $this->makeProject(7, true);
+        $this->projectMapper->method('find')->willReturn($project);
+
+        // Memberships must be cleared before the project row itself is deleted.
+        $this->projectEmployeeMapper->expects($this->once())->method('deleteForProject')->with(7);
+        $this->projectMapper->expects($this->once())->method('delete')->with($project);
+
+        $this->service->delete(7);
     }
 }
