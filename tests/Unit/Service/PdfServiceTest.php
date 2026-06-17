@@ -150,6 +150,28 @@ class PdfServiceTest extends TestCase {
         $this->assertSame('', $byDay['22.06.2026'][0]['start']);
     }
 
+    public function testCancelledAbsenceIsIgnored(): void {
+        // Like a rejected absence, a cancelled one must not appear in the day row.
+        $absences = [$this->absence(Absence::TYPE_VACATION, '2026-06-22', '2026-06-22', Absence::STATUS_CANCELLED)];
+
+        $byDay = $this->rowsByDay([], $absences, [], 2026, 6);
+
+        $this->assertCount(1, $byDay['22.06.2026']);
+        $this->assertSame('', $byDay['22.06.2026'][0]['note']);
+        $this->assertSame('', $byDay['22.06.2026'][0]['start']);
+    }
+
+    public function testPendingAbsenceIsShown(): void {
+        // A still-pending (planned) absence is intentionally visible in the
+        // overview — only rejected/cancelled ones are filtered out.
+        $absences = [$this->absence(Absence::TYPE_VACATION, '2026-06-22', '2026-06-22', Absence::STATUS_PENDING)];
+
+        $byDay = $this->rowsByDay([], $absences, [], 2026, 6);
+
+        $this->assertSame('Urlaub', $byDay['22.06.2026'][0]['note']);
+        $this->assertSame('-', $byDay['22.06.2026'][0]['start']);
+    }
+
     public function testHolidayShowsLabel(): void {
         $holidays = [$this->holiday('2026-06-18', 'Testfeiertag')];
 
