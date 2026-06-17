@@ -316,4 +316,38 @@ class TimeEntryServiceTest extends TestCase {
         $this->expectException(ForbiddenException::class);
         $this->service->delete(99, 'admin', 'genug lange Begründung', true);
     }
+
+    /**
+     * Project assignment guard (#58): an employee who is not assigned to a
+     * restricted project must be rejected when booking on it. The guard runs
+     * after the basic time validation, so we use a valid past entry that clears
+     * all other checks (no future date, no overlap, no absence conflict).
+     */
+    public function testCreateRejectsBookingOnUnassignedProject(): void {
+        $projectService = $this->createMock(ProjectService::class);
+        $projectService->method('isProjectAllowedForEmployee')->willReturn(false);
+        $service = new TimeEntryService(
+            $this->timeEntryMapper,
+            $this->settingsMapper,
+            $this->employeeMapper,
+            $this->absenceMapper,
+            $this->auditLogService,
+            $this->notificationService,
+            $projectService,
+            $this->logger,
+            $this->l,
+        );
+        // No overlapping entries and no absence on that day.
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        // The booking must never be persisted when the guard rejects it.
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        try {
+            $service->create(5, '2020-01-06', '08:00', '14:00', 0, 7);
+            $this->fail('Expected ValidationException for unassigned project');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('projectId', $e->getErrors());
+        }
+    }
 }
