@@ -237,4 +237,22 @@ class AbsenceServiceTest extends TestCase {
 
         $this->service->delete(99, 'admin', 'Korrektur nach Rückfrage', true);
     }
+
+    /**
+     * Regression (#approve-without-profile): an HR/Admin approver that has no own
+     * employee profile (approverEmployeeId === null) must still be able to approve.
+     * The absence becomes APPROVED with approvedBy left null — no exception, no
+     * "Approver not found" abort.
+     */
+    public function testApproveSucceedsWithoutApproverEmployeeProfile(): void {
+        $pending = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('2026-07-13'), new DateTime('2026-07-13'));
+        $this->absenceMapper->method('find')->with(99)->willReturn($pending);
+        $this->absenceMapper->method('update')->willReturnArgument(0);
+
+        $result = $this->service->approve(99, null, 'admin');
+
+        $this->assertSame(Absence::STATUS_APPROVED, $result->getStatus());
+        $this->assertNull($result->getApprovedBy());
+        $this->assertNotNull($result->getApprovedAt());
+    }
 }
