@@ -308,7 +308,7 @@ class AbsenceService {
     /**
      * @throws NotFoundException
      */
-    public function approve(int $id, int $approverEmployeeId, string $currentUserId = ''): Absence {
+    public function approve(int $id, ?int $approverEmployeeId, string $currentUserId = ''): Absence {
         $absence = $this->find($id);
         $oldValues = $absence->jsonSerialize();
 
