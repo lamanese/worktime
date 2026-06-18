@@ -55,11 +55,14 @@
                 <input id="weeklyHours"
                     v-model.number="form.weeklyHours"
                     type="number"
-                    min="0"
+                    min="0.5"
                     max="60"
                     step="0.5"
-                    class="input-field input-small"
+                    :class="['input-field', 'input-small', { 'input-error': !(form.weeklyHours > 0) }]"
                     required>
+                <p v-if="!(form.weeklyHours > 0)" class="field-hint field-hint--error">
+                    {{ t('worktime', 'Wochenstunden müssen größer als 0 sein. Für eine vorübergehende Auszeit (z. B. Elternzeit) eine Abwesenheit erfassen statt 0 Stunden.') }}
+                </p>
             </div>
             <div class="form-group">
                 <label for="vacationDays">{{ t('worktime', 'Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Jährlicher Urlaubsanspruch. Jeder genommene Urlaubstag wird davon abgezogen. Der Resturlaub wird in der Zeiterfassung angezeigt.') }}</InfoIcon> *</label>
@@ -281,8 +284,9 @@ export default {
             if (this.isEdit) {
                 return baseValid
             }
-            // New employee: weeklyHours and vacationDays are in the form
-            return baseValid && this.form.weeklyHours >= 0 && this.form.vacationDays >= 0
+            // New employee: weeklyHours must be > 0 (a 0-hour contract would create
+            // a zero-hour work schedule and break every day/absence calculation).
+            return baseValid && this.form.weeklyHours > 0 && this.form.vacationDays >= 0
         },
     },
     watch: {
@@ -418,6 +422,15 @@ export default {
     margin: -8px 0 16px 0;
     color: var(--color-text-maxcontrast);
     font-size: 0.9em;
+}
+
+.field-hint--error {
+    color: var(--color-error, #dc2626);
+}
+
+.input-error {
+    border-color: var(--color-error, #dc2626) !important;
+    background-color: var(--color-error-element-light, #fef2f2) !important;
 }
 
 .form-actions {
