@@ -681,6 +681,7 @@ class PdfService {
                 . 'Vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. '
                 . 'Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.', 0, 'L');
             $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
         }
 
         $pdf->Ln(5);
