@@ -154,6 +154,15 @@ class EmployeeService {
             throw new ValidationException($errors);
         }
 
+        // Weekly hours must be > 0: the initial work schedule is derived from them
+        // (weeklyHours / 5). A value of 0 would produce a zero-hour profile, which
+        // makes every working-day and absence-day calculation collapse to 0. A
+        // genuine "currently not working" situation is modelled as an absence, not
+        // as a 0-hour contract.
+        if ($weeklyHours <= 0) {
+            throw ValidationException::fromSingleError('weeklyHours', 'Weekly hours must be greater than zero');
+        }
+
         // Check if user already exists
         if ($this->employeeMapper->existsByUserId($userId)) {
             throw ValidationException::fromSingleError('userId', 'Employee already exists for this user');

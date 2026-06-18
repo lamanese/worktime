@@ -670,6 +670,20 @@ class PdfService {
         $pdf->Cell(50, 8, $overtimeLabel, 0, 0);
         $pdf->Cell(0, 8, $overtimeFormatted, 0, 1);
 
+        // Defensive hint: a zero-hour work schedule makes every working-day and
+        // absence-day count collapse to 0. Surface the likely cause instead of
+        // silently showing "0,0 Tage" (which looks like a data error to the user).
+        if ((float)$statistics['workingDays'] === 0.0) {
+            $pdf->Ln(2);
+            $pdf->SetTextColor(180, 0, 0);
+            $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+            $pdf->MultiCell(0, 5, 'Hinweis: Für diesen Monat sind 0 Arbeitstage hinterlegt. '
+                . 'Vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. '
+                . 'Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.', 0, 'L');
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        }
+
         $pdf->Ln(5);
     }
 

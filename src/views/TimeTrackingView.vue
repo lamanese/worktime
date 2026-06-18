@@ -65,6 +65,11 @@
             {{ t('worktime', 'Monat genehmigt – Einträge gesperrt. Korrektur nur durch HR.') }}
         </div>
 
+        <div v-if="!isYearMode && statistics && statistics.workingDays === 0" class="schedule-warning-banner">
+            <AlertIcon :size="20" />
+            {{ t('worktime', '0 Arbeitstage in diesem Monat – vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.') }}
+        </div>
+
         <!-- KPI-Leiste: monatlich (statistics) oder jährlich (yearAggregates) -->
         <OvertimeSummary v-if="!isYearMode && statistics"
             :target-minutes="statistics.adjustedTargetMinutes"
@@ -140,6 +145,7 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import SendIcon from 'vue-material-design-icons/Send.vue'
 import LockIcon from 'vue-material-design-icons/Lock.vue'
+import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
@@ -170,6 +176,7 @@ export default {
         NcModal,
         SendIcon,
         LockIcon,
+        AlertIcon,
         FilePdfBox,
         FormatListBulletedIcon,
         CalendarIcon,
@@ -558,6 +565,20 @@ export default {
     font-size: 14px;
     font-weight: 600;
     color: var(--wt-vacation);
+}
+
+.schedule-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-warning-element-light, #fdf6e3);
+    border: 1px solid var(--color-warning, #c8932a);
+    border-radius: var(--border-radius);
+    padding: 11px 15px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-warning-text, #8a6d00);
 }
 
 .zlayout {

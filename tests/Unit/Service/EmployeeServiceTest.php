@@ -71,6 +71,17 @@ class EmployeeServiceTest extends TestCase {
         return $schedule;
     }
 
+    public function testCreateRejectsZeroWeeklyHours(): void {
+        // weeklyHours = 0 would create a zero-hour initial schedule (0/5 per day),
+        // which collapses every working-day/absence-day calculation to 0. Must be
+        // blocked before any persistence happens.
+        $this->employeeMapper->expects($this->never())->method('insert');
+        $this->workScheduleMapper->expects($this->never())->method('insert');
+
+        $this->expectException(\OCA\WorkTime\Service\ValidationException::class);
+        $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'BY', null, 'admin');
+    }
+
     public function testFindSurfacesActiveScheduleValuesOverStaleCache(): void {
         // Cache holds 40h / 30 days, but the schedule active today is 31.5h / 28 days.
         $this->employeeMapper->method('find')
