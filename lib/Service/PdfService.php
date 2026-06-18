@@ -64,7 +64,7 @@ class PdfService {
         $this->addHeader($pdf, $employee, $year, $month);
 
         // Time entries table
-        $this->addTimeEntriesTable($pdf, $timeEntries, $holidays, $year, $month);
+        $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $year, $month);
 
         // Absences section
         if (!empty($absences)) {
@@ -337,28 +337,14 @@ class PdfService {
     /**
      * Add time entries table
      */
-    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $holidays, int $year, int $month): void {
-        // Build holiday lookup
-        $holidayDates = [];
-        foreach ($holidays as $holiday) {
-            $holidayDates[$holiday->getDate()->format('Y-m-d')] = $holiday->getName();
-        }
-
+    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $absences, array $holidays, int $year, int $month): void {
         // Project id -> name lookup (including inactive projects for historical entries).
         $projectNames = [];
         foreach ($this->projectMapper->findAll() as $project) {
             $projectNames[$project->getId()] = $project->getName();
         }
 
-        // Build entries by date
-        $entriesByDate = [];
-        foreach ($timeEntries as $entry) {
-            $date = $entry->getDate()->format('Y-m-d');
-            if (!isset($entriesByDate[$date])) {
-                $entriesByDate[$date] = [];
-            }
-            $entriesByDate[$date][] = $entry;
-        }
+        $rows = $this->buildDayRows($timeEntries, $absences, $holidays, $year, $month, $projectNames);
 
         // Table header
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
@@ -375,7 +361,69 @@ class PdfService {
 
         // Table body
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        foreach ($rows as $row) {
+            if ($row['fill']) {
+                $pdf->SetFillColor(245, 245, 245);
+            }
+            $this->renderTimeEntryRow(
+                $pdf, $row['date'], $row['day'], $row['start'], $row['end'],
+                $row['break'], $row['work'], $row['project'], $row['note'], $row['fill']
+            );
+        }
 
+        $pdf->Ln(5);
+    }
+
+    /**
+     * Build the ordered list of day rows for the monthly overview (#318).
+     *
+     * Every calendar day of the month produces at least one row so the overview
+     * is gap-free:
+     *  - days with bookings → one row per booking (plus a marker row for a
+     *    genuine half-day absence on the same day);
+     *  - full-day absence days → the absence type;
+     *  - holidays → "Feiertag: …";
+     *  - regular workdays without a booking → blank time cells (a visible gap);
+     *  - weekends without anything → dashes and no label.
+     *
+     * Pure (no PDF/DB side effects) so it can be unit-tested.
+     *
+     * @param TimeEntry[] $timeEntries
+     * @param Absence[] $absences
+     * @param Holiday[] $holidays
+     * @param array<int, string> $projectNames id => name
+     * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}>
+     */
+    private function buildDayRows(array $timeEntries, array $absences, array $holidays, int $year, int $month, array $projectNames): array {
+        // Holiday lookup
+        $holidayDates = [];
+        foreach ($holidays as $holiday) {
+            $holidayDates[$holiday->getDate()->format('Y-m-d')] = $holiday->getName();
+        }
+
+        // Absence lookup per calendar day: expand each absence's start–end range
+        // to individual dates. Rejected/cancelled absences are ignored — they
+        // did not actually happen.
+        $absencesByDate = [];
+        foreach ($absences as $absence) {
+            if (in_array($absence->getStatus(), [Absence::STATUS_REJECTED, Absence::STATUS_CANCELLED], true)) {
+                continue;
+            }
+            $cursor = clone $absence->getStartDate();
+            $absenceEnd = $absence->getEndDate();
+            while ($cursor <= $absenceEnd) {
+                $absencesByDate[$cursor->format('Y-m-d')] = $absence;
+                $cursor->modify('+1 day');
+            }
+        }
+
+        // Entries by date
+        $entriesByDate = [];
+        foreach ($timeEntries as $entry) {
+            $entriesByDate[$entry->getDate()->format('Y-m-d')][] = $entry;
+        }
+
+        $rows = [];
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
         $current = clone $startDate;
@@ -385,76 +433,94 @@ class PdfService {
             $dayOfWeek = (int)$current->format('N');
             $isWeekend = $dayOfWeek > 5;
             $isHoliday = isset($holidayDates[$dateStr]);
+            $fill = $isWeekend || $isHoliday;
 
-            // Background color for weekends/holidays
-            if ($isWeekend || $isHoliday) {
-                $pdf->SetFillColor(245, 245, 245);
-                $fill = true;
-            } else {
-                $fill = false;
-            }
+            $date = $current->format('d.m.Y');
+            $day = $this->getGermanDayName($dayOfWeek);
 
-            $dateFormatted = $current->format('d.m.Y');
-            $dayName = $this->getGermanDayName($dayOfWeek);
+            $absence = $absencesByDate[$dateStr] ?? null;
+            $absenceLabel = $absence !== null
+                ? $absence->getTypeName() . ($absence->isHalfDay() ? ' (halber Tag)' : '')
+                : '';
 
             if (isset($entriesByDate[$dateStr])) {
-                // Has time entries
                 foreach ($entriesByDate[$dateStr] as $entry) {
-                    $this->renderTimeEntryRow(
-                        $pdf,
-                        $dateFormatted,
-                        $dayName,
-                        $entry->getStartTime()->format('H:i'),
-                        $entry->getEndTime()->format('H:i'),
-                        $this->formatMinutes($entry->getBreakMinutes()),
-                        $this->formatMinutes($entry->getWorkMinutes()),
-                        $entry->getProjectId() !== null ? ($projectNames[$entry->getProjectId()] ?? '') : '',
-                        $entry->getDescription() ?? '',
-                        $fill
-                    );
-                    $dateFormatted = ''; // Clear for subsequent entries on same day
-                    $dayName = '';
+                    $rows[] = [
+                        'date' => $date,
+                        'day' => $day,
+                        'start' => $entry->getStartTime()->format('H:i'),
+                        'end' => $entry->getEndTime()->format('H:i'),
+                        'break' => $this->formatMinutes($entry->getBreakMinutes()),
+                        'work' => $this->formatMinutes($entry->getWorkMinutes()),
+                        'project' => $entry->getProjectId() !== null ? ($projectNames[$entry->getProjectId()] ?? '') : '',
+                        'note' => $entry->getDescription() ?? '',
+                        'fill' => $fill,
+                    ];
+                    $date = ''; // Clear for subsequent entries on the same day
+                    $day = '';
                 }
+                // Only a genuine half-day absence is shown alongside a booking
+                // (morning work + afternoon off). A full-day absence never
+                // coexists with a booking in valid data, so we don't add a
+                // marker row there to avoid a confusing "worked + absent" day.
+                if ($absence !== null && $absence->isHalfDay()) {
+                    $rows[] = $this->markerRow($date, $day, $absenceLabel, $fill);
+                }
+            } elseif ($absence !== null) {
+                // Absence day (#318): show the type directly in the day row.
+                $rows[] = $this->markerRow($date, $day, $absenceLabel, $fill);
             } elseif ($isHoliday) {
-                // Holiday
-                $this->renderTimeEntryRow(
-                    $pdf,
-                    $dateFormatted,
-                    $dayName,
-                    '-',
-                    '-',
-                    '-',
-                    '-',
-                    '',
-                    'Feiertag: ' . $holidayDates[$dateStr],
-                    $fill
-                );
+                $rows[] = $this->markerRow($date, $day, 'Feiertag: ' . $holidayDates[$dateStr], $fill);
             } elseif (!$isWeekend) {
-                // Regular workday without entry
-                $this->renderTimeEntryRow(
-                    $pdf,
-                    $dateFormatted,
-                    $dayName,
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    $fill
-                );
+                // Regular workday without entry: blank cells signal a gap
+                // (a missing booking that may need attention).
+                $rows[] = [
+                    'date' => $date, 'day' => $day, 'start' => '', 'end' => '',
+                    'break' => '', 'work' => '', 'project' => '', 'note' => '', 'fill' => $fill,
+                ];
+            } else {
+                // Weekend without entry/absence: show the day so the overview is
+                // gap-free (#318), with dashes and no label — the "Sa"/"So" day
+                // and grey shading already mark it as a non-working day.
+                $rows[] = $this->markerRow($date, $day, '', $fill);
             }
 
             $current->modify('+1 day');
         }
 
-        $pdf->Ln(5);
+        return $rows;
+    }
+
+    /**
+     * A non-working day row: dashes in the time columns plus an optional note.
+     *
+     * @return array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}
+     */
+    private function markerRow(string $date, string $day, string $note, bool $fill): array {
+        return [
+            'date' => $date, 'day' => $day, 'start' => '-', 'end' => '-',
+            'break' => '-', 'work' => '-', 'project' => '', 'note' => $note, 'fill' => $fill,
+        ];
+    }
+
+    /**
+     * Move to the next page if the given block height would not fit in the
+     * remaining space on the current page. Keeps a section (heading + content)
+     * from being orphaned across a page break (#318).
+     */
+    private function ensureSpace(TCPDF $pdf, float $neededMm): void {
+        if ($pdf->GetY() + $neededMm > $pdf->getPageHeight() - $pdf->getBreakMargin()) {
+            $pdf->AddPage();
+        }
     }
 
     /**
      * Add absences section
      */
     private function addAbsencesSection(TCPDF $pdf, array $absences): void {
+        // Keep heading + table header + at least the first rows together.
+        $this->ensureSpace($pdf, 14 + min(count($absences), 3) * 6 + 5);
+
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
         $pdf->Cell(0, 8, 'Abwesenheiten', 0, 1);
 
@@ -558,6 +624,9 @@ class PdfService {
      * Add summary section
      */
     private function addSummary(TCPDF $pdf, Employee $employee, array $statistics): void {
+        // Keep the whole summary block on one page.
+        $this->ensureSpace($pdf, 48);
+
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
         $pdf->Cell(0, 8, 'Zusammenfassung', 0, 1);
 
@@ -601,6 +670,20 @@ class PdfService {
         $pdf->Cell(50, 8, $overtimeLabel, 0, 0);
         $pdf->Cell(0, 8, $overtimeFormatted, 0, 1);
 
+        // Defensive hint: a zero-hour work schedule makes every working-day and
+        // absence-day count collapse to 0. Surface the likely cause instead of
+        // silently showing "0,0 Tage" (which looks like a data error to the user).
+        if ((float)$statistics['workingDays'] === 0.0) {
+            $pdf->Ln(2);
+            $pdf->SetTextColor(180, 0, 0);
+            $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+            $pdf->MultiCell(0, 5, 'Hinweis: Für diesen Monat sind 0 Arbeitstage hinterlegt. '
+                . 'Vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. '
+                . 'Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.', 0, 'L');
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        }
+
         $pdf->Ln(5);
     }
 
@@ -608,6 +691,9 @@ class PdfService {
      * Add signature section
      */
     private function addSignatureSection(TCPDF $pdf): void {
+        // Keep the confirmation text + signature lines together on one page.
+        $this->ensureSpace($pdf, 50);
+
         $pdf->Ln(10);
 
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
@@ -673,6 +759,9 @@ class PdfService {
      * Add approval info section to PDF (two columns: submitted / approved)
      */
     private function addApprovalInfoSection(TCPDF $pdf, array $approvalInfo): void {
+        // Keep the approval info block together on one page.
+        $this->ensureSpace($pdf, 45);
+
         $pdf->Ln(10);
 
         // Extract data

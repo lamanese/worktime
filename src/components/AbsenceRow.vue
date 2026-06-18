@@ -89,21 +89,23 @@
                 </span>
             </td>
             <td class="actions">
-                <NcButton type="primary"
-                    :disabled="!isValid"
-                    :aria-label="t('worktime', 'Speichern')"
-                    @click="save">
-                    <template #icon>
-                        <ContentSaveIcon :size="20" />
-                    </template>
-                </NcButton>
-                <NcButton type="tertiary"
-                    :aria-label="t('worktime', 'Abbrechen')"
-                    @click="$emit('cancel')">
-                    <template #icon>
-                        <CloseIcon :size="20" />
-                    </template>
-                </NcButton>
+                <div class="actions-buttons">
+                    <NcButton type="primary"
+                        :disabled="!isValid"
+                        :aria-label="t('worktime', 'Speichern')"
+                        @click="save">
+                        <template #icon>
+                            <ContentSaveIcon :size="20" />
+                        </template>
+                    </NcButton>
+                    <NcButton type="tertiary"
+                        :aria-label="t('worktime', 'Abbrechen')"
+                        @click="$emit('cancel')">
+                        <template #icon>
+                            <CloseIcon :size="20" />
+                        </template>
+                    </NcButton>
+                </div>
             </td>
         </template>
     </tr>
@@ -465,6 +467,12 @@ tr.creating {
 
     tr:hover .actions-buttons,
     tr:focus-within .actions-buttons {
+        opacity: 1;
+    }
+
+    /* Im aktiven Bearbeiten-/Anlegen-Modus muessen Speichern/Abbrechen
+       dauerhaft sichtbar sein, nicht erst bei Hover. */
+    tr.editing .actions-buttons {
         opacity: 1;
     }
 }

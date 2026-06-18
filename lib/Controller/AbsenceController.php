@@ -226,12 +226,13 @@ class AbsenceController extends BaseController {
                 return $this->forbiddenResponse();
             }
 
+            // The approver does not need an own employee profile: HR/Admins may
+            // manage staff without being tracked as employees themselves. If no
+            // profile exists, approvedBy stays null (same as reject()).
             $approverEmployee = $this->permissionService->getEmployeeForUser($this->userId);
-            if (!$approverEmployee) {
-                return $this->successResponse(['error' => 'Approver not found'], 400);
-            }
+            $approverEmployeeId = $approverEmployee?->getId();
 
-            $absence = $this->absenceService->approve($id, $approverEmployee->getId(), $this->userId);
+            $absence = $this->absenceService->approve($id, $approverEmployeeId, $this->userId);
 
             return $this->successResponse($absence);
         } catch (\Exception $e) {
