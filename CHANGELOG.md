@@ -7,6 +7,19 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-06-18
+
+### Fixed
+- **Genehmigung schlug fehl, wenn der Genehmiger kein eigenes Mitarbeiter-Profil hat (#324)**: Als Admin/HR ließ sich ein beantragter Urlaub nicht genehmigen (Meldung „Fehler beim Genehmigen"), während „Ablehnen" funktionierte. Ursache war, dass das Genehmigen fälschlich voraussetzte, dass der genehmigende Account selbst als Mitarbeiter angelegt ist. Genehmigen funktioniert jetzt auch ohne eigenes Mitarbeiter-Profil.
+- **Abwesenheits- und Arbeitstage blieben bei „0" trotz erfasster Abwesenheit (#325)**: Wurde ein Mitarbeiter mit 0 Wochenstunden angelegt, entstand ein Arbeitszeitprofil ohne Arbeitstage, wodurch im Monatsbericht und im Arbeitszeitnachweis-PDF alle Tage (auch genehmigte Krankheits- oder Urlaubstage) mit 0 gezählt wurden. Das Anlegen mit 0 Wochenstunden wird jetzt verhindert; zusätzlich weisen Monatsansicht und PDF auf ein fehlendes Arbeitszeitprofil hin, falls ein Monat 0 Arbeitstage ergibt.
+- **Speichern/Abbrechen in der Inline-Bearbeitung von Abwesenheiten (#314)**: Die Buttons standen übereinander statt nebeneinander.
+
+### Added
+- **Lückenlose Tagesübersicht im Arbeitszeitnachweis-PDF (#318)**: Der Monatsbericht listet jetzt jeden Kalendertag als eigene Zeile. Abwesenheiten (z. B. Krankheit, Urlaub) erscheinen direkt in der jeweiligen Tageszeile statt nur in einer separaten Übersicht; Wochenenden werden dezent grau dargestellt.
+
+### Changed
+- Projekt-Auswertung lädt die Projekt- und Mitarbeiterlisten beim PDF-Export nur noch einmal statt doppelt (#311).
+
 ## [0.11.0] - 2026-06-16
 
 ### Added
