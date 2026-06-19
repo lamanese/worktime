@@ -46,6 +46,10 @@ class PageController extends Controller {
         // Whether the approval workflow is active for this instance
         $this->initialState->provideInitialState('approvalRequired', $this->settingsService->isApprovalRequired());
 
+        // Company rules for required fields on time entries (#329)
+        $this->initialState->provideInitialState('requireProject', $this->settingsService->isProjectRequired());
+        $this->initialState->provideInitialState('requireDescription', $this->settingsService->isDescriptionRequired());
+
         return new TemplateResponse(
             Application::APP_ID,
             'main'
