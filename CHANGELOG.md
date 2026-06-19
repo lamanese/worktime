@@ -7,6 +7,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-06-19
+
+### Added
+- **Arbeitszeitnachweis über frei wählbaren Zeitraum (#102)**: Neben dem monatlichen Arbeitszeitnachweis lässt sich jetzt ein PDF über einen frei wählbaren Zeitraum erzeugen (z. B. vom 20. bis zum 20.). In der Zeiterfassung öffnet die Aktion „PDF über Zeitraum …" einen Dialog mit Start- und Enddatum; der Nachweis wird über genau diese Spanne gerechnet (Arbeitstage, Abwesenheiten, Soll/Ist), lückenlos auch über Monatsgrenzen hinweg. Die monatliche Übersicht, Genehmigung und Monatssperre bleiben unverändert.
+
+### Fixed
+- **Pflichtfelder „Projekt erforderlich" / „Beschreibung erforderlich" hatten keine Wirkung (#329)**: Trotz aktivierter Schalter unter Arbeitszeit-Regeln ließen sich Zeiteinträge ohne Projekt bzw. ohne Beschreibung speichern. Beide Regeln werden jetzt im Frontend (Pflichtmarkierung, Hinweis, gesperrtes Speichern) und im Backend (maßgebliche Validierung) durchgesetzt. Damit niemand ausgesperrt wird, greift die Projektpflicht nur für Mitarbeitende, die tatsächlich mindestens ein auswählbares Projekt haben.
+
 ## [0.11.1] - 2026-06-18
 
 ### Fixed
