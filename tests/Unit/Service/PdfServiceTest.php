@@ -23,6 +23,7 @@ class PdfServiceTest extends TestCase {
 
     private PdfService $service;
     private ReflectionMethod $buildDayRows;
+    private ReflectionMethod $buildDayRowsBetween;
 
     protected function setUp(): void {
         $this->service = new PdfService(
@@ -32,6 +33,8 @@ class PdfServiceTest extends TestCase {
         );
         $this->buildDayRows = new ReflectionMethod(PdfService::class, 'buildDayRows');
         $this->buildDayRows->setAccessible(true);
+        $this->buildDayRowsBetween = new ReflectionMethod(PdfService::class, 'buildDayRowsBetween');
+        $this->buildDayRowsBetween->setAccessible(true);
     }
 
     /**
@@ -49,6 +52,37 @@ class PdfServiceTest extends TestCase {
             $byDay[$current][] = $row;
         }
         return $byDay;
+    }
+
+    /**
+     * Same as rowsByDay() but for an arbitrary [start, end] range (#102).
+     */
+    private function rowsByDayBetween(array $timeEntries, array $absences, array $holidays, string $start, string $end, array $projectNames = []): array {
+        $rows = $this->buildDayRowsBetween->invoke(
+            $this->service, $timeEntries, $absences, $holidays, new DateTime($start), new DateTime($end), $projectNames
+        );
+        $byDay = [];
+        $current = null;
+        foreach ($rows as $row) {
+            if ($row['date'] !== '') {
+                $current = $row['date'];
+            }
+            $byDay[$current][] = $row;
+        }
+        return $byDay;
+    }
+
+    public function testRangeSpanningMonthBoundaryIsGapFree(): void {
+        // 30.05.–02.06.2026: a custom period crossing the month boundary must
+        // produce exactly one (and only one) day group per calendar day (#102).
+        $entries = [$this->entry('2026-06-01', '09:00', '16:45', 30, 435, 7, 'Bugfixing')];
+
+        $byDay = $this->rowsByDayBetween($entries, [], [], '2026-05-30', '2026-06-02', [7 => 'Mobile App']);
+
+        $this->assertSame(['30.05.2026', '31.05.2026', '01.06.2026', '02.06.2026'], array_keys($byDay));
+        $row = $byDay['01.06.2026'][0];
+        $this->assertSame('09:00', $row['start']);
+        $this->assertSame('Mobile App', $row['project']);
     }
 
     private function entry(string $date, string $start, string $end, int $break, int $work, ?int $projectId, string $desc): TimeEntry {

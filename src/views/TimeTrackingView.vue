@@ -56,6 +56,12 @@
                         </template>
                         {{ t('worktime', 'PDF Monatsbericht') }}
                     </NcActionButton>
+                    <NcActionButton @click="openRangeModal">
+                        <template #icon>
+                            <CalendarIcon :size="20" />
+                        </template>
+                        {{ t('worktime', 'PDF über Zeitraum …') }}
+                    </NcActionButton>
                 </NcActions>
             </div>
         </div>
@@ -134,6 +140,41 @@
                     @refresh="loadData" />
             </div>
         </NcModal>
+
+        <NcModal v-if="showRangeModal"
+            size="small"
+            :name="t('worktime', 'Arbeitszeitnachweis über Zeitraum')"
+            @close="showRangeModal = false">
+            <div class="range-modal">
+                <p class="range-hint">
+                    {{ t('worktime', 'Erzeugt einen Arbeitszeitnachweis als PDF für einen frei wählbaren Zeitraum (z. B. vom 20. bis zum 20.).') }}
+                </p>
+                <div class="range-fields">
+                    <div class="form-group">
+                        <label>{{ t('worktime', 'Von') }}</label>
+                        <NcDateTimePicker v-model="rangeStart" type="date" :format="'DD.MM.YYYY'" />
+                    </div>
+                    <div class="form-group">
+                        <label>{{ t('worktime', 'Bis') }}</label>
+                        <NcDateTimePicker v-model="rangeEnd" type="date" :format="'DD.MM.YYYY'" />
+                    </div>
+                </div>
+                <p v-if="rangeInvalid" class="range-error">
+                    {{ t('worktime', 'Das Enddatum darf nicht vor dem Startdatum liegen.') }}
+                </p>
+                <div class="range-actions">
+                    <NcButton type="tertiary" @click="showRangeModal = false">
+                        {{ t('worktime', 'Abbrechen') }}
+                    </NcButton>
+                    <NcButton type="primary" :disabled="!rangeStart || !rangeEnd || rangeInvalid" @click="exportRangePdf">
+                        <template #icon>
+                            <FilePdfBox :size="20" />
+                        </template>
+                        {{ t('worktime', 'PDF erstellen') }}
+                    </NcButton>
+                </div>
+            </div>
+        </NcModal>
     </div>
 </template>
 
@@ -143,6 +184,7 @@ import NcActions from '@nextcloud/vue/dist/Components/NcActions.js'
 import NcActionButton from '@nextcloud/vue/dist/Components/NcActionButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
+import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import SendIcon from 'vue-material-design-icons/Send.vue'
 import LockIcon from 'vue-material-design-icons/Lock.vue'
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
@@ -174,6 +216,7 @@ export default {
         NcActionButton,
         NcLoadingIcon,
         NcModal,
+        NcDateTimePicker,
         SendIcon,
         LockIcon,
         AlertIcon,
@@ -206,6 +249,9 @@ export default {
             selectedDate: null,
             isNarrow: false,
             showDayModal: false,
+            showRangeModal: false,
+            rangeStart: null,
+            rangeEnd: null,
         }
     },
     computed: {
@@ -216,6 +262,9 @@ export default {
         ...mapGetters('projects', ['activeProjects']),
         projects() {
             return this.activeProjects
+        },
+        rangeInvalid() {
+            return !!(this.rangeStart && this.rangeEnd && new Date(this.rangeEnd) < new Date(this.rangeStart))
         },
         effectiveLayout() {
             if (this.layoutMode === 'year') return 'year'
@@ -440,6 +489,22 @@ export default {
             if (!this.activeEmployeeId) return
             ReportService.downloadPdf(this.activeEmployeeId, this.selectedMonth.year, this.selectedMonth.month)
         },
+        openRangeModal() {
+            // Prefill with the currently selected month as a sensible default.
+            const { year, month } = this.selectedMonth
+            this.rangeStart = new Date(year, month - 1, 1)
+            this.rangeEnd = new Date(year, month, 0)
+            this.showRangeModal = true
+        },
+        exportRangePdf() {
+            if (!this.activeEmployeeId || !this.rangeStart || !this.rangeEnd || this.rangeInvalid) return
+            ReportService.downloadRangePdf(
+                this.activeEmployeeId,
+                formatDateISO(this.rangeStart),
+                formatDateISO(this.rangeEnd),
+            )
+            this.showRangeModal = false
+        },
         async confirmSubmitMonth() {
             const monthName = new Date(this.selectedMonth.year, this.selectedMonth.month - 1)
                 .toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' })
@@ -607,5 +672,48 @@ export default {
 
 .modal-panel {
     padding: 22px;
+}
+
+.range-modal {
+    padding: 22px;
+}
+
+.range-modal h3 {
+    margin: 0 0 8px 0;
+}
+
+.range-hint {
+    color: var(--color-text-maxcontrast);
+    font-size: 0.9em;
+    margin: 0 0 16px 0;
+}
+
+.range-fields {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.range-fields .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.range-fields label {
+    font-weight: 500;
+}
+
+.range-error {
+    color: var(--color-error, #dc2626);
+    font-size: 0.9em;
+    margin: 12px 0 0 0;
+}
+
+.range-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
 }
 </style>

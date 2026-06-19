@@ -100,4 +100,13 @@ export default {
         const url = this.getPdfUrl(employeeId, year, month)
         window.open(url, '_blank')
     },
+
+    getRangePdfUrl(employeeId, startDate, endDate) {
+        const params = new URLSearchParams({ employeeId, startDate, endDate })
+        return generateUrl('/apps/worktime/api/reports/pdf-range') + '?' + params.toString()
+    },
+
+    downloadRangePdf(employeeId, startDate, endDate) {
+        window.open(this.getRangePdfUrl(employeeId, startDate, endDate), '_blank')
+    },
 }

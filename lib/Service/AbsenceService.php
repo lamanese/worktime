@@ -59,6 +59,13 @@ class AbsenceService {
     /**
      * @return Absence[]
      */
+    public function findByEmployeeAndDateRange(int $employeeId, DateTime $startDate, DateTime $endDate): array {
+        return $this->absenceMapper->findByEmployeeAndDateRange($employeeId, $startDate, $endDate);
+    }
+
+    /**
+     * @return Absence[]
+     */
     public function findActiveInformationalForSupervisor(int $supervisorEmployeeId): array {
         return $this->absenceMapper->findActiveInformationalForSupervisor($supervisorEmployeeId);
     }
