@@ -1,6 +1,8 @@
 OC.L10N.register(
     "worktime",
     {
+    "Projekt ist erforderlich." : "Projekt ist erforderlich.",
+    "Beschreibung ist erforderlich." : "Beschreibung ist erforderlich.",
     "Wochenstunden müssen größer als 0 sein. Für eine vorübergehende Auszeit (z. B. Elternzeit) eine Abwesenheit erfassen statt 0 Stunden." : "Wochenstunden müssen größer als 0 sein. Für eine vorübergehende Auszeit (z. B. Elternzeit) eine Abwesenheit erfassen statt 0 Stunden.",
     "0 Arbeitstage in diesem Monat – vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. Bitte das Arbeitszeitprofil des Mitarbeiters prüfen." : "0 Arbeitstage in diesem Monat – vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.",
     "Auswertung" : "Auswertung",
