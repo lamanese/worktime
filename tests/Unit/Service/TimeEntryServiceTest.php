@@ -491,4 +491,93 @@ class TimeEntryServiceTest extends TestCase {
         $entry = $service->create(5, '2026-06-10', '08:00', '14:00', 0, null, null);
         $this->assertNull($entry->getProjectId());
     }
+
+    // ---------------------------------------------------------------------
+    // #338: day-level break & max-daily-hours warnings
+    // ---------------------------------------------------------------------
+
+    private function makeEntry(string $start, string $end, int $break): TimeEntry {
+        $entry = new TimeEntry();
+        $entry->setDate(new DateTime('2026-04-08'));
+        $entry->setStartTime(DateTime::createFromFormat('H:i', $start));
+        $entry->setEndTime(DateTime::createFromFormat('H:i', $end));
+        $entry->setBreakMinutes($break);
+        return $entry;
+    }
+
+    /**
+     * #338: a day split into two short entries without any break (and without a
+     * gap between them) still exceeds 6h of working time and must warn about the
+     * missing §4 ArbZG break — even though no single entry would.
+     */
+    public function testDayWarningsSplitWithoutBreakWarns(): void {
+        // 06:00–11:30 (5.5h) + 11:30–14:00 (2.5h) = 8h gross, no break, no gap.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '11:30', 0),
+            $this->makeEntry('11:30', '14:00', 0),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Mindestpause', $warnings[0]);
+    }
+
+    /**
+     * #338: the same 8h day, but split with a 30 min gap between the entries —
+     * the gap counts as a break, so no warning is raised.
+     */
+    public function testDayWarningsSplitWithGapIsClean(): void {
+        // 06:00–11:30 + 12:00–14:30 → 8h gross, 30 min gap = break taken.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '11:30', 0),
+            $this->makeEntry('12:00', '14:30', 0),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: a single 8.5h entry with the recorded 30 min break is compliant and
+     * must not warn.
+     */
+    public function testDayWarningsRecordedBreakIsClean(): void {
+        // 06:00–14:30 = 8.5h gross, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '14:30', 30),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: a day whose total exceeds the configured maximum daily hours (12h in
+     * the test settings) warns — break is satisfied here so only the max-hours
+     * warning is expected.
+     */
+    public function testDayWarningsMaxDailyHoursWarns(): void {
+        // 06:00–19:00 = 13h gross with the required 45 min break → only max-hours.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '19:00', 45),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Maximale tägliche Arbeitszeit', $warnings[0]);
+    }
+
+    /**
+     * #338: a day at or below 6h of working time needs no break and stays clean.
+     */
+    public function testDayWarningsShortDayIsClean(): void {
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '14:00', 0), // 6h exactly
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: an empty day yields no warnings.
+     */
+    public function testDayWarningsEmptyDay(): void {
+        $this->assertSame([], $this->service->dayWarnings([]));
+    }
 }

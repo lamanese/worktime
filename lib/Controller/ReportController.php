@@ -83,6 +83,10 @@ class ReportController extends BaseController {
             // Calculate statistics
             $stats = $this->calculateMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
 
+            // Per-day labor-law warnings (#338): minimum break (§4 ArbZG) and max
+            // daily hours, evaluated across all entries of each day.
+            $dayWarnings = $this->buildDayWarnings($timeEntries);
+
             return $this->successResponse([
                 'employee' => $employee,
                 'year' => $year,
@@ -91,10 +95,40 @@ class ReportController extends BaseController {
                 'absences' => $absences,
                 'holidays' => $holidays,
                 'statistics' => $stats,
+                'dayWarnings' => $dayWarnings,
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }
+    }
+
+    /**
+     * Group the month's time entries by date and evaluate the day-level
+     * labor-law warnings (#338). Only days that actually have a warning are
+     * included, keyed by their 'Y-m-d' date.
+     *
+     * @param \OCA\WorkTime\Db\TimeEntry[] $timeEntries
+     * @return array<string, string[]>
+     */
+    private function buildDayWarnings(array $timeEntries): array {
+        $entriesByDate = [];
+        foreach ($timeEntries as $entry) {
+            $date = $entry->getDate();
+            if (!$date) {
+                continue;
+            }
+            $entriesByDate[$date->format('Y-m-d')][] = $entry;
+        }
+
+        $dayWarnings = [];
+        foreach ($entriesByDate as $date => $entries) {
+            $warnings = $this->timeEntryService->dayWarnings($entries);
+            if (!empty($warnings)) {
+                $dayWarnings[$date] = $warnings;
+            }
+        }
+
+        return $dayWarnings;
     }
 
     /**
