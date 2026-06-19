@@ -391,6 +391,55 @@ class TimeEntryServiceTest extends TestCase {
         }
     }
 
+    /**
+     * Required-field rule (#329): update() also rejects a missing project when
+     * the rule is active, and must never persist the change.
+     */
+    public function testUpdateRejectsMissingProjectWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(true, false);
+        $entry = new TimeEntry();
+        $entry->setId(42);
+        $entry->setEmployeeId(5);
+        $entry->setDate(new DateTime('2020-01-06'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        try {
+            $service->update(42, '2020-01-06', '08:00', '14:00', 0, null, 'Doku');
+            $this->fail('Expected ValidationException for missing project');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('projectId'));
+            $this->assertFalse($e->hasError('description'));
+        }
+    }
+
+    /**
+     * Required-field rule (#329): update() also rejects a blank description when
+     * the rule is active, and must never persist the change.
+     */
+    public function testUpdateRejectsBlankDescriptionWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(false, true);
+        $entry = new TimeEntry();
+        $entry->setId(42);
+        $entry->setEmployeeId(5);
+        $entry->setDate(new DateTime('2020-01-06'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        try {
+            $service->update(42, '2020-01-06', '08:00', '14:00', 0, 7, '   ');
+            $this->fail('Expected ValidationException for blank description');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('description'));
+        }
+    }
+
     private function serviceWithRequiredFields(bool $requireProject, bool $requireDescription): TimeEntryService {
         $settings = $this->createMock(CompanySettingMapper::class);
         $settings->method('getValueAsBool')->willReturnCallback(fn(string $key): bool => match ($key) {
