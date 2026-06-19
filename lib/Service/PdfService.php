@@ -58,13 +58,53 @@ class PdfService {
         array $statistics,
         ?array $approvalInfo = null
     ): string {
+        $startDate = new DateTime("$year-$month-01");
+        $endDate = (clone $startDate)->modify('last day of this month');
+        $periodLabel = $this->getGermanMonthName($month) . ' ' . $year;
+
+        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo);
+    }
+
+    /**
+     * Generate an Arbeitszeitnachweis PDF for an arbitrary inclusive [start, end]
+     * range (#102 custom period, e.g. the 20th to the 20th).
+     */
+    public function generateRangeReport(
+        Employee $employee,
+        DateTime $startDate,
+        DateTime $endDate,
+        array $timeEntries,
+        array $absences,
+        array $holidays,
+        array $statistics,
+        ?array $approvalInfo = null
+    ): string {
+        $periodLabel = $startDate->format('d.m.Y') . ' – ' . $endDate->format('d.m.Y');
+        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo, 'Arbeitstage im Zeitraum:');
+    }
+
+    /**
+     * Shared rendering for both the monthly and the custom-period timesheet.
+     */
+    private function renderReport(
+        Employee $employee,
+        string $periodLabel,
+        DateTime $startDate,
+        DateTime $endDate,
+        array $timeEntries,
+        array $absences,
+        array $holidays,
+        array $statistics,
+        ?array $approvalInfo = null,
+        string $workingDaysLabel = 'Arbeitstage im Monat:'
+    ): string {
         $pdf = $this->createPdf();
 
         // Header
-        $this->addHeader($pdf, $employee, $year, $month);
+        $this->addHeader($pdf, $employee, $periodLabel);
 
         // Time entries table
-        $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $year, $month);
+        $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $startDate, $endDate);
 
         // Absences section
         if (!empty($absences)) {
@@ -72,7 +112,7 @@ class PdfService {
         }
 
         // Summary
-        $this->addSummary($pdf, $employee, $statistics);
+        $this->addSummary($pdf, $employee, $statistics, $workingDaysLabel);
 
         // Signature section
         $this->addSignatureSection($pdf);
@@ -294,9 +334,8 @@ class PdfService {
     /**
      * Add header with company name and employee info
      */
-    private function addHeader(TCPDF $pdf, Employee $employee, int $year, int $month): void {
+    private function addHeader(TCPDF $pdf, Employee $employee, string $periodLabel): void {
         $companyName = $this->settingsService->getCompanyName();
-        $monthName = $this->getGermanMonthName($month);
 
         // Company name
         if ($companyName) {
@@ -310,7 +349,7 @@ class PdfService {
         $pdf->Cell(0, 8, 'Arbeitszeitnachweis', 0, 1, 'C');
 
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-        $pdf->Cell(0, 6, "$monthName $year", 0, 1, 'C');
+        $pdf->Cell(0, 6, $periodLabel, 0, 1, 'C');
         $pdf->Ln(5);
 
         // Employee info
@@ -337,14 +376,14 @@ class PdfService {
     /**
      * Add time entries table
      */
-    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $absences, array $holidays, int $year, int $month): void {
+    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate): void {
         // Project id -> name lookup (including inactive projects for historical entries).
         $projectNames = [];
         foreach ($this->projectMapper->findAll() as $project) {
             $projectNames[$project->getId()] = $project->getName();
         }
 
-        $rows = $this->buildDayRows($timeEntries, $absences, $holidays, $year, $month, $projectNames);
+        $rows = $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames);
 
         // Table header
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
@@ -395,6 +434,22 @@ class PdfService {
      * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}>
      */
     private function buildDayRows(array $timeEntries, array $absences, array $holidays, int $year, int $month, array $projectNames): array {
+        $startDate = new DateTime("$year-$month-01");
+        $endDate = (clone $startDate)->modify('last day of this month');
+        return $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames);
+    }
+
+    /**
+     * Same as buildDayRows() but for an arbitrary inclusive [start, end] range
+     * (#102 custom-period timesheet). Pure (no PDF/DB side effects).
+     *
+     * @param TimeEntry[] $timeEntries
+     * @param Absence[] $absences
+     * @param Holiday[] $holidays
+     * @param array<int, string> $projectNames id => name
+     * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}>
+     */
+    private function buildDayRowsBetween(array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate, array $projectNames): array {
         // Holiday lookup
         $holidayDates = [];
         foreach ($holidays as $holiday) {
@@ -424,8 +479,6 @@ class PdfService {
         }
 
         $rows = [];
-        $startDate = new DateTime("$year-$month-01");
-        $endDate = (clone $startDate)->modify('last day of this month');
         $current = clone $startDate;
 
         while ($current <= $endDate) {
@@ -623,7 +676,7 @@ class PdfService {
     /**
      * Add summary section
      */
-    private function addSummary(TCPDF $pdf, Employee $employee, array $statistics): void {
+    private function addSummary(TCPDF $pdf, Employee $employee, array $statistics, string $workingDaysLabel = 'Arbeitstage im Monat:'): void {
         // Keep the whole summary block on one page.
         $this->ensureSpace($pdf, 48);
 
@@ -633,7 +686,7 @@ class PdfService {
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
 
         // Left column
-        $pdf->Cell(50, 6, 'Arbeitstage im Monat:', 0, 0);
+        $pdf->Cell(50, 6, $workingDaysLabel, 0, 0);
         $pdf->Cell(30, 6, $statistics['workingDays'] . ' Tage', 0, 0);
         $pdf->Cell(50, 6, 'Feiertage:', 0, 0);
         $pdf->Cell(0, 6, $statistics['holidayCount'] . ' Tage', 0, 1);

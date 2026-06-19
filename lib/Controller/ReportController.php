@@ -500,6 +500,67 @@ class ReportController extends BaseController {
         }
     }
 
+    /**
+     * Arbeitszeitnachweis-PDF over a custom inclusive [startDate, endDate] range
+     * (#102), e.g. the 20th of one month to the 20th of the next.
+     */
+    #[NoAdminRequired]
+    public function pdfRange(?int $employeeId = null, string $startDate = '', string $endDate = ''): DataDownloadResponse|JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        if ($error = $this->requireEmployeeId($employeeId)) {
+            return $error;
+        }
+
+        if (!$this->permissionService->canViewEmployee($this->userId, $employeeId)) {
+            return $this->forbiddenResponse();
+        }
+
+        if ($startDate === '' || $endDate === '') {
+            return $this->successResponse(['error' => 'Start- und Enddatum sind erforderlich'], 400);
+        }
+
+        try {
+            $start = new DateTime($startDate);
+            $end = new DateTime($endDate);
+            // Tolerate a reversed range by normalising the order.
+            if ($start > $end) {
+                [$start, $end] = [$end, $start];
+            }
+
+            $employee = $this->employeeService->find($employeeId);
+            $timeEntries = $this->timeEntryService->findByEmployeeAndDateRange($employeeId, $start, $end);
+            $absences = $this->absenceService->findByEmployeeAndDateRange($employeeId, $start, $end);
+            $holidays = $this->holidayService->findHolidaysInRange($start, $end, $employee->getFederalState());
+
+            $stats = $this->calculateRangeStats($employee, $start, $end, $timeEntries, $absences, $holidays);
+
+            $pdfContent = $this->pdfService->generateRangeReport(
+                $employee,
+                $start,
+                $end,
+                $timeEntries,
+                $absences,
+                $holidays,
+                $stats
+            );
+
+            $filename = sprintf(
+                'Arbeitszeitnachweis_%s_%s_%s_bis_%s.pdf',
+                $employee->getLastName(),
+                $employee->getFirstName(),
+                $start->format('Y-m-d'),
+                $end->format('Y-m-d')
+            );
+
+            return new DataDownloadResponse($pdfContent, $filename, 'application/pdf');
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
     #[NoAdminRequired]
     public function team(int $year, int $month): JSONResponse {
         if ($authError = $this->requireAuth()) {
@@ -851,6 +912,106 @@ class ReportController extends BaseController {
             }
         }
         return false;
+    }
+
+    /**
+     * Statistics for a custom [start, end] range (#102). Unlike the monthly
+     * calculation there is no "until today" proportional logic: a custom-period
+     * timesheet covers a fixed, user-chosen span, so Soll/Ist/Saldo are computed
+     * over the whole range.
+     *
+     * @param TimeEntry[] $timeEntries
+     * @param Absence[] $absences
+     * @param Holiday[] $holidays
+     * @return array<string, mixed>
+     */
+    private function calculateRangeStats(
+        Employee $employee,
+        DateTime $startDate,
+        DateTime $endDate,
+        array $timeEntries,
+        array $absences,
+        array $holidays
+    ): array {
+        $employeeId = $employee->getId();
+
+        // Clip the range to the employment period.
+        $entryDate = $employee->getEntryDate();
+        $exitDate = $employee->getExitDate();
+        if ($entryDate !== null && $startDate < $entryDate) {
+            $startDate = clone $entryDate;
+        }
+        if ($exitDate !== null && $endDate > $exitDate) {
+            $endDate = clone $exitDate;
+        }
+
+        $entryCount = count($timeEntries);
+        if ($startDate > $endDate) {
+            return [
+                'workingDays' => 0, 'holidayCount' => count($holidays),
+                'paidAbsenceDays' => 0, 'targetReductionDays' => 0, 'compensatoryDays' => 0,
+                'absenceDays' => 0, 'adjustedTargetMinutes' => 0, 'actualMinutes' => 0,
+                'overtimeMinutes' => 0, 'entryCount' => $entryCount,
+            ];
+        }
+
+        $workingDays = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $endDate, $holidays);
+        $targetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $endDate, $holidays);
+
+        $targetReductionTypes = [\OCA\WorkTime\Db\Absence::TYPE_UNPAID];
+        $overtimeConsumingTypes = [\OCA\WorkTime\Db\Absence::TYPE_COMPENSATORY];
+
+        $paidAbsenceMinutes = 0;
+        $paidAbsenceDays = 0;
+        $targetReductionMinutes = 0;
+        $targetReductionDays = 0;
+        $compensatoryDays = 0;
+
+        foreach ($absences as $absence) {
+            if (!$absence->isApproved()) {
+                continue;
+            }
+            $aStart = $absence->getStartDate() < $startDate ? $startDate : $absence->getStartDate();
+            $aEnd = $absence->getEndDate() > $endDate ? $endDate : $absence->getEndDate();
+            if ($aStart > $aEnd) {
+                continue;
+            }
+            $scope = $absence->getScopeValue();
+            $days = $this->workScheduleService->countWorkingDays($employeeId, $aStart, $aEnd, $holidays) * $scope;
+            $minutes = $this->calculateAbsenceMinutes($employeeId, $aStart, $aEnd, $scope, $holidays);
+
+            if (in_array($absence->getType(), $targetReductionTypes, true)) {
+                $targetReductionDays += $days;
+                $targetReductionMinutes += $minutes;
+            } elseif (in_array($absence->getType(), $overtimeConsumingTypes, true)) {
+                $compensatoryDays += $days;
+            } else {
+                $paidAbsenceDays += $days;
+                $paidAbsenceMinutes += $minutes;
+            }
+        }
+
+        $adjustedTargetMinutes = $targetMinutes - $targetReductionMinutes;
+
+        $workedMinutes = 0;
+        foreach ($timeEntries as $entry) {
+            $workedMinutes += $entry->getWorkMinutes();
+        }
+        $actualMinutes = $workedMinutes + $paidAbsenceMinutes;
+        $overtimeMinutes = $actualMinutes - $adjustedTargetMinutes;
+
+        return [
+            'workingDays' => $workingDays,
+            'holidayCount' => count($holidays),
+            'paidAbsenceDays' => $paidAbsenceDays,
+            'targetReductionDays' => $targetReductionDays,
+            'compensatoryDays' => $compensatoryDays,
+            'absenceDays' => $paidAbsenceDays + $targetReductionDays + $compensatoryDays,
+            'adjustedTargetMinutes' => $adjustedTargetMinutes,
+            'actualMinutes' => $actualMinutes,
+            'overtimeMinutes' => $overtimeMinutes,
+            'entryCount' => $entryCount,
+        ];
     }
 
     private function calculateMonthlyStats(

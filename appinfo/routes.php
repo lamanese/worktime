@@ -101,6 +101,7 @@ return [
         // Reports API
         ['name' => 'report#monthly', 'url' => '/api/reports/monthly', 'verb' => 'GET'],
         ['name' => 'report#pdf', 'url' => '/api/reports/pdf', 'verb' => 'GET'],
+        ['name' => 'report#pdfRange', 'url' => '/api/reports/pdf-range', 'verb' => 'GET'],
         ['name' => 'report#team_year', 'url' => '/api/reports/team-year', 'verb' => 'GET'],
         ['name' => 'report#team', 'url' => '/api/reports/team', 'verb' => 'GET'],
         ['name' => 'report#overtime', 'url' => '/api/reports/overtime', 'verb' => 'GET'],
