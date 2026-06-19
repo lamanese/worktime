@@ -640,6 +640,93 @@ class TimeEntryService {
     }
 
     /**
+     * Evaluate labor-law constraints for a single day across ALL of its entries
+     * (#338). A day may be split into several entries; checking each one in
+     * isolation lets a long working day slip past the §4 ArbZG break requirement
+     * and the configured maximum daily hours. Both are therefore aggregated here
+     * and returned as non-blocking warnings.
+     *
+     * Convention (kept consistent with validateBreak()/suggestBreak()): the §4
+     * threshold and the max-hours check are evaluated against the total GROSS
+     * minutes of the day (sum of each entry's start→end span, excluding the gaps
+     * between entries). Gaps between consecutive entries count as break time, on
+     * top of the explicitly recorded break minutes.
+     *
+     * @param TimeEntry[] $entries All time entries of one day (same date).
+     * @return string[] Human-readable warning messages (empty when compliant).
+     */
+    public function dayWarnings(array $entries): array {
+        if (empty($entries)) {
+            return [];
+        }
+
+        // Sort by start time so the gaps between entries can be measured.
+        usort($entries, static function (TimeEntry $a, TimeEntry $b): int {
+            return $a->getStartTime()->getTimestamp() <=> $b->getStartTime()->getTimestamp();
+        });
+
+        $totalGrossMinutes = 0;
+        $totalBreakMinutes = 0;
+        $previousEnd = null;
+
+        foreach ($entries as $entry) {
+            $start = $entry->getStartTime();
+            $end = $entry->getEndTime();
+            if (!$start || !$end) {
+                continue;
+            }
+
+            $gross = ($end->getTimestamp() - $start->getTimestamp()) / 60;
+            if ($gross < 0) {
+                $gross += 24 * 60; // overnight shift
+            }
+            $totalGrossMinutes += (int)$gross;
+            $totalBreakMinutes += max(0, $entry->getBreakMinutes());
+
+            // A gap between the previous entry's end and this entry's start counts
+            // as a (taken) break. Only positive gaps are counted; overlaps are
+            // prevented elsewhere.
+            if ($previousEnd !== null) {
+                $gap = ($start->getTimestamp() - $previousEnd->getTimestamp()) / 60;
+                if ($gap > 0) {
+                    $totalBreakMinutes += (int)$gap;
+                }
+            }
+            $previousEnd = $end;
+        }
+
+        $warnings = [];
+        $grossHours = $totalGrossMinutes / 60;
+
+        // §4 ArbZG minimum break, evaluated on the whole day.
+        $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
+        $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
+        $requiredBreak = 0;
+        if ($grossHours > 9) {
+            $requiredBreak = $break9h;
+        } elseif ($grossHours > 6) {
+            $requiredBreak = $break6h;
+        }
+        if ($requiredBreak > 0 && $totalBreakMinutes < $requiredBreak) {
+            $warnings[] = $this->l->t(
+                'Mindestpause nicht eingehalten: Bei %1$d Min Arbeitszeit sind %2$d Min Pause erforderlich (§4 ArbZG), erfasst sind %3$d Min (Lücken zwischen Einträgen zählen als Pause).',
+                [$totalGrossMinutes, $requiredBreak, $totalBreakMinutes]
+            );
+        }
+
+        // Maximum daily working hours, evaluated on the whole day.
+        $maxHours = $this->settingsMapper->getValueAsFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
+        if ($maxHours > 0 && $grossHours > $maxHours) {
+            $warnings[] = $this->l->t(
+                'Maximale tägliche Arbeitszeit (%1$s Std.) überschritten: an diesem Tag sind %2$s Std. erfasst.',
+                [(string)$maxHours, (string)round($grossHours, 2)]
+            );
+        }
+
+        return $warnings;
+    }
+
+    /**
      * Get monthly statistics for an employee
      */
     public function getMonthlyStats(int $employeeId, int $year, int $month): array {
@@ -825,19 +912,12 @@ class TimeEntryService {
                 $grossMinutes += 24 * 60;
             }
 
-            // Check max daily hours
-            $maxHours = $this->settingsMapper->getValueAsFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
-            if ($grossMinutes / 60 > $maxHours) {
-                $errors['endTime'] = [$this->l->t('Maximale tägliche Arbeitszeit (%s Std.) überschritten', [(string)$maxHours])];
-            }
-
-            // Validate break
-            if (!$this->validateBreak((int)$grossMinutes, $breakMinutes)) {
-                $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
-                $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
-                $minBreak = $grossMinutes > 9 * 60 ? $break9h : $break6h;
-                $errors['breakMinutes'] = [$this->l->t('Mindestpause von %d Minuten erforderlich', [$minBreak])];
-            }
+            // Note (#338): the minimum-break (§4 ArbZG) and max-daily-hours checks
+            // are NOT enforced here anymore. A single entry cannot see the rest of
+            // the day, so splitting a day into several short entries used to bypass
+            // them entirely. Both are now evaluated on DAY level (see dayWarnings())
+            // and surfaced as non-blocking warnings, so retroactive corrections are
+            // never hard-blocked.
 
             // Check for absence conflict
             if ($employeeId !== null) {

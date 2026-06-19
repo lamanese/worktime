@@ -17,6 +17,12 @@
             </NcButton>
         </template>
 
+        <!-- Pausenkontrolle / Max-Tagesstunden (#338): nicht-blockierende Warnung auf Tagesebene -->
+        <div v-for="(warning, i) in (day.warnings || [])" :key="'warn-' + i" class="dp-note warning">
+            <AlertIcon :size="18" />
+            {{ warning }}
+        </div>
+
         <!-- Erfassung: immer möglich (auch an Feiertag/Wochenende/Abwesenheit) -->
         <div v-if="formMode" class="dp-form">
             <TimeEntryForm embedded
@@ -82,6 +88,7 @@ import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import LockIcon from 'vue-material-design-icons/Lock.vue'
 import CalendarStarIcon from 'vue-material-design-icons/CalendarStar.vue'
+import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import { mapActions, mapGetters } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import CorrectionReasonModal from './CorrectionReasonModal.vue'
@@ -99,6 +106,7 @@ export default {
         DeleteIcon,
         LockIcon,
         CalendarStarIcon,
+        AlertIcon,
         TimeEntryForm,
         CorrectionReasonModal,
     },
@@ -274,6 +282,13 @@ export default {
 .dp-note.other {
     background: var(--color-background-hover);
     color: var(--color-primary-element);
+}
+
+.dp-note.warning {
+    background: var(--color-warning-element-light, #fdf6e3);
+    border: 1px solid var(--color-warning, #c8932a);
+    color: var(--color-warning-text, #8a6d00);
+    align-items: flex-start;
 }
 
 .dp-open-abs {

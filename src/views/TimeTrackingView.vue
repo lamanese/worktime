@@ -237,6 +237,7 @@ export default {
             statistics: null,
             reportAbsences: [],
             reportHolidays: [],
+            reportDayWarnings: {},
             vacationRemaining: null,
             vacationCarryover: 0,
             vacationTotal: null,
@@ -369,6 +370,7 @@ export default {
                     lastEnd: entries.length ? entries[entries.length - 1].endTime : null,
                     absence: this.absenceByDate[s.date] || null,
                     holiday: holidayByDate[s.date] || null,
+                    warnings: this.reportDayWarnings[s.date] || [],
                     isToday: s.date === todayStr,
                     isFuture: s.date > todayStr,
                 }
@@ -462,6 +464,7 @@ export default {
                 this.statistics = report.statistics
                 this.reportAbsences = (report.absences || []).filter(a => a.status === 'approved')
                 this.reportHolidays = report.holidays || []
+                this.reportDayWarnings = report.dayWarnings || {}
             } catch (error) {
                 console.error('Failed to load statistics:', error)
             }
