@@ -46,6 +46,7 @@
                     @close="closeEmployeeForm">
                     <EmployeeForm
                         :employee="editingEmployee"
+                        :default-federal-state="settings.default_federal_state || 'BY'"
                         @saved="onEmployeeSaved"
                         @cancel="closeEmployeeForm" />
                 </NcModal>
@@ -838,8 +839,18 @@ export default {
         },
     },
     created() {
-        this.loadSettings()
-        this.$store.dispatch('holidays/fetchFederalStates')
+        // Standard-Bundesland (#337): Feiertags-Filter vorbelegen, sobald sowohl
+        // die Firmen-Einstellungen als auch die Bundesland-Labels geladen sind.
+        Promise.all([
+            this.loadSettings(),
+            this.$store.dispatch('holidays/fetchFederalStates'),
+        ]).then(() => {
+            const defaultState = this.settings.default_federal_state
+            if (defaultState && !this.selectedHolidayStateFilter) {
+                this.selectedHolidayStateFilter = this.holidayStateFilterOptions
+                    .find(o => o.id === defaultState) || null
+            }
+        })
         if (this.canManageEmployees) {
             this.$store.dispatch('employees/fetchEmployees')
         }
