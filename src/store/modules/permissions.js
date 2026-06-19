@@ -17,6 +17,9 @@ const state = {
     loading: false,
     loaded: false,
     approvalRequired: true,
+    // Company rules for time-entry fields (#329)
+    requireProject: false,
+    requireDescription: false,
     // HR/Admin correction context (#148): when set, the tracking and absence
     // views operate on this employee instead of the logged-in user.
     correction: {
@@ -28,6 +31,8 @@ const state = {
 const getters = {
     permissions: (state) => state.permissions,
     approvalRequired: (state) => state.approvalRequired,
+    requireProject: (state) => state.requireProject,
+    requireDescription: (state) => state.requireDescription,
     isCorrectionMode: (state) => state.correction.targetEmployeeId !== null,
     correctionEmployeeName: (state) => state.correction.employeeName,
     // The employee whose data the views should load/edit: the correction target
@@ -59,6 +64,10 @@ const mutations = {
     SET_APPROVAL_REQUIRED(state, approvalRequired) {
         state.approvalRequired = approvalRequired
     },
+    SET_REQUIRED_FIELDS(state, { requireProject, requireDescription }) {
+        state.requireProject = requireProject
+        state.requireDescription = requireDescription
+    },
     SET_CORRECTION(state, { targetEmployeeId, employeeName }) {
         state.correction = { targetEmployeeId, employeeName }
     },
@@ -86,6 +95,10 @@ const actions = {
 
     setApprovalRequired({ commit }, approvalRequired) {
         commit('SET_APPROVAL_REQUIRED', approvalRequired)
+    },
+
+    setRequiredFields({ commit }, { requireProject, requireDescription }) {
+        commit('SET_REQUIRED_FIELDS', { requireProject, requireDescription })
     },
 
     startCorrection({ commit }, { employeeId, employeeName }) {

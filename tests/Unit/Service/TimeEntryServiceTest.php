@@ -350,4 +350,145 @@ class TimeEntryServiceTest extends TestCase {
             $this->assertArrayHasKey('projectId', $e->getErrors());
         }
     }
+
+    /**
+     * Required-field rule (#329): with "Projekt erforderlich" on, a booking
+     * without a project must be rejected and never persisted.
+     */
+    public function testCreateRejectsMissingProjectWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(true, false);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        // Both null and 0 (an empty form value binds to 0) count as "no project".
+        foreach ([null, 0] as $noProject) {
+            try {
+                $service->create(5, '2020-01-06', '08:00', '14:00', 0, $noProject, 'Doku');
+                $this->fail('Expected ValidationException for missing project');
+            } catch (ValidationException $e) {
+                $this->assertTrue($e->hasError('projectId'));
+                $this->assertFalse($e->hasError('description'));
+            }
+        }
+    }
+
+    /**
+     * Required-field rule (#329): with "Beschreibung erforderlich" on, a blank
+     * description must be rejected (whitespace does not satisfy the rule).
+     */
+    public function testCreateRejectsBlankDescriptionWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(false, true);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        try {
+            $service->create(5, '2020-01-06', '08:00', '14:00', 0, 7, '   ');
+            $this->fail('Expected ValidationException for blank description');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('description'));
+        }
+    }
+
+    /**
+     * Required-field rule (#329): update() also rejects a missing project when
+     * the rule is active, and must never persist the change.
+     */
+    public function testUpdateRejectsMissingProjectWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(true, false);
+        $entry = new TimeEntry();
+        $entry->setId(42);
+        $entry->setEmployeeId(5);
+        $entry->setDate(new DateTime('2020-01-06'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        try {
+            $service->update(42, '2020-01-06', '08:00', '14:00', 0, null, 'Doku');
+            $this->fail('Expected ValidationException for missing project');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('projectId'));
+            $this->assertFalse($e->hasError('description'));
+        }
+    }
+
+    /**
+     * Required-field rule (#329): update() also rejects a blank description when
+     * the rule is active, and must never persist the change.
+     */
+    public function testUpdateRejectsBlankDescriptionWhenRequired(): void {
+        $service = $this->serviceWithRequiredFields(false, true);
+        $entry = new TimeEntry();
+        $entry->setId(42);
+        $entry->setEmployeeId(5);
+        $entry->setDate(new DateTime('2020-01-06'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        try {
+            $service->update(42, '2020-01-06', '08:00', '14:00', 0, 7, '   ');
+            $this->fail('Expected ValidationException for blank description');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('description'));
+        }
+    }
+
+    private function serviceWithRequiredFields(bool $requireProject, bool $requireDescription, bool $hasSelectableProject = true): TimeEntryService {
+        $settings = $this->createMock(CompanySettingMapper::class);
+        $settings->method('getValueAsBool')->willReturnCallback(fn(string $key): bool => match ($key) {
+            CompanySetting::KEY_REQUIRE_PROJECT => $requireProject,
+            CompanySetting::KEY_REQUIRE_DESCRIPTION => $requireDescription,
+            default => false,
+        });
+        $settings->method('getValueAsInt')->willReturnCallback(fn(string $key): int => match ($key) {
+            CompanySetting::KEY_MIN_BREAK_MINUTES_6H => 30,
+            CompanySetting::KEY_MIN_BREAK_MINUTES_9H => 45,
+            default => 0,
+        });
+        $settings->method('getValueAsFloat')->willReturnCallback(
+            fn(string $key): float => $key === CompanySetting::KEY_MAX_DAILY_HOURS ? 12.0 : 0.0
+        );
+        // "Projekt erforderlich" only bites when the employee actually has a
+        // selectable project (#329 follow-up).
+        $projectService = $this->createMock(ProjectService::class);
+        $projectService->method('isProjectAllowedForEmployee')->willReturn(true);
+        $projectService->method('getProjectsForEmployee')
+            ->willReturn($hasSelectableProject ? [new \OCA\WorkTime\Db\Project()] : []);
+        return new TimeEntryService(
+            $this->timeEntryMapper,
+            $settings,
+            $this->employeeMapper,
+            $this->absenceMapper,
+            $this->auditLogService,
+            $this->notificationService,
+            $projectService,
+            $this->logger,
+            $this->l,
+        );
+    }
+
+    /**
+     * #329 follow-up: with "Projekt erforderlich" on but the employee having no
+     * selectable project, a booking without a project must still succeed (no
+     * projectId error) — otherwise they could not book at all.
+     */
+    public function testCreateAllowsMissingProjectWhenEmployeeHasNoProjects(): void {
+        $service = $this->serviceWithRequiredFields(true, false, false);
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        $this->timeEntryMapper->method('insert')->willReturnArgument(0);
+
+        // Must not throw a ValidationException for the missing project.
+        $entry = $service->create(5, '2026-06-10', '08:00', '14:00', 0, null, null);
+        $this->assertNull($entry->getProjectId());
+    }
 }

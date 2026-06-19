@@ -75,24 +75,32 @@ class AbsenceMapper extends QBMapper {
     public function findByEmployeeAndMonth(int $employeeId, int $year, int $month): array {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
+        return $this->findByEmployeeAndDateRange($employeeId, $startDate, $endDate);
+    }
 
+    /**
+     * All absences of an employee overlapping the inclusive [start, end] range.
+     *
+     * @return Absence[]
+     */
+    public function findByEmployeeAndDateRange(int $employeeId, DateTime $startDate, DateTime $endDate): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('employee_id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
             ->andWhere(
                 $qb->expr()->orX(
-                    // Absence starts within the month
+                    // Absence starts within the range
                     $qb->expr()->andX(
                         $qb->expr()->gte('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
                         $qb->expr()->lte('start_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
                     ),
-                    // Absence ends within the month
+                    // Absence ends within the range
                     $qb->expr()->andX(
                         $qb->expr()->gte('end_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
                         $qb->expr()->lte('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
                     ),
-                    // Absence spans the entire month
+                    // Absence spans the entire range
                     $qb->expr()->andX(
                         $qb->expr()->lte('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
                         $qb->expr()->gte('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))

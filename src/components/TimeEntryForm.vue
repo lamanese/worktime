@@ -43,23 +43,30 @@
         </div>
 
         <div class="form-group">
-            <label for="project">{{ t('worktime', 'Projekt') }}</label>
+            <label for="project">{{ t('worktime', 'Projekt') }}<span v-if="projectRequired"> *</span></label>
             <NcSelect id="project"
                 v-model="selectedProject"
                 :options="projectOptions"
                 :placeholder="t('worktime', 'Projekt auswählen')"
-                :clearable="true" />
+                :clearable="true"
+                :class="{ 'input-error': projectMissing }" />
+            <p v-if="projectMissing" class="field-hint field-hint--error">
+                {{ t('worktime', 'Projekt ist erforderlich.') }}
+            </p>
         </div>
 
         <div class="form-group">
-            <label for="description">{{ t('worktime', 'Beschreibung') }}</label>
+            <label for="description">{{ t('worktime', 'Beschreibung') }}<span v-if="requireDescription"> *</span></label>
             <textarea id="description"
                 v-model="form.description"
-                class="description-input"
+                :class="['description-input', { 'input-error': descriptionMissing }]"
                 rows="2" />
+            <p v-if="descriptionMissing" class="field-hint field-hint--error">
+                {{ t('worktime', 'Beschreibung ist erforderlich.') }}
+            </p>
         </div>
 
-        <div class="form-info" v-if="calculatedWorkMinutes > 0">
+        <div v-if="calculatedWorkMinutes > 0" class="form-info">
             {{ t('worktime', 'Arbeitszeit: {hours}', { hours: formatMinutes(calculatedWorkMinutes) }) }}
         </div>
 
@@ -130,7 +137,7 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('permissions', ['isCorrectionMode']),
+        ...mapGetters('permissions', ['isCorrectionMode', 'requireProject', 'requireDescription']),
         ...mapGetters('projects', ['activeProjects']),
         ...mapGetters('employees', ['currentEmployee']),
         requiredBreak() {
@@ -159,8 +166,22 @@ export default {
             if (!this.form.startTime || !this.form.endTime) return 0
             return calculateWorkMinutes(this.form.startTime, this.form.endTime, this.form.breakMinutes)
         },
+        projectRequired() {
+            // "Projekt erforderlich" only applies when the employee actually has a
+            // selectable project (#329 follow-up): otherwise they could not book at all.
+            return this.requireProject && this.projectOptions.length > 0
+        },
+        projectMissing() {
+            return this.projectRequired && !this.form.projectId
+        },
+        descriptionMissing() {
+            return this.requireDescription && !(this.form.description && this.form.description.trim())
+        },
         isValid() {
-            return this.form.date && this.form.startTime && this.form.endTime && this.calculatedWorkMinutes > 0
+            return this.form.date && this.form.startTime && this.form.endTime
+                && this.calculatedWorkMinutes > 0
+                && !this.projectMissing
+                && !this.descriptionMissing
         },
     },
     watch: {
@@ -318,6 +339,21 @@ export default {
     padding: 8px;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
+}
+
+.field-hint {
+    margin: 4px 0 0 0;
+    font-size: 0.85em;
+    color: var(--color-text-maxcontrast);
+}
+
+.field-hint--error {
+    color: var(--color-error, #dc2626);
+}
+
+.input-error,
+.input-error :deep(.vs__dropdown-toggle) {
+    border-color: var(--color-error, #dc2626) !important;
 }
 
 .break-input {
