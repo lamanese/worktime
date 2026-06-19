@@ -43,7 +43,7 @@
         </div>
 
         <div class="form-group">
-            <label for="project">{{ t('worktime', 'Projekt') }}<span v-if="requireProject"> *</span></label>
+            <label for="project">{{ t('worktime', 'Projekt') }}<span v-if="projectRequired"> *</span></label>
             <NcSelect id="project"
                 v-model="selectedProject"
                 :options="projectOptions"
@@ -166,8 +166,13 @@ export default {
             if (!this.form.startTime || !this.form.endTime) return 0
             return calculateWorkMinutes(this.form.startTime, this.form.endTime, this.form.breakMinutes)
         },
+        projectRequired() {
+            // "Projekt erforderlich" only applies when the employee actually has a
+            // selectable project (#329 follow-up): otherwise they could not book at all.
+            return this.requireProject && this.projectOptions.length > 0
+        },
         projectMissing() {
-            return this.requireProject && !this.form.projectId
+            return this.projectRequired && !this.form.projectId
         },
         descriptionMissing() {
             return this.requireDescription && !(this.form.description && this.form.description.trim())

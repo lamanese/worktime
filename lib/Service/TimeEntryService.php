@@ -111,7 +111,7 @@ class TimeEntryService {
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $employeeId);
 
         // Company rule (#329): enforce required project / description when configured.
-        $errors = array_merge($errors, $this->requiredFieldErrors($projectId, $description));
+        $errors = array_merge($errors, $this->requiredFieldErrors($employeeId, $projectId, $description));
 
         // Check for overlapping entries (only when times are valid)
         if ($startTimeObj !== null && $endTimeObj !== null) {
@@ -198,7 +198,7 @@ class TimeEntryService {
         $errors = $this->validate($dateObj, $startTimeObj, $endTimeObj, $breakMinutes, $entry->getEmployeeId());
 
         // Company rule (#329): enforce required project / description when configured.
-        $errors = array_merge($errors, $this->requiredFieldErrors($projectId, $description));
+        $errors = array_merge($errors, $this->requiredFieldErrors($entry->getEmployeeId(), $projectId, $description));
 
         // Check for overlapping entries (exclude current entry; only when times are valid)
         if ($startTimeObj !== null && $endTimeObj !== null) {
@@ -780,11 +780,17 @@ class TimeEntryService {
      *
      * @return array<string, string[]>
      */
-    private function requiredFieldErrors(?int $projectId, ?string $description): array {
+    private function requiredFieldErrors(int $employeeId, ?int $projectId, ?string $description): array {
         $errors = [];
         // No project selected = null or 0 (an empty form value binds to 0); real
         // projects always have a positive id.
-        if ($this->settingsMapper->getValueAsBool(CompanySetting::KEY_REQUIRE_PROJECT) && empty($projectId)) {
+        //
+        // "Projekt erforderlich" only applies to employees who actually have at
+        // least one selectable project (#329 follow-up): otherwise an employee
+        // without any assigned/open project could not book time at all.
+        if ($this->settingsMapper->getValueAsBool(CompanySetting::KEY_REQUIRE_PROJECT)
+            && empty($projectId)
+            && $this->projectService->getProjectsForEmployee($employeeId) !== []) {
             $errors['projectId'] = [$this->l->t('Projekt ist erforderlich.')];
         }
         if ($this->settingsMapper->getValueAsBool(CompanySetting::KEY_REQUIRE_DESCRIPTION) && trim((string)$description) === '') {
