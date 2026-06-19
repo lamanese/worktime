@@ -430,7 +430,6 @@ export default {
 }
 
 .kind.absence {
-    background: var(--color-success, #2f7d49);
     background: var(--color-background-hover);
     color: #2f7d49;
 }
