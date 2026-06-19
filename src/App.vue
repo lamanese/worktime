@@ -29,7 +29,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="(isAdmin || isHrManager) && hasEmployees"
+				v-if="canApprove && hasEmployees"
 				:name="t('worktime', 'Genehmigungen')"
 				to="/approvals">
 				<template #icon>

@@ -741,6 +741,79 @@ class TimeEntryService {
     }
 
     /**
+     * Build the cross-month approval inbox for submitted month-ends (#344).
+     * Groups all submitted entries of the given (already permission-scoped)
+     * employees by (employee, year, month) and returns one item per submitted
+     * month, oldest submission first (FIFO).
+     *
+     * @param int[] $employeeIds Employees the requester may see/approve.
+     * @return array<int, array{employeeId:int, employeeName:string, employeeUserId:string, year:int, month:int, actualMinutes:int, entryCount:int, submittedAt:?string}>
+     */
+    public function findSubmittedMonths(array $employeeIds): array {
+        $entries = $this->timeEntryMapper->findSubmittedByEmployeeIds($employeeIds);
+
+        $groups = [];
+        foreach ($entries as $entry) {
+            $employeeId = $entry->getEmployeeId();
+            $date = $entry->getDate();
+            $year = (int)$date->format('Y');
+            $month = (int)$date->format('n');
+            $key = $employeeId . '-' . $year . '-' . $month;
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'employeeId' => $employeeId,
+                    'year' => $year,
+                    'month' => $month,
+                    'actualMinutes' => 0,
+                    'entryCount' => 0,
+                    'submittedAt' => null,
+                ];
+            }
+            $groups[$key]['actualMinutes'] += $entry->getWorkMinutes();
+            $groups[$key]['entryCount']++;
+
+            // FIFO key: earliest submission timestamp of the month.
+            $submittedAt = $entry->getSubmittedAt();
+            if ($submittedAt !== null) {
+                $iso = $submittedAt->format('c');
+                if ($groups[$key]['submittedAt'] === null || $iso < $groups[$key]['submittedAt']) {
+                    $groups[$key]['submittedAt'] = $iso;
+                }
+            }
+        }
+
+        // Resolve employee names (once per employee).
+        $employeeCache = [];
+        $items = [];
+        foreach ($groups as $group) {
+            $employeeId = $group['employeeId'];
+            if (!isset($employeeCache[$employeeId])) {
+                try {
+                    $employeeCache[$employeeId] = $this->employeeMapper->find($employeeId);
+                } catch (\Exception) {
+                    $employeeCache[$employeeId] = null;
+                }
+            }
+            $employee = $employeeCache[$employeeId];
+            $group['employeeName'] = $employee?->getFullName() ?? '';
+            $group['employeeUserId'] = $employee?->getUserId() ?? '';
+            $items[] = $group;
+        }
+
+        // Oldest first: by submission time, then by calendar month as fallback.
+        usort($items, static function (array $a, array $b): int {
+            $byTime = ($a['submittedAt'] ?? '') <=> ($b['submittedAt'] ?? '');
+            if ($byTime !== 0) {
+                return $byTime;
+            }
+            return [$a['year'], $a['month']] <=> [$b['year'], $b['month']];
+        });
+
+        return $items;
+    }
+
+    /**
      * Check if a month is fully approved (all time entries approved)
      */
     public function isMonthApproved(int $employeeId, int $year, int $month): bool {

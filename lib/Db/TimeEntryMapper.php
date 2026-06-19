@@ -306,6 +306,32 @@ class TimeEntryMapper extends QBMapper {
         return $this->findEntities($qb);
     }
 
+    /**
+     * All submitted (eingereichte) time entries for a set of employees, across all
+     * months (#344). Used to build the cross-month approval inbox. Empty id list
+     * returns an empty array (no query).
+     *
+     * @param int[] $employeeIds
+     * @return TimeEntry[]
+     */
+    public function findSubmittedByEmployeeIds(array $employeeIds): array {
+        if (empty($employeeIds)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('status', $qb->createNamedParameter(TimeEntry::STATUS_SUBMITTED)))
+            ->andWhere($qb->expr()->in(
+                'employee_id',
+                $qb->createNamedParameter($employeeIds, IQueryBuilder::PARAM_INT_ARRAY)
+            ))
+            ->orderBy('date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
     public function sumWorkMinutesByEmployeeAndMonth(int $employeeId, int $year, int $month): int {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
