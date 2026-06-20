@@ -210,13 +210,6 @@ export default {
 .timeline-row {
 	display: flex;
 	align-items: stretch;
-	border-bottom: 1px solid var(--color-border);
-}
-
-/* Schlanke Raster-Timeline im Redesign-Look (UI-Konzept v2): Zellen werden
-   direkt gefüllt, helle Rahmen, gedämpfte Farben. */
-.timeline-header,
-.timeline-row {
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 }
 
@@ -277,7 +270,7 @@ export default {
 
 .timeline-day-header.weekend,
 .timeline-cell.weekend {
-	background-color: #f0f1f3;
+	background-color: var(--color-background-hover);
 }
 
 .timeline-day-header.holiday,
@@ -308,10 +301,6 @@ export default {
 .status-pending {
 	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 5px, #e0a64f 5px, #e0a64f 10px);
 	background-color: #c98b3a;
-}
-
-.legend-color {
-	border-radius: 3px;
 }
 
 .legend-color.status-pending {
@@ -352,7 +341,7 @@ export default {
 	width: 12px;
 	height: 12px;
 	min-width: 12px;
-	border-radius: 50%;
+	border-radius: 3px;
 	margin-top: 3px;
 }
 
