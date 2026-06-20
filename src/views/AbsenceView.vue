@@ -669,7 +669,9 @@ export default {
 
 .team-head {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
