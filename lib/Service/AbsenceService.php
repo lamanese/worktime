@@ -530,10 +530,8 @@ class AbsenceService {
     /**
      * Get absence overview for all visible employees in a given month.
      *
+     * @param int[] $subtreeEmployeeIds Employees the viewer supervises (recursively, #347) — shown unmasked incl. pending. Empty for non-supervisors.
      * @return array[] Array of { employeeId, employeeName, absences }
-     */
-    /**
-     * @param int[] $subtreeEmployeeIds Employees the viewer supervises (recursively, #347) — these are shown unmasked incl. pending. Empty for non-supervisors.
      */
     public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds = []): array {
         $allEmployees = $this->employeeMapper->findAllActive();

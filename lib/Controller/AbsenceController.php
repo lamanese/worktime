@@ -336,8 +336,8 @@ class AbsenceController extends BaseController {
         }
 
         // Admin/HR see everything unmasked across all employees.
-        // Supervisors only see their own team (employees whose supervisorId matches them)
-        // and only their team unmasked. Everyone else falls back to per-employee visibility rules.
+        // Supervisors see their whole subtree (recursive) unmasked incl. pending (#347).
+        // Everyone else falls back to per-employee visibility rules.
         $isPrivileged = $this->permissionService->canManageEmployees($this->userId);
         $isSupervisor = $this->permissionService->isSupervisor($this->userId);
 
