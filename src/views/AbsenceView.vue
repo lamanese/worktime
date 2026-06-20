@@ -186,6 +186,14 @@
         <div v-show="tab === 'team'">
             <div class="team-head">
                 <MonthPicker :year="teamMonth.year" :month="teamMonth.month" @update="onTeamMonthChange" />
+                <div class="seg" role="group" :aria-label="t('worktime', 'Färbung')">
+                    <button class="seg-btn" :class="{ active: teamColorBy === 'status' }" @click="teamColorBy = 'status'">
+                        {{ t('worktime', 'Nach Status') }}
+                    </button>
+                    <button class="seg-btn" :class="{ active: teamColorBy === 'type' }" @click="teamColorBy = 'type'">
+                        {{ t('worktime', 'Nach Art') }}
+                    </button>
+                </div>
             </div>
             <NcLoadingIcon v-if="teamLoading" :size="44" />
             <AbsenceTimeline v-else
@@ -193,6 +201,7 @@
                 :year="teamMonth.year"
                 :month="teamMonth.month"
                 :holidays="teamHolidays"
+                :color-by="teamColorBy"
                 :show-full-legend="isPrivileged" />
         </div>
 
@@ -248,6 +257,7 @@ export default {
             teamMonth: { year: getCurrentYear(), month: getCurrentMonth() },
             teamOverview: [],
             teamHolidays: [],
+            teamColorBy: 'status',
             teamLoading: false,
             teamLoaded: false,
         }
@@ -659,7 +669,9 @@ export default {
 
 .team-head {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 12px;
     margin-bottom: 16px;
 }
 

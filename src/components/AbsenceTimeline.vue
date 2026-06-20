@@ -31,14 +31,26 @@
 					:class="{ weekend: day.isWeekend, holiday: day.isHoliday }">
 					<div v-if="getAbsenceForDay(emp, day.date)"
 						class="absence-bar"
-						:class="'type-' + getAbsenceForDay(emp, day.date).type"
+						:class="barClass(getAbsenceForDay(emp, day.date))"
 						:title="getAbsenceTooltip(getAbsenceForDay(emp, day.date))">
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="absence-legend">
+		<div v-if="colorBy === 'status'" class="absence-legend">
+			<h3>{{ t('worktime', 'Status') }}</h3>
+			<div class="legend-grid">
+				<div v-for="item in statusLegendItems" :key="item.status" class="legend-item">
+					<span class="legend-color" :class="'status-' + item.status"></span>
+					<div class="legend-text">
+						<strong>{{ item.label }}</strong>
+						<span>{{ item.description }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div v-else class="absence-legend">
 			<h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
 			<div class="legend-grid">
 				<div v-for="item in activeLegendItems"
@@ -79,8 +91,21 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+		// #345: 'type' faerbt die Balken nach Abwesenheitsart, 'status' nach
+		// Genehmigungsstatus (genehmigt/beantragt) fuer die Engpass-Planung.
+		colorBy: {
+			type: String,
+			default: 'type',
+			validator: v => ['type', 'status'].includes(v),
+		},
 	},
 	computed: {
+		statusLegendItems() {
+			return [
+				{ status: 'approved', label: t('worktime', 'Genehmigt'), description: t('worktime', 'Bestätigte Abwesenheit.') },
+				{ status: 'pending', label: t('worktime', 'Beantragt'), description: t('worktime', 'Offener Antrag, noch nicht genehmigt.') },
+			]
+		},
 		activeLegendItems() {
 			const typeInfo = {
 				vacation: { label: t('worktime', 'Urlaub'), description: t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') },
@@ -134,6 +159,12 @@ export default {
 		},
 	},
 	methods: {
+		barClass(absence) {
+			if (this.colorBy === 'status') {
+				return 'status-' + (absence.status || 'approved')
+			}
+			return 'type-' + absence.type
+		},
 		formatDate(date) {
 			const y = date.getFullYear()
 			const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -256,6 +287,16 @@ export default {
 .type-compensatory { background-color: #1abc9c; } /* Freizeitausgleich – tuerkis */
 .type-unpaid { background-color: #34495e; }       /* Unbezahlt – dunkelblau */
 .type-absent { background-color: #95a5a6; }       /* Abwesend (maskiert) – grau */
+
+/* Status-Modus (#345): genehmigt = grün, beantragt = schraffiertes Amber */
+.status-approved { background-color: #4a9d63; }
+.status-pending {
+	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 5px, #e0a64f 5px, #e0a64f 10px);
+	background-color: #c98b3a;
+}
+.legend-color.status-pending {
+	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 4px, #e0a64f 4px, #e0a64f 8px);
+}
 
 .timeline-empty {
 	padding: 40px;
