@@ -61,7 +61,9 @@ export default {
             month: { year: getCurrentYear(), month: getCurrentMonth() },
             overview: [],
             holidays: [],
-            colorBy: 'status',
+            // Standard: nach Abwesenheits-Art einfärben (Status ist über den
+            // Umschalter erreichbar).
+            colorBy: 'type',
             loading: false,
         }
     },
@@ -72,9 +74,6 @@ export default {
         },
     },
     created() {
-        // Privilegierte sehen offene Anträge → Status-Färbung ist hilfreich;
-        // normale Kollegen sehen nur genehmigte → Art-Färbung ist aussagekräftiger.
-        this.colorBy = this.isPrivileged ? 'status' : 'type'
         this.load()
     },
     methods: {
