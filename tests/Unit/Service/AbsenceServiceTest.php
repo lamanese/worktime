@@ -295,8 +295,8 @@ class AbsenceServiceTest extends TestCase {
             $this->ovAbsence(1, Absence::STATUS_PENDING),
         ]);
 
-        // Viewer is supervisor (employeeId 10), not privileged.
-        $result = $this->service->getAbsenceOverview(2026, 6, 'sv', false, 10, 10);
+        // Viewer is supervisor (employeeId 10); subtree contains member id 1.
+        $result = $this->service->getAbsenceOverview(2026, 6, 'sv', false, 10, [1]);
 
         $this->assertCount(1, $result);
         $statuses = array_column($result[0]['absences'], 'status');
@@ -317,8 +317,8 @@ class AbsenceServiceTest extends TestCase {
             $this->ovAbsence(1, Absence::STATUS_APPROVED),
         ]);
 
-        // Viewer is a normal employee (id 2), not privileged, not a supervisor.
-        $result = $this->service->getAbsenceOverview(2026, 6, 'peer', false, 2, null);
+        // Viewer is a normal employee (id 2), not privileged, no subtree.
+        $result = $this->service->getAbsenceOverview(2026, 6, 'peer', false, 2, []);
 
         $this->assertCount(1, $result);
         $statuses = array_column($result[0]['absences'], 'status');

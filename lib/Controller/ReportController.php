@@ -646,7 +646,9 @@ class ReportController extends BaseController {
             return $authError;
         }
 
-        $teamMembers = $this->permissionService->getTeamMembers($this->userId);
+        // Sicht (#347): rekursiv ueber den ganzen Unterbaum. Genehmigen bleibt
+        // direkt (siehe Genehmigungen/pendingMonths).
+        $teamMembers = $this->permissionService->getVisibleTeamMembers($this->userId);
 
         if (empty($teamMembers)) {
             return $this->successResponse([]);

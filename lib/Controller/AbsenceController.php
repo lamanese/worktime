@@ -344,7 +344,14 @@ class AbsenceController extends BaseController {
         $currentEmployee = $this->permissionService->getEmployeeForUser($this->userId);
         $currentEmployeeId = $currentEmployee?->getId();
 
-        $supervisorEmployeeId = $isSupervisor ? $currentEmployeeId : null;
+        // Sicht (#347): ein Vorgesetzter sieht seinen ganzen Unterbaum rekursiv,
+        // nicht nur direkte Unterstellte. Genehmigen bleibt davon unberuehrt.
+        $subtreeEmployeeIds = ($isSupervisor && $currentEmployeeId !== null)
+            ? array_map(
+                static fn($e) => $e->getId(),
+                $this->permissionService->getSubordinateEmployees($currentEmployeeId)
+            )
+            : [];
 
         $overview = $this->absenceService->getAbsenceOverview(
             $year,
@@ -352,7 +359,7 @@ class AbsenceController extends BaseController {
             $this->userId,
             $isPrivileged,
             $currentEmployeeId,
-            $supervisorEmployeeId
+            $subtreeEmployeeIds
         );
 
         return $this->successResponse($overview);

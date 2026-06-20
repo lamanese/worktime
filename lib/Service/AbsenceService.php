@@ -532,17 +532,19 @@ class AbsenceService {
      *
      * @return array[] Array of { employeeId, employeeName, absences }
      */
-    public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): array {
+    /**
+     * @param int[] $subtreeEmployeeIds Employees the viewer supervises (recursively, #347) — these are shown unmasked incl. pending. Empty for non-supervisors.
+     */
+    public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds = []): array {
         $allEmployees = $this->employeeMapper->findAllActive();
         $result = [];
 
         foreach ($allEmployees as $employee) {
-            if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $supervisorEmployeeId)) {
+            if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $subtreeEmployeeIds)) {
                 continue;
             }
 
-            $isTeamMember = $supervisorEmployeeId !== null
-                && $employee->getSupervisorId() === $supervisorEmployeeId;
+            $isTeamMember = in_array($employee->getId(), $subtreeEmployeeIds, true);
             $unmasked = $isPrivileged || $isTeamMember;
 
             // Status-Kalender (#345): wer den Mitarbeiter unmaskiert sieht (Admin/HR
@@ -591,7 +593,7 @@ class AbsenceService {
     /**
      * Check if an employee's absences should be visible to the current user.
      */
-    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): bool {
+    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds): bool {
         // Admin/HR see all employees
         if ($isPrivileged) {
             return true;
@@ -602,8 +604,9 @@ class AbsenceService {
             return true;
         }
 
-        // Supervisors see their own team members regardless of per-employee visibility setting
-        if ($supervisorEmployeeId !== null && $employee->getSupervisorId() === $supervisorEmployeeId) {
+        // Supervisors see everyone in their (recursive) subtree, regardless of
+        // the per-employee visibility setting.
+        if (in_array($employee->getId(), $subtreeEmployeeIds, true)) {
             return true;
         }
 
