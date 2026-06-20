@@ -461,13 +461,18 @@ export default {
 }
 
 .actions-col {
-    text-align: right;
+    /* Links ausgerichtet: "Genehmigen" ist in jeder Zeile gleich breit und
+       startet dadurch immer an der gleichen Stelle (unabhängig davon, ob der
+       zweite Button "Ablehnen" oder "Zurückweisen" heißt). */
+    text-align: left;
+    white-space: nowrap;
+    width: 1%;
 }
 
 .actions {
     display: flex;
     gap: 6px;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .info-section h3 {
