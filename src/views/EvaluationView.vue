@@ -3,7 +3,16 @@
         <div class="view-header">
             <h2>{{ t('worktime', 'Auswertung') }}</h2>
 
-            <div class="layout-seg" role="group" :aria-label="t('worktime', 'Zeitraum')">
+            <div class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+                <button class="seg-btn" :class="{ active: mode === 'mitarbeiter' }" @click="mode = 'mitarbeiter'">
+                    {{ t('worktime', 'Mitarbeiter') }}
+                </button>
+                <button class="seg-btn" :class="{ active: mode === 'projekte' }" @click="mode = 'projekte'">
+                    {{ t('worktime', 'Projekte') }}
+                </button>
+            </div>
+
+            <div v-show="mode === 'projekte'" class="layout-seg" role="group" :aria-label="t('worktime', 'Zeitraum')">
                 <button v-for="p in periods"
                     :key="p.value"
                     class="seg-btn"
@@ -13,7 +22,7 @@
                 </button>
             </div>
 
-            <div class="period-nav">
+            <div v-show="mode === 'projekte'" class="period-nav">
                 <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
                     <template #icon><ChevronLeftIcon :size="20" /></template>
                 </NcButton>
@@ -24,6 +33,20 @@
             </div>
         </div>
 
+        <!-- Mitarbeiter: Jahresübersicht (aus „Team" hierher verschoben, #346) -->
+        <div v-show="mode === 'mitarbeiter'" class="ev-mitarbeiter">
+            <div class="ev-year">
+                <YearPicker :year="teamYear" @update="onTeamYearChange" />
+            </div>
+            <NcLoadingIcon v-if="teamLoading" :size="44" />
+            <TeamYearTable v-else-if="teamReport.length > 0" :report="teamReport" :year="teamYear" />
+            <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
+                <template #icon><AccountGroupIcon /></template>
+                <template #description>{{ t('worktime', 'Sie haben keine Teammitglieder.') }}</template>
+            </NcEmptyContent>
+        </div>
+
+        <div v-show="mode === 'projekte'">
         <div class="ev-filter">
             <div class="ev-filter__label">{{ t('worktime', 'Projekte') }}</div>
             <div class="ev-chips">
@@ -183,6 +206,7 @@
         <div v-else class="ev-empty">
             {{ t('worktime', 'Für diese Auswahl liegen keine Buchungen vor.') }}
         </div>
+        </div>
     </div>
 </template>
 
@@ -193,6 +217,10 @@ import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
+import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
+import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import YearPicker from '../components/YearPicker.vue'
+import TeamYearTable from '../components/TeamYearTable.vue'
 import ReportService from '../services/ReportService.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { formatDate as formatDateUtil, getMonthName } from '../utils/dateUtils.js'
@@ -203,14 +231,22 @@ export default {
     components: {
         NcButton,
         NcLoadingIcon,
+        NcEmptyContent,
         ChevronLeftIcon,
         ChevronRightIcon,
         DownloadIcon,
         MagnifyIcon,
+        AccountGroupIcon,
+        YearPicker,
+        TeamYearTable,
     },
     data() {
         const now = new Date()
         return {
+            mode: 'mitarbeiter',
+            teamYear: now.getFullYear(),
+            teamReport: [],
+            teamLoading: false,
             year: now.getFullYear(),
             month: now.getMonth() + 1,
             period: 'month',
@@ -334,9 +370,25 @@ export default {
         tab(value) { if (value === 'detail') this.ensureEntries() },
     },
     created() {
+        this.loadTeamReport()
         this.refresh()
     },
     methods: {
+        async loadTeamReport() {
+            this.teamLoading = true
+            try {
+                this.teamReport = await ReportService.getTeamYear(this.teamYear) || []
+            } catch (error) {
+                console.error('Failed to load team report:', error)
+                this.teamReport = []
+            } finally {
+                this.teamLoading = false
+            }
+        },
+        onTeamYearChange(year) {
+            this.teamYear = year
+            this.loadTeamReport()
+        },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
         formatDate(date) { return formatDateUtil(date) },
         initials(name) {

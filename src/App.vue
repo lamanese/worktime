@@ -20,7 +20,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="canApprove && hasEmployees"
+				v-if="isEmployee && hasEmployees"
 				:name="t('worktime', 'Team')"
 				to="/team">
 				<template #icon>
@@ -38,7 +38,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="isAdmin || isHrManager"
+				v-if="canApprove"
 				:name="t('worktime', 'Auswertung')"
 				to="/evaluation">
 				<template #icon>

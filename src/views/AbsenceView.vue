@@ -2,19 +2,11 @@
     <div class="absence-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Abwesenheit') }}</h2>
-            <div class="seg" role="group" :aria-label="t('worktime', 'Ansicht')">
-                <button class="seg-btn" :class="{ active: tab === 'konto' }" @click="tab = 'konto'">
-                    {{ t('worktime', 'Mein Konto') }}
-                </button>
-                <button class="seg-btn" :class="{ active: tab === 'team' }" @click="switchToTeam">
-                    {{ t('worktime', 'Team') }}
-                </button>
-            </div>
             <div class="header-spacer" />
         </div>
 
-        <!-- ============ MEIN KONTO ============ -->
-        <div v-show="tab === 'konto'">
+        <!-- ============ MEIN KONTO (Team-Kalender lebt jetzt unter „Team") ============ -->
+        <div>
             <div class="konto-yearbar">
                 <YearPicker :year="currentYear" :max="thisYear" @update="onYearChange" />
             </div>
@@ -182,29 +174,6 @@
             </div>
         </div>
 
-        <!-- ============ TEAM ============ -->
-        <div v-show="tab === 'team'">
-            <div class="team-head">
-                <MonthPicker :year="teamMonth.year" :month="teamMonth.month" @update="onTeamMonthChange" />
-                <div class="seg" role="group" :aria-label="t('worktime', 'Färbung')">
-                    <button class="seg-btn" :class="{ active: teamColorBy === 'status' }" @click="teamColorBy = 'status'">
-                        {{ t('worktime', 'Nach Status') }}
-                    </button>
-                    <button class="seg-btn" :class="{ active: teamColorBy === 'type' }" @click="teamColorBy = 'type'">
-                        {{ t('worktime', 'Nach Art') }}
-                    </button>
-                </div>
-            </div>
-            <NcLoadingIcon v-if="teamLoading" :size="44" />
-            <AbsenceTimeline v-else
-                :employees="teamOverview"
-                :year="teamMonth.year"
-                :month="teamMonth.month"
-                :holidays="teamHolidays"
-                :color-by="teamColorBy"
-                :show-full-legend="isPrivileged" />
-        </div>
-
         <CorrectionReasonModal v-if="pendingCorrection"
             @confirm="onReasonConfirm"
             @close="pendingCorrection = null" />
@@ -220,16 +189,12 @@ import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import { mapGetters, mapActions } from 'vuex'
 import AbsenceRow from '../components/AbsenceRow.vue'
 import CorrectionReasonModal from '../components/CorrectionReasonModal.vue'
-import MonthPicker from '../components/MonthPicker.vue'
 import YearPicker from '../components/YearPicker.vue'
-import AbsenceTimeline from '../components/AbsenceTimeline.vue'
 import InfoIcon from '../components/InfoIcon.vue'
-import { getCurrentYear, getCurrentMonth } from '../utils/dateUtils.js'
+import { getCurrentYear } from '../utils/dateUtils.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import ReportService from '../services/ReportService.js'
-import AbsenceService from '../services/AbsenceService.js'
-import HolidayService from '../services/HolidayService.js'
 
 export default {
     name: 'AbsenceView',
@@ -241,33 +206,21 @@ export default {
         CalendarIcon,
         AbsenceRow,
         CorrectionReasonModal,
-        MonthPicker,
         YearPicker,
-        AbsenceTimeline,
         InfoIcon,
     },
     data() {
         return {
-            tab: 'konto',
             currentYear: getCurrentYear(),
             editingId: null,
             isCreating: false,
             overtime: null,
             pendingCorrection: null,
-            teamMonth: { year: getCurrentYear(), month: getCurrentMonth() },
-            teamOverview: [],
-            teamHolidays: [],
-            teamColorBy: 'status',
-            teamLoading: false,
-            teamLoaded: false,
         }
     },
     computed: {
         ...mapGetters('absences', ['absences', 'absenceTypes', 'vacationStats', 'loading']),
-        ...mapGetters('permissions', ['activeEmployeeId', 'isAdmin', 'isHrManager', 'canApprove', 'isCorrectionMode']),
-        isPrivileged() {
-            return this.isAdmin || this.isHrManager || this.canApprove
-        },
+        ...mapGetters('permissions', ['activeEmployeeId', 'isCorrectionMode']),
         thisYear() {
             return getCurrentYear()
         },
@@ -339,34 +292,6 @@ export default {
                 this.overtime = await ReportService.getOvertime(this.activeEmployeeId, this.currentYear)
             } catch (error) {
                 console.error('Failed to load overtime stats:', error)
-            }
-        },
-        switchToTeam() {
-            this.tab = 'team'
-            if (!this.teamLoaded) {
-                this.loadTeam()
-            }
-        },
-        onTeamMonthChange({ year, month }) {
-            this.teamMonth = { year, month }
-            this.loadTeam()
-        },
-        async loadTeam() {
-            this.teamLoading = true
-            try {
-                const [overviewRes, holidaysRes] = await Promise.all([
-                    AbsenceService.getOverview(this.teamMonth.year, this.teamMonth.month),
-                    HolidayService.getByYear(this.teamMonth.year),
-                ])
-                this.teamOverview = Array.isArray(overviewRes) ? overviewRes : (overviewRes?.data || [])
-                const holidayData = Array.isArray(holidaysRes) ? holidaysRes : (holidaysRes?.data || [])
-                this.teamHolidays = holidayData.map(h => ({ date: h.date, name: h.name }))
-                this.teamLoaded = true
-            } catch (error) {
-                console.error('Failed to load absence overview', error)
-                this.teamOverview = []
-            } finally {
-                this.teamLoading = false
             }
         },
         signedHours(minutes) {
