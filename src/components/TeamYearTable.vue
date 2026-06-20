@@ -185,18 +185,18 @@ table {
 /* Month data columns */
 .col-month {
     text-align: center;
-    min-width: 58px;
-    padding: 10px 4px;
-    font-size: 13px;
+    min-width: 44px;
+    padding: 9px 3px;
+    font-size: 12.5px;
     font-variant-numeric: tabular-nums;
 }
 
 /* Total column */
 .col-total {
     text-align: center;
-    min-width: 75px;
-    padding: 10px 4px;
-    font-size: 13px;
+    min-width: 62px;
+    padding: 9px 4px;
+    font-size: 12.5px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     border-left: 1px solid var(--color-border);

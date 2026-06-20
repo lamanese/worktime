@@ -38,6 +38,20 @@
             <div class="ev-year">
                 <YearPicker :year="teamYear" @update="onTeamYearChange" />
             </div>
+            <div v-if="teamReport.length > 0" class="ev-kpis">
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
+                    <div class="kpi-num">{{ teamKpis.count }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Überstunden gesamt') }}</div>
+                    <div class="kpi-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Urlaub genommen') }}</div>
+                    <div class="kpi-num">{{ teamKpis.vacationUsed }} <span class="kpi-sub">/ {{ teamKpis.vacationTotal }} {{ t('worktime', 'Tage') }}</span></div>
+                </div>
+            </div>
             <NcLoadingIcon v-if="teamLoading" :size="44" />
             <TeamYearTable v-else-if="teamReport.length > 0" :report="teamReport" :year="teamYear" />
             <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
@@ -269,6 +283,17 @@ export default {
         }
     },
     computed: {
+        teamKpis() {
+            let overtimeMinutes = 0
+            let vacationUsed = 0
+            let vacationTotal = 0
+            for (const m of this.teamReport) {
+                overtimeMinutes += m.totalOvertimeMinutes || 0
+                vacationUsed += m.vacationStats?.used || 0
+                vacationTotal += m.vacationStats?.total || 0
+            }
+            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal }
+        },
         periods() {
             return [
                 { value: 'month', label: this.t('worktime', 'Monat') },
@@ -390,6 +415,10 @@ export default {
             this.loadTeamReport()
         },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
+        signedHours(minutes) {
+            const sign = minutes < 0 ? '−' : '+'
+            return `${sign}${formatMinutes(Math.abs(minutes || 0))} h`
+        },
         formatDate(date) { return formatDateUtil(date) },
         initials(name) {
             return name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -706,6 +735,19 @@ export default {
     font-size: 1.5em;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+}
+
+.kpi-num.kpi-pos { color: var(--color-success-text, #2f7d49); }
+.kpi-num.kpi-neg { color: var(--color-error-text, #b03b33); }
+
+.kpi-sub {
+    font-size: 0.62em;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-year {
+    margin-bottom: 14px;
 }
 
 .ev-tabs {
