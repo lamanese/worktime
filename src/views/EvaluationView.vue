@@ -859,6 +859,11 @@ export default {
     margin-bottom: 14px;
 }
 
+/* Umschalter nur so breit wie seine Buttons (nicht volle Breite) */
+.ev-subtabs .layout-seg {
+    width: max-content;
+}
+
 .ev-emp {
     display: flex;
     align-items: center;
