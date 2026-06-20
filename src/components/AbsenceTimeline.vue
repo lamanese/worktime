@@ -213,24 +213,32 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
+/* Schlanke Raster-Timeline im Redesign-Look (UI-Konzept v2): Zellen werden
+   direkt gefüllt, helle Rahmen, gedämpfte Farben. */
+.timeline-header,
+.timeline-row {
+	border-bottom: 1px solid var(--color-border-light, var(--color-border));
+}
+
 .timeline-header {
 	position: sticky;
 	top: 0;
-	background: var(--color-main-background);
 	z-index: 1;
+	background: var(--color-background-hover);
 	font-weight: 600;
 }
 
 .timeline-name-col {
-	min-width: 160px;
-	max-width: 160px;
-	padding: 6px 10px;
+	min-width: 168px;
+	max-width: 168px;
+	padding: 7px 12px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	border-right: 1px solid var(--color-border);
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 	display: flex;
 	align-items: center;
+	font-size: 13.5px;
 }
 
 .timeline-days {
@@ -239,54 +247,61 @@ export default {
 }
 
 .timeline-day-header {
-	min-width: 32px;
-	max-width: 32px;
+	flex: 1;
+	min-width: 22px;
 	text-align: center;
-	padding: 4px 0;
+	padding: 5px 0;
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 }
 
 .timeline-day-header .day-weekday {
-	font-size: 10px;
+	font-size: 9.5px;
 	color: var(--color-text-maxcontrast);
 }
 
 .timeline-day-header .day-number {
-	font-size: 12px;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
 }
 
 .timeline-cell {
-	min-width: 32px;
-	max-width: 32px;
-	height: 32px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 2px;
+	flex: 1;
+	min-width: 22px;
+	min-height: 30px;
+	padding: 0;
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 }
 
-.weekend,
-.holiday {
-	background-color: var(--color-background-dark);
+.timeline-day-header.weekend,
+.timeline-cell.weekend {
+	background-color: #f0f1f3;
 }
 
+.timeline-day-header.holiday,
+.timeline-cell.holiday {
+	background-color: var(--wt-holiday-bg, #fbf3e6);
+}
+
+/* Abwesenheit füllt die ganze Zelle (kein abgesetzter Balken mehr) */
 .absence-bar {
 	width: 100%;
-	height: 20px;
-	border-radius: 3px;
+	height: 100%;
+	min-height: 30px;
 	cursor: default;
 }
 
-.type-vacation { background-color: #0082c9; }     /* Urlaub – blau */
-.type-sick { background-color: #e74c3c; }         /* Krank – rot */
-.type-child_sick { background-color: #f39c12; }   /* Kind krank – orange */
-.type-training { background-color: #2ecc71; }     /* Fortbildung – gruen */
-.type-special { background-color: #9b59b6; }      /* Sonderurlaub – lila */
-.type-compensatory { background-color: #1abc9c; } /* Freizeitausgleich – tuerkis */
-.type-unpaid { background-color: #34495e; }       /* Unbezahlt – dunkelblau */
-.type-absent { background-color: #95a5a6; }       /* Abwesend (maskiert) – grau */
+/* Gedämpfte Farb-Palette (Owner-Wunsch, wie im Redesign) */
+.type-vacation { background-color: #4a9d63; }      /* Urlaub */
+.type-sick { background-color: #cc4b42; }          /* Krank */
+.type-child_sick { background-color: #d98a2b; }    /* Kind krank */
+.type-training { background-color: #3a8f7a; }      /* Fortbildung */
+.type-special { background-color: #8e6bbf; }       /* Sonderurlaub */
+.type-compensatory { background-color: #3a9aa8; }  /* Freizeitausgleich */
+.type-unpaid { background-color: #5b6b7a; }        /* Unbezahlt */
+.type-absent { background-color: #9aa3ad; }        /* Abwesend (maskiert) */
 
 /* Status-Modus (#345): genehmigt = grün, beantragt = schraffiertes Amber */
 .status-approved { background-color: #4a9d63; }
@@ -294,6 +309,11 @@ export default {
 	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 5px, #e0a64f 5px, #e0a64f 10px);
 	background-color: #c98b3a;
 }
+
+.legend-color {
+	border-radius: 3px;
+}
+
 .legend-color.status-pending {
 	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 4px, #e0a64f 4px, #e0a64f 8px);
 }
