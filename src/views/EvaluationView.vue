@@ -53,7 +53,69 @@
                 </div>
             </div>
             <NcLoadingIcon v-if="teamLoading" :size="44" />
-            <TeamYearTable v-else-if="teamReport.length > 0" :report="teamReport" :year="teamYear" />
+            <template v-else-if="teamReport.length > 0">
+                <div class="ev-subtabs">
+                    <div class="layout-seg" role="group">
+                        <button class="seg-btn" :class="{ active: teamSubtab === 'overview' }" @click="teamSubtab = 'overview'">
+                            {{ t('worktime', 'Übersicht') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: teamSubtab === 'months' }" @click="teamSubtab = 'months'">
+                            {{ t('worktime', 'Monatsdetail') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Übersicht: flache Tabelle, eine Zeile je Mitarbeiter (Projekte-Look) -->
+                <div v-show="teamSubtab === 'overview'" class="ev-card">
+                    <table class="ev-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="teamSortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ teamSortArrow('name') }}</th>
+                                <th class="ev-num sortable" @click="teamSortBy('overtime')">{{ t('worktime', 'Überstunden') }}{{ teamSortArrow('overtime') }}</th>
+                                <th class="sortable" @click="teamSortBy('vacation')">{{ t('worktime', 'Resturlaub') }}{{ teamSortArrow('vacation') }}</th>
+                                <th>{{ t('worktime', 'Status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in teamOverviewRows" :key="row.id">
+                                <td>
+                                    <div class="ev-emp">
+                                        <NcAvatar :user="row.userId" :display-name="row.name" :size="30" />
+                                        <div>
+                                            <div class="ev-emp-name">{{ row.name }}</div>
+                                            <div class="ev-emp-sub">{{ row.weeklyHours }} {{ t('worktime', 'Std./Woche') }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="ev-num" :class="row.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(row.overtimeMinutes) }}</td>
+                                <td>
+                                    <div class="ev-vac">
+                                        <span class="ev-vac-num">{{ row.vacationRemaining }} / {{ row.vacationTotal }}</span>
+                                        <span class="ev-vac-track"><span class="ev-vac-fill" :style="{ width: row.vacationPercent + '%' }" /></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span v-if="row.openMonths > 0" class="ev-stchip ev-stchip--open">{{ t('worktime', 'Offen: {n}', { n: row.openMonths }) }}</span>
+                                    <span v-else class="ev-stchip ev-stchip--ok">{{ t('worktime', '✓ aktuell') }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td>{{ t('worktime', 'Team gesamt') }}</td>
+                                <td class="ev-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</td>
+                                <td>{{ teamKpis.vacationTotal - teamKpis.vacationUsed }} / {{ teamKpis.vacationTotal }}</td>
+                                <td />
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Monatsdetail: bestehende Monats-Grids -->
+                <div v-show="teamSubtab === 'months'">
+                    <TeamYearTable :report="teamReport" :year="teamYear" />
+                </div>
+            </template>
             <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
                 <template #icon><AccountGroupIcon /></template>
                 <template #description>{{ t('worktime', 'Sie haben keine Teammitglieder.') }}</template>
@@ -233,6 +295,7 @@ import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import YearPicker from '../components/YearPicker.vue'
 import TeamYearTable from '../components/TeamYearTable.vue'
 import ReportService from '../services/ReportService.js'
@@ -246,6 +309,7 @@ export default {
         NcButton,
         NcLoadingIcon,
         NcEmptyContent,
+        NcAvatar,
         ChevronLeftIcon,
         ChevronRightIcon,
         DownloadIcon,
@@ -261,6 +325,8 @@ export default {
             teamYear: now.getFullYear(),
             teamReport: [],
             teamLoading: false,
+            teamSubtab: 'overview',
+            teamSort: { key: 'name', dir: 1 },
             year: now.getFullYear(),
             month: now.getMonth() + 1,
             period: 'month',
@@ -293,6 +359,34 @@ export default {
                 vacationTotal += m.vacationStats?.total || 0
             }
             return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal }
+        },
+        teamOverviewRows() {
+            const rows = this.teamReport.map(m => {
+                const used = m.vacationStats?.used || 0
+                const total = m.vacationStats?.total || 0
+                const remaining = total - used
+                const openMonths = (m.months || []).filter(mm => mm.status === 'submitted').length
+                return {
+                    id: m.employee.id,
+                    userId: m.employee.userId,
+                    name: m.employee.fullName,
+                    weeklyHours: m.employee.weeklyHours,
+                    overtimeMinutes: m.totalOvertimeMinutes || 0,
+                    vacationTotal: total,
+                    vacationRemaining: remaining,
+                    vacationPercent: total > 0 ? Math.max(0, Math.min(100, Math.round((remaining / total) * 100))) : 0,
+                    openMonths,
+                }
+            })
+            const { key, dir } = this.teamSort
+            rows.sort((a, b) => {
+                let cmp = 0
+                if (key === 'overtime') cmp = a.overtimeMinutes - b.overtimeMinutes
+                else if (key === 'vacation') cmp = a.vacationRemaining - b.vacationRemaining
+                else cmp = a.name.localeCompare(b.name)
+                return cmp * dir
+            })
+            return rows
         },
         periods() {
             return [
@@ -418,6 +512,17 @@ export default {
         signedHours(minutes) {
             const sign = minutes < 0 ? '−' : '+'
             return `${sign}${formatMinutes(Math.abs(minutes || 0))} h`
+        },
+        teamSortBy(key) {
+            if (this.teamSort.key === key) {
+                this.teamSort = { key, dir: this.teamSort.dir * -1 }
+            } else {
+                this.teamSort = { key, dir: 1 }
+            }
+        },
+        teamSortArrow(key) {
+            if (this.teamSort.key !== key) return ''
+            return this.teamSort.dir === 1 ? ' ▲' : ' ▼'
         },
         formatDate(date) { return formatDateUtil(date) },
         initials(name) {
@@ -748,6 +853,72 @@ export default {
 
 .ev-year {
     margin-bottom: 14px;
+}
+
+.ev-subtabs {
+    margin-bottom: 14px;
+}
+
+.ev-emp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ev-emp-name {
+    font-weight: 600;
+}
+
+.ev-emp-sub {
+    font-size: 12.5px;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-vac {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ev-vac-num {
+    font-variant-numeric: tabular-nums;
+    min-width: 56px;
+}
+
+.ev-vac-track {
+    flex: 1;
+    max-width: 120px;
+    height: 8px;
+    border-radius: 6px;
+    background: var(--color-background-dark);
+    overflow: hidden;
+}
+
+.ev-vac-fill {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    background: var(--wt-vacation, #4a9d63);
+}
+
+.ev-stchip {
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--border-radius, 8px);
+    padding: 3px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ev-stchip--open {
+    background: var(--wt-holiday-bg, #fbf3e6);
+    color: #9a6c25;
+}
+
+.ev-stchip--ok {
+    background: #eaf5ee;
+    color: var(--color-success-text, #2f7d49);
 }
 
 .ev-tabs {
