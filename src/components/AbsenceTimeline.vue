@@ -96,6 +96,7 @@ export default {
 		colorBy: {
 			type: String,
 			default: 'type',
+			validator: v => ['type', 'status'].includes(v),
 		},
 	},
 	computed: {
