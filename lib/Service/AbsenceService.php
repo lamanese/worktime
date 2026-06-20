@@ -545,7 +545,22 @@ class AbsenceService {
                 && $employee->getSupervisorId() === $supervisorEmployeeId;
             $unmasked = $isPrivileged || $isTeamMember;
 
-            $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
+            // Status-Kalender (#345): wer den Mitarbeiter unmaskiert sieht (Admin/HR
+            // oder dessen Vorgesetzter), bekommt auch OFFENE Anträge (Status
+            // 'pending') zur Engpass-Planung. Kollegen sehen unverändert NUR
+            // genehmigte Abwesenheiten – kein Datenschutz-Leak offener Anträge.
+            if ($unmasked) {
+                $absences = array_values(array_filter(
+                    $this->absenceMapper->findByEmployeeAndMonth($employee->getId(), $year, $month),
+                    static fn($absence) => in_array(
+                        $absence->getStatus(),
+                        [Absence::STATUS_APPROVED, Absence::STATUS_PENDING],
+                        true
+                    )
+                ));
+            } else {
+                $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
+            }
 
             $absenceData = [];
             $detail = $employee->getAbsenceDetail();
