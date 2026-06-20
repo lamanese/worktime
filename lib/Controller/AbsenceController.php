@@ -336,15 +336,22 @@ class AbsenceController extends BaseController {
         }
 
         // Admin/HR see everything unmasked across all employees.
-        // Supervisors only see their own team (employees whose supervisorId matches them)
-        // and only their team unmasked. Everyone else falls back to per-employee visibility rules.
+        // Supervisors see their whole subtree (recursive) unmasked incl. pending (#347).
+        // Everyone else falls back to per-employee visibility rules.
         $isPrivileged = $this->permissionService->canManageEmployees($this->userId);
         $isSupervisor = $this->permissionService->isSupervisor($this->userId);
 
         $currentEmployee = $this->permissionService->getEmployeeForUser($this->userId);
         $currentEmployeeId = $currentEmployee?->getId();
 
-        $supervisorEmployeeId = $isSupervisor ? $currentEmployeeId : null;
+        // Sicht (#347): ein Vorgesetzter sieht seinen ganzen Unterbaum rekursiv,
+        // nicht nur direkte Unterstellte. Genehmigen bleibt davon unberuehrt.
+        $subtreeEmployeeIds = ($isSupervisor && $currentEmployeeId !== null)
+            ? array_map(
+                static fn($e) => $e->getId(),
+                $this->permissionService->getSubordinateEmployees($currentEmployeeId)
+            )
+            : [];
 
         $overview = $this->absenceService->getAbsenceOverview(
             $year,
@@ -352,7 +359,7 @@ class AbsenceController extends BaseController {
             $this->userId,
             $isPrivileged,
             $currentEmployeeId,
-            $supervisorEmployeeId
+            $subtreeEmployeeIds
         );
 
         return $this->successResponse($overview);

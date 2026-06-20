@@ -333,4 +333,58 @@ class PermissionServiceTest extends TestCase {
 
         $this->service->setHrManagers(['user:new_hr', 'group:new_group']);
     }
+
+    // ---------------------------------------------------------------------
+    // #347: recursive subtree for SIGHT (getSubordinateEmployees)
+    // ---------------------------------------------------------------------
+
+    private function subEmp(int $id, ?int $supervisorId): Employee {
+        $e = new Employee();
+        $e->setId($id);
+        $e->setSupervisorId($supervisorId);
+        $e->setFirstName('E');
+        $e->setLastName((string)$id);
+        return $e;
+    }
+
+    /**
+     * #347: getSubordinateEmployees walks the whole subtree (direct + indirect),
+     * e.g. Frank(10) → Anna(20) → Ben(30)/Carla(31).
+     */
+    public function testGetSubordinateEmployeesIsRecursive(): void {
+        $anna = $this->subEmp(20, 10);
+        $ben = $this->subEmp(30, 20);
+        $carla = $this->subEmp(31, 20);
+        $this->employeeMapper->method('findBySupervisor')->willReturnCallback(
+            fn(int $sid): array => match ($sid) {
+                10 => [$anna],
+                20 => [$ben, $carla],
+                default => [],
+            }
+        );
+
+        $ids = array_map(fn(Employee $e) => $e->getId(), $this->service->getSubordinateEmployees(10));
+        sort($ids);
+        $this->assertSame([20, 30, 31], $ids);
+    }
+
+    /**
+     * #347: an accidental supervisor cycle must not loop forever.
+     */
+    public function testGetSubordinateEmployeesHandlesCycles(): void {
+        $a = $this->subEmp(2, 1);
+        $b = $this->subEmp(3, 2);
+        $this->employeeMapper->method('findBySupervisor')->willReturnCallback(
+            fn(int $sid): array => match ($sid) {
+                1 => [$a],
+                2 => [$b],
+                3 => [$a], // cycle back to id 2's subtree
+                default => [],
+            }
+        );
+
+        $ids = array_map(fn(Employee $e) => $e->getId(), $this->service->getSubordinateEmployees(1));
+        sort($ids);
+        $this->assertSame([2, 3], $ids); // each visited once, no infinite loop
+    }
 }
