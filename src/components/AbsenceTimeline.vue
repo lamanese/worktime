@@ -275,7 +275,7 @@ export default {
 
 .timeline-day-header.holiday,
 .timeline-cell.holiday {
-	background-color: var(--wt-holiday-bg, #fbf3e6);
+	background-color: var(--wt-holiday-bg, rgba(201, 139, 58, 0.13));
 }
 
 /* Abwesenheit füllt die ganze Zelle (kein abgesetzter Balken mehr) */
