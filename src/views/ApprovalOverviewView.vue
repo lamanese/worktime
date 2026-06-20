@@ -2,307 +2,134 @@
     <div class="approval-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Genehmigungen') }}</h2>
-            <div class="view-header__controls">
-                <NcSelect v-model="statusFilter"
-                    :options="statusOptions"
-                    :placeholder="t('worktime', 'Alle Status')"
-                    :clearable="true"
-                    label="label"
-                    class="status-filter" />
-                <MonthPicker :year="year"
-                    :month="month"
-                    :allow-past="true"
-                    @update="onMonthChange" />
-            </div>
         </div>
 
-        <!-- Zur Kenntnisnahme (Krankmeldungen) -->
-        <div v-if="informationalAbsences.length > 0" class="report-section">
-            <h3>{{ t('worktime', 'Zur Kenntnisnahme') }} <InfoIcon>{{ t('worktime', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon> ({{ informationalAbsences.length }})</h3>
-            <table class="approval-table">
-                <thead>
-                    <tr>
-                        <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                        <th>{{ t('worktime', 'Art') }}</th>
-                        <th>{{ t('worktime', 'Zeitraum') }}</th>
-                        <th class="center">{{ t('worktime', 'Tage') }}</th>
-                        <th>{{ t('worktime', 'Bemerkung') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="absence in informationalAbsences" :key="absence.id">
-                        <td class="employee-cell">
-                            <NcAvatar :user="absence.employeeUserId"
-                                :display-name="absence.employeeName"
-                                :size="32" />
-                            <span class="employee-name">{{ absence.employeeName }}</span>
-                        </td>
-                        <td>{{ getAbsenceTypeLabel(absence.type) }}</td>
-                        <td>{{ formatDate(absence.startDate) }} - {{ formatDate(absence.endDate) }}</td>
-                        <td class="center">{{ absence.days }}</td>
-                        <td class="note-cell"><span class="note-text">{{ absence.note || '-' }}</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <NcLoadingIcon v-if="loading" :size="44" class="loading" />
 
-        <!-- Ausstehende Abwesenheiten -->
-        <div v-if="pendingAbsences.length > 0" class="report-section">
-            <h3>{{ t('worktime', 'Ausstehende Urlaubsanträge') }} <InfoIcon>{{ t('worktime', 'Diese Anträge warten auf Ihre Genehmigung oder Ablehnung. Erst nach Genehmigung werden sie vom Urlaubskonto abgezogen.') }}</InfoIcon> ({{ pendingAbsences.length }})</h3>
-            <table class="approval-table">
-                <thead>
-                    <tr>
-                        <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                        <th>{{ t('worktime', 'Art') }}</th>
-                        <th>{{ t('worktime', 'Zeitraum') }}</th>
-                        <th class="center">{{ t('worktime', 'Tage') }}</th>
-                        <th>{{ t('worktime', 'Bemerkung') }}</th>
-                        <th class="center">{{ t('worktime', 'Aktionen') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="absence in pendingAbsences" :key="absence.id">
-                        <td class="employee-cell">
-                            <NcAvatar :user="absence.employeeUserId"
-                                :display-name="absence.employeeName"
-                                :size="32" />
-                            <span class="employee-name">{{ absence.employeeName }}</span>
-                        </td>
-                        <td>{{ getAbsenceTypeLabel(absence.type) }}</td>
-                        <td>{{ formatDate(absence.startDate) }} - {{ formatDate(absence.endDate) }}</td>
-                        <td class="center">{{ absence.days }}</td>
-                        <td class="note-cell"><span class="note-text">{{ absence.note || '-' }}</span></td>
-                        <td class="center actions-cell">
-                            <NcButton type="primary"
-                                :disabled="processingAbsence === absence.id"
-                                @click="approveAbsence(absence.id)">
-                                <template #icon>
-                                    <NcLoadingIcon v-if="processingAbsence === absence.id" :size="20" />
-                                    <CheckIcon v-else :size="20" />
-                                </template>
-                                {{ t('worktime', 'Genehmigen') }}
-                            </NcButton>
-                            <NcButton type="error"
-                                :disabled="processingAbsence === absence.id"
-                                @click="rejectAbsence(absence.id)">
-                                <template #icon>
-                                    <CloseIcon :size="20" />
-                                </template>
-                                {{ t('worktime', 'Ablehnen') }}
-                            </NcButton>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <template v-else>
+            <!-- Eingangsliste: Urlaubsanträge + Monatsabschlüsse, älteste zuerst (#344/#240) -->
+            <section v-if="inboxItems.length > 0" class="inbox">
+                <p class="inbox-hint">
+                    {{ t('worktime', 'Älteste zuerst – auch aus früheren Monaten.') }}
+                </p>
+                <div class="chips">
+                    <button class="chip" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
+                        {{ t('worktime', 'Alle') }} {{ inboxItems.length }}
+                    </button>
+                    <button class="chip" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
+                        {{ t('worktime', 'Urlaub') }} {{ absenceCount }}
+                    </button>
+                    <button class="chip" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
+                        {{ t('worktime', 'Zeiten') }} {{ monthCount }}
+                    </button>
+                </div>
 
-        <!-- Zeiteinträge Übersicht (nur bei aktiviertem Genehmigungs-Workflow) -->
-        <div v-if="approvalRequired" class="report-section">
-            <h3>{{ t('worktime', 'Zeiteinträge') }}</h3>
-
-            <NcLoadingIcon v-if="loading" :size="44" />
-
-            <div v-else-if="filteredEmployees.length > 0" class="approval-table-wrapper">
                 <table class="approval-table">
-                <thead>
-                    <tr>
-                        <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                        <th class="center">{{ t('worktime', 'Entwurf') }}</th>
-                        <th class="center">{{ t('worktime', 'Eingereicht') }}</th>
-                        <th class="center">{{ t('worktime', 'Genehmigt') }}</th>
-                        <th class="center">{{ t('worktime', 'Abgelehnt') }}</th>
-                        <th class="center">{{ t('worktime', 'Status') }}</th>
-                        <th class="center">{{ t('worktime', 'Aktionen') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template v-for="item in filteredEmployees">
-                    <tr :key="item.employee.id"
-                        class="employee-row"
-                        :class="{ expanded: expandedEmployeeId === item.employee.id }"
-                        @click="toggleDetails(item.employee.id)">
-                        <td class="employee-cell">
-                            <ChevronDownIcon v-if="expandedEmployeeId === item.employee.id"
-                                :size="18"
-                                class="chevron-icon" />
-                            <ChevronRightIcon v-else
-                                :size="18"
-                                class="chevron-icon" />
-                            <NcAvatar :user="item.employee.userId"
-                                :display-name="item.employee.fullName"
-                                :size="32" />
-                            <span class="employee-name">{{ item.employee.fullName }}</span>
-                        </td>
-                        <td class="center">
-                            <span v-if="item.monthStatus.draft > 0" class="count-badge draft">
-                                {{ item.monthStatus.draft }}
-                            </span>
-                            <span v-else class="count-zero">-</span>
-                        </td>
-                        <td class="center">
-                            <span v-if="item.monthStatus.submitted > 0" class="count-badge submitted">
-                                {{ item.monthStatus.submitted }}
-                            </span>
-                            <span v-else class="count-zero">-</span>
-                        </td>
-                        <td class="center">
-                            <span v-if="item.monthStatus.approved > 0" class="count-badge approved">
-                                {{ item.monthStatus.approved }}
-                            </span>
-                            <span v-else class="count-zero">-</span>
-                        </td>
-                        <td class="center">
-                            <span v-if="item.monthStatus.rejected > 0" class="count-badge rejected">
-                                {{ item.monthStatus.rejected }}
-                            </span>
-                            <span v-else class="count-zero">-</span>
-                        </td>
-                        <td class="center">
-                            <span v-if="item.monthStatus.isFullyApproved" class="overall-status approved">
-                                {{ t('worktime', 'Vollständig') }}
-                            </span>
-                            <span v-else-if="item.monthStatus.total === 0" class="overall-status empty">
-                                {{ t('worktime', 'Keine Einträge') }}
-                            </span>
-                            <span v-else-if="item.monthStatus.canApprove" class="overall-status pending">
-                                {{ t('worktime', 'Ausstehend') }}
-                            </span>
-                            <span v-else class="overall-status draft">
-                                {{ t('worktime', 'In Bearbeitung') }}
-                            </span>
-                        </td>
-                        <td class="center" @click.stop>
-                            <NcButton v-if="item.monthStatus.canApprove"
-                                type="primary"
-                                :disabled="approvingEmployee === item.employee.id"
-                                @click="approveMonth(item.employee.id)">
-                                <template #icon>
-                                    <NcLoadingIcon v-if="approvingEmployee === item.employee.id" :size="20" />
-                                    <CheckIcon v-else :size="20" />
-                                </template>
-                                {{ t('worktime', 'Genehmigen') }}
-                            </NcButton>
-                            <NcButton v-if="item.monthStatus.approved > 0"
-                                type="tertiary"
-                                :disabled="reopeningEmployee === item.employee.id"
-                                @click="openReopenModal(item.employee)">
-                                <template #icon>
-                                    <NcLoadingIcon v-if="reopeningEmployee === item.employee.id" :size="20" />
-                                    <RestoreIcon v-else :size="20" />
-                                </template>
-                                {{ t('worktime', 'Genehmigung zurücknehmen') }}
-                            </NcButton>
-                            <span v-if="!item.monthStatus.canApprove && item.monthStatus.approved === 0" class="no-action">-</span>
-                        </td>
-                    </tr>
-                    <tr v-if="expandedEmployeeId === item.employee.id"
-                        :key="`details-${item.employee.id}`"
-                        class="details-row">
-                        <td colspan="7" class="details-cell">
-                            <div class="details-header">
-                                <span class="details-title">{{ t('worktime', 'Einträge im Zeitraum') }}</span>
-                                <NcButton type="tertiary" @click="downloadPdf(item.employee.id)">
-                                    <template #icon>
-                                        <FileDocumentIcon :size="18" />
+                    <thead>
+                        <tr>
+                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
+                            <th>{{ t('worktime', 'Art') }}</th>
+                            <th>{{ t('worktime', 'Details') }}</th>
+                            <th class="actions-col">{{ t('worktime', 'Aktion') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in filteredItems" :key="item.key">
+                            <td>
+                                <div class="who">
+                                    <NcAvatar :user="item.employeeUserId" :display-name="item.employeeName" :size="30" />
+                                    <span class="employee-name">{{ item.employeeName }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="kind" :class="item.kind">
+                                    <span class="kind-dot"></span>
+                                    {{ item.kind === 'month' ? t('worktime', 'Monat') : item.typeLabel }}
+                                </span>
+                            </td>
+                            <td class="detail">{{ item.detail }}</td>
+                            <td class="actions-col">
+                                <div class="actions">
+                                    <template v-if="item.kind === 'absence'">
+                                        <NcButton type="primary"
+                                            :disabled="processingAbsence === item.id"
+                                            @click="approveAbsence(item.id)">
+                                            <template #icon><CheckIcon :size="18" /></template>
+                                            {{ t('worktime', 'Genehmigen') }}
+                                        </NcButton>
+                                        <NcButton type="tertiary"
+                                            :disabled="processingAbsence === item.id"
+                                            @click="rejectAbsence(item.id)">
+                                            <template #icon><CloseIcon :size="18" /></template>
+                                            {{ t('worktime', 'Ablehnen') }}
+                                        </NcButton>
                                     </template>
-                                    {{ t('worktime', 'Monatsbericht als PDF') }}
-                                </NcButton>
-                            </div>
-                            <NcLoadingIcon v-if="loadingDetails === item.employee.id" :size="32" />
-                            <table v-else-if="mergedDetailItems(item.employee.id).length > 0"
-                                class="details-table">
-                                <thead>
-                                    <tr>
-                                        <th>{{ t('worktime', 'Datum') }}</th>
-                                        <th>{{ t('worktime', 'Beginn') }}</th>
-                                        <th>{{ t('worktime', 'Ende') }}</th>
-                                        <th class="center">{{ t('worktime', 'Pause') }}</th>
-                                        <th class="center">{{ t('worktime', 'Arbeitszeit') }}</th>
-                                        <th>{{ t('worktime', 'Projekt') }}</th>
-                                        <th>{{ t('worktime', 'Beschreibung') }}</th>
-                                        <th class="center">{{ t('worktime', 'Status') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template v-for="item2 in mergedDetailItems(item.employee.id)">
-                                        <tr v-if="item2.kind === 'entry'" :key="`e-${item2.id}`">
-                                            <td>{{ formatDate(item2.date) }}</td>
-                                            <td>{{ item2.startTime }}</td>
-                                            <td>{{ item2.endTime }}</td>
-                                            <td class="center">{{ item2.breakMinutes }} min</td>
-                                            <td class="center">{{ formatMinutes(item2.workMinutes) }}</td>
-                                            <td>{{ projectName(item2.projectId) }}</td>
-                                            <td class="description-cell">{{ item2.description || '-' }}</td>
-                                            <td class="center">
-                                                <span class="status-badge" :class="item2.status">
-                                                    {{ statusLabel(item2.status) }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        <tr v-else :key="`a-${item2.id}`" class="detail-absence-row">
-                                            <td class="absence-date-cell">
-                                                <span v-if="item2.startDate === item2.endDate">{{ formatDate(item2.startDate) }}</span>
-                                                <span v-else>{{ formatDate(item2.startDate) }} – {{ formatDate(item2.endDate) }}</span>
-                                            </td>
-                                            <td colspan="4" class="absence-info-cell">
-                                                <span class="absence-type-badge" :class="item2.type">{{ item2.typeName }}</span>
-                                                <span class="absence-days">{{ item2.days }} {{ item2.days === 1 ? t('worktime', 'Tag') : t('worktime', 'Tage') }}</span>
-                                            </td>
-                                            <td>—</td>
-                                            <td class="description-cell">{{ item2.note || '—' }}</td>
-                                            <td class="center">
-                                                <span class="status-badge" :class="item2.status">
-                                                    {{ statusLabel(item2.status) }}
-                                                </span>
-                                            </td>
-                                        </tr>
+                                    <template v-else>
+                                        <NcButton type="primary"
+                                            :disabled="processingMonth === item.key"
+                                            @click="approveMonthItem(item)">
+                                            <template #icon><CheckIcon :size="18" /></template>
+                                            {{ t('worktime', 'Genehmigen') }}
+                                        </NcButton>
+                                        <NcButton type="tertiary"
+                                            :disabled="processingMonth === item.key"
+                                            @click="openReopenModal(item)">
+                                            <template #icon><RestoreIcon :size="18" /></template>
+                                            {{ t('worktime', 'Zurückweisen') }}
+                                        </NcButton>
                                     </template>
-                                </tbody>
-                            </table>
-                            <p v-else class="details-empty">
-                                {{ t('worktime', 'Keine Einträge in diesem Monat.') }}
-                            </p>
-                        </td>
-                    </tr>
-                    </template>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-            </div>
+            </section>
 
-            <NcEmptyContent v-else
-                :name="t('worktime', 'Keine Mitarbeiter')">
-                <template #icon>
-                    <AccountGroupIcon />
-                </template>
+            <!-- Zur Kenntnisnahme: gemeldete Abwesenheiten (z.B. Krankheit), keine Genehmigung nötig -->
+            <section v-if="informationalAbsences.length > 0" class="info-section">
+                <h3>
+                    {{ t('worktime', 'Zur Kenntnisnahme') }}
+                    <InfoIcon>{{ t('worktime', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon>
+                    ({{ informationalAbsences.length }})
+                </h3>
+                <table class="approval-table">
+                    <tbody>
+                        <tr v-for="absence in informationalAbsences" :key="'info-' + absence.id">
+                            <td>
+                                <div class="who">
+                                    <NcAvatar :user="absence.employeeUserId" :display-name="absence.employeeName" :size="30" />
+                                    <span class="employee-name">{{ absence.employeeName }}</span>
+                                </div>
+                            </td>
+                            <td><span class="kind sick"><span class="kind-dot"></span>{{ getAbsenceTypeLabel(absence.type) }}</span></td>
+                            <td class="detail">{{ formatDate(absence.startDate) }} – {{ formatDate(absence.endDate) }} · {{ absence.days }} {{ t('worktime', 'Tage') }}</td>
+                            <td class="actions-col"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <NcEmptyContent v-if="inboxItems.length === 0 && informationalAbsences.length === 0"
+                :name="t('worktime', 'Keine offenen Genehmigungen')">
+                <template #icon><CheckIcon /></template>
                 <template #description>
-                    {{ t('worktime', 'Keine Mitarbeiter mit dem gewählten Filter gefunden.') }}
+                    {{ t('worktime', 'Aktuell wartet nichts auf Ihre Genehmigung.') }}
                 </template>
             </NcEmptyContent>
-        </div>
+        </template>
 
-        <!-- Genehmigung zurücknehmen: Begründung (Pflicht) -->
-        <NcModal v-if="showReopenModal"
-            :name="t('worktime', 'Genehmigung zurücknehmen')"
-            @close="closeReopenModal">
+        <!-- Monat zurückweisen (Grund erforderlich) -->
+        <NcModal v-if="showReopenModal" @close="closeReopenModal">
             <div class="reopen-modal">
-                <h3>{{ t('worktime', 'Genehmigung zurücknehmen für {name}', { name: reopenTarget && reopenTarget.fullName }) }}</h3>
-                <p class="reopen-modal__hint">
-                    {{ t('worktime', 'Die genehmigten Zeiteinträge dieses Monats werden zur Korrektur wieder auf den Status Entwurf gesetzt und müssen anschließend erneut eingereicht und genehmigt werden. Der Vorgang wird im Audit-Log festgehalten.') }}
-                </p>
-                <div class="form-group">
-                    <label>{{ t('worktime', 'Begründung (Pflicht)') }}</label>
-                    <input v-model="reopenReason"
-                        type="text"
-                        :placeholder="t('worktime', 'Grund für die Rücknahme')"
-                        class="input-field"
-                        required>
-                </div>
+                <h3>{{ t('worktime', 'Monat zurückweisen') }}</h3>
+                <p>{{ reopenTarget ? getMonthName(reopenTarget.month) + ' ' + reopenTarget.year + ' – ' + reopenTarget.employeeName : '' }}</p>
+                <label for="reopen-reason">{{ t('worktime', 'Begründung') }}</label>
+                <textarea id="reopen-reason" v-model="reopenReason" rows="3"
+                    :placeholder="t('worktime', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
                 <div class="form-actions">
-                    <NcButton type="tertiary" @click="closeReopenModal">
-                        {{ t('worktime', 'Abbrechen') }}
-                    </NcButton>
+                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
                     <NcButton type="primary"
-                        :disabled="!reopenReason.trim() || reopeningEmployee !== null"
+                        :disabled="!reopenReason.trim() || reopeningKey !== null"
                         @click="submitReopen">
                         {{ t('worktime', 'Genehmigung zurücknehmen') }}
                     </NcButton>
@@ -317,21 +144,13 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
-import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
-import ChevronDownIcon from 'vue-material-design-icons/ChevronDown.vue'
-import FileDocumentIcon from 'vue-material-design-icons/FileDocument.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
-import { mapGetters } from 'vuex'
-import MonthPicker from '../components/MonthPicker.vue'
-import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import AbsenceService from '../services/AbsenceService.js'
-import { getCurrentYear, getCurrentMonth, formatDate } from '../utils/dateUtils.js'
+import { formatDate } from '../utils/dateUtils.js'
 import { getAbsenceTypeLabel } from '../utils/formatters.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { showSuccess, showError } from '@nextcloud/dialogs'
@@ -345,67 +164,65 @@ export default {
         NcEmptyContent,
         NcAvatar,
         NcButton,
-        NcSelect,
         NcModal,
-        AccountGroupIcon,
         CheckIcon,
         CloseIcon,
-        ChevronRightIcon,
-        ChevronDownIcon,
-        FileDocumentIcon,
         RestoreIcon,
-        MonthPicker,
     },
     data() {
         return {
-            year: getCurrentYear(),
-            month: getCurrentMonth(),
-            employees: [],
             pendingAbsences: [],
+            pendingMonths: [],
             informationalAbsences: [],
             loading: false,
-            approvingEmployee: null,
-            reopeningEmployee: null,
+            kindFilter: 'all',
+            processingAbsence: null,
+            processingMonth: null,
             showReopenModal: false,
             reopenTarget: null,
             reopenReason: '',
-            processingAbsence: null,
-            statusFilter: null,
-            expandedEmployeeId: null,
-            detailEntries: {},
-            detailAbsences: {},
-            loadingDetails: null,
-            statusOptions: [
-                { value: 'pending', label: t('worktime', 'Ausstehend (zur Genehmigung)') },
-                { value: 'approved', label: t('worktime', 'Vollständig genehmigt') },
-                { value: 'draft', label: t('worktime', 'In Bearbeitung') },
-                { value: 'empty', label: t('worktime', 'Keine Einträge') },
-            ],
+            reopeningKey: null,
         }
     },
     computed: {
-        ...mapGetters('projects', ['getProjectById']),
-        ...mapGetters('permissions', ['approvalRequired']),
-        filteredEmployees() {
-            if (!this.statusFilter) {
-                return this.employees
-            }
-
-            return this.employees.filter(item => {
-                const status = item.monthStatus
-                switch (this.statusFilter.value) {
-                    case 'pending':
-                        return status.canApprove
-                    case 'approved':
-                        return status.isFullyApproved
-                    case 'draft':
-                        return !status.isFullyApproved && !status.canApprove && status.total > 0
-                    case 'empty':
-                        return status.total === 0
-                    default:
-                        return true
-                }
-            })
+        absenceItems() {
+            return this.pendingAbsences.map(a => ({
+                key: 'a-' + a.id,
+                kind: 'absence',
+                id: a.id,
+                employeeName: a.employeeName,
+                employeeUserId: a.employeeUserId,
+                typeLabel: getAbsenceTypeLabel(a.type),
+                detail: `${formatDate(a.startDate)} – ${formatDate(a.endDate)} · ${a.days} ${t('worktime', 'Tage')}`,
+                waitingSince: (a.createdAt || a.startDate || '').slice(0, 10),
+            }))
+        },
+        monthItems() {
+            return this.pendingMonths.map(m => ({
+                key: `m-${m.employeeId}-${m.year}-${m.month}`,
+                kind: 'month',
+                employeeId: m.employeeId,
+                year: m.year,
+                month: m.month,
+                employeeName: m.employeeName,
+                employeeUserId: m.employeeUserId,
+                detail: `${this.getMonthName(m.month)} ${m.year} · ${formatMinutes(m.actualMinutes)} h · ${m.entryCount} ${t('worktime', 'Einträge')}`,
+                waitingSince: (m.submittedAt || `${m.year}-${String(m.month).padStart(2, '0')}-01`).slice(0, 10),
+            }))
+        },
+        inboxItems() {
+            return [...this.absenceItems, ...this.monthItems]
+                .sort((a, b) => a.waitingSince.localeCompare(b.waitingSince))
+        },
+        absenceCount() {
+            return this.absenceItems.length
+        },
+        monthCount() {
+            return this.monthItems.length
+        },
+        filteredItems() {
+            if (this.kindFilter === 'all') return this.inboxItems
+            return this.inboxItems.filter(i => i.kind === this.kindFilter)
         },
     },
     created() {
@@ -413,161 +230,33 @@ export default {
     },
     methods: {
         getAbsenceTypeLabel,
+        formatDate,
+        getMonthName(month) {
+            const names = [
+                t('worktime', 'Januar'), t('worktime', 'Februar'), t('worktime', 'März'),
+                t('worktime', 'April'), t('worktime', 'Mai'), t('worktime', 'Juni'),
+                t('worktime', 'Juli'), t('worktime', 'August'), t('worktime', 'September'),
+                t('worktime', 'Oktober'), t('worktime', 'November'), t('worktime', 'Dezember'),
+            ]
+            return names[month - 1] || String(month)
+        },
         async loadData() {
             this.loading = true
             const results = await Promise.allSettled([
-                ReportService.getAllEmployeesStatus(this.year, this.month),
                 AbsenceService.getPending(),
+                TimeEntryService.getPendingMonths(),
                 AbsenceService.getInformational(),
             ])
-            this.employees = results[0].status === 'fulfilled' ? results[0].value : []
-            this.pendingAbsences = results[1].status === 'fulfilled' ? results[1].value : []
-            this.informationalAbsences = results[2].status === 'fulfilled' ? results[2].value : []
-
+            this.pendingAbsences = results[0].status === 'fulfilled' ? (results[0].value || []) : []
+            this.pendingMonths = results[1].status === 'fulfilled' ? (results[1].value || []) : []
+            this.informationalAbsences = results[2].status === 'fulfilled' ? (results[2].value || []) : []
             results.forEach((r, i) => {
                 if (r.status === 'rejected') {
-                    const names = ['getAllEmployeesStatus', 'getPending', 'getInformational']
+                    const names = ['getPending', 'getPendingMonths', 'getInformational']
                     console.error(`Failed: ${names[i]}`, r.reason)
                 }
             })
             this.loading = false
-        },
-        formatDate(date) {
-            return formatDate(date)
-        },
-        formatMinutes(minutes) {
-            return formatMinutes(minutes)
-        },
-        projectName(projectId) {
-            if (!projectId) return '-'
-            const project = this.getProjectById(projectId)
-            return project ? project.name : '-'
-        },
-        statusLabel(status) {
-            const labels = {
-                draft: t('worktime', 'Entwurf'),
-                submitted: t('worktime', 'Eingereicht'),
-                approved: t('worktime', 'Genehmigt'),
-                rejected: t('worktime', 'Abgelehnt'),
-                pending: t('worktime', 'Ausstehend'),
-                cancelled: t('worktime', 'Storniert'),
-            }
-            return labels[status] || status
-        },
-        calendarDays(startStr, endStr) {
-            return Math.round((new Date(endStr) - new Date(startStr)) / 86400000) + 1
-        },
-        mergedDetailItems(employeeId) {
-            const pad = n => String(n).padStart(2, '0')
-            const monthStart = `${this.year}-${pad(this.month)}-01`
-            const lastDay = new Date(this.year, this.month, 0).getDate()
-            const monthEnd = `${this.year}-${pad(this.month)}-${pad(lastDay)}`
-
-            const entries = (this.detailEntries[employeeId] || []).map(e => ({ ...e, kind: 'entry' }))
-            const absences = (this.detailAbsences[employeeId] || []).map(a => {
-                const clippedStart = a.startDate < monthStart ? monthStart : a.startDate
-                const clippedEnd = a.endDate > monthEnd ? monthEnd : a.endDate
-                let clippedDays = a.days
-                if (a.startDate < monthStart || a.endDate > monthEnd) {
-                    const totalCal = this.calendarDays(a.startDate, a.endDate)
-                    const clippedCal = this.calendarDays(clippedStart, clippedEnd)
-                    clippedDays = totalCal > 0 ? Math.max(1, Math.round(a.days * clippedCal / totalCal)) : a.days
-                }
-                return { ...a, kind: 'absence', startDate: clippedStart, endDate: clippedEnd, days: clippedDays }
-            })
-
-            return [...entries, ...absences].sort((a, b) => {
-                const dateA = a.kind === 'entry' ? a.date : a.startDate
-                const dateB = b.kind === 'entry' ? b.date : b.startDate
-                const cmp = dateA.localeCompare(dateB)
-                if (cmp !== 0) return cmp
-                if (a.kind === 'absence' && b.kind === 'entry') return -1
-                if (a.kind === 'entry' && b.kind === 'absence') return 1
-                if (a.kind === 'entry' && b.kind === 'entry') return a.startTime.localeCompare(b.startTime)
-                return 0
-            })
-        },
-        async toggleDetails(employeeId) {
-            if (this.expandedEmployeeId === employeeId) {
-                this.expandedEmployeeId = null
-                return
-            }
-            this.expandedEmployeeId = employeeId
-            if (this.detailEntries[employeeId]) {
-                return
-            }
-            this.loadingDetails = employeeId
-            try {
-                const [entries, absences] = await Promise.all([
-                    TimeEntryService.getByEmployee(employeeId, this.year, this.month),
-                    AbsenceService.getByEmployee(employeeId, this.year, this.month),
-                ])
-                this.$set(this.detailEntries, employeeId, entries || [])
-                this.$set(this.detailAbsences, employeeId, absences || [])
-            } catch (error) {
-                console.error('Failed to load details:', error)
-                showError(t('worktime', 'Fehler beim Laden der Einträge'))
-                this.$set(this.detailEntries, employeeId, [])
-                this.$set(this.detailAbsences, employeeId, [])
-            } finally {
-                this.loadingDetails = null
-            }
-        },
-        downloadPdf(employeeId) {
-            ReportService.downloadPdf(employeeId, this.year, this.month)
-        },
-        onMonthChange({ year, month }) {
-            this.year = year
-            this.month = month
-            this.expandedEmployeeId = null
-            this.detailEntries = {}
-            this.detailAbsences = {}
-            this.loadData()
-        },
-        async approveMonth(employeeId) {
-            this.approvingEmployee = employeeId
-            try {
-                const result = await TimeEntryService.approveMonth(employeeId, this.year, this.month)
-                showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
-                this.$delete(this.detailEntries, employeeId)
-                this.$delete(this.detailAbsences, employeeId)
-                await this.loadData()
-            } catch (error) {
-                console.error('Failed to approve month:', error)
-                showError(t('worktime', 'Fehler beim Genehmigen'))
-            } finally {
-                this.approvingEmployee = null
-            }
-        },
-        openReopenModal(employee) {
-            this.reopenTarget = employee
-            this.reopenReason = ''
-            this.showReopenModal = true
-        },
-        closeReopenModal() {
-            this.showReopenModal = false
-            this.reopenTarget = null
-            this.reopenReason = ''
-        },
-        async submitReopen() {
-            if (!this.reopenTarget || !this.reopenReason.trim()) {
-                return
-            }
-            const employeeId = this.reopenTarget.id
-            this.reopeningEmployee = employeeId
-            try {
-                const result = await TimeEntryService.reopenMonth(employeeId, this.year, this.month, this.reopenReason.trim())
-                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
-                this.closeReopenModal()
-                this.$delete(this.detailEntries, employeeId)
-                this.$delete(this.detailAbsences, employeeId)
-                await this.loadData()
-            } catch (error) {
-                console.error('Failed to reopen month:', error)
-                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
-            } finally {
-                this.reopeningEmployee = null
-            }
         },
         async approveAbsence(absenceId) {
             this.processingAbsence = absenceId
@@ -595,6 +284,45 @@ export default {
                 this.processingAbsence = null
             }
         },
+        async approveMonthItem(item) {
+            this.processingMonth = item.key
+            try {
+                const result = await TimeEntryService.approveMonth(item.employeeId, item.year, item.month)
+                showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
+                await this.loadData()
+            } catch (error) {
+                console.error('Failed to approve month:', error)
+                showError(t('worktime', 'Fehler beim Genehmigen'))
+            } finally {
+                this.processingMonth = null
+            }
+        },
+        openReopenModal(item) {
+            this.reopenTarget = item
+            this.reopenReason = ''
+            this.showReopenModal = true
+        },
+        closeReopenModal() {
+            this.showReopenModal = false
+            this.reopenTarget = null
+            this.reopenReason = ''
+        },
+        async submitReopen() {
+            if (!this.reopenTarget || !this.reopenReason.trim()) return
+            const item = this.reopenTarget
+            this.reopeningKey = item.key
+            try {
+                const result = await TimeEntryService.reopenMonth(item.employeeId, item.year, item.month, this.reopenReason.trim())
+                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
+                this.closeReopenModal()
+                await this.loadData()
+            } catch (error) {
+                console.error('Failed to reopen month:', error)
+                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
+            } finally {
+                this.reopeningKey = null
+            }
+        },
     },
 }
 </script>
@@ -607,346 +335,193 @@ export default {
 }
 
 .view-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .view-header h2 {
-    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
 }
 
-.view-header__controls {
+.loading {
+    margin-top: 40px;
+}
+
+.inbox-hint {
+    font-size: 12.5px;
+    color: #9a6c25;
+    background: var(--color-warning-element-light, #fdf6e3);
+    border: 1px solid var(--color-warning, #c8932a);
+    border-radius: var(--border-radius);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.chips {
     display: flex;
-    gap: 12px;
-    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
-.status-filter {
-    min-width: 200px;
-}
-
-.report-section {
-    margin-bottom: 18px;
-    background: var(--color-main-background);
-    border: 1px solid var(--color-border-dark, var(--color-border));
-    border-radius: var(--border-radius-large, 12px);
-    padding: 16px 20px;
-}
-
-.report-section h3 {
-    margin: 0 0 14px 0;
-    font-size: 17px;
+.chip {
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-main-text);
+    background: var(--color-background-dark);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 6px 13px;
+    cursor: pointer;
 }
 
-.approval-table-wrapper {
-    overflow-x: auto;
+.chip.active {
+    background: var(--color-primary-element-light);
+    color: var(--color-primary-element);
 }
 
 .approval-table {
     width: 100%;
     border-collapse: collapse;
-}
-
-.approval-table th,
-.approval-table td {
-    padding: 10px 12px;
-    text-align: left;
-    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    margin-bottom: 24px;
 }
 
 .approval-table th {
-    font-size: 15px;
+    text-align: left;
+    font-size: 12px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .approval-table td {
-    border-bottom: 1px solid var(--color-border);
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--color-border-light, var(--color-border));
+    vertical-align: middle;
 }
 
-.approval-table tr:last-child td {
-    border-bottom: none;
-}
-
-.approval-table th.center,
-.approval-table td.center {
-    text-align: center;
-}
-
-.employee-cell {
+.who {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 9px;
 }
 
 .employee-name {
-    font-size: 15px;
-    font-weight: 500;
-}
-
-.count-badge {
-    display: inline-block;
-    min-width: 24px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 13px;
     font-weight: 600;
 }
 
-.count-badge.draft {
-    background: var(--color-background-darker);
-    color: var(--color-text-maxcontrast);
-}
-
-.count-badge.submitted {
-    background: var(--color-warning-element-light);
-    color: var(--color-warning-text);
-}
-
-.count-badge.approved {
-    background: var(--color-success-element-light);
-    color: var(--color-success-text);
-}
-
-.count-badge.rejected {
-    background: var(--color-error-element-light);
-    color: var(--color-error-text);
-}
-
-.count-zero {
-    color: var(--color-text-maxcontrast);
-}
-
-.overall-status {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.overall-status.approved {
-    background: var(--color-success-element-light);
-    color: var(--color-success-text);
-}
-
-.overall-status.pending {
-    background: var(--color-warning-element-light);
-    color: var(--color-warning-text);
-}
-
-.overall-status.draft {
-    background: var(--color-background-darker);
-    color: var(--color-text-maxcontrast);
-}
-
-.overall-status.empty {
-    background: var(--color-background-dark);
-    color: var(--color-text-maxcontrast);
-}
-
-.no-action {
-    color: var(--color-text-maxcontrast);
-}
-
-.actions-cell {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-.employee-row {
-    cursor: pointer;
-    transition: background-color 0.15s;
-}
-
-.employee-row:hover {
-    background-color: var(--color-background-hover);
-}
-
-.employee-row.expanded {
-    background-color: var(--color-background-dark);
-}
-
-.chevron-icon {
-    color: var(--color-text-maxcontrast);
-    flex-shrink: 0;
-}
-
-.details-row td.details-cell {
-    background-color: var(--color-background-hover);
-    padding: 16px 24px 20px 54px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.details-header {
-    display: flex;
-    justify-content: space-between;
+.kind {
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 3px 9px;
+    display: inline-flex;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 6px;
+    white-space: nowrap;
 }
 
-.details-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--color-text-maxcontrast);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.kind-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
 }
 
-.details-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--color-main-background);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.details-table th,
-.details-table td {
-    padding: 8px 12px;
-    text-align: left;
-    font-size: 13px;
-    font-variant-numeric: tabular-nums;
-}
-
-.details-table th {
-    font-weight: 600;
-    color: var(--color-text-maxcontrast);
-    background: var(--color-background-dark);
-    border-bottom: 1px solid var(--color-border);
-}
-
-.details-table td {
-    border-bottom: 1px solid var(--color-border);
-}
-
-.details-table tr:last-child td {
-    border-bottom: none;
-}
-
-.details-table th.center,
-.details-table td.center {
-    text-align: center;
-}
-
-.description-cell {
-    max-width: 280px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
-
-/* Bemerkung (Anzeige): kappt die Spaltenbreite und bricht lange Texte um,
-   damit die Tabelle nicht über ihren Container hinauswächst (#275). */
-.note-cell .note-text {
-    display: inline-block;
-    max-width: 22rem;
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.status-badge.draft {
-    background: var(--color-background-darker);
-    color: var(--color-text-maxcontrast);
-}
-
-.status-badge.submitted {
-    background: var(--color-warning-element-light);
-    color: var(--color-warning-text);
-}
-
-.status-badge.approved {
-    background: var(--color-success-element-light);
-    color: var(--color-success-text);
-}
-
-.status-badge.rejected {
-    background: var(--color-error-element-light);
-    color: var(--color-error-text);
-}
-
-.details-empty {
-    margin: 0;
-    padding: 8px 0;
-    font-size: 13px;
-    color: var(--color-text-maxcontrast);
-    font-style: italic;
-}
-
-.detail-absence-row {
+.kind.absence {
     background: var(--color-background-hover);
+    color: #2f7d49;
 }
 
-.absence-date-cell {
-    font-weight: 500;
+.kind.absence .kind-dot {
+    background: #4a9d63;
 }
 
-.absence-info-cell {
+.kind.month {
+    background: var(--color-primary-element-light);
+    color: var(--color-primary-element);
+}
+
+.kind.month .kind-dot {
+    background: var(--color-primary-element);
+}
+
+.kind.sick {
+    background: var(--color-background-hover);
+    color: #b03b33;
+}
+
+.kind.sick .kind-dot {
+    background: #cc4b42;
+}
+
+.detail {
+    color: var(--color-main-text);
+}
+
+.actions-col {
+    /* Links ausgerichtet: "Genehmigen" ist in jeder Zeile gleich breit und
+       startet dadurch immer an der gleichen Stelle (unabhängig davon, ob der
+       zweite Button "Ablehnen" oder "Zurückweisen" heißt). */
+    text-align: left;
+    white-space: nowrap;
+    width: 1%;
+}
+
+.actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-start;
+}
+
+.info-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-}
-
-.absence-type-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #fff;
-    background: #2563eb;
-}
-
-.absence-type-badge.vacation { background: var(--wt-vacation, #4a9d63); }
-.absence-type-badge.sick { background: var(--wt-sick, #cc4b42); }
-.absence-type-badge.child_sick { background: var(--wt-child-sick, #d4763a); }
-.absence-type-badge.compensatory { background: var(--wt-compensatory, #7c3aed); }
-.absence-type-badge.unpaid { background: var(--wt-unpaid, #6b7280); }
-.absence-type-badge.special { background: var(--wt-special, #0891b2); }
-.absence-type-badge.training { background: var(--wt-holiday, #c98b3a); }
-
-.absence-days {
-    font-size: 12px;
-    color: var(--color-text-maxcontrast);
+    gap: 6px;
 }
 
 .reopen-modal {
-    padding: 20px 24px 24px;
+    padding: 22px;
+    max-width: 460px;
 }
 
-.reopen-modal__hint {
+.reopen-modal h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.reopen-modal p {
     color: var(--color-text-maxcontrast);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
-.reopen-modal .form-group {
-    margin-bottom: 16px;
+.reopen-modal label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+    margin-bottom: 4px;
 }
 
-.reopen-modal .input-field {
+.reopen-modal textarea {
     width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 9px 11px;
+    font-family: inherit;
+    font-size: 14px;
 }
 
-.reopen-modal .form-actions {
+.form-actions {
     display: flex;
-    gap: 8px;
     justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
 }
-
 </style>

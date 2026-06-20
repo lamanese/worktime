@@ -1,6 +1,16 @@
 import api, { handleApiError } from './api.js'
 
 export default {
+    // Cross-month approval inbox of submitted month-ends (#344).
+    async getPendingMonths() {
+        try {
+            const response = await api.get('/time-entries/pending-months')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getByEmployee(employeeId, year = null, month = null) {
         try {
             const params = { employeeId }

@@ -64,9 +64,7 @@
                             <ClockOutlineIcon v-else-if="m.status === 'submitted'"
                                 :size="20"
                                 class="status-icon status-submitted"
-                                :class="{ clickable: m.canApprove }"
-                                :title="m.canApprove ? t('worktime', 'Klicken zum Genehmigen') : t('worktime', 'Eingereicht')"
-                                @click="m.canApprove ? onApproveClick(member, m.month) : null" />
+                                :title="t('worktime', 'Eingereicht')" />
                             <CloseCircleIcon v-else-if="m.status === 'rejected'"
                                 :size="20"
                                 class="status-icon status-rejected"
@@ -77,52 +75,21 @@
                 </tbody>
             </table>
         </div>
-
-        <!-- Approval Dialog -->
-        <NcDialog v-if="approveDialog.show"
-            :name="t('worktime', 'Monat genehmigen')"
-            @closing="approveDialog.show = false">
-            <p>
-                {{ getMonthName(approveDialog.month) }} {{ t('worktime', 'für') }}
-                <strong>{{ approveDialog.employeeName }}</strong> {{ t('worktime', 'genehmigen?') }}
-            </p>
-            <template #actions>
-                <NcButton type="tertiary" @click="approveDialog.show = false">
-                    {{ t('worktime', 'Abbrechen') }}
-                </NcButton>
-                <NcButton type="primary"
-                    :disabled="approveDialog.loading"
-                    @click="confirmApprove">
-                    <template v-if="approveDialog.loading" #icon>
-                        <NcLoadingIcon :size="20" />
-                    </template>
-                    {{ t('worktime', 'Genehmigen') }}
-                </NcButton>
-            </template>
-        </NcDialog>
     </div>
 </template>
 
 <script>
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import CheckCircleIcon from 'vue-material-design-icons/CheckCircle.vue'
 import ClockOutlineIcon from 'vue-material-design-icons/ClockOutline.vue'
 import CloseCircleIcon from 'vue-material-design-icons/CloseCircle.vue'
-import { getMonthNameShort, getMonthName } from '../utils/dateUtils.js'
+import { getMonthNameShort } from '../utils/dateUtils.js'
 import { formatMinutes } from '../utils/timeUtils.js'
-import TimeEntryService from '../services/TimeEntryService.js'
-import { showSuccess, showError } from '@nextcloud/dialogs'
 
 export default {
     name: 'TeamYearTable',
     components: {
         NcAvatar,
-        NcButton,
-        NcDialog,
-        NcLoadingIcon,
         CheckCircleIcon,
         ClockOutlineIcon,
         CloseCircleIcon,
@@ -137,20 +104,8 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            approveDialog: {
-                show: false,
-                employeeId: null,
-                employeeName: '',
-                month: null,
-                loading: false,
-            },
-        }
-    },
     methods: {
         getMonthNameShort,
-        getMonthName,
         formatOvertimeShort(minutes) {
             if (minutes === null || minutes === undefined) return '--'
             const sign = minutes >= 0 ? '+' : ''
@@ -161,33 +116,6 @@ export default {
             if (minutes > 0) return 'positive'
             if (minutes < 0) return 'negative'
             return ''
-        },
-        onApproveClick(member, month) {
-            this.approveDialog = {
-                show: true,
-                employeeId: member.employee.id,
-                employeeName: member.employee.fullName,
-                month,
-                loading: false,
-            }
-        },
-        async confirmApprove() {
-            this.approveDialog.loading = true
-            try {
-                const result = await TimeEntryService.approveMonth(
-                    this.approveDialog.employeeId,
-                    this.year,
-                    this.approveDialog.month,
-                )
-                showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
-                this.approveDialog.show = false
-                this.$emit('approved')
-            } catch (error) {
-                console.error('Failed to approve month:', error)
-                showError(t('worktime', 'Fehler beim Genehmigen'))
-            } finally {
-                this.approveDialog.loading = false
-            }
         },
     },
 }

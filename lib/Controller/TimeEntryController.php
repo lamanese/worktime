@@ -58,6 +58,25 @@ class TimeEntryController extends BaseController {
         return $this->successResponse($entries);
     }
 
+    /**
+     * Cross-month approval inbox of submitted month-ends (#344). Scope is the
+     * requester's visible employees (Admin/HR: all; supervisor: their team);
+     * non-approvers get an empty list.
+     */
+    #[NoAdminRequired]
+    public function pendingMonths(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        $employeeIds = array_map(
+            static fn($employee) => $employee->getId(),
+            $this->permissionService->getTeamMembers($this->userId)
+        );
+
+        return $this->successResponse($this->timeEntryService->findSubmittedMonths($employeeIds));
+    }
+
     #[NoAdminRequired]
     public function show(int $id): JSONResponse {
         if ($authError = $this->requireAuth()) {
