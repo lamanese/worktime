@@ -52,7 +52,8 @@
                         type="date"
                         :format="'DD.MM.YYYY'"
                         class="inline-picker"
-                        :disabled="form.scope < 1.0" />
+                        :disabled="form.scope < 1.0"
+                        @input="onEndDateChange" />
                 </div>
             </td>
             <td>
@@ -164,6 +165,9 @@ export default {
                 note: '',
                 scope: 1.0,
             },
+            // Tracks whether the user deliberately picked an end date. While false,
+            // the end date follows the start date (single day is the default outcome).
+            endTouched: false,
             scopeOptions: [
                 { id: 1.0, label: this.t('worktime', 'Ganzer Tag') },
                 { id: 0.5, label: this.t('worktime', 'Halber Tag') },
@@ -316,6 +320,8 @@ export default {
                 note: absence.note || '',
                 scope: absence.scope ?? 1.0,
             }
+            // Existing absence already has an explicit end date -> don't auto-clobber it.
+            this.endTouched = true
         },
         resetForm() {
             this.form = {
@@ -325,12 +331,26 @@ export default {
                 note: '',
                 scope: 1.0,
             }
+            // Fresh form: end date follows the start until the user picks one.
+            this.endTouched = false
         },
         onStartDateChange() {
-            // Half day (scope < 1) must be single day
+            // Half day (scope < 1) must always be a single day.
             if (this.form.scope < 1.0) {
                 this.form.endDate = new Date(this.form.startDate)
+                return
             }
+            // Full day: the end date follows the start until the user sets it
+            // explicitly, or whenever the start moves past the current end. This
+            // prevents the phantom range that occurred when the end stayed on the
+            // form default ("today") while the start was moved to an earlier day.
+            if (!this.endTouched || this.form.endDate < this.form.startDate) {
+                this.form.endDate = new Date(this.form.startDate)
+            }
+        },
+        onEndDateChange() {
+            // User deliberately picked an end date -> stop auto-following the start.
+            this.endTouched = true
         },
         onKeydown(event) {
             if (event.key === 'Enter' && this.isValid) {
