@@ -391,6 +391,9 @@ tr td {
     padding: 14px 12px;
     font-size: 16px;
     border-bottom: 1px solid var(--color-border);
+    /* Alle Zelltexte oben ausrichten — bei hohen Zeilen (lange Bemerkung) bleibt
+       so alles bündig oben statt vertikal zentriert. */
+    vertical-align: top;
 }
 
 tr.editing {
@@ -536,17 +539,21 @@ tr.creating {
     font-weight: 500;
 }
 
+/* KEIN display:flex auf dem <td>: eine Flex-Zelle ist nur so hoch wie ihr Text,
+   wodurch der border-bottom in hohen Zeilen mittig zeichnet (Linie unter
+   "Krankheit"). Normale Tabellenzelle + Dot inline. */
 .type-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    overflow-wrap: anywhere;
 }
 
 .type-dot {
+    display: inline-block;
     width: 10px;
     height: 10px;
     min-width: 10px;
     border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
 .type-dot.type-vacation { background-color: #0082c9; }
