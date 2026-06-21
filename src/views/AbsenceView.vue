@@ -78,39 +78,39 @@
             <!-- Sicherheitsnetz: schmale Viewports lassen die Tabelle horizontal
                  scrollen statt über die Card-Kante zu laufen (#361). -->
             <div v-else-if="absences.length > 0 || isCreating" class="absence-table-wrap">
-            <table class="absence-table">
-                <thead>
-                    <tr>
-                        <th>{{ t('worktime', 'Zeitraum') }}</th>
-                        <th>{{ t('worktime', 'Art') }}</th>
-                        <th>{{ t('worktime', 'Tage') }}</th>
-                        <th>{{ t('worktime', 'Bemerkung') }}</th>
-                        <th>{{ t('worktime', 'Status') }}</th>
-                        <th>{{ t('worktime', 'Aktionen') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <AbsenceRow
-                        v-if="isCreating"
-                        :absence="null"
-                        mode="create"
-                        :absence-types="absenceTypes"
-                        :vacation-stats="vacationStats"
-                        @save="onCreate"
-                        @cancel="cancelCreate" />
-                    <AbsenceRow
-                        v-for="absence in sortedAbsences"
-                        :key="absence.id"
-                        :absence="absence"
-                        :mode="editingId === absence.id ? 'edit' : 'view'"
-                        :absence-types="absenceTypes"
-                        :vacation-stats="vacationStats"
-                        @edit="startEdit(absence.id)"
-                        @save="onUpdate"
-                        @cancel="cancelEdit"
-                        @remove="confirmRemove" />
-                </tbody>
-            </table>
+                <table class="absence-table">
+                    <thead>
+                        <tr>
+                            <th>{{ t('worktime', 'Zeitraum') }}</th>
+                            <th>{{ t('worktime', 'Art') }}</th>
+                            <th>{{ t('worktime', 'Tage') }}</th>
+                            <th>{{ t('worktime', 'Bemerkung') }}</th>
+                            <th>{{ t('worktime', 'Status') }}</th>
+                            <th>{{ t('worktime', 'Aktionen') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <AbsenceRow
+                            v-if="isCreating"
+                            :absence="null"
+                            mode="create"
+                            :absence-types="absenceTypes"
+                            :vacation-stats="vacationStats"
+                            @save="onCreate"
+                            @cancel="cancelCreate" />
+                        <AbsenceRow
+                            v-for="absence in sortedAbsences"
+                            :key="absence.id"
+                            :absence="absence"
+                            :mode="editingId === absence.id ? 'edit' : 'view'"
+                            :absence-types="absenceTypes"
+                            :vacation-stats="vacationStats"
+                            @edit="startEdit(absence.id)"
+                            @save="onUpdate"
+                            @cancel="cancelEdit"
+                            @remove="confirmRemove" />
+                    </tbody>
+                </table>
             </div>
             <NcEmptyContent v-else :name="t('worktime', 'Keine Abwesenheiten')">
                 <template #icon>
