@@ -420,7 +420,9 @@ export default {
 .absence-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1200px;
+    /* Breiterer Deckel als bisher (1200px), damit auf großen Bildschirmen mehr
+       Platz genutzt wird; das restliche Layout ist ohnehin responsiv (#361). */
+    max-width: 1600px;
 }
 
 .view-header {

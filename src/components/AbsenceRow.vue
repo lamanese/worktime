@@ -432,15 +432,19 @@ tr.creating {
     min-width: 6rem;
 }
 
-/* Bemerkung (Anzeige): einzeilig mit Ellipsis, voller Text als Tooltip. So
-   bleibt jede Zeile gleich hoch und die Tabelle wächst nicht in die Höhe,
-   egal wie lang die Bemerkung ist (#361). */
+/* Bemerkung (Anzeige): bricht um statt abzuschneiden — voller Text bleibt
+   lesbar, mehrzeilig nach unten, während die übrigen Zellen oben stehen
+   (vertical-align: top). min-width reserviert Platz, damit die Spalte nicht
+   auf wenige Pixel kollabiert und der Text zu schmal umbricht (#361). */
+.note-cell {
+    min-width: 16rem;
+}
+
 .note-cell .note-text {
     display: inline-block;
-    max-width: 16rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 30rem;
+    white-space: normal;
+    overflow-wrap: break-word;
     vertical-align: top;
 }
 
