@@ -8,7 +8,7 @@
                 {{ translatedTypeName }}
             </td>
             <td>{{ absence.days }}</td>
-            <td class="note-cell"><span class="note-text">{{ absence.note || '-' }}</span></td>
+            <td class="note-cell"><span class="note-text" :title="absence.note || ''">{{ absence.note || '-' }}</span></td>
             <td>
                 <span class="status-badge" :class="absence.status">
                     {{ getStatusLabel(absence.status) }}
@@ -55,6 +55,11 @@
                         :disabled="form.scope < 1.0"
                         @input="onEndDateChange" />
                 </div>
+                <!-- Quota-Hinweis direkt unter den Datumsfeldern (volle Zellbreite,
+                     bricht um) statt rechts in der Status-Spalte (#361). -->
+                <span v-if="showQuotaHint" class="quota-hint">
+                    {{ t('worktime', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+                </span>
             </td>
             <td>
                 <NcSelect
@@ -82,10 +87,7 @@
                     @keydown="onKeydown">
             </td>
             <td>
-                <span v-if="showQuotaHint" class="quota-hint">
-                    {{ t('worktime', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
-                </span>
-                <span v-else-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
+                <span v-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
                     {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
                 </span>
             </td>
@@ -391,6 +393,9 @@ tr td {
     padding: 14px 12px;
     font-size: 16px;
     border-bottom: 1px solid var(--color-border);
+    /* Alle Zelltexte oben ausrichten — bei hohen Zeilen (lange Bemerkung) bleibt
+       so alles bündig oben statt vertikal zentriert (#361). */
+    vertical-align: top;
 }
 
 tr.editing {
@@ -424,32 +429,40 @@ tr.creating {
 }
 
 .note-input {
-    min-width: 10rem;
+    min-width: 6rem;
 }
 
-/* Bemerkung (Anzeige): kappt die Spaltenbreite und bricht lange Texte um,
-   damit die Tabelle nicht über die Kachel hinauswächst (#275). */
+/* Bemerkung (Anzeige): einzeilig mit Ellipsis, voller Text als Tooltip. So
+   bleibt jede Zeile gleich hoch und die Tabelle wächst nicht in die Höhe,
+   egal wie lang die Bemerkung ist (#361). */
 .note-cell .note-text {
     display: inline-block;
-    max-width: 22rem;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    max-width: 16rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
 }
 
 .inline-picker {
-    width: 8rem;
+    width: 7rem;
 }
 
-.inline-select {
-    min-width: 8rem;
+/* NcSelect erzwingt per Default min-width 260px; in der kompakten Inline-Zeile
+   stauchen, damit die Edit-Zeile in die Card passt (#361). */
+.inline-select.type-select,
+.scope-select {
+    min-width: 0 !important;
 }
 
+/* Breit genug für das längste Label inkl. Dropdown-Chevron
+   ("Freizeitausgleich" bzw. "Ganzer Tag"), damit nichts abgeschnitten wird. */
 .type-select {
-    min-width: 6.5rem;
+    width: 12.5rem;
 }
 
 .days-cell {
-    min-width: 11rem;
+    min-width: 9rem;
 }
 
 .scope-row {
@@ -459,7 +472,7 @@ tr.creating {
 }
 
 .scope-select {
-    min-width: 7rem;
+    width: 10rem;
 }
 
 .days-value {
@@ -531,22 +544,33 @@ tr.creating {
 }
 
 .quota-hint {
+    display: block;
+    margin-top: 6px;
+    max-width: 22rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
     font-size: 0.85em;
     color: var(--color-text-maxcontrast);
     font-weight: 500;
 }
 
+/* KEIN display:flex auf dem <td>: ein Flex-Cell ist nur so hoch wie sein Text,
+   wodurch der border-bottom in hohen Zeilen mittig zeichnet (Linie unter
+   "Krankheit"). Normale Tabellenzelle + Dot inline am oberen Rand (#361).
+   Kein nowrap — sonst beansprucht die Art-Spalte zu viel Breite und erdrückt
+   die Bemerkung-Spalte. */
 .type-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    overflow-wrap: anywhere;
 }
 
 .type-dot {
+    display: inline-block;
     width: 10px;
     height: 10px;
     min-width: 10px;
     border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
 .type-dot.type-vacation { background-color: #0082c9; }

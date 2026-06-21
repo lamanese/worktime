@@ -75,7 +75,10 @@
                 </NcButton>
             </div>
             <NcLoadingIcon v-if="loading" :size="44" />
-            <table v-else-if="absences.length > 0 || isCreating" class="absence-table">
+            <!-- Sicherheitsnetz: schmale Viewports lassen die Tabelle horizontal
+                 scrollen statt über die Card-Kante zu laufen (#361). -->
+            <div v-else-if="absences.length > 0 || isCreating" class="absence-table-wrap">
+            <table class="absence-table">
                 <thead>
                     <tr>
                         <th>{{ t('worktime', 'Zeitraum') }}</th>
@@ -108,6 +111,7 @@
                         @remove="confirmRemove" />
                 </tbody>
             </table>
+            </div>
             <NcEmptyContent v-else :name="t('worktime', 'Keine Abwesenheiten')">
                 <template #icon>
                     <CalendarIcon />
@@ -598,6 +602,10 @@ export default {
     justify-content: flex-end;
     gap: 12px;
     margin-bottom: 16px;
+}
+
+.absence-table-wrap {
+    overflow-x: auto;
 }
 
 .absence-table {
