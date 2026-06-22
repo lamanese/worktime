@@ -1,6 +1,13 @@
 OC.L10N.register(
     "worktime",
     {
+    "Audit-Eintrag" : "Audit-Eintrag",
+    "Feld" : "Feld",
+    "Vorher" : "Vorher",
+    "Nachher" : "Nachher",
+    "Keine Detaildaten vorhanden." : "Keine Detaildaten vorhanden.",
+    "Schließen" : "Schließen",
+    "Details anzeigen" : "Details anzeigen",
     "Aktuell sind keine Team-Abwesenheiten sichtbar." : "Aktuell sind keine Team-Abwesenheiten sichtbar.",
     "Aktuell wartet nichts auf Ihre Genehmigung." : "Aktuell wartet nichts auf Ihre Genehmigung.",
     "Begründung" : "Begründung",

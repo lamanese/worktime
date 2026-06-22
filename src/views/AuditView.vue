@@ -56,7 +56,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="entry in entries" :key="entry.id" class="audit-row">
+                    <tr v-for="entry in entries"
+                        :key="entry.id"
+                        class="audit-row"
+                        role="button"
+                        tabindex="0"
+                        :aria-label="t('worktime', 'Details anzeigen')"
+                        @click="openDetail(entry)"
+                        @keydown.enter="openDetail(entry)"
+                        @keydown.space.prevent="openDetail(entry)">
                         <td class="nowrap">{{ formatDateTime(entry.createdAt) }}</td>
                         <td>{{ entry.userId }}</td>
                         <td>
@@ -91,6 +99,13 @@
         <p v-if="entries.length >= 200" class="limit-hint">
             {{ t('worktime', 'Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken.') }}
         </p>
+
+        <AuditDetailModal v-if="selectedEntry"
+            :entry="selectedEntry"
+            :action-label="translateAction(selectedEntry.action)"
+            :entity-label="translateEntityType(selectedEntry.entityType)"
+            :date-label="formatDateTime(selectedEntry.createdAt)"
+            @close="selectedEntry = null" />
     </div>
 </template>
 
@@ -101,6 +116,7 @@ import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import ShieldIcon from 'vue-material-design-icons/Shield.vue'
 import AuditService from '../services/AuditService.js'
+import AuditDetailModal from '../components/AuditDetailModal.vue'
 import { formatDateISO, getLocale } from '../utils/dateUtils.js'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -112,6 +128,7 @@ export default {
         NcDateTimePicker,
         NcEmptyContent,
         ShieldIcon,
+        AuditDetailModal,
     },
     data() {
         return {
@@ -122,6 +139,7 @@ export default {
             filterEntityType: null,
             filterFrom: null,
             filterTo: null,
+            selectedEntry: null,
         }
     },
     computed: {
@@ -158,6 +176,9 @@ export default {
     },
     methods: {
         ...mapActions('employees', ['fetchEmployees']),
+        openDetail(entry) {
+            this.selectedEntry = entry
+        },
         async load() {
             this.loading = true
             this.entries = await AuditService.getFiltered({
@@ -272,8 +293,17 @@ export default {
     vertical-align: top;
 }
 
+.audit-row {
+    cursor: pointer;
+}
+
 .audit-row:hover {
     background: var(--color-background-hover);
+}
+
+.audit-row:focus-visible {
+    outline: 2px solid var(--color-primary-element);
+    outline-offset: -2px;
 }
 
 .nowrap {
