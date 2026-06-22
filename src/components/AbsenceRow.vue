@@ -37,75 +37,83 @@
         </template>
 
         <!-- Edit/Create Mode -->
+        <!-- Eine einzige, volle Breite spannende Zelle: die Steuerelemente brechen
+             per flex-wrap um (kein horizontaler Überlauf über die Card hinaus, #361),
+             der lange Hinweistext steht darunter über die volle Breite statt rechts
+             abgeschnitten daneben. -->
         <template v-else>
-            <td class="date-cells">
-                <div class="date-row">
-                    <NcDateTimePicker
-                        v-model="form.startDate"
-                        type="date"
-                        :format="'DD.MM.YYYY'"
-                        class="inline-picker"
-                        @input="onStartDateChange" />
-                    <span class="date-separator">-</span>
-                    <NcDateTimePicker
-                        v-model="form.endDate"
-                        type="date"
-                        :format="'DD.MM.YYYY'"
-                        class="inline-picker"
-                        :disabled="form.scope < 1.0"
-                        @input="onEndDateChange" />
-                </div>
-            </td>
-            <td>
-                <NcSelect
-                    v-model="selectedType"
-                    :options="typeOptions"
-                    :clearable="false"
-                    class="inline-select type-select" />
-            </td>
-            <td class="days-cell">
-                <div class="scope-row">
-                    <NcSelect
-                        v-model="selectedScope"
-                        :options="scopeOptions"
-                        :clearable="false"
-                        class="scope-select" />
-                    <span class="days-value">{{ calculatedDays }}</span>
-                </div>
-            </td>
-            <td>
-                <input
-                    v-model="form.note"
-                    type="text"
-                    class="inline-input note-input"
-                    :placeholder="t('worktime', 'Bemerkung')"
-                    @keydown="onKeydown">
-            </td>
-            <td>
-                <span v-if="showQuotaHint" class="quota-hint">
-                    {{ t('worktime', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
-                </span>
-                <span v-else-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
-                    {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
-                </span>
-            </td>
-            <td class="actions">
-                <div class="actions-buttons">
-                    <NcButton type="primary"
-                        :disabled="!isValid"
-                        :aria-label="t('worktime', 'Speichern')"
-                        @click="save">
-                        <template #icon>
-                            <ContentSaveIcon :size="20" />
-                        </template>
-                    </NcButton>
-                    <NcButton type="tertiary"
-                        :aria-label="t('worktime', 'Abbrechen')"
-                        @click="$emit('cancel')">
-                        <template #icon>
-                            <CloseIcon :size="20" />
-                        </template>
-                    </NcButton>
+            <td colspan="6" class="edit-cell">
+                <div class="edit-form">
+                    <div class="edit-fields">
+                        <div class="field date-cells">
+                            <div class="date-row">
+                                <NcDateTimePicker
+                                    v-model="form.startDate"
+                                    type="date"
+                                    :format="'DD.MM.YYYY'"
+                                    class="inline-picker"
+                                    @input="onStartDateChange" />
+                                <span class="date-separator">-</span>
+                                <NcDateTimePicker
+                                    v-model="form.endDate"
+                                    type="date"
+                                    :format="'DD.MM.YYYY'"
+                                    class="inline-picker"
+                                    :disabled="form.scope < 1.0"
+                                    @input="onEndDateChange" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <NcSelect
+                                v-model="selectedType"
+                                :options="typeOptions"
+                                :clearable="false"
+                                class="inline-select type-select" />
+                        </div>
+                        <div class="field days-cell">
+                            <div class="scope-row">
+                                <NcSelect
+                                    v-model="selectedScope"
+                                    :options="scopeOptions"
+                                    :clearable="false"
+                                    class="scope-select" />
+                                <span class="days-value">{{ calculatedDays }} {{ t('worktime', 'Tage') }}</span>
+                            </div>
+                        </div>
+                        <div class="field note-field">
+                            <input
+                                v-model="form.note"
+                                type="text"
+                                class="inline-input note-input"
+                                :placeholder="t('worktime', 'Bemerkung')"
+                                @keydown="onKeydown">
+                        </div>
+                        <div class="field actions">
+                            <div class="actions-buttons">
+                                <NcButton type="primary"
+                                    :disabled="!isValid"
+                                    :aria-label="t('worktime', 'Speichern')"
+                                    @click="save">
+                                    <template #icon>
+                                        <ContentSaveIcon :size="20" />
+                                    </template>
+                                </NcButton>
+                                <NcButton type="tertiary"
+                                    :aria-label="t('worktime', 'Abbrechen')"
+                                    @click="$emit('cancel')">
+                                    <template #icon>
+                                        <CloseIcon :size="20" />
+                                    </template>
+                                </NcButton>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-if="showQuotaHint" class="quota-hint">
+                        {{ t('worktime', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+                    </p>
+                    <p v-else-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
+                        {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
+                    </p>
                 </div>
             </td>
         </template>
@@ -404,6 +412,44 @@ tr.creating {
     background: var(--color-background-hover) !important;
 }
 
+/* Edit-/Create-Zeile: eine volle Breite spannende Zelle (#361). Steuerelemente
+   brechen um, der Hinweis steht darunter über die volle Breite. */
+.edit-cell {
+    padding: 12px;
+}
+
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.edit-fields .field {
+    min-width: 0;
+}
+
+/* Speichern/Abbrechen ans Ende der Steuerleiste schieben (wie zuvor rechts). */
+.edit-fields .actions {
+    margin-left: auto;
+}
+
+/* Bemerkungsfeld füllt den verbleibenden Platz, weicht aber auf schmaler
+   Breite in die nächste Zeile aus (kein Überlauf). */
+.edit-fields .note-field {
+    flex: 1 1 14rem;
+}
+
+.edit-fields .note-field .note-input {
+    width: 100%;
+}
+
 .date-cells {
     min-width: 16rem;
 }
@@ -527,16 +573,20 @@ tr.creating {
     color: var(--color-text-maxcontrast);
 }
 
+/* Hinweise unter der Edit-Zeile: volle Breite, vollständig umgebrochen (#361). */
 .edit-hint {
+    margin: 0;
     font-size: 0.85em;
     color: var(--color-main-text);
     font-style: italic;
 }
 
 .quota-hint {
+    margin: 0;
     font-size: 0.85em;
     color: var(--color-text-maxcontrast);
     font-weight: 500;
+    overflow-wrap: anywhere;
 }
 
 /* KEIN display:flex auf dem <td>: eine Flex-Zelle ist nur so hoch wie ihr Text,
