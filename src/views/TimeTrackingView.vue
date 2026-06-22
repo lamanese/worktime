@@ -81,6 +81,7 @@
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
             :overtime-minutes="statistics.overtimeMinutes"
+            :balance-minutes="totalOvertimeMinutes"
             :vacation-remaining="vacationRemaining"
             :vacation-carryover="vacationCarryover"
             :vacation-total="vacationTotal"
@@ -243,6 +244,8 @@ export default {
             vacationTotal: null,
             yearlyMonths: [],
             carryoverMinutes: 0,
+            // #358: kumulierter Überstunden-Kontostand (bis heute + Übertrag), wie in der Abwesenheiten-Card.
+            totalOvertimeMinutes: null,
             overviewYear: getCurrentYear(),
             layoutMode: (['list', 'calendar', 'year'].includes(localStorage.getItem('worktime_tracking_layout'))
                 ? localStorage.getItem('worktime_tracking_layout')
@@ -449,6 +452,7 @@ export default {
                 const overtime = await ReportService.getOvertime(this.activeEmployeeId, this.overviewYear)
                 this.yearlyMonths = overtime?.monthly || []
                 this.carryoverMinutes = overtime?.carryoverMinutes || 0
+                this.totalOvertimeMinutes = overtime?.totalOvertimeMinutes ?? null
             } catch (error) {
                 console.error('Failed to load yearly overview:', error)
             }
