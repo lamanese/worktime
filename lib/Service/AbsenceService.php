@@ -109,6 +109,9 @@ class AbsenceService {
             throw new ValidationException($errors);
         }
 
+        // #360: a full-day absence must not overlap existing time entries.
+        $this->checkTimeEntryConflict($employeeId, $startDateObj, $endDateObj, $scope);
+
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->timeEntryService->lockedMonthsInRange($employeeId, $startDateObj, $endDateObj);
         $effectiveReason = $this->timeEntryService->requireReasonForLockedMonths($lockedMonths, $allowLockedOverride, $reason);
@@ -210,6 +213,9 @@ class AbsenceService {
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
+
+        // #360: a full-day absence must not overlap existing time entries.
+        $this->checkTimeEntryConflict($absence->getEmployeeId(), $startDateObj, $endDateObj, $scope);
 
         // Closed-month rules (#148): employees are blocked from any change that
         // touches a closed month (old or new range); HR corrections require a
@@ -463,8 +469,48 @@ class AbsenceService {
     }
 
     /**
-     * @return array<string, string[]>
+     * #360: A full-day absence is logically incompatible with time entries on the
+     * same day — you cannot work and take the whole day off, and the overtime
+     * would be counted twice (the absence consumes the daily target while the
+     * booked work credits the actual time). Block creation/edit when the covered
+     * range already contains time entries.
+     *
+     * Half-day absences (scope < 1.0) are deliberately allowed to coexist: the
+     * overtime calculation handles the reduced target correctly. The overlap is
+     * surfaced as a non-blocking day warning in the monthly report instead
+     * (ReportController::buildDayWarnings).
+     *
+     * @throws ValidationException
      */
+    private function checkTimeEntryConflict(int $employeeId, DateTime $startDate, DateTime $endDate, float $scope): void {
+        // Half-day absences may coexist with time entries — no hard block.
+        if ($scope < 1.0) {
+            return;
+        }
+
+        $entries = $this->timeEntryService->findByEmployeeAndDateRange($employeeId, $startDate, $endDate);
+        if (empty($entries)) {
+            return;
+        }
+
+        // Collect the distinct conflicting days for a helpful error message.
+        $dates = [];
+        foreach ($entries as $entry) {
+            $entryDate = $entry->getDate();
+            if ($entryDate) {
+                $dates[$entryDate->format('Y-m-d')] = $entryDate->format('d.m.Y');
+            }
+        }
+        ksort($dates);
+
+        throw new ValidationException([
+            'timeEntryConflict' => [$this->l->t(
+                'An folgenden Tagen sind bereits Zeiteinträge erfasst: %s. Eine ganztägige Abwesenheit ist dort nicht möglich. Bitte zuerst die Zeiteinträge entfernen.',
+                [implode(', ', array_values($dates))]
+            )],
+        ]);
+    }
+
     private function checkVacationQuota(int $employeeId, float $requestedDays, int $year, ?int $excludeId = null): void {
         $employee = $this->employeeMapper->find($employeeId);
         $totalVacationDays = (int)$employee->getVacationDays();

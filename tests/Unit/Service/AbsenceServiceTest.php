@@ -257,6 +257,79 @@ class AbsenceServiceTest extends TestCase {
     }
 
     // ---------------------------------------------------------------------
+    // #360: Überlappungs-Schutz Abwesenheit ↔ Zeiteinträge
+    // ---------------------------------------------------------------------
+
+    /**
+     * #360: a FULL-day absence over days that already contain time entries is a
+     * logical contradiction (work + take the whole day off) and must be hard-
+     * blocked — the absence is never inserted.
+     */
+    public function testFullDayAbsenceBlockedWhenTimeEntriesExist(): void {
+        $this->absenceMapper->method('findOverlapping')->willReturn([]);
+
+        $entry = new TimeEntry();
+        $entry->setId(5);
+        $entry->setEmployeeId(1);
+        $entry->setDate($this->currentMonthDate('11'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
+
+        $this->absenceMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ValidationException::class);
+        $this->service->create(
+            1,
+            Absence::TYPE_COMPENSATORY,
+            $this->currentMonthDate('10')->format('Y-m-d'),
+            $this->currentMonthDate('12')->format('Y-m-d'),
+            null,
+            'BY',
+            'user1',
+            1.0
+        );
+    }
+
+    /**
+     * #360: a HALF-day absence may coexist with time entries (the overtime
+     * calculation handles the reduced target). It must NOT be blocked — the
+     * absence is inserted normally.
+     */
+    public function testHalfDayAbsenceAllowedDespiteTimeEntries(): void {
+        $this->absenceMapper->method('findOverlapping')->willReturn([]);
+
+        $entry = new TimeEntry();
+        $entry->setId(5);
+        $entry->setEmployeeId(1);
+        $entry->setDate($this->currentMonthDate('11'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
+
+        // Current month is open (a draft entry) → not locked.
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        // Schedule-aware working-day count for setDays().
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->workScheduleService->method('countWorkingDays')->willReturn(1.0);
+        $this->absenceMapper->method('insert')->willReturnArgument(0);
+
+        $this->absenceMapper->expects($this->once())->method('insert');
+
+        $result = $this->service->create(
+            1,
+            Absence::TYPE_COMPENSATORY,
+            $this->currentMonthDate('11')->format('Y-m-d'),
+            $this->currentMonthDate('11')->format('Y-m-d'),
+            null,
+            'BY',
+            'user1',
+            0.5
+        );
+
+        $this->assertSame(Absence::STATUS_PENDING, $result->getStatus());
+    }
+
+    // ---------------------------------------------------------------------
     // #345: Status-Kalender — Sichtbarkeit offener Anträge (Datenschutz)
     // ---------------------------------------------------------------------
 

@@ -27,6 +27,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 
 class ReportController extends BaseController {
@@ -48,6 +49,7 @@ class ReportController extends BaseController {
         private WorkScheduleService $workScheduleService,
         private YearlyCarryoverService $carryoverService,
         private ProjectService $projectService,
+        private IL10N $l,
     ) {
         parent::__construct($request, $userId);
     }
@@ -85,7 +87,7 @@ class ReportController extends BaseController {
 
             // Per-day labor-law warnings (#338): minimum break (§4 ArbZG) and max
             // daily hours, evaluated across all entries of each day.
-            $dayWarnings = $this->buildDayWarnings($timeEntries);
+            $dayWarnings = $this->buildDayWarnings($timeEntries, $absences);
 
             return $this->successResponse([
                 'employee' => $employee,
@@ -108,9 +110,10 @@ class ReportController extends BaseController {
      * included, keyed by their 'Y-m-d' date.
      *
      * @param \OCA\WorkTime\Db\TimeEntry[] $timeEntries
+     * @param Absence[] $absences
      * @return array<string, string[]>
      */
-    private function buildDayWarnings(array $timeEntries): array {
+    private function buildDayWarnings(array $timeEntries, array $absences = []): array {
         $entriesByDate = [];
         foreach ($timeEntries as $entry) {
             $date = $entry->getDate();
@@ -123,12 +126,48 @@ class ReportController extends BaseController {
         $dayWarnings = [];
         foreach ($entriesByDate as $date => $entries) {
             $warnings = $this->timeEntryService->dayWarnings($entries);
+
+            // #360: a half-day absence may coexist with time entries (it is not
+            // hard-blocked like a full-day absence), but the combination is worth
+            // flagging. Surfaced symmetrically here regardless of which side was
+            // created first.
+            $halfDayAbsence = $this->halfDayAbsenceOnDate($absences, $date);
+            if ($halfDayAbsence !== null) {
+                $warnings[] = $this->l->t(
+                    'Halbtägige Abwesenheit (%s) und Zeiteintrag am selben Tag.',
+                    [$halfDayAbsence->getTypeName()]
+                );
+            }
+
             if (!empty($warnings)) {
                 $dayWarnings[$date] = $warnings;
             }
         }
 
         return $dayWarnings;
+    }
+
+    /**
+     * #360: find a non-cancelled half-day absence that covers the given date, if
+     * any. Used to flag days that have both a half-day absence and time entries.
+     *
+     * @param Absence[] $absences
+     */
+    private function halfDayAbsenceOnDate(array $absences, string $date): ?Absence {
+        $dateObj = new DateTime($date);
+        foreach ($absences as $absence) {
+            if ($absence->getStatus() === Absence::STATUS_CANCELLED) {
+                continue;
+            }
+            if (!$absence->isHalfDay()) {
+                continue;
+            }
+            if ($absence->getStartDate() <= $dateObj && $absence->getEndDate() >= $dateObj) {
+                return $absence;
+            }
+        }
+
+        return null;
     }
 
     /**
