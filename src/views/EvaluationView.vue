@@ -682,7 +682,6 @@ export default {
     margin: 0;
 }
 
-/* Toolbar-Zeile unter der Überschrift: alle Controls, Zeitnav rechts */
 .view-toolbar {
     display: flex;
     align-items: center;
@@ -691,7 +690,6 @@ export default {
     margin-bottom: 20px;
 }
 
-/* Zeitnav konsistent rechts in der Kopfzeile (View-Header-Standard) */
 .view-header__nav {
     margin-left: auto;
     display: flex;
