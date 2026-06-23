@@ -2,6 +2,9 @@
     <div class="audit-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Audit-Log') }}</h2>
+        </div>
+
+        <div class="view-toolbar">
             <div class="view-header__controls">
                 <NcSelect v-model="filterEmployee"
                     :options="employeeOptions"
@@ -241,7 +244,7 @@ export default {
 .audit-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1400px;
+    max-width: 1600px;
 }
 
 .audit-card {
@@ -255,14 +258,25 @@ export default {
 .view-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
     margin: 0;
+}
+
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .view-header__controls {

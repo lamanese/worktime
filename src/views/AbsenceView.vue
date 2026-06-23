@@ -2,14 +2,16 @@
     <div class="absence-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Abwesenheit') }}</h2>
-            <div class="header-spacer" />
+        </div>
+
+        <div class="view-toolbar">
+            <div class="view-header__nav">
+                <YearPicker :year="currentYear" :max="thisYear" @update="onYearChange" />
+            </div>
         </div>
 
         <!-- ============ MEIN KONTO (Team-Kalender lebt jetzt unter „Team") ============ -->
         <div>
-            <div class="konto-yearbar">
-                <YearPicker :year="currentYear" :max="thisYear" @update="onYearChange" />
-            </div>
             <div class="konto-stats">
             <section v-if="vacationStats" class="konto-box">
                 <h3>{{ t('worktime', 'Urlaub') }}</h3>
@@ -416,22 +418,31 @@ export default {
 .absence-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1200px;
+    max-width: 1600px;
 }
 
 .view-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
     margin: 0;
 }
 
-.header-spacer {
-    flex: 1;
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 /* Segment-Umschalter (NC-Control-Form, konsistent mit Zeiten) */
@@ -457,12 +468,6 @@ export default {
     background: var(--color-main-background);
     color: var(--color-primary-element);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.konto-yearbar {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 12px;
 }
 
 /* Urlaub- und Überstunden-Box nebeneinander (#252.9), auf schmalen Screens gestapelt */

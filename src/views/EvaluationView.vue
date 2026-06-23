@@ -2,12 +2,16 @@
     <div class="evaluation-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Auswertung') }}</h2>
+        </div>
 
+        <div class="view-toolbar">
             <div class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
                 <button class="seg-btn" :class="{ active: mode === 'mitarbeiter' }" @click="mode = 'mitarbeiter'">
+                    <AccountMultipleIcon :size="18" />
                     {{ t('worktime', 'Mitarbeiter') }}
                 </button>
                 <button class="seg-btn" :class="{ active: mode === 'projekte' }" @click="mode = 'projekte'">
+                    <FolderOutlineIcon :size="18" />
                     {{ t('worktime', 'Projekte') }}
                 </button>
             </div>
@@ -18,26 +22,27 @@
                     class="seg-btn"
                     :class="{ active: period === p.value }"
                     @click="setPeriod(p.value)">
+                    <component :is="p.icon" :size="18" />
                     {{ p.label }}
                 </button>
             </div>
 
-            <div v-show="mode === 'projekte'" class="period-nav">
-                <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
-                    <template #icon><ChevronLeftIcon :size="20" /></template>
-                </NcButton>
-                <span class="period-nav__label">{{ periodLabel }}</span>
-                <NcButton type="tertiary" :aria-label="t('worktime', 'Weiter')" @click="shiftPeriod(1)">
-                    <template #icon><ChevronRightIcon :size="20" /></template>
-                </NcButton>
+            <div class="view-header__nav">
+                <YearPicker v-show="mode === 'mitarbeiter'" :year="teamYear" @update="onTeamYearChange" />
+                <div v-show="mode === 'projekte'" class="period-nav">
+                    <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
+                        <template #icon><ChevronLeftIcon :size="20" /></template>
+                    </NcButton>
+                    <span class="period-nav__label">{{ periodLabel }}</span>
+                    <NcButton type="tertiary" :aria-label="t('worktime', 'Weiter')" @click="shiftPeriod(1)">
+                        <template #icon><ChevronRightIcon :size="20" /></template>
+                    </NcButton>
+                </div>
             </div>
         </div>
 
         <!-- Mitarbeiter: Jahresübersicht (aus „Team" hierher verschoben, #346) -->
         <div v-show="mode === 'mitarbeiter'" class="ev-mitarbeiter">
-            <div class="ev-year">
-                <YearPicker :year="teamYear" @update="onTeamYearChange" />
-            </div>
             <div v-if="teamReport.length > 0" class="ev-kpis">
                 <div class="kpi-card">
                     <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
@@ -57,9 +62,11 @@
                 <div class="ev-subtabs">
                     <div class="layout-seg" role="group">
                         <button class="seg-btn" :class="{ active: teamSubtab === 'overview' }" @click="teamSubtab = 'overview'">
+                            <ViewListOutlineIcon :size="18" />
                             {{ t('worktime', 'Übersicht') }}
                         </button>
                         <button class="seg-btn" :class="{ active: teamSubtab === 'months' }" @click="teamSubtab = 'months'">
+                            <CalendarTextOutlineIcon :size="18" />
                             {{ t('worktime', 'Monatsdetail') }}
                         </button>
                     </div>
@@ -193,9 +200,11 @@
         <div class="ev-tabs">
             <div class="layout-seg" role="group">
                 <button class="seg-btn" :class="{ active: tab === 'agg' }" @click="tab = 'agg'">
+                    <ChartBarIcon :size="18" />
                     {{ t('worktime', 'Aggregiert') }}
                 </button>
                 <button class="seg-btn" :class="{ active: tab === 'detail' }" @click="tab = 'detail'">
+                    <FormatListBulletedIcon :size="18" />
                     {{ t('worktime', 'Einzelbuchungen') }}
                 </button>
             </div>
@@ -294,6 +303,15 @@ import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
+import AccountMultipleIcon from 'vue-material-design-icons/AccountMultiple.vue'
+import FolderOutlineIcon from 'vue-material-design-icons/FolderOutline.vue'
+import ViewListOutlineIcon from 'vue-material-design-icons/ViewListOutline.vue'
+import CalendarTextOutlineIcon from 'vue-material-design-icons/CalendarTextOutline.vue'
+import ChartBarIcon from 'vue-material-design-icons/ChartBar.vue'
+import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
+import CalendarMonthOutlineIcon from 'vue-material-design-icons/CalendarMonthOutline.vue'
+import CalendarRangeIcon from 'vue-material-design-icons/CalendarRange.vue'
+import CalendarOutlineIcon from 'vue-material-design-icons/CalendarOutline.vue'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import YearPicker from '../components/YearPicker.vue'
@@ -315,6 +333,15 @@ export default {
         DownloadIcon,
         MagnifyIcon,
         AccountGroupIcon,
+        AccountMultipleIcon,
+        FolderOutlineIcon,
+        ViewListOutlineIcon,
+        CalendarTextOutlineIcon,
+        ChartBarIcon,
+        FormatListBulletedIcon,
+        CalendarMonthOutlineIcon,
+        CalendarRangeIcon,
+        CalendarOutlineIcon,
         YearPicker,
         TeamYearTable,
     },
@@ -390,9 +417,9 @@ export default {
         },
         periods() {
             return [
-                { value: 'month', label: this.t('worktime', 'Monat') },
-                { value: 'quarter', label: this.t('worktime', 'Quartal') },
-                { value: 'year', label: this.t('worktime', 'Jahr') },
+                { value: 'month', label: this.t('worktime', 'Monat'), icon: CalendarMonthOutlineIcon },
+                { value: 'quarter', label: this.t('worktime', 'Quartal'), icon: CalendarRangeIcon },
+                { value: 'year', label: this.t('worktime', 'Jahr'), icon: CalendarOutlineIcon },
             ]
         },
         periodLabel() {
@@ -642,10 +669,21 @@ export default {
 .evaluation-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1040px;
+    max-width: 1600px;
 }
 
 .view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.view-header h2 {
+    margin: 0;
+}
+
+/* Toolbar-Zeile unter der Überschrift: alle Controls, Zeitnav rechts */
+.view-toolbar {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -653,8 +691,11 @@ export default {
     margin-bottom: 20px;
 }
 
-.view-header h2 {
-    margin: 0;
+/* Zeitnav konsistent rechts in der Kopfzeile (View-Header-Standard) */
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .layout-seg {
@@ -665,6 +706,9 @@ export default {
 }
 
 .seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);

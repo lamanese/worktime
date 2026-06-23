@@ -9,19 +9,21 @@
         <template v-else>
             <!-- Eingangsliste: Urlaubsanträge + Monatsabschlüsse, älteste zuerst (#344/#240) -->
             <section v-if="inboxItems.length > 0" class="inbox">
-                <p class="inbox-hint">
-                    {{ t('worktime', 'Älteste zuerst – auch aus früheren Monaten.') }}
-                </p>
-                <div class="chips">
-                    <button class="chip" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
-                        {{ t('worktime', 'Alle') }} {{ inboxItems.length }}
-                    </button>
-                    <button class="chip" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
-                        {{ t('worktime', 'Urlaub') }} {{ absenceCount }}
-                    </button>
-                    <button class="chip" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
-                        {{ t('worktime', 'Zeiten') }} {{ monthCount }}
-                    </button>
+                <div class="view-toolbar">
+                    <div class="layout-seg" role="group" :aria-label="t('worktime', 'Filter')">
+                        <button class="seg-btn" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
+                            <FormatListBulletedIcon :size="18" />
+                            {{ t('worktime', 'Alle') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
+                            <CalendarIcon :size="18" />
+                            {{ t('worktime', 'Urlaub') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
+                            <ClockOutlineIcon :size="18" />
+                            {{ t('worktime', 'Zeiten') }}
+                        </button>
+                    </div>
                 </div>
 
                 <table class="approval-table">
@@ -148,6 +150,9 @@ import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
+import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
+import ClockOutlineIcon from 'vue-material-design-icons/ClockOutline.vue'
 import TimeEntryService from '../services/TimeEntryService.js'
 import AbsenceService from '../services/AbsenceService.js'
 import { formatDate } from '../utils/dateUtils.js'
@@ -168,6 +173,9 @@ export default {
         CheckIcon,
         CloseIcon,
         RestoreIcon,
+        FormatListBulletedIcon,
+        CalendarIcon,
+        ClockOutlineIcon,
     },
     data() {
         return {
@@ -331,53 +339,62 @@ export default {
 .approval-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1400px;
+    max-width: 1600px;
 }
 
 .view-header {
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
-    font-size: 22px;
-    font-weight: 600;
+    margin: 0;
+}
+
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .loading {
     margin-top: 40px;
 }
 
-.inbox-hint {
-    font-size: 12.5px;
-    color: #9a6c25;
-    background: var(--color-warning-element-light, #fdf6e3);
-    border: 1px solid var(--color-warning, #c8932a);
-    border-radius: var(--border-radius);
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: inline-block;
-}
-
-.chips {
+.layout-seg {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    background: var(--color-background-dark);
+    border-radius: var(--border-radius-element, 8px);
+    padding: 3px;
 }
 
-.chip {
+.seg-btn {
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-main-text);
-    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+    background: none;
     border: none;
-    border-radius: var(--border-radius);
-    padding: 6px 13px;
+    padding: 6px 14px;
+    border-radius: var(--border-radius-element, 8px);
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.chip.active {
-    background: var(--color-primary-element-light);
+.seg-btn.active {
+    background: var(--color-main-background);
     color: var(--color-primary-element);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .approval-table {

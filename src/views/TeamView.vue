@@ -2,16 +2,22 @@
     <div class="team-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Team') }}</h2>
-            <div class="team-head">
+        </div>
+
+        <div class="view-toolbar">
+            <div class="seg" role="group" :aria-label="t('worktime', 'Färbung')">
+                <button class="seg-btn" :class="{ active: colorBy === 'status' }" @click="colorBy = 'status'">
+                    <FlagOutline :size="18" />
+                    {{ t('worktime', 'Nach Status') }}
+                </button>
+                <button class="seg-btn" :class="{ active: colorBy === 'type' }" @click="colorBy = 'type'">
+                    <TagOutline :size="18" />
+                    {{ t('worktime', 'Nach Art') }}
+                </button>
+            </div>
+
+            <div class="view-header__nav">
                 <MonthPicker :year="month.year" :month="month.month" @update="onMonthChange" />
-                <div class="seg" role="group" :aria-label="t('worktime', 'Färbung')">
-                    <button class="seg-btn" :class="{ active: colorBy === 'status' }" @click="colorBy = 'status'">
-                        {{ t('worktime', 'Nach Status') }}
-                    </button>
-                    <button class="seg-btn" :class="{ active: colorBy === 'type' }" @click="colorBy = 'type'">
-                        {{ t('worktime', 'Nach Art') }}
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -40,6 +46,8 @@
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
+import FlagOutline from 'vue-material-design-icons/FlagOutline.vue'
+import TagOutline from 'vue-material-design-icons/TagOutline.vue'
 import { mapGetters } from 'vuex'
 import MonthPicker from '../components/MonthPicker.vue'
 import AbsenceTimeline from '../components/AbsenceTimeline.vue'
@@ -53,6 +61,8 @@ export default {
         NcLoadingIcon,
         NcEmptyContent,
         AccountGroupIcon,
+        FlagOutline,
+        TagOutline,
         MonthPicker,
         AbsenceTimeline,
     },
@@ -106,39 +116,51 @@ export default {
 .team-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1400px;
+    max-width: 1600px;
 }
 
 .view-header {
-    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
-    margin: 0 0 12px;
+    margin: 0;
 }
 
-.team-head {
+.view-toolbar {
     display: flex;
     align-items: center;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .seg {
     display: flex;
     background: var(--color-background-dark);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-element, 8px);
     padding: 3px;
 }
 
 .seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-main-text);
+    color: var(--color-text-maxcontrast);
     background: none;
     border: none;
     padding: 6px 14px;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-element, 8px);
     cursor: pointer;
 }
 
