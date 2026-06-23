@@ -273,12 +273,6 @@ export default {
     margin-bottom: 20px;
 }
 
-.view-header__nav {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-}
-
 .view-header__controls {
     display: flex;
     align-items: center;
