@@ -249,7 +249,7 @@ export default {
     border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: var(--border-radius-large, 12px);
     padding: 8px 16px;
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .view-header {
@@ -274,9 +274,17 @@ export default {
 
 .audit-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 14px;
 }
+
+.audit-table th:nth-child(1) { width: 160px; } /* Zeitpunkt */
+.audit-table th:nth-child(2) { width: 130px; } /* Benutzer */
+.audit-table th:nth-child(3) { width: 110px; } /* Aktion */
+.audit-table th:nth-child(4) { width: 120px; } /* Typ */
+.audit-table th:nth-child(5) { width: 60px; }  /* ID */
+/* Spalte 6 (Änderung) nimmt die Restbreite und bricht um */
 
 .audit-table th {
     text-align: left;
@@ -326,20 +334,23 @@ export default {
 .action-reject { background: var(--wt-sick, #cc4b42); color: #fff; }
 
 .diff-cell {
-    max-width: 500px;
-    font-size: 0.85em;
+    font-size: 0.8em;
     font-family: monospace;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .diff-old {
     display: block;
     color: var(--color-error-text);
     text-decoration: line-through;
+    white-space: normal;
 }
 
 .diff-new {
     display: block;
     color: var(--color-success-text);
+    white-space: normal;
 }
 
 .diff-item {
@@ -359,6 +370,8 @@ export default {
 .diff-old-val {
     color: var(--color-error-text);
     text-decoration: line-through;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .diff-arrow {
@@ -367,6 +380,8 @@ export default {
 
 .diff-new-val {
     color: var(--color-success-text);
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .loading-hint {
