@@ -178,7 +178,7 @@ export default {
 
 .meta-row {
     display: grid;
-    grid-template-columns: 130px 1fr;
+    grid-template-columns: 150px 1fr;
     gap: 16px;
     align-items: baseline;
     padding: 5px 0;
