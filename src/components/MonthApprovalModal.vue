@@ -59,6 +59,7 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import { showError } from '@nextcloud/dialogs'
 import TimeEntryService from '../services/TimeEntryService.js'
 import ProjectService from '../services/ProjectService.js'
 import { formatDate, getMonthName } from '../utils/dateUtils.js'
@@ -112,6 +113,7 @@ export default {
             this.projects = Array.isArray(projects) ? projects : (projects?.data || [])
         } catch (error) {
             console.error('Failed to load month entries:', error)
+            showError(t('worktime', 'Fehler beim Laden der Monatseinträge'))
         } finally {
             this.loading = false
         }
