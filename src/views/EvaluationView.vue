@@ -230,23 +230,25 @@
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
                     <th>{{ t('worktime', 'Anteil') }}</th>
-                    <th class="ev-num" />
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="r in aggRows" :key="r.id">
                     <td>{{ r.name }}</td>
                     <td class="ev-num">{{ hours(r.minutes) }}</td>
-                    <td><div class="ev-bar"><span :style="{ width: pct(r.minutes) + '%' }" /></div></td>
-                    <td class="ev-num ev-muted">{{ pct(r.minutes) }} %</td>
+                    <td>
+                        <div class="ev-share">
+                            <div class="ev-bar"><span :style="{ width: pct(r.minutes) + '%' }" /></div>
+                            <span class="ev-muted">{{ pct(r.minutes) }} %</span>
+                        </div>
+                    </td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
                     <td>{{ t('worktime', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
-                    <td />
-                    <td class="ev-num">100 %</td>
+                    <td class="ev-muted">100 %</td>
                 </tr>
             </tfoot>
         </table>
@@ -262,7 +264,7 @@
                     <th>{{ t('worktime', 'Kunde') }}</th>
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
-                    <th>{{ t('worktime', 'Tätigkeit') }}</th>
+                    <th>{{ t('worktime', 'Beschreibung') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -933,8 +935,8 @@ export default {
 }
 
 .ev-vac-track {
-    flex: 1;
-    max-width: 120px;
+    flex: 0 0 120px;
+    width: 120px;
     height: 8px;
     border-radius: 6px;
     background: var(--color-background-dark);
@@ -948,24 +950,22 @@ export default {
     background: var(--wt-vacation, #4a9d63);
 }
 
+/* Status-Pillen wie in den anderen Tabellen (AbsenceRow .status-badge) */
 .ev-stchip {
-    font-size: 11.5px;
-    font-weight: 600;
-    border-radius: var(--border-radius, 8px);
-    padding: 3px 9px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
 }
 
 .ev-stchip--open {
-    background: var(--wt-holiday-bg, #fbf3e6);
-    color: #9a6c25;
+    background: var(--color-warning-hover);
+    color: var(--color-warning-text);
 }
 
 .ev-stchip--ok {
-    background: #eaf5ee;
-    color: var(--color-success-text, #2f7d49);
+    background: var(--color-success-hover);
+    color: var(--color-success-text);
 }
 
 .ev-tabs {
@@ -1007,6 +1007,12 @@ export default {
     white-space: nowrap;
 }
 
+/* Zahlen-Spalten: Überschrift rechtsbündig wie ihre Werte (sonst Header links, Wert rechts). */
+.ev-table th.ev-num {
+    text-align: right;
+}
+
+
 .ev-table td {
     padding: 8px 12px;
     border-bottom: 1px solid var(--color-border);
@@ -1040,9 +1046,16 @@ export default {
     color: var(--color-text-maxcontrast);
 }
 
+.ev-share {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .ev-bar {
     height: 6px;
-    max-width: 160px;
+    flex: 0 0 120px;
+    width: 120px;
     border-radius: var(--border-radius-element, 8px);
     background: var(--color-background-dark);
     overflow: hidden;

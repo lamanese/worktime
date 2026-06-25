@@ -26,6 +26,7 @@
                     </div>
                 </div>
 
+                <div class="approval-card">
                 <table class="approval-table">
                     <thead>
                         <tr>
@@ -85,6 +86,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <!-- Zur Kenntnisnahme: gemeldete Abwesenheiten (z.B. Krankheit), keine Genehmigung nötig -->
@@ -94,6 +96,7 @@
                     <InfoIcon>{{ t('worktime', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon>
                     ({{ informationalAbsences.length }})
                 </h3>
+                <div class="approval-card">
                 <table class="approval-table">
                     <tbody>
                         <tr v-for="absence in informationalAbsences" :key="'info-' + absence.id">
@@ -109,6 +112,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <NcEmptyContent v-if="inboxItems.length === 0 && informationalAbsences.length === 0"
@@ -397,26 +401,39 @@ export default {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
+/* Tabellen in Card wie Audit/Abwesenheit/Auswertung */
+.approval-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 8px 16px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
 .approval-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    margin-bottom: 24px;
 }
 
 .approval-table th {
     text-align: left;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    padding: 9px 10px;
-    border-bottom: 1px solid var(--color-border);
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .approval-table td {
-    padding: 11px 10px;
-    border-bottom: 1px solid var(--color-border-light, var(--color-border));
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
+}
+
+.approval-table tbody tr:hover {
+    background: var(--color-background-hover);
 }
 
 .who {

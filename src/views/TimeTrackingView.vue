@@ -117,6 +117,7 @@
                 <DayList v-if="effectiveLayout === 'list'"
                     :days="days"
                     :month="selectedMonth.month"
+                    :projects="projects"
                     :selected-date="selectedDate"
                     @select="onSelectDay" />
                 <MonthCalendar v-else
@@ -670,7 +671,7 @@ export default {
 
 .zlayout {
     display: grid;
-    grid-template-columns: 1fr 330px;
+    grid-template-columns: 1fr clamp(340px, 26%, 460px);
     gap: 18px;
     align-items: start;
 }
