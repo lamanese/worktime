@@ -920,4 +920,42 @@ class PdfService {
             throw new \Exception('Could not archive PDF: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Remove an archived monthly report. Called when a month is un-approved (reopened),
+     * so the archive never holds a PDF for a month that is no longer approved (#323).
+     * No-op if archiving is not configured or the file does not exist.
+     */
+    public function deleteArchivedReport(
+        string $adminUserId,
+        Employee $employee,
+        int $year,
+        int $month
+    ): bool {
+        $archivePath = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_PATH);
+        if (empty($archivePath)) {
+            return false;
+        }
+
+        $folderPath = sprintf(
+            '%s/%d/%s_%s',
+            trim($archivePath, '/'),
+            $year,
+            $employee->getLastName(),
+            $employee->getFirstName()
+        );
+        $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
+        $relativePath = ltrim($folderPath . '/' . $filename, '/');
+
+        try {
+            $userFolder = $this->rootFolder->getUserFolder($adminUserId);
+            $file = $userFolder->get($relativePath);
+            $file->delete();
+            return true;
+        } catch (FilesNotFoundException) {
+            return false;
+        } catch (\Exception) {
+            return false;
+        }
+    }
 }

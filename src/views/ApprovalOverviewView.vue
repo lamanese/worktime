@@ -326,7 +326,11 @@ export default {
             this.processingMonth = item.key
             try {
                 const result = await TimeEntryService.approveMonth(item.employeeId, item.year, item.month)
-                showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
+                if (result.archiveQueued) {
+                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { count: result.approved }))
+                } else {
+                    showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
+                }
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to approve month:', error)

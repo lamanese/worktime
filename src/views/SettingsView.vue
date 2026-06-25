@@ -250,6 +250,33 @@
                         {{ t('worktime', 'Struktur: {path}/{Jahr}/{Nachname_Vorname}/Arbeitszeitnachweis_YYYY-MM.pdf', { path: settings.pdf_archive_path || '...' }) }}
                     </p>
                 </div>
+
+                <div v-if="settings.pdf_archive_path" class="form-group archive-status">
+                    <label>{{ t('worktime', 'Archivierungs-Status') }} <InfoIcon>{{ t('worktime', 'Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen.') }}</InfoIcon></label>
+                    <NcLoadingIcon v-if="archiveLoading" :size="20" />
+                    <template v-else>
+                        <p class="help-text">
+                            {{ t('worktime', '{pending} ausstehend · {failed} fehlgeschlagen', { pending: archiveStatus.pending, failed: archiveStatus.failed }) }}
+                        </p>
+                        <div v-if="archiveFailedJobs.length" class="archive-failed-list">
+                            <div v-for="job in archiveFailedJobs" :key="job.id" class="archive-failed-row">
+                                <div class="archive-failed-info">
+                                    <strong>{{ job.employeeName }}</strong>
+                                    <span class="archive-failed-month">{{ archiveMonthLabel(job.month) }} {{ job.year }}</span>
+                                    <span v-if="job.lastError" class="archive-failed-error">{{ job.lastError }}</span>
+                                </div>
+                                <NcButton type="secondary"
+                                    :disabled="archiveRetryingId === job.id"
+                                    @click="retryArchiveJob(job)">
+                                    {{ t('worktime', 'Erneut versuchen') }}
+                                </NcButton>
+                            </div>
+                        </div>
+                        <NcButton type="tertiary" @click="loadArchiveStatus">
+                            {{ t('worktime', 'Aktualisieren') }}
+                        </NcButton>
+                    </template>
+                </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
@@ -633,9 +660,10 @@ import EmployeeList from '../components/EmployeeList.vue'
 import ProjectForm from '../components/ProjectForm.vue'
 import ProjectList from '../components/ProjectList.vue'
 import { showSuccessMessage, showErrorMessage } from '../utils/errorHandler.js'
-import { getCurrentYear, getLocale, formatDateISO } from '../utils/dateUtils.js'
+import { getCurrentYear, getLocale, formatDateISO, getMonthName } from '../utils/dateUtils.js'
 import YearlyCarryoverService from '../services/YearlyCarryoverService.js'
 import ReportService from '../services/ReportService.js'
+import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 function round2(value) {
@@ -690,6 +718,10 @@ export default {
             availablePrincipals: [],
             hrManagers: [],
             previousHrManagers: [],
+            // PDF-Archiv-Status (#323)
+            archiveStatus: { configured: false, pending: 0, failed: 0, jobs: [] },
+            archiveLoading: false,
+            archiveRetryingId: null,
             // Holiday management
             holidays: [],
             loadingHolidays: false,
@@ -723,6 +755,9 @@ export default {
     },
     computed: {
         ...mapGetters('permissions', ['canManageSettings', 'canManageHolidays', 'canManageEmployees', 'canManageProjects']),
+        archiveFailedJobs() {
+            return (this.archiveStatus.jobs || []).filter(j => j.status === 'failed')
+        },
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
         ...mapGetters('projects', { allProjects: 'projects' }),
@@ -862,6 +897,7 @@ export default {
         }
         if (this.canManageSettings) {
             this.loadHrManagers()
+            this.loadArchiveStatus()
         }
         if (this.canManageHolidays) {
             this.loadHolidays()
@@ -888,6 +924,35 @@ export default {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
+        archiveMonthLabel(month) {
+            return getMonthName(month)
+        },
+        async loadArchiveStatus() {
+            this.archiveLoading = true
+            try {
+                const status = await TimeEntryService.getArchiveStatus()
+                if (status) {
+                    this.archiveStatus = status
+                }
+            } catch (e) {
+                console.error('Failed to load archive status:', e)
+            } finally {
+                this.archiveLoading = false
+            }
+        },
+        async retryArchiveJob(job) {
+            this.archiveRetryingId = job.id
+            try {
+                await TimeEntryService.retryArchive(job.id)
+                showSuccessMessage(this.t('worktime', 'Archivierung wird erneut versucht'))
+                await this.loadArchiveStatus()
+            } catch (e) {
+                console.error('Failed to retry archive job:', e)
+                showErrorMessage(this.t('worktime', 'Erneuter Versuch fehlgeschlagen'))
+            } finally {
+                this.archiveRetryingId = null
+            }
+        },
         setActiveSection(id) {
             this.activeSection = id
             if (typeof window !== 'undefined' && window.history?.replaceState) {
@@ -1660,6 +1725,49 @@ export default {
     padding: 4px 8px;
     background: var(--color-background-hover);
     border-radius: var(--border-radius);
+}
+
+/* PDF-Archiv-Status (#323) */
+.archive-status {
+    margin-top: 16px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 16px;
+}
+
+.archive-failed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0 12px;
+}
+
+.archive-failed-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-error, var(--color-border-dark));
+    border-radius: var(--border-radius-large, 12px);
+    background: var(--color-main-background);
+}
+
+.archive-failed-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.archive-failed-month {
+    color: var(--color-text-maxcontrast);
+    font-size: 13px;
+}
+
+.archive-failed-error {
+    color: var(--color-error-text, var(--color-error));
+    font-size: 12px;
+    overflow-wrap: anywhere;
 }
 
 /* Holiday management styles */

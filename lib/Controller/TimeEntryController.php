@@ -14,6 +14,8 @@ use OCA\WorkTime\Db\ArchiveQueue;
 use OCA\WorkTime\Db\ArchiveQueueMapper;
 use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Service\CompanySettingsService;
+use OCA\WorkTime\Service\EmployeeService;
+use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\PermissionService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -30,6 +32,8 @@ class TimeEntryController extends BaseController {
         private PermissionService $permissionService,
         private ArchiveQueueMapper $archiveQueueMapper,
         private CompanySettingsService $settingsService,
+        private PdfService $pdfService,
+        private EmployeeService $employeeService,
         private LoggerInterface $logger,
     ) {
         parent::__construct($request, $userId);
@@ -338,6 +342,12 @@ class TimeEntryController extends BaseController {
             return $this->handleException($e);
         }
 
+        // The archived PDF no longer reflects an approved month — remove it and cancel
+        // any still-queued archive job so the archive stays consistent (#323).
+        if ($result['reopened'] > 0) {
+            $this->cleanupArchiveOnReopen($employeeId, $year, $month);
+        }
+
         return $this->successResponse([
             'status' => 'success',
             'reopened' => $result['reopened'],
@@ -366,6 +376,99 @@ class TimeEntryController extends BaseController {
             'rejected' => $result['rejected'],
             'skipped' => $result['skipped'],
         ]);
+    }
+
+    #[NoAdminRequired]
+    public function archiveStatus(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageSettings($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        $jobs = $this->archiveQueueMapper->findRecent(20);
+        $names = [];
+        $items = array_map(function (ArchiveQueue $job) use (&$names) {
+            $empId = $job->getEmployeeId();
+            if (!isset($names[$empId])) {
+                try {
+                    $names[$empId] = $this->employeeService->find($empId)->getFullName();
+                } catch (\Throwable) {
+                    $names[$empId] = '#' . $empId;
+                }
+            }
+            return [
+                'id' => $job->getId(),
+                'employeeName' => $names[$empId],
+                'year' => $job->getYear(),
+                'month' => $job->getMonth(),
+                'status' => $job->getStatus(),
+                'attempts' => $job->getAttempts(),
+                'lastError' => $job->getLastError(),
+                'processedAt' => $job->getProcessedAt()?->format('c'),
+            ];
+        }, $jobs);
+
+        $pending = 0;
+        $failed = 0;
+        foreach ($jobs as $job) {
+            if (in_array($job->getStatus(), [ArchiveQueue::STATUS_PENDING, ArchiveQueue::STATUS_PROCESSING], true)) {
+                $pending++;
+            } elseif ($job->getStatus() === ArchiveQueue::STATUS_FAILED) {
+                $failed++;
+            }
+        }
+
+        return $this->successResponse([
+            'configured' => !empty($this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_USER)),
+            'pending' => $pending,
+            'failed' => $failed,
+            'jobs' => $items,
+        ]);
+    }
+
+    #[NoAdminRequired]
+    public function archiveRetry(int $id): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageSettings($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $job = $this->archiveQueueMapper->find($id);
+            if ($job->getStatus() !== ArchiveQueue::STATUS_FAILED) {
+                return $this->successResponse(['status' => 'skipped']);
+            }
+            $job->setStatus(ArchiveQueue::STATUS_PENDING);
+            $job->setAttempts(0);
+            $job->setLastError(null);
+            $this->archiveQueueMapper->update($job);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+
+        return $this->successResponse(['status' => 'success']);
+    }
+
+    /**
+     * Remove the archived PDF and cancel queued archive jobs for a month that has
+     * been un-approved (reopened), so the archive never holds a stale PDF (#323).
+     */
+    private function cleanupArchiveOnReopen(int $employeeId, int $year, int $month): void {
+        try {
+            $this->archiveQueueMapper->deletePendingFor($employeeId, $year, $month);
+
+            $archiveUserId = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_USER);
+            if (!empty($archiveUserId)) {
+                $employee = $this->employeeService->find($employeeId);
+                $this->pdfService->deleteArchivedReport($archiveUserId, $employee, $year, $month);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning('Archive cleanup on reopen failed: ' . $e->getMessage());
+        }
     }
 
     /**
