@@ -37,7 +37,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in filteredItems" :key="item.key">
+                        <tr v-for="item in filteredItems"
+                            :key="item.key"
+                            :class="{ 'row-clickable': item.kind === 'month' }"
+                            @click="item.kind === 'month' && openMonthDetail(item)">
                             <td>
                                 <div class="who">
                                     <NcAvatar :user="item.employeeUserId" :display-name="item.employeeName" :size="30" />
@@ -52,7 +55,7 @@
                             </td>
                             <td class="detail">{{ item.detail }}</td>
                             <td class="actions-col">
-                                <div class="actions">
+                                <div class="actions" @click.stop>
                                     <template v-if="item.kind === 'absence'">
                                         <NcButton type="primary"
                                             :disabled="processingAbsence === item.id"
@@ -142,6 +145,13 @@
                 </div>
             </div>
         </NcModal>
+
+        <!-- Monats-Details vor dem Abnehmen -->
+        <MonthApprovalModal v-if="detailItem"
+            :item="detailItem"
+            @approve="onModalApprove"
+            @reject="onModalReject"
+            @close="detailItem = null" />
     </div>
 </template>
 
@@ -164,11 +174,13 @@ import { getAbsenceTypeLabel } from '../utils/formatters.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import InfoIcon from '../components/InfoIcon.vue'
+import MonthApprovalModal from '../components/MonthApprovalModal.vue'
 
 export default {
     name: 'ApprovalOverviewView',
     components: {
         InfoIcon,
+        MonthApprovalModal,
         NcLoadingIcon,
         NcEmptyContent,
         NcAvatar,
@@ -194,6 +206,7 @@ export default {
             reopenTarget: null,
             reopenReason: '',
             reopeningKey: null,
+            detailItem: null,
         }
     },
     computed: {
@@ -295,6 +308,19 @@ export default {
             } finally {
                 this.processingAbsence = null
             }
+        },
+        openMonthDetail(item) {
+            this.detailItem = item
+        },
+        onModalApprove() {
+            const item = this.detailItem
+            this.detailItem = null
+            this.approveMonthItem(item)
+        },
+        onModalReject() {
+            const item = this.detailItem
+            this.detailItem = null
+            this.openReopenModal(item)
         },
         async approveMonthItem(item) {
             this.processingMonth = item.key
@@ -434,6 +460,10 @@ export default {
 
 .approval-table tbody tr:hover {
     background: var(--color-background-hover);
+}
+
+.approval-table tbody tr.row-clickable {
+    cursor: pointer;
 }
 
 .who {
