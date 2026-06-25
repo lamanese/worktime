@@ -190,6 +190,13 @@ export default {
             type: Object,
             default: null,
         },
+        // Standard-Bundesland aus den Firmendaten (#337): Vorauswahl fuer neue
+        // Mitarbeitende. Bleibt frei aenderbar; im Bearbeiten-Modus wird das am
+        // Mitarbeiter gespeicherte Bundesland verwendet.
+        defaultFederalState: {
+            type: String,
+            default: 'BY',
+        },
     },
     data() {
         return {
@@ -203,7 +210,7 @@ export default {
                 vacationDays: 30,
                 workingDaysPerWeek: 5,
                 supervisorId: null,
-                federalState: 'BY',
+                federalState: this.defaultFederalState,
                 entryDate: null,
                 exitDate: null,
                 isActive: true,
@@ -335,7 +342,7 @@ export default {
                 vacationDays: 30,
                 workingDaysPerWeek: 5,
                 supervisorId: null,
-                federalState: 'BY',
+                federalState: this.defaultFederalState,
                 entryDate: null,
                 exitDate: null,
                 isActive: true,

@@ -31,14 +31,26 @@
 					:class="{ weekend: day.isWeekend, holiday: day.isHoliday }">
 					<div v-if="getAbsenceForDay(emp, day.date)"
 						class="absence-bar"
-						:class="'type-' + getAbsenceForDay(emp, day.date).type"
+						:class="barClass(getAbsenceForDay(emp, day.date))"
 						:title="getAbsenceTooltip(getAbsenceForDay(emp, day.date))">
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="absence-legend">
+		<div v-if="colorBy === 'status'" class="absence-legend">
+			<h3>{{ t('worktime', 'Status') }}</h3>
+			<div class="legend-grid">
+				<div v-for="item in statusLegendItems" :key="item.status" class="legend-item">
+					<span class="legend-color" :class="'status-' + item.status"></span>
+					<div class="legend-text">
+						<strong>{{ item.label }}</strong>
+						<span>{{ item.description }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div v-else class="absence-legend">
 			<h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
 			<div class="legend-grid">
 				<div v-for="item in activeLegendItems"
@@ -79,8 +91,21 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+		// #345: 'type' faerbt die Balken nach Abwesenheitsart, 'status' nach
+		// Genehmigungsstatus (genehmigt/beantragt) fuer die Engpass-Planung.
+		colorBy: {
+			type: String,
+			default: 'type',
+			validator: v => ['type', 'status'].includes(v),
+		},
 	},
 	computed: {
+		statusLegendItems() {
+			return [
+				{ status: 'approved', label: t('worktime', 'Genehmigt'), description: t('worktime', 'Bestätigte Abwesenheit.') },
+				{ status: 'pending', label: t('worktime', 'Beantragt'), description: t('worktime', 'Offener Antrag, noch nicht genehmigt.') },
+			]
+		},
 		activeLegendItems() {
 			const typeInfo = {
 				vacation: { label: t('worktime', 'Urlaub'), description: t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') },
@@ -134,6 +159,12 @@ export default {
 		},
 	},
 	methods: {
+		barClass(absence) {
+			if (this.colorBy === 'status') {
+				return 'status-' + (absence.status || 'approved')
+			}
+			return 'type-' + absence.type
+		},
 		formatDate(date) {
 			const y = date.getFullYear()
 			const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -179,27 +210,28 @@ export default {
 .timeline-row {
 	display: flex;
 	align-items: stretch;
-	border-bottom: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 }
 
 .timeline-header {
 	position: sticky;
 	top: 0;
-	background: var(--color-main-background);
 	z-index: 1;
+	background: var(--color-background-hover);
 	font-weight: 600;
 }
 
 .timeline-name-col {
-	min-width: 160px;
-	max-width: 160px;
-	padding: 6px 10px;
+	min-width: 168px;
+	max-width: 168px;
+	padding: 7px 12px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	border-right: 1px solid var(--color-border);
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 	display: flex;
 	align-items: center;
+	font-size: 13.5px;
 }
 
 .timeline-days {
@@ -208,54 +240,72 @@ export default {
 }
 
 .timeline-day-header {
-	min-width: 32px;
-	max-width: 32px;
+	flex: 1;
+	min-width: 22px;
 	text-align: center;
-	padding: 4px 0;
+	padding: 5px 0;
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 }
 
 .timeline-day-header .day-weekday {
-	font-size: 10px;
+	font-size: 9.5px;
 	color: var(--color-text-maxcontrast);
 }
 
 .timeline-day-header .day-number {
-	font-size: 12px;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
 }
 
 .timeline-cell {
-	min-width: 32px;
-	max-width: 32px;
-	height: 32px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 2px;
+	flex: 1;
+	min-width: 22px;
+	min-height: 30px;
+	padding: 0;
+	border-right: 1px solid var(--color-border-light, var(--color-border));
 }
 
-.weekend,
-.holiday {
-	background-color: var(--color-background-dark);
+.timeline-day-header.weekend,
+.timeline-cell.weekend {
+	background-color: var(--color-background-hover);
 }
 
+.timeline-day-header.holiday,
+.timeline-cell.holiday {
+	background-color: var(--wt-holiday-bg, rgba(201, 139, 58, 0.13));
+}
+
+/* Abwesenheit füllt die ganze Zelle (kein abgesetzter Balken mehr) */
 .absence-bar {
 	width: 100%;
-	height: 20px;
-	border-radius: 3px;
+	height: 100%;
+	min-height: 30px;
 	cursor: default;
 }
 
-.type-vacation { background-color: #0082c9; }     /* Urlaub – blau */
-.type-sick { background-color: #e74c3c; }         /* Krank – rot */
-.type-child_sick { background-color: #f39c12; }   /* Kind krank – orange */
-.type-training { background-color: #2ecc71; }     /* Fortbildung – gruen */
-.type-special { background-color: #9b59b6; }      /* Sonderurlaub – lila */
-.type-compensatory { background-color: #1abc9c; } /* Freizeitausgleich – tuerkis */
-.type-unpaid { background-color: #34495e; }       /* Unbezahlt – dunkelblau */
-.type-absent { background-color: #95a5a6; }       /* Abwesend (maskiert) – grau */
+/* Gedämpfte Farb-Palette (Owner-Wunsch, wie im Redesign) */
+.type-vacation { background-color: #4a9d63; }      /* Urlaub */
+.type-sick { background-color: #cc4b42; }          /* Krank */
+.type-child_sick { background-color: #d98a2b; }    /* Kind krank */
+.type-training { background-color: #3a8f7a; }      /* Fortbildung */
+.type-special { background-color: #8e6bbf; }       /* Sonderurlaub */
+.type-compensatory { background-color: #3a9aa8; }  /* Freizeitausgleich */
+.type-unpaid { background-color: #5b6b7a; }        /* Unbezahlt */
+.type-absent { background-color: #9aa3ad; }        /* Abwesend (maskiert) */
+
+/* Status-Modus (#345): genehmigt = grün, beantragt = schraffiertes Amber */
+.status-approved { background-color: #4a9d63; }
+.status-pending {
+	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 5px, #e0a64f 5px, #e0a64f 10px);
+	background-color: #c98b3a;
+}
+
+.legend-color.status-pending {
+	background-image: repeating-linear-gradient(45deg, #c98b3a, #c98b3a 4px, #e0a64f 4px, #e0a64f 8px);
+}
 
 .timeline-empty {
 	padding: 40px;
@@ -291,7 +341,7 @@ export default {
 	width: 12px;
 	height: 12px;
 	min-width: 12px;
-	border-radius: 50%;
+	border-radius: 3px;
 	margin-top: 3px;
 }
 

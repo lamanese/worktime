@@ -255,4 +255,147 @@ class AbsenceServiceTest extends TestCase {
         $this->assertNull($result->getApprovedBy());
         $this->assertNotNull($result->getApprovedAt());
     }
+
+    // ---------------------------------------------------------------------
+    // #360: Überlappungs-Schutz Abwesenheit ↔ Zeiteinträge
+    // ---------------------------------------------------------------------
+
+    /**
+     * #360: a FULL-day absence over days that already contain time entries is a
+     * logical contradiction (work + take the whole day off) and must be hard-
+     * blocked — the absence is never inserted.
+     */
+    public function testFullDayAbsenceBlockedWhenTimeEntriesExist(): void {
+        $this->absenceMapper->method('findOverlapping')->willReturn([]);
+
+        $entry = new TimeEntry();
+        $entry->setId(5);
+        $entry->setEmployeeId(1);
+        $entry->setDate($this->currentMonthDate('11'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
+
+        $this->absenceMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ValidationException::class);
+        $this->service->create(
+            1,
+            Absence::TYPE_COMPENSATORY,
+            $this->currentMonthDate('10')->format('Y-m-d'),
+            $this->currentMonthDate('12')->format('Y-m-d'),
+            null,
+            'BY',
+            'user1',
+            1.0
+        );
+    }
+
+    /**
+     * #360: a HALF-day absence may coexist with time entries (the overtime
+     * calculation handles the reduced target). It must NOT be blocked — the
+     * absence is inserted normally.
+     */
+    public function testHalfDayAbsenceAllowedDespiteTimeEntries(): void {
+        $this->absenceMapper->method('findOverlapping')->willReturn([]);
+
+        $entry = new TimeEntry();
+        $entry->setId(5);
+        $entry->setEmployeeId(1);
+        $entry->setDate($this->currentMonthDate('11'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
+
+        // Current month is open (a draft entry) → not locked.
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        // Schedule-aware working-day count for setDays().
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->workScheduleService->method('countWorkingDays')->willReturn(1.0);
+        $this->absenceMapper->method('insert')->willReturnArgument(0);
+
+        $this->absenceMapper->expects($this->once())->method('insert');
+
+        $result = $this->service->create(
+            1,
+            Absence::TYPE_COMPENSATORY,
+            $this->currentMonthDate('11')->format('Y-m-d'),
+            $this->currentMonthDate('11')->format('Y-m-d'),
+            null,
+            'BY',
+            'user1',
+            0.5
+        );
+
+        $this->assertSame(Absence::STATUS_PENDING, $result->getStatus());
+    }
+
+    // ---------------------------------------------------------------------
+    // #345: Status-Kalender — Sichtbarkeit offener Anträge (Datenschutz)
+    // ---------------------------------------------------------------------
+
+    private function ovEmployee(int $id, ?int $supervisorId, string $visibility): \OCA\WorkTime\Db\Employee {
+        $e = new \OCA\WorkTime\Db\Employee();
+        $e->setId($id);
+        $e->setUserId('u' . $id);
+        $e->setFirstName('E');
+        $e->setLastName((string)$id);
+        $e->setSupervisorId($supervisorId);
+        $e->setAbsenceVisibility($visibility);
+        $e->setAbsenceDetail('hidden');
+        $e->setIsActive(true);
+        return $e;
+    }
+
+    private function ovAbsence(int $employeeId, string $status): Absence {
+        $a = new Absence();
+        $a->setEmployeeId($employeeId);
+        $a->setType('vacation');
+        $a->setStatus($status);
+        $a->setStartDate(new DateTime('2026-06-10'));
+        $a->setEndDate(new DateTime('2026-06-12'));
+        return $a;
+    }
+
+    /**
+     * #345: A supervisor sees their team member's OPEN (pending) requests in the
+     * team calendar — needed for capacity planning.
+     */
+    public function testAbsenceOverviewIncludesPendingForSupervisorTeam(): void {
+        $member = $this->ovEmployee(1, 10, 'none'); // team member of supervisor 10
+        $this->employeeMapper->method('findAllActive')->willReturn([$member]);
+        $this->absenceMapper->method('findByEmployeeAndMonth')->willReturn([
+            $this->ovAbsence(1, Absence::STATUS_APPROVED),
+            $this->ovAbsence(1, Absence::STATUS_PENDING),
+        ]);
+
+        // Viewer is supervisor (employeeId 10); subtree contains member id 1.
+        $result = $this->service->getAbsenceOverview(2026, 6, 'sv', false, 10, [1]);
+
+        $this->assertCount(1, $result);
+        $statuses = array_column($result[0]['absences'], 'status');
+        $this->assertContains(Absence::STATUS_PENDING, $statuses);
+        $this->assertContains(Absence::STATUS_APPROVED, $statuses);
+    }
+
+    /**
+     * #345 (Datenschutz): A normal colleague must NOT see another employee's open
+     * requests — only approved absences, via findApprovedByEmployeeAndMonth.
+     */
+    public function testAbsenceOverviewHidesPendingFromPeers(): void {
+        $colleague = $this->ovEmployee(1, 5, 'team');
+        $viewer = $this->ovEmployee(2, 5, 'team');
+        $this->employeeMapper->method('findAllActive')->willReturn([$colleague]);
+        $this->employeeMapper->method('find')->willReturn($viewer);
+        $this->absenceMapper->method('findApprovedByEmployeeAndMonth')->willReturn([
+            $this->ovAbsence(1, Absence::STATUS_APPROVED),
+        ]);
+
+        // Viewer is a normal employee (id 2), not privileged, no subtree.
+        $result = $this->service->getAbsenceOverview(2026, 6, 'peer', false, 2, []);
+
+        $this->assertCount(1, $result);
+        $statuses = array_column($result[0]['absences'], 'status');
+        $this->assertSame([Absence::STATUS_APPROVED], $statuses);
+        $this->assertNotContains(Absence::STATUS_PENDING, $statuses);
+    }
 }

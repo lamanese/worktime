@@ -119,6 +119,17 @@ export default {
             type: Boolean,
             default: false,
         },
+        // Smart-Prefill (#340): bei einem Folge-Eintrag das Vorausfüllen der
+        // Zeitfelder. `null` = kein Vorschlag (Standard verwenden). prefillEnd
+        // kann gezielt '' sein (vergangener Tag → Ende leer lassen).
+        prefillStart: {
+            type: String,
+            default: null,
+        },
+        prefillEnd: {
+            type: String,
+            default: null,
+        },
     },
     data() {
         return {
@@ -235,10 +246,13 @@ export default {
         resetForm() {
             const defaultStart = this.currentEmployee?.defaultStartTime || '08:00'
             const defaultEnd = this.currentEmployee?.defaultEndTime || '17:00'
+            // Smart-Prefill (#340): bei einem Folge-Eintrag Start = Ende des
+            // letzten Eintrags, Ende = aktuelle Uhrzeit (nur heute), sonst leer.
+            // `null` bedeutet „kein Vorschlag" → Standardwert verwenden.
             this.form = {
                 date: this.presetDate ? new Date(this.presetDate) : new Date(),
-                startTime: defaultStart,
-                endTime: defaultEnd,
+                startTime: this.prefillStart || defaultStart,
+                endTime: this.prefillEnd !== null ? this.prefillEnd : defaultEnd,
                 breakMinutes: 30,
                 projectId: null,
                 description: '',

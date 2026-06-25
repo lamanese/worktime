@@ -201,6 +201,56 @@ class PermissionService {
     }
 
     /**
+     * Team members a user may SEE (calendar, evaluation) — recursively over the
+     * whole subtree (#347). A higher-level manager sees everyone below them.
+     * Genehmigen bleibt davon UNBERUEHRT: dafuer gilt weiterhin der direkte
+     * Vorgesetzte (canApprove / getTeamMembers, eine Ebene).
+     *
+     * @return Employee[]
+     */
+    public function getVisibleTeamMembers(string $userId): array {
+        // Admin and HR Manager see all active employees
+        if ($this->isAdmin($userId) || $this->isHrManager($userId)) {
+            return $this->employeeMapper->findAllActive();
+        }
+
+        $employee = $this->getEmployeeForUser($userId);
+        if ($employee === null) {
+            return [];
+        }
+
+        return $this->getSubordinateEmployees($employee->getId());
+    }
+
+    /**
+     * All employees in the subtree below the given employee (direct AND indirect
+     * reports), via the supervisor relation. Cycle-guarded; the root itself is
+     * not included. For SIGHT only — not for approval.
+     *
+     * @return Employee[]
+     */
+    public function getSubordinateEmployees(int $rootEmployeeId): array {
+        $result = [];
+        $visited = [$rootEmployeeId => true];
+        $queue = [$rootEmployeeId];
+
+        while (!empty($queue)) {
+            $current = array_shift($queue);
+            foreach ($this->employeeMapper->findBySupervisor($current) as $report) {
+                $id = $report->getId();
+                if (isset($visited[$id])) {
+                    continue; // protect against accidental supervisor cycles
+                }
+                $visited[$id] = true;
+                $result[] = $report;
+                $queue[] = $id;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Get permission info for frontend
      */
     public function getPermissionInfo(string $userId): array {

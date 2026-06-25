@@ -17,11 +17,19 @@
             </NcButton>
         </template>
 
+        <!-- Pausenkontrolle / Max-Tagesstunden (#338): nicht-blockierende Warnung auf Tagesebene -->
+        <div v-for="(warning, i) in (day.warnings || [])" :key="'warn-' + i" class="dp-note warning">
+            <AlertIcon :size="18" />
+            {{ warning }}
+        </div>
+
         <!-- Erfassung: immer möglich (auch an Feiertag/Wochenende/Abwesenheit) -->
         <div v-if="formMode" class="dp-form">
             <TimeEntryForm embedded
                 :entry="editingEntry"
                 :preset-date="day.date"
+                :prefill-start="prefillStart"
+                :prefill-end="prefillEnd"
                 @saved="onSaved"
                 @cancel="closeForm" />
         </div>
@@ -82,11 +90,12 @@ import PencilIcon from 'vue-material-design-icons/Pencil.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import LockIcon from 'vue-material-design-icons/Lock.vue'
 import CalendarStarIcon from 'vue-material-design-icons/CalendarStar.vue'
+import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import { mapActions, mapGetters } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import CorrectionReasonModal from './CorrectionReasonModal.vue'
-import { formatDateWithWeekday } from '../utils/dateUtils.js'
-import { formatMinutes } from '../utils/timeUtils.js'
+import { formatDateWithWeekday, getToday } from '../utils/dateUtils.js'
+import { formatMinutes, getCurrentTime } from '../utils/timeUtils.js'
 import { getAbsenceColorClass } from '../utils/formatters.js'
 import { confirmAction, showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 
@@ -99,6 +108,7 @@ export default {
         DeleteIcon,
         LockIcon,
         CalendarStarIcon,
+        AlertIcon,
         TimeEntryForm,
         CorrectionReasonModal,
     },
@@ -153,6 +163,19 @@ export default {
                 return this.t('worktime', 'Monat genehmigt – gesperrt. Korrektur nur durch HR.')
             }
             return this.t('worktime', 'Eingereicht – Bearbeitung erst nach Genehmigung oder Ablehnung möglich.')
+        },
+        // Smart-Prefill (#340): Vorschlag fuer einen Folge-Eintrag.
+        // Start = Ende des spaetesten Eintrags des Tages (null beim ersten Eintrag).
+        prefillStart() {
+            const entries = this.day.entries
+            if (!entries.length) return null
+            return entries.reduce((latest, e) => (e.endTime > latest ? e.endTime : latest), entries[0].endTime)
+        },
+        // Ende = aktuelle Uhrzeit nur wenn der Tag heute ist; an vergangenen Tagen
+        // leer ('') lassen; beim ersten Eintrag kein Vorschlag (null → Standard).
+        prefillEnd() {
+            if (!this.day.entries.length) return null
+            return this.day.date === getToday() ? getCurrentTime() : ''
         },
     },
     watch: {
@@ -274,6 +297,13 @@ export default {
 .dp-note.other {
     background: var(--color-background-hover);
     color: var(--color-primary-element);
+}
+
+.dp-note.warning {
+    background: var(--color-warning-element-light, #fdf6e3);
+    border: 1px solid var(--color-warning, #c8932a);
+    color: var(--color-warning-text, #8a6d00);
+    align-items: flex-start;
 }
 
 .dp-open-abs {

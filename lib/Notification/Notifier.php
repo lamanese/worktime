@@ -157,6 +157,20 @@ class Notifier implements INotifier {
 				}
 				break;
 
+			case 'archive_failed':
+				$notification->setParsedSubject(
+					$l->t(
+						'PDF-Archivierung für %1$s (%2$s) ist fehlgeschlagen',
+						[$params['employeeName'], $params['monthYear']]
+					)
+				);
+				if (!empty($params['error'])) {
+					$notification->setParsedMessage(
+						$l->t('Fehler: %s', [$params['error']])
+					);
+				}
+				break;
+
 			default:
 				throw new UnknownNotificationException();
 		}

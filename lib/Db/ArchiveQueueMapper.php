@@ -109,6 +109,53 @@ class ArchiveQueueMapper extends QBMapper {
     }
 
     /**
+     * Count jobs in the given statuses (exact counts for the status view, #323)
+     */
+    public function countByStatus(array $statuses): int {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('id'))
+            ->from($this->getTableName())
+            ->where($qb->expr()->in('status', $qb->createNamedParameter($statuses, IQueryBuilder::PARAM_STR_ARRAY)));
+
+        $result = $qb->executeQuery();
+        $count = (int)$result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
+    }
+
+    /**
+     * Most recently created jobs (for the archive status view, #323)
+     */
+    public function findRecent(int $limit = 20): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created_at', 'DESC')
+            ->setMaxResults($limit);
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * Remove pending/processing jobs for a month — called when it is reopened so a
+     * queued archive job does not later write a PDF for a no-longer-approved month (#323).
+     */
+    public function deletePendingFor(int $employeeId, int $year, int $month): int {
+        $qb = $this->db->getQueryBuilder();
+        $qb->delete($this->getTableName())
+            ->where($qb->expr()->eq('employee_id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('year', $qb->createNamedParameter($year, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('month', $qb->createNamedParameter($month, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->in('status', $qb->createNamedParameter(
+                [ArchiveQueue::STATUS_PENDING, ArchiveQueue::STATUS_PROCESSING],
+                IQueryBuilder::PARAM_STR_ARRAY
+            )));
+
+        return $qb->executeStatement();
+    }
+
+    /**
      * Delete completed jobs older than given days
      */
     public function deleteOldCompleted(int $daysOld = 30): int {

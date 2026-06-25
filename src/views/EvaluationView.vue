@@ -2,28 +2,134 @@
     <div class="evaluation-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Auswertung') }}</h2>
+        </div>
 
-            <div class="layout-seg" role="group" :aria-label="t('worktime', 'Zeitraum')">
+        <div class="view-toolbar">
+            <div class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+                <button class="seg-btn" :class="{ active: mode === 'mitarbeiter' }" @click="mode = 'mitarbeiter'">
+                    <AccountMultipleIcon :size="18" />
+                    {{ t('worktime', 'Mitarbeiter') }}
+                </button>
+                <button class="seg-btn" :class="{ active: mode === 'projekte' }" @click="mode = 'projekte'">
+                    <FolderOutlineIcon :size="18" />
+                    {{ t('worktime', 'Projekte') }}
+                </button>
+            </div>
+
+            <div v-show="mode === 'projekte'" class="layout-seg" role="group" :aria-label="t('worktime', 'Zeitraum')">
                 <button v-for="p in periods"
                     :key="p.value"
                     class="seg-btn"
                     :class="{ active: period === p.value }"
                     @click="setPeriod(p.value)">
+                    <component :is="p.icon" :size="18" />
                     {{ p.label }}
                 </button>
             </div>
 
-            <div class="period-nav">
-                <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
-                    <template #icon><ChevronLeftIcon :size="20" /></template>
-                </NcButton>
-                <span class="period-nav__label">{{ periodLabel }}</span>
-                <NcButton type="tertiary" :aria-label="t('worktime', 'Weiter')" @click="shiftPeriod(1)">
-                    <template #icon><ChevronRightIcon :size="20" /></template>
-                </NcButton>
+            <div class="view-header__nav">
+                <YearPicker v-show="mode === 'mitarbeiter'" :year="teamYear" @update="onTeamYearChange" />
+                <div v-show="mode === 'projekte'" class="period-nav">
+                    <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
+                        <template #icon><ChevronLeftIcon :size="20" /></template>
+                    </NcButton>
+                    <span class="period-nav__label">{{ periodLabel }}</span>
+                    <NcButton type="tertiary" :aria-label="t('worktime', 'Weiter')" @click="shiftPeriod(1)">
+                        <template #icon><ChevronRightIcon :size="20" /></template>
+                    </NcButton>
+                </div>
             </div>
         </div>
 
+        <!-- Mitarbeiter: Jahresübersicht (aus „Team" hierher verschoben, #346) -->
+        <div v-show="mode === 'mitarbeiter'" class="ev-mitarbeiter">
+            <div v-if="teamReport.length > 0" class="ev-kpis">
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
+                    <div class="kpi-num">{{ teamKpis.count }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Überstunden gesamt') }}</div>
+                    <div class="kpi-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Urlaub genommen') }}</div>
+                    <div class="kpi-num">{{ teamKpis.vacationUsed }} <span class="kpi-sub">/ {{ teamKpis.vacationTotal }} {{ t('worktime', 'Tage') }}</span></div>
+                </div>
+            </div>
+            <NcLoadingIcon v-if="teamLoading" :size="44" />
+            <template v-else-if="teamReport.length > 0">
+                <div class="ev-subtabs">
+                    <div class="layout-seg" role="group">
+                        <button class="seg-btn" :class="{ active: teamSubtab === 'overview' }" @click="teamSubtab = 'overview'">
+                            <ViewListOutlineIcon :size="18" />
+                            {{ t('worktime', 'Übersicht') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: teamSubtab === 'months' }" @click="teamSubtab = 'months'">
+                            <CalendarTextOutlineIcon :size="18" />
+                            {{ t('worktime', 'Monatsdetail') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Übersicht: flache Tabelle, eine Zeile je Mitarbeiter (Projekte-Look) -->
+                <div v-show="teamSubtab === 'overview'" class="ev-card">
+                    <table class="ev-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" @click="teamSortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ teamSortArrow('name') }}</th>
+                                <th class="ev-num sortable" @click="teamSortBy('overtime')">{{ t('worktime', 'Überstunden') }}{{ teamSortArrow('overtime') }}</th>
+                                <th class="sortable" @click="teamSortBy('vacation')">{{ t('worktime', 'Resturlaub') }}{{ teamSortArrow('vacation') }}</th>
+                                <th>{{ t('worktime', 'Status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="row in teamOverviewRows" :key="row.id">
+                                <td>
+                                    <div class="ev-emp">
+                                        <NcAvatar :user="row.userId" :display-name="row.name" :size="30" />
+                                        <div>
+                                            <div class="ev-emp-name">{{ row.name }}</div>
+                                            <div class="ev-emp-sub">{{ weeklyLabel(row.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="ev-num" :class="row.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(row.overtimeMinutes) }}</td>
+                                <td>
+                                    <div class="ev-vac">
+                                        <span class="ev-vac-num">{{ row.vacationRemaining }} / {{ row.vacationTotal }}</span>
+                                        <span class="ev-vac-track"><span class="ev-vac-fill" :style="{ width: row.vacationPercent + '%' }" /></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span v-if="row.openMonths > 0" class="ev-stchip ev-stchip--open">{{ t('worktime', 'Offen: {n}', { n: row.openMonths }) }}</span>
+                                    <span v-else class="ev-stchip ev-stchip--ok">{{ t('worktime', '✓ aktuell') }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td>{{ t('worktime', 'Team gesamt') }}</td>
+                                <td class="ev-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</td>
+                                <td>{{ teamKpis.vacationTotal - teamKpis.vacationUsed }} / {{ teamKpis.vacationTotal }}</td>
+                                <td />
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Monatsdetail: bestehende Monats-Grids -->
+                <div v-show="teamSubtab === 'months'">
+                    <TeamYearTable :report="teamReport" :year="teamYear" />
+                </div>
+            </template>
+            <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
+                <template #icon><AccountGroupIcon /></template>
+                <template #description>{{ t('worktime', 'Sie haben keine Teammitglieder.') }}</template>
+            </NcEmptyContent>
+        </div>
+
+        <div v-show="mode === 'projekte'">
         <div class="ev-filter">
             <div class="ev-filter__label">{{ t('worktime', 'Projekte') }}</div>
             <div class="ev-chips">
@@ -94,9 +200,11 @@
         <div class="ev-tabs">
             <div class="layout-seg" role="group">
                 <button class="seg-btn" :class="{ active: tab === 'agg' }" @click="tab = 'agg'">
+                    <ChartBarIcon :size="18" />
                     {{ t('worktime', 'Aggregiert') }}
                 </button>
                 <button class="seg-btn" :class="{ active: tab === 'detail' }" @click="tab = 'detail'">
+                    <FormatListBulletedIcon :size="18" />
                     {{ t('worktime', 'Einzelbuchungen') }}
                 </button>
             </div>
@@ -122,23 +230,28 @@
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
                     <th>{{ t('worktime', 'Anteil') }}</th>
-                    <th class="ev-num" />
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="r in aggRows" :key="r.id">
-                    <td>{{ r.name }}</td>
+                    <td>
+                        <div class="ev-emp-name">{{ r.name }}</div>
+                        <div v-if="weeklyLabel(r.weeklyHours)" class="ev-emp-sub">{{ weeklyLabel(r.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
+                    </td>
                     <td class="ev-num">{{ hours(r.minutes) }}</td>
-                    <td><div class="ev-bar"><span :style="{ width: pct(r.minutes) + '%' }" /></div></td>
-                    <td class="ev-num ev-muted">{{ pct(r.minutes) }} %</td>
+                    <td>
+                        <div class="ev-share">
+                            <div class="ev-bar"><span :style="{ width: pct(r.minutes) + '%' }" /></div>
+                            <span class="ev-muted">{{ pct(r.minutes) }} %</span>
+                        </div>
+                    </td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
                     <td>{{ t('worktime', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
-                    <td />
-                    <td class="ev-num">100 %</td>
+                    <td class="ev-muted">100 %</td>
                 </tr>
             </tfoot>
         </table>
@@ -154,7 +267,7 @@
                     <th>{{ t('worktime', 'Kunde') }}</th>
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
-                    <th>{{ t('worktime', 'Tätigkeit') }}</th>
+                    <th>{{ t('worktime', 'Beschreibung') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -183,6 +296,7 @@
         <div v-else class="ev-empty">
             {{ t('worktime', 'Für diese Auswahl liegen keine Buchungen vor.') }}
         </div>
+        </div>
     </div>
 </template>
 
@@ -193,6 +307,20 @@ import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
+import AccountGroupIcon from 'vue-material-design-icons/AccountGroup.vue'
+import AccountMultipleIcon from 'vue-material-design-icons/AccountMultiple.vue'
+import FolderOutlineIcon from 'vue-material-design-icons/FolderOutline.vue'
+import ViewListOutlineIcon from 'vue-material-design-icons/ViewListOutline.vue'
+import CalendarTextOutlineIcon from 'vue-material-design-icons/CalendarTextOutline.vue'
+import ChartBarIcon from 'vue-material-design-icons/ChartBar.vue'
+import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
+import CalendarMonthOutlineIcon from 'vue-material-design-icons/CalendarMonthOutline.vue'
+import CalendarRangeIcon from 'vue-material-design-icons/CalendarRange.vue'
+import CalendarOutlineIcon from 'vue-material-design-icons/CalendarOutline.vue'
+import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
+import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
+import YearPicker from '../components/YearPicker.vue'
+import TeamYearTable from '../components/TeamYearTable.vue'
 import ReportService from '../services/ReportService.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { formatDate as formatDateUtil, getMonthName } from '../utils/dateUtils.js'
@@ -203,14 +331,34 @@ export default {
     components: {
         NcButton,
         NcLoadingIcon,
+        NcEmptyContent,
+        NcAvatar,
         ChevronLeftIcon,
         ChevronRightIcon,
         DownloadIcon,
         MagnifyIcon,
+        AccountGroupIcon,
+        AccountMultipleIcon,
+        FolderOutlineIcon,
+        ViewListOutlineIcon,
+        CalendarTextOutlineIcon,
+        ChartBarIcon,
+        FormatListBulletedIcon,
+        CalendarMonthOutlineIcon,
+        CalendarRangeIcon,
+        CalendarOutlineIcon,
+        YearPicker,
+        TeamYearTable,
     },
     data() {
         const now = new Date()
         return {
+            mode: 'mitarbeiter',
+            teamYear: now.getFullYear(),
+            teamReport: [],
+            teamLoading: false,
+            teamSubtab: 'overview',
+            teamSort: { key: 'name', dir: 1 },
             year: now.getFullYear(),
             month: now.getMonth() + 1,
             period: 'month',
@@ -233,11 +381,50 @@ export default {
         }
     },
     computed: {
+        teamKpis() {
+            let overtimeMinutes = 0
+            let vacationUsed = 0
+            let vacationTotal = 0
+            for (const m of this.teamReport) {
+                overtimeMinutes += m.totalOvertimeMinutes || 0
+                vacationUsed += m.vacationStats?.used || 0
+                vacationTotal += m.vacationStats?.total || 0
+            }
+            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal }
+        },
+        teamOverviewRows() {
+            const rows = this.teamReport.map(m => {
+                const used = m.vacationStats?.used || 0
+                const total = m.vacationStats?.total || 0
+                const remaining = total - used
+                const openMonths = (m.months || []).filter(mm => mm.status === 'submitted').length
+                return {
+                    id: m.employee.id,
+                    userId: m.employee.userId,
+                    name: m.employee.fullName,
+                    weeklyHours: m.employee.weeklyHours,
+                    overtimeMinutes: m.totalOvertimeMinutes || 0,
+                    vacationTotal: total,
+                    vacationRemaining: remaining,
+                    vacationPercent: total > 0 ? Math.max(0, Math.min(100, Math.round((remaining / total) * 100))) : 0,
+                    openMonths,
+                }
+            })
+            const { key, dir } = this.teamSort
+            rows.sort((a, b) => {
+                let cmp = 0
+                if (key === 'overtime') cmp = a.overtimeMinutes - b.overtimeMinutes
+                else if (key === 'vacation') cmp = a.vacationRemaining - b.vacationRemaining
+                else cmp = a.name.localeCompare(b.name)
+                return cmp * dir
+            })
+            return rows
+        },
         periods() {
             return [
-                { value: 'month', label: this.t('worktime', 'Monat') },
-                { value: 'quarter', label: this.t('worktime', 'Quartal') },
-                { value: 'year', label: this.t('worktime', 'Jahr') },
+                { value: 'month', label: this.t('worktime', 'Monat'), icon: CalendarMonthOutlineIcon },
+                { value: 'quarter', label: this.t('worktime', 'Quartal'), icon: CalendarRangeIcon },
+                { value: 'year', label: this.t('worktime', 'Jahr'), icon: CalendarOutlineIcon },
             ]
         },
         periodLabel() {
@@ -303,10 +490,18 @@ export default {
             return { totalMinutes: total, projectCount: projects.size, employeeCount: employees.size }
         },
         aggRows() {
+            // Wochenstunden je Mitarbeiter aus dem Team-Report (id + userId als Schlüssel)
+            const weeklyByEmp = {}
+            for (const m of this.teamReport) {
+                if (m.employee?.weeklyHours != null) {
+                    weeklyByEmp[m.employee.id] = m.employee.weeklyHours
+                    if (m.employee.userId) weeklyByEmp[m.employee.userId] = m.employee.weeklyHours
+                }
+            }
             const byEmp = {}
             for (const r of this.filteredRows) {
                 if (!byEmp[r.employeeId]) {
-                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0 }
+                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[r.employeeId] ?? null }
                 }
                 byEmp[r.employeeId].minutes += r.minutes
             }
@@ -334,10 +529,47 @@ export default {
         tab(value) { if (value === 'detail') this.ensureEntries() },
     },
     created() {
+        this.loadTeamReport()
         this.refresh()
     },
     methods: {
+        async loadTeamReport() {
+            this.teamLoading = true
+            try {
+                this.teamReport = await ReportService.getTeamYear(this.teamYear) || []
+            } catch (error) {
+                console.error('Failed to load team report:', error)
+                this.teamReport = []
+            } finally {
+                this.teamLoading = false
+            }
+        },
+        onTeamYearChange(year) {
+            this.teamYear = year
+            this.loadTeamReport()
+        },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
+        // Wochenstunden ohne überflüssige Nullen: "40.00" → "40", "37.50" → "37.5"
+        weeklyLabel(h) {
+            if (h == null || h === '') return ''
+            const n = parseFloat(h)
+            return Number.isNaN(n) ? '' : String(n)
+        },
+        signedHours(minutes) {
+            const sign = minutes < 0 ? '−' : '+'
+            return `${sign}${formatMinutes(Math.abs(minutes || 0))} h`
+        },
+        teamSortBy(key) {
+            if (this.teamSort.key === key) {
+                this.teamSort = { key, dir: this.teamSort.dir * -1 }
+            } else {
+                this.teamSort = { key, dir: 1 }
+            }
+        },
+        teamSortArrow(key) {
+            if (this.teamSort.key !== key) return ''
+            return this.teamSort.dir === 1 ? ' ▲' : ' ▼'
+        },
         formatDate(date) { return formatDateUtil(date) },
         initials(name) {
             return name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -456,10 +688,20 @@ export default {
 .evaluation-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1040px;
+    max-width: 1600px;
 }
 
 .view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.view-header h2 {
+    margin: 0;
+}
+
+.view-toolbar {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -467,8 +709,10 @@ export default {
     margin-bottom: 20px;
 }
 
-.view-header h2 {
-    margin: 0;
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .layout-seg {
@@ -479,6 +723,9 @@ export default {
 }
 
 .seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
@@ -656,6 +903,88 @@ export default {
     font-variant-numeric: tabular-nums;
 }
 
+.kpi-num.kpi-pos { color: var(--color-success-text, #2f7d49); }
+.kpi-num.kpi-neg { color: var(--color-error-text, #b03b33); }
+
+.kpi-sub {
+    font-size: 0.62em;
+    font-weight: 600;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-year {
+    margin-bottom: 14px;
+}
+
+.ev-subtabs {
+    margin-bottom: 14px;
+}
+
+/* Umschalter nur so breit wie seine Buttons (nicht volle Breite) */
+.ev-subtabs .layout-seg {
+    width: max-content;
+}
+
+.ev-emp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ev-emp-name {
+    font-weight: 600;
+}
+
+.ev-emp-sub {
+    font-size: 12.5px;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-vac {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ev-vac-num {
+    font-variant-numeric: tabular-nums;
+    min-width: 56px;
+}
+
+.ev-vac-track {
+    flex: 0 0 120px;
+    width: 120px;
+    height: 8px;
+    border-radius: 6px;
+    background: var(--color-background-dark);
+    overflow: hidden;
+}
+
+.ev-vac-fill {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    background: var(--wt-vacation, #4a9d63);
+}
+
+/* Status-Pillen wie in den anderen Tabellen (AbsenceRow .status-badge) */
+.ev-stchip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+.ev-stchip--open {
+    background: var(--color-warning-hover);
+    color: var(--color-warning-text);
+}
+
+.ev-stchip--ok {
+    background: var(--color-success-hover);
+    color: var(--color-success-text);
+}
+
 .ev-tabs {
     display: flex;
     align-items: center;
@@ -695,6 +1024,31 @@ export default {
     white-space: nowrap;
 }
 
+/* Zahlen-Spalten: Überschrift rechtsbündig wie ihre Werte (sonst Header links, Wert rechts). */
+.ev-table th.ev-num {
+    text-align: right;
+}
+
+/* Mitarbeiter-Übersicht + Aggregiert: Name-Spalte nimmt die Restbreite →
+   Werte rechts gruppiert (Name links, Kennzahlen rechts). Einzelbuchungen ausgenommen. */
+.ev-table:not(.ev-entries) th:first-child,
+.ev-table:not(.ev-entries) td:first-child {
+    width: 100%;
+}
+
+/* Einzelbuchungen: feste Spaltenbreiten — Projekt/Kunde/Mitarbeiter großzügig,
+   Beschreibung dafür schmaler. */
+.ev-entries {
+    table-layout: fixed;
+}
+
+.ev-entries th:nth-child(1) { width: 9%; }   /* Datum */
+.ev-entries th:nth-child(2) { width: 21%; }  /* Projekt */
+.ev-entries th:nth-child(3) { width: 14%; }  /* Kunde */
+.ev-entries th:nth-child(4) { width: 15%; }  /* Mitarbeiter */
+.ev-entries th:nth-child(5) { width: 9%; }   /* Stunden */
+.ev-entries th:nth-child(6) { width: 32%; }  /* Beschreibung */
+
 .ev-table td {
     padding: 8px 12px;
     border-bottom: 1px solid var(--color-border);
@@ -728,9 +1082,16 @@ export default {
     color: var(--color-text-maxcontrast);
 }
 
+.ev-share {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .ev-bar {
     height: 6px;
-    max-width: 160px;
+    flex: 0 0 120px;
+    width: 120px;
     border-radius: var(--border-radius-element, 8px);
     background: var(--color-background-dark);
     overflow: hidden;

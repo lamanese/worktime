@@ -2,6 +2,9 @@
     <div class="audit-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Audit-Log') }}</h2>
+        </div>
+
+        <div class="view-toolbar">
             <div class="view-header__controls">
                 <NcSelect v-model="filterEmployee"
                     :options="employeeOptions"
@@ -56,7 +59,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="entry in entries" :key="entry.id" class="audit-row">
+                    <tr v-for="entry in entries"
+                        :key="entry.id"
+                        class="audit-row"
+                        role="button"
+                        tabindex="0"
+                        :aria-label="t('worktime', 'Details anzeigen')"
+                        @click="openDetail(entry)"
+                        @keydown.enter="openDetail(entry)"
+                        @keydown.space.prevent="openDetail(entry)">
                         <td class="nowrap">{{ formatDateTime(entry.createdAt) }}</td>
                         <td>{{ entry.userId }}</td>
                         <td>
@@ -91,6 +102,13 @@
         <p v-if="entries.length >= 200" class="limit-hint">
             {{ t('worktime', 'Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken.') }}
         </p>
+
+        <AuditDetailModal v-if="selectedEntry"
+            :entry="selectedEntry"
+            :action-label="translateAction(selectedEntry.action)"
+            :entity-label="translateEntityType(selectedEntry.entityType)"
+            :date-label="formatDateTime(selectedEntry.createdAt)"
+            @close="selectedEntry = null" />
     </div>
 </template>
 
@@ -101,6 +119,7 @@ import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import ShieldIcon from 'vue-material-design-icons/Shield.vue'
 import AuditService from '../services/AuditService.js'
+import AuditDetailModal from '../components/AuditDetailModal.vue'
 import { formatDateISO, getLocale } from '../utils/dateUtils.js'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -112,6 +131,7 @@ export default {
         NcDateTimePicker,
         NcEmptyContent,
         ShieldIcon,
+        AuditDetailModal,
     },
     data() {
         return {
@@ -122,6 +142,7 @@ export default {
             filterEntityType: null,
             filterFrom: null,
             filterTo: null,
+            selectedEntry: null,
         }
     },
     computed: {
@@ -158,6 +179,9 @@ export default {
     },
     methods: {
         ...mapActions('employees', ['fetchEmployees']),
+        openDetail(entry) {
+            this.selectedEntry = entry
+        },
         async load() {
             this.loading = true
             this.entries = await AuditService.getFiltered({
@@ -220,7 +244,7 @@ export default {
 .audit-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1400px;
+    max-width: 1600px;
 }
 
 .audit-card {
@@ -228,20 +252,25 @@ export default {
     border: 1px solid var(--color-border-dark, var(--color-border));
     border-radius: var(--border-radius-large, 12px);
     padding: 8px 16px;
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .view-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
     margin: 0;
+}
+
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
 .view-header__controls {
@@ -253,9 +282,17 @@ export default {
 
 .audit-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 14px;
 }
+
+.audit-table th:nth-child(1) { width: 160px; } /* Zeitpunkt */
+.audit-table th:nth-child(2) { width: 130px; } /* Benutzer */
+.audit-table th:nth-child(3) { width: 110px; } /* Aktion */
+.audit-table th:nth-child(4) { width: 120px; } /* Typ */
+.audit-table th:nth-child(5) { width: 60px; }  /* ID */
+/* Spalte 6 (Änderung) nimmt die Restbreite und bricht um */
 
 .audit-table th {
     text-align: left;
@@ -272,8 +309,17 @@ export default {
     vertical-align: top;
 }
 
+.audit-row {
+    cursor: pointer;
+}
+
 .audit-row:hover {
     background: var(--color-background-hover);
+}
+
+.audit-row:focus-visible {
+    outline: 2px solid var(--color-primary-element);
+    outline-offset: -2px;
 }
 
 .nowrap {
@@ -296,20 +342,23 @@ export default {
 .action-reject { background: var(--wt-sick, #cc4b42); color: #fff; }
 
 .diff-cell {
-    max-width: 500px;
-    font-size: 0.85em;
+    font-size: 0.8em;
     font-family: monospace;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .diff-old {
     display: block;
     color: var(--color-error-text);
     text-decoration: line-through;
+    white-space: normal;
 }
 
 .diff-new {
     display: block;
     color: var(--color-success-text);
+    white-space: normal;
 }
 
 .diff-item {
@@ -329,6 +378,8 @@ export default {
 .diff-old-val {
     color: var(--color-error-text);
     text-decoration: line-through;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .diff-arrow {
@@ -337,6 +388,8 @@ export default {
 
 .diff-new-val {
     color: var(--color-success-text);
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .loading-hint {

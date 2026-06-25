@@ -109,6 +109,9 @@ class AbsenceService {
             throw new ValidationException($errors);
         }
 
+        // #360: a full-day absence must not overlap existing time entries.
+        $this->checkTimeEntryConflict($employeeId, $startDateObj, $endDateObj, $scope);
+
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->timeEntryService->lockedMonthsInRange($employeeId, $startDateObj, $endDateObj);
         $effectiveReason = $this->timeEntryService->requireReasonForLockedMonths($lockedMonths, $allowLockedOverride, $reason);
@@ -210,6 +213,9 @@ class AbsenceService {
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
+
+        // #360: a full-day absence must not overlap existing time entries.
+        $this->checkTimeEntryConflict($absence->getEmployeeId(), $startDateObj, $endDateObj, $scope);
 
         // Closed-month rules (#148): employees are blocked from any change that
         // touches a closed month (old or new range); HR corrections require a
@@ -463,8 +469,48 @@ class AbsenceService {
     }
 
     /**
-     * @return array<string, string[]>
+     * #360: A full-day absence is logically incompatible with time entries on the
+     * same day — you cannot work and take the whole day off, and the overtime
+     * would be counted twice (the absence consumes the daily target while the
+     * booked work credits the actual time). Block creation/edit when the covered
+     * range already contains time entries.
+     *
+     * Half-day absences (scope < 1.0) are deliberately allowed to coexist: the
+     * overtime calculation handles the reduced target correctly. The overlap is
+     * surfaced as a non-blocking day warning in the monthly report instead
+     * (ReportController::buildDayWarnings).
+     *
+     * @throws ValidationException
      */
+    private function checkTimeEntryConflict(int $employeeId, DateTime $startDate, DateTime $endDate, float $scope): void {
+        // Half-day absences may coexist with time entries — no hard block.
+        if ($scope < 1.0) {
+            return;
+        }
+
+        $entries = $this->timeEntryService->findByEmployeeAndDateRange($employeeId, $startDate, $endDate);
+        if (empty($entries)) {
+            return;
+        }
+
+        // Collect the distinct conflicting days for a helpful error message.
+        $dates = [];
+        foreach ($entries as $entry) {
+            $entryDate = $entry->getDate();
+            if ($entryDate) {
+                $dates[$entryDate->format('Y-m-d')] = $entryDate->format('d.m.Y');
+            }
+        }
+        ksort($dates);
+
+        throw new ValidationException([
+            'timeEntryConflict' => [$this->l->t(
+                'An folgenden Tagen sind bereits Zeiteinträge erfasst: %s. Eine ganztägige Abwesenheit ist dort nicht möglich. Bitte zuerst die Zeiteinträge entfernen.',
+                [implode(', ', array_values($dates))]
+            )],
+        ]);
+    }
+
     private function checkVacationQuota(int $employeeId, float $requestedDays, int $year, ?int $excludeId = null): void {
         $employee = $this->employeeMapper->find($employeeId);
         $totalVacationDays = (int)$employee->getVacationDays();
@@ -530,22 +576,37 @@ class AbsenceService {
     /**
      * Get absence overview for all visible employees in a given month.
      *
+     * @param int[] $subtreeEmployeeIds Employees the viewer supervises (recursively, #347) — shown unmasked incl. pending. Empty for non-supervisors.
      * @return array[] Array of { employeeId, employeeName, absences }
      */
-    public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): array {
+    public function getAbsenceOverview(int $year, int $month, string $currentUserId, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds = []): array {
         $allEmployees = $this->employeeMapper->findAllActive();
         $result = [];
 
         foreach ($allEmployees as $employee) {
-            if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $supervisorEmployeeId)) {
+            if (!$this->isEmployeeVisibleInOverview($employee, $isPrivileged, $currentEmployeeId, $subtreeEmployeeIds)) {
                 continue;
             }
 
-            $isTeamMember = $supervisorEmployeeId !== null
-                && $employee->getSupervisorId() === $supervisorEmployeeId;
+            $isTeamMember = in_array($employee->getId(), $subtreeEmployeeIds, true);
             $unmasked = $isPrivileged || $isTeamMember;
 
-            $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
+            // Status-Kalender (#345): wer den Mitarbeiter unmaskiert sieht (Admin/HR
+            // oder dessen Vorgesetzter), bekommt auch OFFENE Anträge (Status
+            // 'pending') zur Engpass-Planung. Kollegen sehen unverändert NUR
+            // genehmigte Abwesenheiten – kein Datenschutz-Leak offener Anträge.
+            if ($unmasked) {
+                $absences = array_values(array_filter(
+                    $this->absenceMapper->findByEmployeeAndMonth($employee->getId(), $year, $month),
+                    static fn($absence) => in_array(
+                        $absence->getStatus(),
+                        [Absence::STATUS_APPROVED, Absence::STATUS_PENDING],
+                        true
+                    )
+                ));
+            } else {
+                $absences = $this->absenceMapper->findApprovedByEmployeeAndMonth($employee->getId(), $year, $month);
+            }
 
             $absenceData = [];
             $detail = $employee->getAbsenceDetail();
@@ -576,7 +637,7 @@ class AbsenceService {
     /**
      * Check if an employee's absences should be visible to the current user.
      */
-    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, ?int $supervisorEmployeeId): bool {
+    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds): bool {
         // Admin/HR see all employees
         if ($isPrivileged) {
             return true;
@@ -587,8 +648,9 @@ class AbsenceService {
             return true;
         }
 
-        // Supervisors see their own team members regardless of per-employee visibility setting
-        if ($supervisorEmployeeId !== null && $employee->getSupervisorId() === $supervisorEmployeeId) {
+        // Supervisors see everyone in their (recursive) subtree, regardless of
+        // the per-employee visibility setting.
+        if (in_array($employee->getId(), $subtreeEmployeeIds, true)) {
             return true;
         }
 

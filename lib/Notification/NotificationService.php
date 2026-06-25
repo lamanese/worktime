@@ -110,6 +110,26 @@ class NotificationService {
 		$this->sendTimeEntryDecisionNotification($employeeId, $year, $month, 'time_entries_reopened', $reason);
 	}
 
+	/**
+	 * Tell the archive admin that automatic PDF archiving for a month failed
+	 * permanently, instead of failing silently in the background (#323).
+	 */
+	public function notifyArchiveFailed(string $recipientUserId, int $employeeId, string $employeeName, int $year, int $month, string $error): void {
+		try {
+			$monthYear = (self::MONTH_NAMES[$month] ?? (string)$month) . ' ' . $year;
+			$notification = $this->createNotification('archive_failed', $recipientUserId, [
+				'employeeName' => $employeeName,
+				'monthYear' => $monthYear,
+				'error' => $error,
+			]);
+			$notification->setObject('archive', $employeeId . '-' . $year . '-' . $month);
+
+			$this->notificationManager->notify($notification);
+		} catch (\Throwable $e) {
+			$this->logger->error('Failed to send archive_failed notification', ['exception' => $e]);
+		}
+	}
+
 	private function sendSupervisorAbsenceNotification(Absence $absence, string $subject): void {
 		try {
 			$employee = $this->employeeMapper->find($absence->getEmployeeId());

@@ -1,6 +1,16 @@
 import api, { handleApiError } from './api.js'
 
 export default {
+    // Cross-month approval inbox of submitted month-ends (#344).
+    async getPendingMonths() {
+        try {
+            const response = await api.get('/time-entries/pending-months')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getByEmployee(employeeId, year = null, month = null) {
         try {
             const params = { employeeId }
@@ -112,6 +122,16 @@ export default {
         }
     },
 
+    async rejectMonth(employeeId, year, month, reason) {
+        try {
+            const response = await api.post('/time-entries/reject-month', { employeeId, year, month, reason })
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
+        }
+    },
+
     async getMonthlyStats(employeeId, year, month) {
         try {
             const response = await api.get('/time-entries/stats/monthly', {
@@ -120,6 +140,25 @@ export default {
             return response.data
         } catch (error) {
             handleApiError(error)
+        }
+    },
+
+    async getArchiveStatus() {
+        try {
+            const response = await api.get('/time-entries/archive-status')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
+    async retryArchive(id) {
+        try {
+            const response = await api.post(`/time-entries/archive-retry/${id}`)
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
         }
     },
 }

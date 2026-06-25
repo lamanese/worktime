@@ -20,6 +20,7 @@ use OCA\WorkTime\Service\ProjectService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\WorkScheduleService;
 use OCA\WorkTime\Service\YearlyCarryoverService;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -56,6 +57,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(WorkScheduleService::class),
             $this->createMock(YearlyCarryoverService::class),
             $this->projectService,
+            $this->createMock(IL10N::class),
         );
     }
 
@@ -143,6 +145,7 @@ class ReportControllerTest extends TestCase {
             $this->employeeService, $this->createMock(HolidayService::class), $perm,
             $this->createMock(PdfService::class), $this->createMock(WorkScheduleService::class),
             $this->createMock(YearlyCarryoverService::class), $this->projectService,
+            $this->createMock(IL10N::class),
         );
 
         $this->assertSame(403, $controller->projects(2026, 6, 'month')->getStatus());

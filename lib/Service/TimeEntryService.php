@@ -584,6 +584,58 @@ class TimeEntryService {
     }
 
     /**
+     * Reject a submitted month: set all submitted entries back to rejected so the
+     * employee can correct and resubmit. Mirrors the per-entry reject (submitted → rejected).
+     */
+    public function rejectMonth(int $employeeId, int $year, int $month, string $reason, string $currentUserId = ''): array {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::fromSingleError('reason', $this->l->t('Begründung erforderlich'));
+        }
+
+        $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
+        $rejected = 0;
+        $skipped = 0;
+        $rejectedByEmployeeId = $currentUserId ? $this->getEmployeeIdForUser($currentUserId) : null;
+        $now = new DateTime();
+
+        foreach ($entries as $entry) {
+            if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
+                $oldValues = $entry->jsonSerialize();
+                $entry->setStatus(TimeEntry::STATUS_REJECTED);
+                $entry->setUpdatedAt($now);
+                // Track who rejected and when (same fields as the per-entry reject)
+                $entry->setApprovedAt($now);
+                $entry->setApprovedBy($rejectedByEmployeeId);
+                $this->timeEntryMapper->update($entry);
+
+                if ($currentUserId) {
+                    $newValues = $entry->jsonSerialize();
+                    $newValues['reason'] = $reason;
+                    $this->auditLogService->log($currentUserId, 'reject', 'time_entry', $entry->getId(), $oldValues, $newValues);
+                }
+
+                $rejected++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($rejected > 0) {
+            try {
+                $this->notificationService->notifyTimeEntriesRejected($employeeId, $year, $month);
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to send time entries rejected notification', ['exception' => $e]);
+            }
+        }
+
+        return [
+            'rejected' => $rejected,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
      * Calculate suggested break time based on German labor law (§4 ArbZG)
      *
      * Rules:
@@ -640,6 +692,93 @@ class TimeEntryService {
     }
 
     /**
+     * Evaluate labor-law constraints for a single day across ALL of its entries
+     * (#338). A day may be split into several entries; checking each one in
+     * isolation lets a long working day slip past the §4 ArbZG break requirement
+     * and the configured maximum daily hours. Both are therefore aggregated here
+     * and returned as non-blocking warnings.
+     *
+     * Convention (kept consistent with validateBreak()/suggestBreak()): the §4
+     * threshold and the max-hours check are evaluated against the total GROSS
+     * minutes of the day (sum of each entry's start→end span, excluding the gaps
+     * between entries). Gaps between consecutive entries count as break time, on
+     * top of the explicitly recorded break minutes.
+     *
+     * @param TimeEntry[] $entries All time entries of one day (same date).
+     * @return string[] Human-readable warning messages (empty when compliant).
+     */
+    public function dayWarnings(array $entries): array {
+        if (empty($entries)) {
+            return [];
+        }
+
+        // Sort by start time so the gaps between entries can be measured.
+        usort($entries, static function (TimeEntry $a, TimeEntry $b): int {
+            return $a->getStartTime()->getTimestamp() <=> $b->getStartTime()->getTimestamp();
+        });
+
+        $totalGrossMinutes = 0;
+        $totalBreakMinutes = 0;
+        $previousEnd = null;
+
+        foreach ($entries as $entry) {
+            $start = $entry->getStartTime();
+            $end = $entry->getEndTime();
+            if (!$start || !$end) {
+                continue;
+            }
+
+            $gross = ($end->getTimestamp() - $start->getTimestamp()) / 60;
+            if ($gross < 0) {
+                $gross += 24 * 60; // overnight shift
+            }
+            $totalGrossMinutes += (int)$gross;
+            $totalBreakMinutes += max(0, $entry->getBreakMinutes());
+
+            // A gap between the previous entry's end and this entry's start counts
+            // as a (taken) break. Only positive gaps are counted; overlaps are
+            // prevented elsewhere.
+            if ($previousEnd !== null) {
+                $gap = ($start->getTimestamp() - $previousEnd->getTimestamp()) / 60;
+                if ($gap > 0) {
+                    $totalBreakMinutes += (int)$gap;
+                }
+            }
+            $previousEnd = $end;
+        }
+
+        $warnings = [];
+        $grossHours = $totalGrossMinutes / 60;
+
+        // §4 ArbZG minimum break, evaluated on the whole day.
+        $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
+        $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
+        $requiredBreak = 0;
+        if ($grossHours > 9) {
+            $requiredBreak = $break9h;
+        } elseif ($grossHours > 6) {
+            $requiredBreak = $break6h;
+        }
+        if ($requiredBreak > 0 && $totalBreakMinutes < $requiredBreak) {
+            $warnings[] = $this->l->t(
+                'Mindestpause nicht eingehalten: Bei %1$d Min Arbeitszeit sind %2$d Min Pause erforderlich (§4 ArbZG), erfasst sind %3$d Min (Lücken zwischen Einträgen zählen als Pause).',
+                [$totalGrossMinutes, $requiredBreak, $totalBreakMinutes]
+            );
+        }
+
+        // Maximum daily working hours, evaluated on the whole day.
+        $maxHours = $this->settingsMapper->getValueAsFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
+        if ($maxHours > 0 && $grossHours > $maxHours) {
+            $warnings[] = $this->l->t(
+                'Maximale tägliche Arbeitszeit (%1$s Std.) überschritten: an diesem Tag sind %2$s Std. erfasst.',
+                [(string)$maxHours, (string)round($grossHours, 2)]
+            );
+        }
+
+        return $warnings;
+    }
+
+    /**
      * Get monthly statistics for an employee
      */
     public function getMonthlyStats(int $employeeId, int $year, int $month): array {
@@ -651,6 +790,79 @@ class TimeEntryService {
             'totalWorkHours' => round($totalWorkMinutes / 60, 2),
             'entryCount' => $entryCount,
         ];
+    }
+
+    /**
+     * Build the cross-month approval inbox for submitted month-ends (#344).
+     * Groups all submitted entries of the given (already permission-scoped)
+     * employees by (employee, year, month) and returns one item per submitted
+     * month, oldest submission first (FIFO).
+     *
+     * @param int[] $employeeIds Employees the requester may see/approve.
+     * @return array<int, array{employeeId:int, employeeName:string, employeeUserId:string, year:int, month:int, actualMinutes:int, entryCount:int, submittedAt:?string}>
+     */
+    public function findSubmittedMonths(array $employeeIds): array {
+        $entries = $this->timeEntryMapper->findSubmittedByEmployeeIds($employeeIds);
+
+        $groups = [];
+        foreach ($entries as $entry) {
+            $employeeId = $entry->getEmployeeId();
+            $date = $entry->getDate();
+            $year = (int)$date->format('Y');
+            $month = (int)$date->format('n');
+            $key = $employeeId . '-' . $year . '-' . $month;
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'employeeId' => $employeeId,
+                    'year' => $year,
+                    'month' => $month,
+                    'actualMinutes' => 0,
+                    'entryCount' => 0,
+                    'submittedAt' => null,
+                ];
+            }
+            $groups[$key]['actualMinutes'] += $entry->getWorkMinutes();
+            $groups[$key]['entryCount']++;
+
+            // FIFO key: earliest submission timestamp of the month.
+            $submittedAt = $entry->getSubmittedAt();
+            if ($submittedAt !== null) {
+                $iso = $submittedAt->format('c');
+                if ($groups[$key]['submittedAt'] === null || $iso < $groups[$key]['submittedAt']) {
+                    $groups[$key]['submittedAt'] = $iso;
+                }
+            }
+        }
+
+        // Resolve employee names (once per employee).
+        $employeeCache = [];
+        $items = [];
+        foreach ($groups as $group) {
+            $employeeId = $group['employeeId'];
+            if (!isset($employeeCache[$employeeId])) {
+                try {
+                    $employeeCache[$employeeId] = $this->employeeMapper->find($employeeId);
+                } catch (\Exception) {
+                    $employeeCache[$employeeId] = null;
+                }
+            }
+            $employee = $employeeCache[$employeeId];
+            $group['employeeName'] = $employee?->getFullName() ?? '';
+            $group['employeeUserId'] = $employee?->getUserId() ?? '';
+            $items[] = $group;
+        }
+
+        // Oldest first: by submission time, then by calendar month as fallback.
+        usort($items, static function (array $a, array $b): int {
+            $byTime = ($a['submittedAt'] ?? '') <=> ($b['submittedAt'] ?? '');
+            if ($byTime !== 0) {
+                return $byTime;
+            }
+            return [$a['year'], $a['month']] <=> [$b['year'], $b['month']];
+        });
+
+        return $items;
     }
 
     /**
@@ -825,19 +1037,12 @@ class TimeEntryService {
                 $grossMinutes += 24 * 60;
             }
 
-            // Check max daily hours
-            $maxHours = $this->settingsMapper->getValueAsFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
-            if ($grossMinutes / 60 > $maxHours) {
-                $errors['endTime'] = [$this->l->t('Maximale tägliche Arbeitszeit (%s Std.) überschritten', [(string)$maxHours])];
-            }
-
-            // Validate break
-            if (!$this->validateBreak((int)$grossMinutes, $breakMinutes)) {
-                $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
-                $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
-                $minBreak = $grossMinutes > 9 * 60 ? $break9h : $break6h;
-                $errors['breakMinutes'] = [$this->l->t('Mindestpause von %d Minuten erforderlich', [$minBreak])];
-            }
+            // Note (#338): the minimum-break (§4 ArbZG) and max-daily-hours checks
+            // are NOT enforced here anymore. A single entry cannot see the rest of
+            // the day, so splitting a day into several short entries used to bypass
+            // them entirely. Both are now evaluated on DAY level (see dayWarnings())
+            // and surfaced as non-blocking warnings, so retroactive corrections are
+            // never hard-blocked.
 
             // Check for absence conflict
             if ($employeeId !== null) {

@@ -7,6 +7,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-25
+
+### Added
+- **Monats-Details vor dem Genehmigen (#369)**: In den Genehmigungen öffnet ein Klick auf eine Monatszeile jetzt einen Dialog mit allen Zeiteinträgen des Monats (Datum, Zeiten, Pause, Stunden, Projekt, Beschreibung). So lässt sich ein Monat vor der Freigabe prüfen, ohne die Ansicht zu wechseln; Genehmigen und Zurückweisen sind direkt aus dem Dialog möglich.
+- **Monats-Zurückweisung mit Begründung (#368)**: Ein eingereichter Monat kann jetzt mit Angabe eines Grundes zurückgewiesen werden. Die Einträge gehen zur Korrektur an die Mitarbeitenden zurück und können nach Anpassung erneut eingereicht werden.
+- **Sichtbarer PDF-Archiv-Status (#323)**: Unter Einstellungen → PDF-Archiv zeigt ein neuer Status-Bereich die zuletzt erfolgreich archivierten Monate sowie ausstehende und fehlgeschlagene Archivierungen. Fehlgeschlagene lassen sich per Klick erneut anstoßen, und schlägt eine automatische Archivierung endgültig fehl, erhält der Archiv-Admin eine Nextcloud-Benachrichtigung statt eines stillen Fehlers.
+- **Rekursive Team-Sicht für Vorgesetzte (#347)**: Ein Vorgesetzter sieht jetzt nicht nur die direkt zugeordneten Mitarbeitenden, sondern den gesamten Team-Unterbaum.
+
+### Fixed
+- **Veraltete Archiv-PDF nach erneuter Genehmigung (#323)**: Wurde ein genehmigter Monat zurückgenommen, korrigiert und erneut genehmigt, blieb die alte PDF im Archiv liegen. Beim Zurücknehmen wird die archivierte PDF jetzt entfernt und bei der erneuten Genehmigung frisch erzeugt. Damit entspricht das Archiv immer dem aktuell genehmigten Monatsstand.
+- **Überstunden-Kontostand in der Monatsansicht (#358)**: Die Kennzahl zeigt jetzt den kumulierten Kontostand statt nur des aktuellen Monatswerts.
+- **Abwesenheiten**: Überschneidungen zwischen einer Abwesenheit und erfassten Zeiteinträgen werden jetzt verhindert (#360); beim Anlegen folgt das Enddatum automatisch dem Startdatum (#364); die Inline-Bearbeitung und einige Darstellungsdetails wurden korrigiert (#361, #367).
+- **Audit-Log (#362)**: Ein Klick auf einen Eintrag öffnet eine Detailsicht mit den vollständigen alten und neuen Werten; lange Änderungstexte brechen jetzt um statt horizontal zu scrollen.
+
+### Changed
+- **Einheitliches Design über alle Ansichten (#369)**: Zeiterfassung, Abwesenheiten, Team, Genehmigungen, Auswertung und Audit-Log folgen jetzt einem gemeinsamen Aufbau (einheitlicher Kopfbereich, Umschalter, Breite, Tabellen im Karten-Look). Das Tabellen-Layout der Auswertung wurde überarbeitet (Spaltenbreiten, Wochenstunden), und die Einstellungs-Ansichten wurden angeglichen.
+- **Vollständige tschechische Übersetzung (#354, #355)**: Fehlende tschechische und englische Texte (u. a. in Genehmigungen, Team und Auswertung) wurden ergänzt.
+
 ## [0.11.2] - 2026-06-19
 
 ### Added

@@ -8,6 +8,7 @@ use DateTime;
 use OCA\WorkTime\Db\AbsenceMapper;
 use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Db\CompanySettingMapper;
+use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\EmployeeMapper;
 use OCA\WorkTime\Db\TimeEntry;
 use OCA\WorkTime\Db\TimeEntryMapper;
@@ -490,5 +491,164 @@ class TimeEntryServiceTest extends TestCase {
         // Must not throw a ValidationException for the missing project.
         $entry = $service->create(5, '2026-06-10', '08:00', '14:00', 0, null, null);
         $this->assertNull($entry->getProjectId());
+    }
+
+    // ---------------------------------------------------------------------
+    // #338: day-level break & max-daily-hours warnings
+    // ---------------------------------------------------------------------
+
+    private function makeEntry(string $start, string $end, int $break): TimeEntry {
+        $entry = new TimeEntry();
+        $entry->setDate(new DateTime('2026-04-08'));
+        $entry->setStartTime(DateTime::createFromFormat('H:i', $start));
+        $entry->setEndTime(DateTime::createFromFormat('H:i', $end));
+        $entry->setBreakMinutes($break);
+        return $entry;
+    }
+
+    /**
+     * #338: a day split into two short entries without any break (and without a
+     * gap between them) still exceeds 6h of working time and must warn about the
+     * missing §4 ArbZG break — even though no single entry would.
+     */
+    public function testDayWarningsSplitWithoutBreakWarns(): void {
+        // 06:00–11:30 (5.5h) + 11:30–14:00 (2.5h) = 8h gross, no break, no gap.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '11:30', 0),
+            $this->makeEntry('11:30', '14:00', 0),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Mindestpause', $warnings[0]);
+    }
+
+    /**
+     * #338: the same 8h day, but split with a 30 min gap between the entries —
+     * the gap counts as a break, so no warning is raised.
+     */
+    public function testDayWarningsSplitWithGapIsClean(): void {
+        // 06:00–11:30 + 12:00–14:30 → 8h gross, 30 min gap = break taken.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '11:30', 0),
+            $this->makeEntry('12:00', '14:30', 0),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: a single 8.5h entry with the recorded 30 min break is compliant and
+     * must not warn.
+     */
+    public function testDayWarningsRecordedBreakIsClean(): void {
+        // 06:00–14:30 = 8.5h gross, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '14:30', 30),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: a day whose total exceeds the configured maximum daily hours (12h in
+     * the test settings) warns — break is satisfied here so only the max-hours
+     * warning is expected.
+     */
+    public function testDayWarningsMaxDailyHoursWarns(): void {
+        // 06:00–19:00 = 13h gross with the required 45 min break → only max-hours.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('06:00', '19:00', 45),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Maximale tägliche Arbeitszeit', $warnings[0]);
+    }
+
+    /**
+     * #338: a day at or below 6h of working time needs no break and stays clean.
+     */
+    public function testDayWarningsShortDayIsClean(): void {
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '14:00', 0), // 6h exactly
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #338: an empty day yields no warnings.
+     */
+    public function testDayWarningsEmptyDay(): void {
+        $this->assertSame([], $this->service->dayWarnings([]));
+    }
+
+    // ---------------------------------------------------------------------
+    // #344: cross-month approval inbox (submitted months)
+    // ---------------------------------------------------------------------
+
+    private function submittedEntry(int $employeeId, string $date, int $workMinutes, string $submittedAt): TimeEntry {
+        $entry = new TimeEntry();
+        $entry->setEmployeeId($employeeId);
+        $entry->setDate(new DateTime($date));
+        $entry->setWorkMinutes($workMinutes);
+        $entry->setStatus(TimeEntry::STATUS_SUBMITTED);
+        $entry->setSubmittedAt(new DateTime($submittedAt));
+        return $entry;
+    }
+
+    private function makeEmployee(int $id, string $userId, string $first, string $last): Employee {
+        $e = new Employee();
+        $e->setId($id);
+        $e->setUserId($userId);
+        $e->setFirstName($first);
+        $e->setLastName($last);
+        return $e;
+    }
+
+    /**
+     * #344: submitted entries are grouped per (employee, year, month) and the
+     * resulting months are returned oldest-submission-first (FIFO).
+     */
+    public function testFindSubmittedMonthsGroupsByMonthAndSortsFifo(): void {
+        $e1 = $this->makeEmployee(1, 'u1', 'Ben', 'Conradi');
+        $e2 = $this->makeEmployee(2, 'u2', 'Carla', 'Adam');
+        $this->employeeMapper->method('find')
+            ->willReturnCallback(fn(int $id): Employee => $id === 1 ? $e1 : $e2);
+
+        $entries = [
+            $this->submittedEntry(1, '2026-04-10', 480, '2026-05-02T10:00:00+00:00'),
+            $this->submittedEntry(1, '2026-03-05', 300, '2026-04-01T09:00:00+00:00'),
+            $this->submittedEntry(1, '2026-03-06', 180, '2026-04-01T09:30:00+00:00'),
+            $this->submittedEntry(2, '2026-04-15', 420, '2026-05-03T08:00:00+00:00'),
+        ];
+        $this->timeEntryMapper->method('findSubmittedByEmployeeIds')
+            ->with([1, 2])->willReturn($entries);
+
+        $result = $this->service->findSubmittedMonths([1, 2]);
+
+        // Three submitted months: (1,März), (1,April), (2,April).
+        $this->assertCount(3, $result);
+
+        // FIFO: März (submitted 2026-04-01) first, aggregated 300+180 over 2 entries.
+        $this->assertSame(1, $result[0]['employeeId']);
+        $this->assertSame(2026, $result[0]['year']);
+        $this->assertSame(3, $result[0]['month']);
+        $this->assertSame(480, $result[0]['actualMinutes']);
+        $this->assertSame(2, $result[0]['entryCount']);
+        $this->assertSame('Ben Conradi', $result[0]['employeeName']);
+        $this->assertSame('u1', $result[0]['employeeUserId']);
+
+        // Last by submission time: Carla's April (2026-05-03).
+        $this->assertSame(2, $result[2]['employeeId']);
+        $this->assertSame(4, $result[2]['month']);
+    }
+
+    /**
+     * #344: no visible employees → empty inbox, no query side effects.
+     */
+    public function testFindSubmittedMonthsEmptyWhenNoEmployees(): void {
+        $this->timeEntryMapper->method('findSubmittedByEmployeeIds')
+            ->with([])->willReturn([]);
+        $this->assertSame([], $this->service->findSubmittedMonths([]));
     }
 }

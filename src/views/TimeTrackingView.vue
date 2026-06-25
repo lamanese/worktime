@@ -2,7 +2,9 @@
     <div class="time-tracking-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
+        </div>
 
+        <div class="view-toolbar">
             <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
                 <button class="seg-btn"
                     :class="{ active: layoutMode === 'list' }"
@@ -23,16 +25,6 @@
                     {{ t('worktime', 'Jahr') }}
                 </button>
             </div>
-
-            <MonthPicker v-if="!isYearMode"
-                :year="selectedMonth.year"
-                :month="selectedMonth.month"
-                @update="onMonthChange" />
-            <YearPicker v-else
-                :year="overviewYear"
-                :min="minYear"
-                :max="maxYear"
-                @update="onYearChange" />
 
             <div class="header-actions__right">
                 <span v-if="monthStatus && !isYearMode" class="month-badge" :class="monthStatus">
@@ -64,6 +56,18 @@
                     </NcActionButton>
                 </NcActions>
             </div>
+
+            <div class="view-header__nav">
+                <MonthPicker v-if="!isYearMode"
+                    :year="selectedMonth.year"
+                    :month="selectedMonth.month"
+                    @update="onMonthChange" />
+                <YearPicker v-else
+                    :year="overviewYear"
+                    :min="minYear"
+                    :max="maxYear"
+                    @update="onYearChange" />
+            </div>
         </div>
 
         <div v-if="locked && !isYearMode" class="lock-banner">
@@ -81,6 +85,7 @@
             :target-minutes="statistics.adjustedTargetMinutes"
             :actual-minutes="statistics.actualMinutes"
             :overtime-minutes="statistics.overtimeMinutes"
+            :balance-minutes="totalOvertimeMinutes"
             :vacation-remaining="vacationRemaining"
             :vacation-carryover="vacationCarryover"
             :vacation-total="vacationTotal"
@@ -112,6 +117,7 @@
                 <DayList v-if="effectiveLayout === 'list'"
                     :days="days"
                     :month="selectedMonth.month"
+                    :projects="projects"
                     :selected-date="selectedDate"
                     @select="onSelectDay" />
                 <MonthCalendar v-else
@@ -237,11 +243,14 @@ export default {
             statistics: null,
             reportAbsences: [],
             reportHolidays: [],
+            reportDayWarnings: {},
             vacationRemaining: null,
             vacationCarryover: 0,
             vacationTotal: null,
             yearlyMonths: [],
             carryoverMinutes: 0,
+            // #358: kumulierter Überstunden-Kontostand (bis heute + Übertrag), wie in der Abwesenheiten-Card.
+            totalOvertimeMinutes: null,
             overviewYear: getCurrentYear(),
             layoutMode: (['list', 'calendar', 'year'].includes(localStorage.getItem('worktime_tracking_layout'))
                 ? localStorage.getItem('worktime_tracking_layout')
@@ -369,6 +378,7 @@ export default {
                     lastEnd: entries.length ? entries[entries.length - 1].endTime : null,
                     absence: this.absenceByDate[s.date] || null,
                     holiday: holidayByDate[s.date] || null,
+                    warnings: this.reportDayWarnings[s.date] || [],
                     isToday: s.date === todayStr,
                     isFuture: s.date > todayStr,
                 }
@@ -447,6 +457,7 @@ export default {
                 const overtime = await ReportService.getOvertime(this.activeEmployeeId, this.overviewYear)
                 this.yearlyMonths = overtime?.monthly || []
                 this.carryoverMinutes = overtime?.carryoverMinutes || 0
+                this.totalOvertimeMinutes = overtime?.totalOvertimeMinutes ?? null
             } catch (error) {
                 console.error('Failed to load yearly overview:', error)
             }
@@ -462,6 +473,7 @@ export default {
                 this.statistics = report.statistics
                 this.reportAbsences = (report.absences || []).filter(a => a.status === 'approved')
                 this.reportHolidays = report.holidays || []
+                this.reportDayWarnings = report.dayWarnings || {}
             } catch (error) {
                 console.error('Failed to load statistics:', error)
             }
@@ -536,23 +548,34 @@ export default {
 .time-tracking-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1200px;
+    max-width: 1600px;
 }
 
 .view-header {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 16px;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
     margin: 0;
 }
 
-.header-actions__right {
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.header-actions__right {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -648,7 +671,7 @@ export default {
 
 .zlayout {
     display: grid;
-    grid-template-columns: 1fr 330px;
+    grid-template-columns: 1fr clamp(340px, 26%, 460px);
     gap: 18px;
     align-items: start;
 }

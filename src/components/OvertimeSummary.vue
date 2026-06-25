@@ -33,14 +33,14 @@
                 <div v-if="vacationSub" class="kpi-sub">{{ vacationSub }}</div>
             </div>
 
-            <!-- Überstunden -->
+            <!-- Überstunden (#358: kumulierter Kontostand inkl. Übertrag, identisch zur Abwesenheiten-Card) -->
             <div class="kpi-card">
                 <div class="kpi-lab">
-                    {{ overtimeMinutes >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}
+                    {{ displayOvertime >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}
                     <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis gestern berechnet. Der heutige Tag zählt erst mit, sobald du Zeit erfasst.') }}</InfoIcon>
                 </div>
-                <div class="kpi-num" :class="{ pos: overtimeMinutes > 0, neg: overtimeMinutes < 0 }">
-                    {{ overtimeMinutes > 0 ? '+' : '' }}{{ absHoursLabel(overtimeMinutes) }} <small>h</small>
+                <div class="kpi-num" :class="{ pos: displayOvertime > 0, neg: displayOvertime < 0 }">
+                    {{ displayOvertime > 0 ? '+' : '' }}{{ absHoursLabel(displayOvertime) }} <small>h</small>
                 </div>
                 <div class="kpi-sub">{{ t('worktime', 'Stand heute') }}</div>
             </div>
@@ -119,6 +119,14 @@ export default {
             type: Number,
             default: 0,
         },
+        // #358: kumulierter Überstunden-Kontostand (Summe aller Monate bis heute +
+        // Übertrag Vorjahr). Wird in der Überstunden-KPI-Card angezeigt. Fällt auf
+        // overtimeMinutes zurück, wenn nicht gesetzt. Das monatliche Pacing-Label der
+        // Ist/Soll-Card nutzt bewusst weiter overtimeMinutes (anteilig diesen Monat).
+        balanceMinutes: {
+            type: Number,
+            default: null,
+        },
         vacationRemaining: {
             type: Number,
             default: null,
@@ -155,6 +163,11 @@ export default {
         }
     },
     computed: {
+        // #358: Überstunden-KPI zeigt den kumulierten Kontostand, wenn übergeben;
+        // sonst (z.B. Jahresansicht) den weitergereichten overtimeMinutes-Wert.
+        displayOvertime() {
+            return this.balanceMinutes !== null ? this.balanceMinutes : this.overtimeMinutes
+        },
         monthLabel() {
             if (!this.month || !this.year) return ''
             return `${getMonthName(this.month)} ${this.year}`
