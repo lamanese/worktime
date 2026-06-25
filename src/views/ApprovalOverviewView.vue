@@ -318,7 +318,9 @@ export default {
         onModalReject() {
             const item = this.detailItem
             this.detailItem = null
-            this.openRejectModal(item)
+            // Detail-Modal erst vollständig schließen lassen, bevor der Grund-Dialog
+            // öffnet – zwei NcModals im selben Tick brechen das Vue-DOM-Patching.
+            setTimeout(() => this.openRejectModal(item), 300)
         },
         async approveMonthItem(item) {
             this.processingMonth = item.key
