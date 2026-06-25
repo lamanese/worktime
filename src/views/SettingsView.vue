@@ -272,6 +272,14 @@
                                 </NcButton>
                             </div>
                         </div>
+                        <div v-if="archiveDoneJobs.length" class="archive-done-list">
+                            <p class="help-text archive-done-caption">{{ t('worktime', 'Zuletzt archiviert') }}</p>
+                            <div v-for="job in archiveDoneJobs" :key="job.id" class="archive-done-row">
+                                <span class="archive-done-check">✓</span>
+                                <span class="archive-done-name">{{ job.employeeName }} · {{ archiveMonthLabel(job.month) }} {{ job.year }}</span>
+                                <span class="archive-done-date">{{ archiveDate(job.processedAt) }}</span>
+                            </div>
+                        </div>
                         <NcButton type="tertiary" @click="loadArchiveStatus">
                             {{ t('worktime', 'Aktualisieren') }}
                         </NcButton>
@@ -758,6 +766,9 @@ export default {
         archiveFailedJobs() {
             return (this.archiveStatus.jobs || []).filter(j => j.status === 'failed')
         },
+        archiveDoneJobs() {
+            return (this.archiveStatus.jobs || []).filter(j => j.status === 'completed').slice(0, 5)
+        },
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
         ...mapGetters('projects', { allProjects: 'projects' }),
@@ -926,6 +937,14 @@ export default {
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
         archiveMonthLabel(month) {
             return getMonthName(month)
+        },
+        archiveDate(iso) {
+            if (!iso) return ''
+            try {
+                return new Date(iso).toLocaleString(getLocale(), { dateStyle: 'short', timeStyle: 'short' })
+            } catch (e) {
+                return ''
+            }
         },
         async loadArchiveStatus() {
             this.archiveLoading = true
@@ -1768,6 +1787,40 @@ export default {
     color: var(--color-error-text, var(--color-error));
     font-size: 12px;
     overflow-wrap: anywhere;
+}
+
+.archive-done-list {
+    margin: 8px 0 12px;
+}
+
+.archive-done-caption {
+    margin-bottom: 4px;
+}
+
+.archive-done-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 13px;
+}
+
+.archive-done-check {
+    color: var(--color-success, #46ba61);
+    font-weight: 700;
+}
+
+.archive-done-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.archive-done-date {
+    margin-left: auto;
+    color: var(--color-text-maxcontrast);
+    white-space: nowrap;
 }
 
 /* Holiday management styles */

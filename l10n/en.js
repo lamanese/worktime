@@ -18,6 +18,7 @@ OC.L10N.register(
     "Monat zurückweisen" : "Reject month",
     "{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern)." : "{count} entries approved – PDF is being archived in the background (may take a few minutes).",
     "Archivierungs-Status" : "Archiving status",
+    "Zuletzt archiviert" : "Recently archived",
     "Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen." : "PDF archiving runs via a background job (roughly every 5 minutes). Here you see pending and failed archiving runs.",
     "{pending} ausstehend · {failed} fehlgeschlagen" : "{pending} pending · {failed} failed",
     "Erneut versuchen" : "Retry",

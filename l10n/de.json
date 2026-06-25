@@ -17,6 +17,7 @@
 		"Monat zurückweisen": "Monat zurückweisen",
 		"{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).": "{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).",
 		"Archivierungs-Status": "Archivierungs-Status",
+		"Zuletzt archiviert": "Zuletzt archiviert",
 		"Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen.": "Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen.",
 		"{pending} ausstehend · {failed} fehlgeschlagen": "{pending} ausstehend · {failed} fehlgeschlagen",
 		"Erneut versuchen": "Erneut versuchen",
