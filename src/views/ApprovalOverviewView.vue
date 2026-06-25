@@ -9,21 +9,24 @@
         <template v-else>
             <!-- Eingangsliste: Urlaubsanträge + Monatsabschlüsse, älteste zuerst (#344/#240) -->
             <section v-if="inboxItems.length > 0" class="inbox">
-                <p class="inbox-hint">
-                    {{ t('worktime', 'Älteste zuerst – auch aus früheren Monaten.') }}
-                </p>
-                <div class="chips">
-                    <button class="chip" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
-                        {{ t('worktime', 'Alle') }} {{ inboxItems.length }}
-                    </button>
-                    <button class="chip" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
-                        {{ t('worktime', 'Urlaub') }} {{ absenceCount }}
-                    </button>
-                    <button class="chip" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
-                        {{ t('worktime', 'Zeiten') }} {{ monthCount }}
-                    </button>
+                <div class="view-toolbar">
+                    <div class="layout-seg" role="group" :aria-label="t('worktime', 'Filter')">
+                        <button class="seg-btn" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
+                            <FormatListBulletedIcon :size="18" />
+                            {{ t('worktime', 'Alle') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
+                            <CalendarIcon :size="18" />
+                            {{ t('worktime', 'Urlaub') }}
+                        </button>
+                        <button class="seg-btn" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
+                            <ClockOutlineIcon :size="18" />
+                            {{ t('worktime', 'Zeiten') }}
+                        </button>
+                    </div>
                 </div>
 
+                <div class="approval-card">
                 <table class="approval-table">
                     <thead>
                         <tr>
@@ -34,7 +37,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in filteredItems" :key="item.key">
+                        <tr v-for="item in filteredItems"
+                            :key="item.key"
+                            :class="{ 'row-clickable': item.kind === 'month' }"
+                            @click="item.kind === 'month' && openMonthDetail(item)">
                             <td>
                                 <div class="who">
                                     <NcAvatar :user="item.employeeUserId" :display-name="item.employeeName" :size="30" />
@@ -49,7 +55,7 @@
                             </td>
                             <td class="detail">{{ item.detail }}</td>
                             <td class="actions-col">
-                                <div class="actions">
+                                <div class="actions" @click.stop>
                                     <template v-if="item.kind === 'absence'">
                                         <NcButton type="primary"
                                             :disabled="processingAbsence === item.id"
@@ -83,6 +89,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <!-- Zur Kenntnisnahme: gemeldete Abwesenheiten (z.B. Krankheit), keine Genehmigung nötig -->
@@ -92,6 +99,7 @@
                     <InfoIcon>{{ t('worktime', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon>
                     ({{ informationalAbsences.length }})
                 </h3>
+                <div class="approval-card">
                 <table class="approval-table">
                     <tbody>
                         <tr v-for="absence in informationalAbsences" :key="'info-' + absence.id">
@@ -107,6 +115,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </section>
 
             <NcEmptyContent v-if="inboxItems.length === 0 && informationalAbsences.length === 0"
@@ -136,6 +145,13 @@
                 </div>
             </div>
         </NcModal>
+
+        <!-- Monats-Details vor dem Abnehmen -->
+        <MonthApprovalModal v-if="detailItem"
+            :item="detailItem"
+            @approve="onModalApprove"
+            @reject="onModalReject"
+            @close="detailItem = null" />
     </div>
 </template>
 
@@ -148,6 +164,9 @@ import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
+import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
+import ClockOutlineIcon from 'vue-material-design-icons/ClockOutline.vue'
 import TimeEntryService from '../services/TimeEntryService.js'
 import AbsenceService from '../services/AbsenceService.js'
 import { formatDate } from '../utils/dateUtils.js'
@@ -155,11 +174,13 @@ import { getAbsenceTypeLabel } from '../utils/formatters.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 import InfoIcon from '../components/InfoIcon.vue'
+import MonthApprovalModal from '../components/MonthApprovalModal.vue'
 
 export default {
     name: 'ApprovalOverviewView',
     components: {
         InfoIcon,
+        MonthApprovalModal,
         NcLoadingIcon,
         NcEmptyContent,
         NcAvatar,
@@ -168,6 +189,9 @@ export default {
         CheckIcon,
         CloseIcon,
         RestoreIcon,
+        FormatListBulletedIcon,
+        CalendarIcon,
+        ClockOutlineIcon,
     },
     data() {
         return {
@@ -182,6 +206,7 @@ export default {
             reopenTarget: null,
             reopenReason: '',
             reopeningKey: null,
+            detailItem: null,
         }
     },
     computed: {
@@ -284,6 +309,19 @@ export default {
                 this.processingAbsence = null
             }
         },
+        openMonthDetail(item) {
+            this.detailItem = item
+        },
+        onModalApprove() {
+            const item = this.detailItem
+            this.detailItem = null
+            this.approveMonthItem(item)
+        },
+        onModalReject() {
+            const item = this.detailItem
+            this.detailItem = null
+            this.openReopenModal(item)
+        },
         async approveMonthItem(item) {
             this.processingMonth = item.key
             try {
@@ -331,75 +369,101 @@ export default {
 .approval-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1400px;
+    max-width: 1600px;
 }
 
 .view-header {
-    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
-    font-size: 22px;
-    font-weight: 600;
+    margin: 0;
+}
+
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .loading {
     margin-top: 40px;
 }
 
-.inbox-hint {
-    font-size: 12.5px;
-    color: #9a6c25;
-    background: var(--color-warning-element-light, #fdf6e3);
-    border: 1px solid var(--color-warning, #c8932a);
-    border-radius: var(--border-radius);
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    display: inline-block;
-}
-
-.chips {
+.layout-seg {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    background: var(--color-background-dark);
+    border-radius: var(--border-radius-element, 8px);
+    padding: 3px;
 }
 
-.chip {
+.seg-btn {
     font-size: 13px;
     font-weight: 600;
-    color: var(--color-main-text);
-    background: var(--color-background-dark);
+    color: var(--color-text-maxcontrast);
+    background: none;
     border: none;
-    border-radius: var(--border-radius);
-    padding: 6px 13px;
+    padding: 6px 14px;
+    border-radius: var(--border-radius-element, 8px);
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.chip.active {
-    background: var(--color-primary-element-light);
+.seg-btn.active {
+    background: var(--color-main-background);
     color: var(--color-primary-element);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Tabellen in Card wie Audit/Abwesenheit/Auswertung */
+.approval-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 8px 16px;
+    overflow-x: auto;
+    margin-bottom: 24px;
 }
 
 .approval-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    margin-bottom: 24px;
 }
 
 .approval-table th {
     text-align: left;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--color-text-maxcontrast);
-    padding: 9px 10px;
-    border-bottom: 1px solid var(--color-border);
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
 
 .approval-table td {
-    padding: 11px 10px;
-    border-bottom: 1px solid var(--color-border-light, var(--color-border));
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
+}
+
+.approval-table tbody tr:hover {
+    background: var(--color-background-hover);
+}
+
+.approval-table tbody tr.row-clickable {
+    cursor: pointer;
 }
 
 .who {

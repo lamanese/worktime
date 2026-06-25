@@ -2,7 +2,9 @@
     <div class="time-tracking-view">
         <div class="view-header">
             <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
+        </div>
 
+        <div class="view-toolbar">
             <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
                 <button class="seg-btn"
                     :class="{ active: layoutMode === 'list' }"
@@ -23,16 +25,6 @@
                     {{ t('worktime', 'Jahr') }}
                 </button>
             </div>
-
-            <MonthPicker v-if="!isYearMode"
-                :year="selectedMonth.year"
-                :month="selectedMonth.month"
-                @update="onMonthChange" />
-            <YearPicker v-else
-                :year="overviewYear"
-                :min="minYear"
-                :max="maxYear"
-                @update="onYearChange" />
 
             <div class="header-actions__right">
                 <span v-if="monthStatus && !isYearMode" class="month-badge" :class="monthStatus">
@@ -63,6 +55,18 @@
                         {{ t('worktime', 'PDF über Zeitraum …') }}
                     </NcActionButton>
                 </NcActions>
+            </div>
+
+            <div class="view-header__nav">
+                <MonthPicker v-if="!isYearMode"
+                    :year="selectedMonth.year"
+                    :month="selectedMonth.month"
+                    @update="onMonthChange" />
+                <YearPicker v-else
+                    :year="overviewYear"
+                    :min="minYear"
+                    :max="maxYear"
+                    @update="onYearChange" />
             </div>
         </div>
 
@@ -113,6 +117,7 @@
                 <DayList v-if="effectiveLayout === 'list'"
                     :days="days"
                     :month="selectedMonth.month"
+                    :projects="projects"
                     :selected-date="selectedDate"
                     @select="onSelectDay" />
                 <MonthCalendar v-else
@@ -543,23 +548,34 @@ export default {
 .time-tracking-view {
     padding: 20px;
     padding-left: 50px;
-    max-width: 1200px;
+    max-width: 1600px;
 }
 
 .view-header {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 16px;
+    margin-bottom: 12px;
 }
 
 .view-header h2 {
     margin: 0;
 }
 
-.header-actions__right {
+.view-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.view-header__nav {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.header-actions__right {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -655,7 +671,7 @@ export default {
 
 .zlayout {
     display: grid;
-    grid-template-columns: 1fr 330px;
+    grid-template-columns: 1fr clamp(340px, 26%, 460px);
     gap: 18px;
     align-items: start;
 }

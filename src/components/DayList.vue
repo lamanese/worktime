@@ -24,25 +24,32 @@
                 </div>
 
                 <div class="dl-mid">
-                    <template v-if="day.entries.length">
-                        <span v-if="day.holiday || day.absence"
-                            class="dot"
-                            :class="day.holiday ? 'holiday' : absenceColorClass(day.absence.type)" />
-                        <span class="dl-times">{{ day.firstStart }} – {{ day.lastEnd }}</span>
-                        <span v-if="day.entries.length > 1" class="dl-count">
-                            {{ t('worktime', '{n} Einträge', { n: day.entries.length }) }}
-                        </span>
-                    </template>
-                    <template v-else-if="day.holiday">
-                        <span class="dl-tag"><span class="dot holiday" /> {{ day.holiday.name }}</span>
-                    </template>
-                    <template v-else-if="day.absence">
-                        <span class="dl-tag">
-                            <span class="dot" :class="absenceColorClass(day.absence.type)" />
-                            {{ day.absence.typeName }}
-                        </span>
-                    </template>
-                    <span v-else class="dl-mut">–</span>
+                    <div class="dl-mid-top">
+                        <template v-if="day.entries.length">
+                            <span v-if="day.holiday || day.absence"
+                                class="dot"
+                                :class="day.holiday ? 'holiday' : absenceColorClass(day.absence.type)" />
+                            <span class="dl-times">{{ day.firstStart }} – {{ day.lastEnd }}</span>
+                            <span v-if="day.entries.length > 1" class="dl-count">
+                                {{ t('worktime', '{n} Einträge', { n: day.entries.length }) }}
+                            </span>
+                        </template>
+                        <template v-else-if="day.holiday">
+                            <span class="dl-tag"><span class="dot holiday" /> {{ day.holiday.name }}</span>
+                        </template>
+                        <template v-else-if="day.absence">
+                            <span class="dl-tag">
+                                <span class="dot" :class="absenceColorClass(day.absence.type)" />
+                                {{ day.absence.typeName }}
+                            </span>
+                        </template>
+                        <span v-else class="dl-mut">–</span>
+                    </div>
+                    <div v-if="entryLines(day).length" class="dl-entries">
+                        <div v-for="line in entryLines(day)" :key="line.id" class="dl-entry-line">
+                            {{ line.text }}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="dl-r dl-pause">{{ pauseLabel(day) }}</div>
@@ -72,6 +79,10 @@ export default {
             type: Number,
             default: null,
         },
+        projects: {
+            type: Array,
+            default: () => [],
+        },
     },
     emits: ['select'],
     computed: {
@@ -80,6 +91,23 @@ export default {
         },
     },
     methods: {
+        projectName(projectId) {
+            if (!projectId) return ''
+            const project = this.projects.find(p => p.id === projectId)
+            return project?.name || project?.displayName || ''
+        },
+        // Pro Eintrag eine kompakte Zeile „Projekt · Bemerkung"; Einträge ohne
+        // beides werden ausgelassen.
+        entryLines(day) {
+            return (day.entries || [])
+                .map(e => {
+                    const text = [this.projectName(e.projectId), (e.description || '').trim()]
+                        .filter(Boolean)
+                        .join(' · ')
+                    return { id: e.id, text }
+                })
+                .filter(l => l.text)
+        },
         pad(n) {
             return n < 10 ? '0' + n : '' + n
         },
@@ -116,7 +144,7 @@ export default {
 .dl-head,
 .dl-day {
     display: grid;
-    grid-template-columns: 116px 1fr 92px 84px;
+    grid-template-columns: 116px minmax(0, 1fr) 92px 84px;
     align-items: center;
     gap: 10px;
 }
@@ -134,6 +162,7 @@ export default {
     border-top: 1px solid var(--color-border-light, var(--color-border));
     background: var(--color-main-background);
     cursor: pointer;
+    align-items: start;
 }
 
 .dl-day:first-child {
@@ -214,12 +243,38 @@ export default {
 .dl-mid {
     min-width: 0;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+}
+
+.dl-mid-top {
+    display: flex;
     align-items: center;
     gap: 8px;
 }
 
+.dl-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dl-entry-line {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--color-text-maxcontrast);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .dl-times {
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .dl-count {
