@@ -114,7 +114,7 @@ class NotificationService {
 	 * Tell the archive admin that automatic PDF archiving for a month failed
 	 * permanently, instead of failing silently in the background (#323).
 	 */
-	public function notifyArchiveFailed(string $recipientUserId, string $employeeName, int $year, int $month, string $error): void {
+	public function notifyArchiveFailed(string $recipientUserId, int $employeeId, string $employeeName, int $year, int $month, string $error): void {
 		try {
 			$monthYear = (self::MONTH_NAMES[$month] ?? (string)$month) . ' ' . $year;
 			$notification = $this->createNotification('archive_failed', $recipientUserId, [
@@ -122,7 +122,7 @@ class NotificationService {
 				'monthYear' => $monthYear,
 				'error' => $error,
 			]);
-			$notification->setObject('archive', $employeeName . '-' . $year . '-' . $month);
+			$notification->setObject('archive', $employeeId . '-' . $year . '-' . $month);
 
 			$this->notificationManager->notify($notification);
 		} catch (\Throwable $e) {

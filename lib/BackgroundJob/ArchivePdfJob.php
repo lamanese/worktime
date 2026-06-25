@@ -208,6 +208,7 @@ class ArchivePdfJob extends TimedJob {
 
         $this->notificationService->notifyArchiveFailed(
             $archiveUserId,
+            $job->getEmployeeId(),
             $employeeName,
             $job->getYear(),
             $job->getMonth(),
