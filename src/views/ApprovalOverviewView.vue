@@ -79,8 +79,8 @@
                                         </NcButton>
                                         <NcButton type="tertiary"
                                             :disabled="processingMonth === item.key"
-                                            @click="openReopenModal(item)">
-                                            <template #icon><RestoreIcon :size="18" /></template>
+                                            @click="openRejectModal(item)">
+                                            <template #icon><CloseIcon :size="18" /></template>
                                             {{ t('worktime', 'Zurückweisen') }}
                                         </NcButton>
                                     </template>
@@ -128,19 +128,19 @@
         </template>
 
         <!-- Monat zurückweisen (Grund erforderlich) -->
-        <NcModal v-if="showReopenModal" @close="closeReopenModal">
-            <div class="reopen-modal">
+        <NcModal v-if="showRejectModal" @close="closeRejectModal">
+            <div class="reject-modal">
                 <h3>{{ t('worktime', 'Monat zurückweisen') }}</h3>
-                <p>{{ reopenTarget ? getMonthName(reopenTarget.month) + ' ' + reopenTarget.year + ' – ' + reopenTarget.employeeName : '' }}</p>
-                <label for="reopen-reason">{{ t('worktime', 'Begründung') }}</label>
-                <textarea id="reopen-reason" v-model="reopenReason" rows="3"
-                    :placeholder="t('worktime', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
+                <p>{{ rejectTarget ? getMonthName(rejectTarget.month) + ' ' + rejectTarget.year + ' – ' + rejectTarget.employeeName : '' }}</p>
+                <label for="reject-reason">{{ t('worktime', 'Begründung') }}</label>
+                <textarea id="reject-reason" v-model="rejectReason" rows="3"
+                    :placeholder="t('worktime', 'Warum wird der Monat zurückgewiesen?')"></textarea>
                 <div class="form-actions">
-                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
+                    <NcButton type="tertiary" @click="closeRejectModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
                     <NcButton type="primary"
-                        :disabled="!reopenReason.trim() || reopeningKey !== null"
-                        @click="submitReopen">
-                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                        :disabled="!rejectReason.trim() || rejectingKey !== null"
+                        @click="submitReject">
+                        {{ t('worktime', 'Zurückweisen') }}
                     </NcButton>
                 </div>
             </div>
@@ -163,7 +163,6 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import CloseIcon from 'vue-material-design-icons/Close.vue'
-import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import ClockOutlineIcon from 'vue-material-design-icons/ClockOutline.vue'
@@ -188,7 +187,6 @@ export default {
         NcModal,
         CheckIcon,
         CloseIcon,
-        RestoreIcon,
         FormatListBulletedIcon,
         CalendarIcon,
         ClockOutlineIcon,
@@ -202,10 +200,10 @@ export default {
             kindFilter: 'all',
             processingAbsence: null,
             processingMonth: null,
-            showReopenModal: false,
-            reopenTarget: null,
-            reopenReason: '',
-            reopeningKey: null,
+            showRejectModal: false,
+            rejectTarget: null,
+            rejectReason: '',
+            rejectingKey: null,
             detailItem: null,
         }
     },
@@ -320,7 +318,9 @@ export default {
         onModalReject() {
             const item = this.detailItem
             this.detailItem = null
-            this.openReopenModal(item)
+            // Detail-Modal erst vollständig schließen lassen, bevor der Grund-Dialog
+            // öffnet – zwei NcModals im selben Tick brechen das Vue-DOM-Patching.
+            setTimeout(() => this.openRejectModal(item), 300)
         },
         async approveMonthItem(item) {
             this.processingMonth = item.key
@@ -335,30 +335,30 @@ export default {
                 this.processingMonth = null
             }
         },
-        openReopenModal(item) {
-            this.reopenTarget = item
-            this.reopenReason = ''
-            this.showReopenModal = true
+        openRejectModal(item) {
+            this.rejectTarget = item
+            this.rejectReason = ''
+            this.showRejectModal = true
         },
-        closeReopenModal() {
-            this.showReopenModal = false
-            this.reopenTarget = null
-            this.reopenReason = ''
+        closeRejectModal() {
+            this.showRejectModal = false
+            this.rejectTarget = null
+            this.rejectReason = ''
         },
-        async submitReopen() {
-            if (!this.reopenTarget || !this.reopenReason.trim()) return
-            const item = this.reopenTarget
-            this.reopeningKey = item.key
+        async submitReject() {
+            if (!this.rejectTarget || !this.rejectReason.trim()) return
+            const item = this.rejectTarget
+            this.rejectingKey = item.key
             try {
-                const result = await TimeEntryService.reopenMonth(item.employeeId, item.year, item.month, this.reopenReason.trim())
-                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
-                this.closeReopenModal()
+                const result = await TimeEntryService.rejectMonth(item.employeeId, item.year, item.month, this.rejectReason.trim())
+                showSuccess(t('worktime', '{count} Einträge zurückgewiesen', { count: result.rejected }))
+                this.closeRejectModal()
                 await this.loadData()
             } catch (error) {
-                console.error('Failed to reopen month:', error)
-                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
+                console.error('Failed to reject month:', error)
+                showError(t('worktime', 'Fehler beim Zurückweisen'))
             } finally {
-                this.reopeningKey = null
+                this.rejectingKey = null
             }
         },
     },
@@ -549,23 +549,23 @@ export default {
     gap: 6px;
 }
 
-.reopen-modal {
+.reject-modal {
     padding: 22px;
     max-width: 460px;
 }
 
-.reopen-modal h3 {
+.reject-modal h3 {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 6px;
 }
 
-.reopen-modal p {
+.reject-modal p {
     color: var(--color-text-maxcontrast);
     margin-bottom: 14px;
 }
 
-.reopen-modal label {
+.reject-modal label {
     display: block;
     font-size: 12.5px;
     font-weight: 600;
@@ -573,7 +573,7 @@ export default {
     margin-bottom: 4px;
 }
 
-.reopen-modal textarea {
+.reject-modal textarea {
     width: 100%;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);

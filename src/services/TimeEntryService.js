@@ -122,6 +122,16 @@ export default {
         }
     },
 
+    async rejectMonth(employeeId, year, month, reason) {
+        try {
+            const response = await api.post('/time-entries/reject-month', { employeeId, year, month, reason })
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
+        }
+    },
+
     async getMonthlyStats(employeeId, year, month) {
         try {
             const response = await api.get('/time-entries/stats/monthly', {

@@ -584,6 +584,58 @@ class TimeEntryService {
     }
 
     /**
+     * Reject a submitted month: set all submitted entries back to rejected so the
+     * employee can correct and resubmit. Mirrors the per-entry reject (submitted → rejected).
+     */
+    public function rejectMonth(int $employeeId, int $year, int $month, string $reason, string $currentUserId = ''): array {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::fromSingleError('reason', $this->l->t('Begründung erforderlich'));
+        }
+
+        $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
+        $rejected = 0;
+        $skipped = 0;
+        $rejectedByEmployeeId = $currentUserId ? $this->getEmployeeIdForUser($currentUserId) : null;
+        $now = new DateTime();
+
+        foreach ($entries as $entry) {
+            if ($entry->getStatus() === TimeEntry::STATUS_SUBMITTED) {
+                $oldValues = $entry->jsonSerialize();
+                $entry->setStatus(TimeEntry::STATUS_REJECTED);
+                $entry->setUpdatedAt($now);
+                // Track who rejected and when (same fields as the per-entry reject)
+                $entry->setApprovedAt($now);
+                $entry->setApprovedBy($rejectedByEmployeeId);
+                $this->timeEntryMapper->update($entry);
+
+                if ($currentUserId) {
+                    $newValues = $entry->jsonSerialize();
+                    $newValues['reason'] = $reason;
+                    $this->auditLogService->log($currentUserId, 'reject', 'time_entry', $entry->getId(), $oldValues, $newValues);
+                }
+
+                $rejected++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($rejected > 0) {
+            try {
+                $this->notificationService->notifyTimeEntriesRejected($employeeId, $year, $month);
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to send time entries rejected notification', ['exception' => $e]);
+            }
+        }
+
+        return [
+            'rejected' => $rejected,
+            'skipped' => $skipped,
+        ];
+    }
+
+    /**
      * Calculate suggested break time based on German labor law (§4 ArbZG)
      *
      * Rules:
