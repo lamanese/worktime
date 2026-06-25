@@ -15,6 +15,7 @@ use OCA\WorkTime\Db\ArchiveQueue;
 use OCA\WorkTime\Db\ArchiveQueueMapper;
 use OCA\WorkTime\Db\CompanySetting;
 use OCA\WorkTime\Db\Employee;
+use OCA\WorkTime\Notification\NotificationService;
 use OCA\WorkTime\Service\AbsenceService;
 use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\EmployeeService;
@@ -43,6 +44,7 @@ class ArchivePdfJob extends TimedJob {
         private AbsenceService $absenceService,
         private HolidayService $holidayService,
         private WorkScheduleService $workScheduleService,
+        private NotificationService $notificationService,
         private LoggerInterface $logger,
     ) {
         parent::__construct($time);
@@ -171,6 +173,7 @@ class ArchivePdfJob extends TimedJob {
                         'error' => $e->getMessage(),
                     ]
                 );
+                $this->notifyFailure($job, $archiveUserId, $e->getMessage());
             } else {
                 // Reset to pending for retry
                 $job->setStatus(ArchiveQueue::STATUS_PENDING);
@@ -188,6 +191,29 @@ class ArchivePdfJob extends TimedJob {
 
             $this->queueMapper->update($job);
         }
+    }
+
+    /**
+     * Notify the archive admin about a permanently failed archive job (#323),
+     * so it surfaces instead of failing silently in the background.
+     */
+    private function notifyFailure(ArchiveQueue $job, string $archiveUserId, string $error): void {
+        $employeeName = '#' . $job->getEmployeeId();
+        try {
+            $employee = $this->employeeService->find($job->getEmployeeId());
+            $employeeName = trim($employee->getFirstName() . ' ' . $employee->getLastName());
+        } catch (\Throwable) {
+            // fall back to the id-based label
+        }
+
+        $this->notificationService->notifyArchiveFailed(
+            $archiveUserId,
+            $job->getEmployeeId(),
+            $employeeName,
+            $job->getYear(),
+            $job->getMonth(),
+            $error
+        );
     }
 
     /**

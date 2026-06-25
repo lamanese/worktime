@@ -142,4 +142,23 @@ export default {
             handleApiError(error)
         }
     },
+
+    async getArchiveStatus() {
+        try {
+            const response = await api.get('/time-entries/archive-status')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
+    async retryArchive(id) {
+        try {
+            const response = await api.post(`/time-entries/archive-retry/${id}`)
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
+        }
+    },
 }
