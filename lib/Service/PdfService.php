@@ -964,4 +964,39 @@ class PdfService {
         // Other errors (permissions, storage) propagate so the calling
         // controller can log them instead of failing silently.
     }
+
+    /**
+     * Whether an archived report already exists for this month (#323),
+     * so callers can distinguish a fresh archive from a replacement.
+     */
+    public function archivedReportExists(
+        string $adminUserId,
+        Employee $employee,
+        int $year,
+        int $month
+    ): bool {
+        $archivePath = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_PATH);
+        if (empty($archivePath)) {
+            return false;
+        }
+
+        $folderPath = sprintf(
+            '%s/%d/%s_%s',
+            trim($archivePath, '/'),
+            $year,
+            $employee->getLastName(),
+            $employee->getFirstName()
+        );
+        $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
+        $relativePath = ltrim($folderPath . '/' . $filename, '/');
+
+        try {
+            $this->rootFolder->getUserFolder($adminUserId)->get($relativePath);
+            return true;
+        } catch (FilesNotFoundException) {
+            return false;
+        } catch (\Exception) {
+            return false;
+        }
+    }
 }

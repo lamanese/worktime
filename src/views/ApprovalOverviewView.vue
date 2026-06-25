@@ -149,6 +149,7 @@
         <!-- Monats-Details vor dem Abnehmen -->
         <MonthApprovalModal v-if="detailItem"
             :item="detailItem"
+            :archive-configured="archiveConfigured"
             @approve="onModalApprove"
             @reject="onModalReject"
             @close="detailItem = null" />
@@ -205,6 +206,7 @@ export default {
             rejectReason: '',
             rejectingKey: null,
             detailItem: null,
+            archiveConfigured: false,
         }
     },
     computed: {
@@ -269,13 +271,15 @@ export default {
                 AbsenceService.getPending(),
                 TimeEntryService.getPendingMonths(),
                 AbsenceService.getInformational(),
+                TimeEntryService.getArchiveStatus(),
             ])
             this.pendingAbsences = results[0].status === 'fulfilled' ? (results[0].value || []) : []
             this.pendingMonths = results[1].status === 'fulfilled' ? (results[1].value || []) : []
             this.informationalAbsences = results[2].status === 'fulfilled' ? (results[2].value || []) : []
+            this.archiveConfigured = results[3].status === 'fulfilled' ? !!(results[3].value?.configured) : false
             results.forEach((r, i) => {
                 if (r.status === 'rejected') {
-                    const names = ['getPending', 'getPendingMonths', 'getInformational']
+                    const names = ['getPending', 'getPendingMonths', 'getInformational', 'getArchiveStatus']
                     console.error(`Failed: ${names[i]}`, r.reason)
                 }
             })
@@ -310,10 +314,10 @@ export default {
         openMonthDetail(item) {
             this.detailItem = item
         },
-        onModalApprove() {
+        onModalApprove(withArchive) {
             const item = this.detailItem
             this.detailItem = null
-            this.approveMonthItem(item)
+            this.approveMonthItem(item, withArchive)
         },
         onModalReject() {
             const item = this.detailItem
@@ -322,11 +326,13 @@ export default {
             // öffnet – zwei NcModals im selben Tick brechen das Vue-DOM-Patching.
             setTimeout(() => this.openRejectModal(item), 300)
         },
-        async approveMonthItem(item) {
+        async approveMonthItem(item, withArchive = false) {
             this.processingMonth = item.key
             try {
                 const result = await TimeEntryService.approveMonth(item.employeeId, item.year, item.month)
-                if (result.archiveQueued) {
+                if (withArchive) {
+                    await this.archiveAndNotify(item, result.approved)
+                } else if (result.archiveQueued) {
                     showSuccess(t('worktime', '{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { count: result.approved }))
                 } else {
                     showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
@@ -337,6 +343,21 @@ export default {
                 showError(t('worktime', 'Fehler beim Genehmigen'))
             } finally {
                 this.processingMonth = null
+            }
+        },
+        async archiveAndNotify(item, approvedCount) {
+            try {
+                const res = await TimeEntryService.archiveNow(item.employeeId, item.year, item.month)
+                if (res?.result === 'replaced') {
+                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF im Archiv aktualisiert.', { count: approvedCount }))
+                } else if (res?.result === 'created') {
+                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF im Archiv erstellt.', { count: approvedCount }))
+                } else {
+                    showSuccess(t('worktime', '{count} Einträge genehmigt', { count: approvedCount }))
+                }
+            } catch (e) {
+                console.error('Archive now failed:', e)
+                showError(t('worktime', 'Genehmigt, aber Archivierung fehlgeschlagen.'))
             }
         },
         openRejectModal(item) {

@@ -10,20 +10,13 @@ declare(strict_types=1);
 namespace OCA\WorkTime\BackgroundJob;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\ArchiveQueue;
 use OCA\WorkTime\Db\ArchiveQueueMapper;
 use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Notification\NotificationService;
-use OCA\WorkTime\Service\AbsenceService;
+use OCA\WorkTime\Service\ArchiveService;
 use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\NotFoundException;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -38,12 +31,8 @@ class ArchivePdfJob extends TimedJob {
         ITimeFactory $time,
         private ArchiveQueueMapper $queueMapper,
         private CompanySettingsService $settingsService,
-        private PdfService $pdfService,
+        private ArchiveService $archiveService,
         private EmployeeService $employeeService,
-        private TimeEntryService $timeEntryService,
-        private AbsenceService $absenceService,
-        private HolidayService $holidayService,
-        private WorkScheduleService $workScheduleService,
         private NotificationService $notificationService,
         private LoggerInterface $logger,
     ) {
@@ -78,70 +67,13 @@ class ArchivePdfJob extends TimedJob {
         $this->queueMapper->update($job);
 
         try {
-            $employee = $this->employeeService->find($job->getEmployeeId());
-
-            $timeEntries = $this->timeEntryService->findByEmployeeAndMonth(
+            $this->archiveService->archiveMonth(
                 $job->getEmployeeId(),
                 $job->getYear(),
-                $job->getMonth()
-            );
-
-            $absences = $this->absenceService->findByEmployeeAndMonth(
-                $job->getEmployeeId(),
-                $job->getYear(),
-                $job->getMonth()
-            );
-
-            $holidays = $this->holidayService->findByMonth(
-                $job->getYear(),
                 $job->getMonth(),
-                $employee->getFederalState()
-            );
-
-            $stats = $this->calculateMonthlyStats(
-                $employee,
-                $job->getYear(),
-                $job->getMonth(),
-                $timeEntries,
-                $absences,
-                $holidays
-            );
-
-            // Build approval info (includes submission and approval data)
-            $approvalInfo = [
-                'submittedBy' => $employee,
-                'submittedAt' => $job->getSubmittedAt(),
-                'approvedBy' => null,
-                'approvedAt' => $job->getApprovedAt(),
-            ];
-
-            if ($job->getApproverId()) {
-                try {
-                    $approver = $this->employeeService->find($job->getApproverId());
-                    $approvalInfo['approvedBy'] = $approver;
-                } catch (NotFoundException) {
-                    // Approver not found, continue without
-                }
-            }
-
-            $pdfContent = $this->pdfService->generateMonthlyReport(
-                $employee,
-                $job->getYear(),
-                $job->getMonth(),
-                $timeEntries,
-                $absences,
-                $holidays,
-                $stats,
-                $approvalInfo
-            );
-
-            // Archive using the configured admin user
-            $this->pdfService->archiveMonthlyReport(
-                $archiveUserId,
-                $employee,
-                $job->getYear(),
-                $job->getMonth(),
-                $pdfContent
+                $job->getApproverId(),
+                $job->getApprovedAt(),
+                $job->getSubmittedAt()
             );
 
             // Mark as completed
@@ -216,97 +148,4 @@ class ArchivePdfJob extends TimedJob {
         );
     }
 
-    /**
-     * Calculate monthly statistics for PDF generation.
-     * Uses WorkScheduleService for schedule-aware calculations.
-     */
-    private function calculateMonthlyStats(
-        Employee $employee,
-        int $year,
-        int $month,
-        array $timeEntries,
-        array $absences,
-        array $holidays
-    ): array {
-        $startDate = new DateTime("$year-$month-01");
-        $endDate = (clone $startDate)->modify('last day of this month');
-        $employeeId = $employee->getId();
-
-        // Count working days using schedule-aware service
-        $workingDays = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $endDate, $holidays);
-
-        // Calculate target minutes using schedule-aware service
-        $targetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $endDate, $holidays);
-
-        // dailyMinutes approximation for display
-        $dailyMinutes = $workingDays > 0 ? (int)round($targetMinutes / $workingDays) : 0;
-
-        // Count absence days and calculate absence minutes
-        $absenceDays = 0;
-        $absenceMinutesTotal = 0;
-        foreach ($absences as $absence) {
-            if ($absence->isApproved()) {
-                $absenceStart = $absence->getStartDate();
-                $absenceEnd = $absence->getEndDate();
-
-                // Limit to month boundaries
-                if ($absenceStart < $startDate) {
-                    $absenceStart = clone $startDate;
-                }
-                if ($absenceEnd > $endDate) {
-                    $absenceEnd = clone $endDate;
-                }
-
-                $absenceDays += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays);
-
-                // Compensatory time (Freizeitausgleich) keeps the target and is not credited
-                // as work, so it is counted as an absence day but NOT deducted from the target
-                // minutes -> the overtime balance decreases by the daily target (#186).
-                if ($absence->getType() === Absence::TYPE_COMPENSATORY) {
-                    continue;
-                }
-
-                // Calculate actual absence minutes per day from schedule
-                $current = clone $absenceStart;
-                $holidayMap = [];
-                foreach ($holidays as $holiday) {
-                    $holidayMap[$holiday->getDate()->format('Y-m-d')] = true;
-                }
-                while ($current <= $absenceEnd) {
-                    $dateStr = $current->format('Y-m-d');
-                    $dayMin = $this->workScheduleService->getDailyMinutesForDate($employeeId, $current);
-                    if ($dayMin > 0 && !isset($holidayMap[$dateStr])) {
-                        $absenceMinutesTotal += $dayMin;
-                    }
-                    $current->modify('+1 day');
-                }
-            }
-        }
-
-        // Adjusted target (reduced by absences)
-        $adjustedTargetMinutes = $targetMinutes - $absenceMinutesTotal;
-
-        // Sum actual work minutes
-        $actualMinutes = 0;
-        foreach ($timeEntries as $entry) {
-            $actualMinutes += $entry->getWorkMinutes();
-        }
-
-        // Calculate overtime
-        $overtimeMinutes = $actualMinutes - $adjustedTargetMinutes;
-
-        return [
-            'workingDays' => $workingDays,
-            'holidayCount' => count($holidays),
-            'absenceDays' => $absenceDays,
-            'dailyMinutes' => $dailyMinutes,
-            'targetMinutes' => $targetMinutes,
-            'adjustedTargetMinutes' => $adjustedTargetMinutes,
-            'actualMinutes' => $actualMinutes,
-            'actualHours' => round($actualMinutes / 60, 2),
-            'overtimeMinutes' => $overtimeMinutes,
-            'overtimeHours' => round($overtimeMinutes / 60, 2),
-            'entryCount' => count($timeEntries),
-        ];
-    }
 }

@@ -161,4 +161,14 @@ export default {
             throw error
         }
     },
+
+    async archiveNow(employeeId, year, month) {
+        try {
+            const response = await api.post('/time-entries/archive-now', { employeeId, year, month })
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
+        }
+    },
 }
