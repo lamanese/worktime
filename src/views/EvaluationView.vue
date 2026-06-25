@@ -90,7 +90,7 @@
                                         <NcAvatar :user="row.userId" :display-name="row.name" :size="30" />
                                         <div>
                                             <div class="ev-emp-name">{{ row.name }}</div>
-                                            <div class="ev-emp-sub">{{ row.weeklyHours }} {{ t('worktime', 'Std./Woche') }}</div>
+                                            <div class="ev-emp-sub">{{ weeklyLabel(row.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -234,7 +234,10 @@
             </thead>
             <tbody>
                 <tr v-for="r in aggRows" :key="r.id">
-                    <td>{{ r.name }}</td>
+                    <td>
+                        <div class="ev-emp-name">{{ r.name }}</div>
+                        <div v-if="weeklyLabel(r.weeklyHours)" class="ev-emp-sub">{{ weeklyLabel(r.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
+                    </td>
                     <td class="ev-num">{{ hours(r.minutes) }}</td>
                     <td>
                         <div class="ev-share">
@@ -487,10 +490,18 @@ export default {
             return { totalMinutes: total, projectCount: projects.size, employeeCount: employees.size }
         },
         aggRows() {
+            // Wochenstunden je Mitarbeiter aus dem Team-Report (id + userId als Schlüssel)
+            const weeklyByEmp = {}
+            for (const m of this.teamReport) {
+                if (m.employee?.weeklyHours != null) {
+                    weeklyByEmp[m.employee.id] = m.employee.weeklyHours
+                    if (m.employee.userId) weeklyByEmp[m.employee.userId] = m.employee.weeklyHours
+                }
+            }
             const byEmp = {}
             for (const r of this.filteredRows) {
                 if (!byEmp[r.employeeId]) {
-                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0 }
+                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[r.employeeId] ?? null }
                 }
                 byEmp[r.employeeId].minutes += r.minutes
             }
@@ -538,6 +549,12 @@ export default {
             this.loadTeamReport()
         },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
+        // Wochenstunden ohne überflüssige Nullen: "40.00" → "40", "37.50" → "37.5"
+        weeklyLabel(h) {
+            if (h == null || h === '') return ''
+            const n = parseFloat(h)
+            return Number.isNaN(n) ? '' : String(n)
+        },
         signedHours(minutes) {
             const sign = minutes < 0 ? '−' : '+'
             return `${sign}${formatMinutes(Math.abs(minutes || 0))} h`
@@ -1012,6 +1029,25 @@ export default {
     text-align: right;
 }
 
+/* Mitarbeiter-Übersicht + Aggregiert: Name-Spalte nimmt die Restbreite →
+   Werte rechts gruppiert (Name links, Kennzahlen rechts). Einzelbuchungen ausgenommen. */
+.ev-table:not(.ev-entries) th:first-child,
+.ev-table:not(.ev-entries) td:first-child {
+    width: 100%;
+}
+
+/* Einzelbuchungen: feste Spaltenbreiten — Projekt/Kunde/Mitarbeiter großzügig,
+   Beschreibung dafür schmaler. */
+.ev-entries {
+    table-layout: fixed;
+}
+
+.ev-entries th:nth-child(1) { width: 9%; }   /* Datum */
+.ev-entries th:nth-child(2) { width: 21%; }  /* Projekt */
+.ev-entries th:nth-child(3) { width: 14%; }  /* Kunde */
+.ev-entries th:nth-child(4) { width: 15%; }  /* Mitarbeiter */
+.ev-entries th:nth-child(5) { width: 9%; }   /* Stunden */
+.ev-entries th:nth-child(6) { width: 32%; }  /* Beschreibung */
 
 .ev-table td {
     padding: 8px 12px;
