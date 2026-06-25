@@ -214,10 +214,16 @@ export default {
     overflow-wrap: anywhere;
 }
 
+/* Aktionsleiste bleibt beim Scrollen langer Monate immer sichtbar */
 .month-detail__actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 20px;
+    position: sticky;
+    bottom: 0;
+    margin: 16px -24px -24px;
+    padding: 14px 24px;
+    background: var(--color-main-background);
+    border-top: 1px solid var(--color-border);
 }
 </style>
