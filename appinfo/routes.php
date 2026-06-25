@@ -15,6 +15,7 @@ return [
         ['name' => 'time_entry#rejectMonth', 'url' => '/api/time-entries/reject-month', 'verb' => 'POST'],
         ['name' => 'time_entry#archiveStatus', 'url' => '/api/time-entries/archive-status', 'verb' => 'GET'],
         ['name' => 'time_entry#archiveRetry', 'url' => '/api/time-entries/archive-retry/{id}', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#archiveNow', 'url' => '/api/time-entries/archive-now', 'verb' => 'POST'],
         ['name' => 'time_entry#monthlyStats', 'url' => '/api/time-entries/stats/monthly', 'verb' => 'GET'],
         ['name' => 'time_entry#pendingMonths', 'url' => '/api/time-entries/pending-months', 'verb' => 'GET'],
         ['name' => 'time_entry#index', 'url' => '/api/time-entries', 'verb' => 'GET'],

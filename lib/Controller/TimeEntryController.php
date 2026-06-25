@@ -13,6 +13,7 @@ use DateTime;
 use OCA\WorkTime\Db\ArchiveQueue;
 use OCA\WorkTime\Db\ArchiveQueueMapper;
 use OCA\WorkTime\Db\CompanySetting;
+use OCA\WorkTime\Service\ArchiveService;
 use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\PdfService;
@@ -34,6 +35,7 @@ class TimeEntryController extends BaseController {
         private CompanySettingsService $settingsService,
         private PdfService $pdfService,
         private EmployeeService $employeeService,
+        private ArchiveService $archiveService,
         private LoggerInterface $logger,
     ) {
         parent::__construct($request, $userId);
@@ -444,6 +446,30 @@ class TimeEntryController extends BaseController {
         }
 
         return $this->successResponse(['status' => 'success']);
+    }
+
+    #[NoAdminRequired]
+    public function archiveNow(int $employeeId, int $year, int $month): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canApprove($this->userId, $employeeId)) {
+            return $this->forbiddenResponse();
+        }
+
+        try {
+            $approver = $this->permissionService->getEmployeeForUser($this->userId);
+            $result = $this->archiveService->archiveMonth($employeeId, $year, $month, $approver?->getId(), new DateTime());
+            // A queued background archive for this month would now be redundant.
+            $this->archiveQueueMapper->deletePendingFor($employeeId, $year, $month);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+
+        return $this->successResponse([
+            'status' => 'success',
+            'result' => $result,
+        ]);
     }
 
     /**
