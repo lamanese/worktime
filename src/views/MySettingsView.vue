@@ -1,6 +1,8 @@
 <template>
     <div class="my-settings-view">
-        <h2>{{ t('worktime', 'Meine Einstellungen') }}</h2>
+        <div class="view-header">
+            <h2>{{ t('worktime', 'Meine Einstellungen') }}</h2>
+        </div>
 
         <NcSettingsSection :name="t('worktime', 'Standard-Arbeitszeiten')"
             :description="t('worktime', 'Diese Zeiten werden beim Anlegen neuer Zeiteinträge vorausgefüllt.')">
@@ -235,8 +237,14 @@ export default {
     max-width: 600px;
 }
 
+.view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
 .my-settings-view h2 {
-    margin: 0 0 24px 0;
+    margin: 0;
 }
 
 .settings-form {

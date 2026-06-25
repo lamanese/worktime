@@ -1,6 +1,8 @@
 <template>
     <div class="settings-view">
-        <h2>{{ t('worktime', 'Einstellungen') }}</h2>
+        <div class="view-header">
+            <h2>{{ t('worktime', 'Einstellungen') }}</h2>
+        </div>
 
         <NcLoadingIcon v-if="loading" :size="44" />
 
@@ -306,7 +308,8 @@
 
                 <NcLoadingIcon v-if="loadingHolidays" :size="32" />
 
-                <table v-else-if="groupedHolidays.length > 0" class="holiday-table">
+                <div v-else-if="groupedHolidays.length > 0" class="settings-table-card">
+                <table class="holiday-table">
                     <thead>
                         <tr>
                             <th class="col-expand"></th>
@@ -365,6 +368,7 @@
                         </template>
                     </tbody>
                 </table>
+                </div>
 
                 <NcEmptyContent v-else
                     :name="t('worktime', 'Keine Feiertage')"
@@ -466,7 +470,8 @@
                         </span>
                     </div>
                 </div>
-                <table v-if="carryoverEmployees.length > 0" class="carryover-table">
+                <div v-if="carryoverEmployees.length > 0" class="settings-table-card">
+                <table class="carryover-table">
                     <thead>
                         <tr>
                             <th>{{ t('worktime', 'Mitarbeiter') }}</th>
@@ -539,6 +544,7 @@
                         </tr>
                     </tbody>
                 </table>
+                </div>
 
                 <!-- Cancel/Correction Modal -->
                 <NcModal v-if="showCancelModal"
@@ -1473,8 +1479,14 @@ export default {
     max-width: 1100px;
 }
 
+.view-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
 .settings-view h2 {
-    margin: 0 0 20px 0;
+    margin: 0;
 }
 
 .settings-layout {
@@ -1655,6 +1667,21 @@ export default {
     margin-bottom: 16px;
 }
 
+/* Tabellen im Card-Look wie Audit/Genehmigungen */
+.settings-table-card {
+    background: var(--color-main-background);
+    border: 1px solid var(--color-border-dark, var(--color-border));
+    border-radius: var(--border-radius-large, 12px);
+    padding: 2px 16px;
+    margin-top: 16px;
+    overflow-x: auto;
+}
+
+.settings-table-card .holiday-table,
+.settings-table-card .carryover-table {
+    margin-top: 0;
+}
+
 .holiday-table {
     width: 100%;
     border-collapse: collapse;
@@ -1804,7 +1831,7 @@ export default {
 
 .carryover-table th {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--color-text-maxcontrast);
     border-bottom: 2px solid var(--color-border-dark, var(--color-border));
 }
