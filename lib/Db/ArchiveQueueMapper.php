@@ -109,6 +109,22 @@ class ArchiveQueueMapper extends QBMapper {
     }
 
     /**
+     * Count jobs in the given statuses (exact counts for the status view, #323)
+     */
+    public function countByStatus(array $statuses): int {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('id'))
+            ->from($this->getTableName())
+            ->where($qb->expr()->in('status', $qb->createNamedParameter($statuses, IQueryBuilder::PARAM_STR_ARRAY)));
+
+        $result = $qb->executeQuery();
+        $count = (int)$result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
+    }
+
+    /**
      * Most recently created jobs (for the archive status view, #323)
      */
     public function findRecent(int $limit = 20): array {

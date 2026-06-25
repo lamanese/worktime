@@ -410,15 +410,8 @@ class TimeEntryController extends BaseController {
             ];
         }, $jobs);
 
-        $pending = 0;
-        $failed = 0;
-        foreach ($jobs as $job) {
-            if (in_array($job->getStatus(), [ArchiveQueue::STATUS_PENDING, ArchiveQueue::STATUS_PROCESSING], true)) {
-                $pending++;
-            } elseif ($job->getStatus() === ArchiveQueue::STATUS_FAILED) {
-                $failed++;
-            }
-        }
+        $pending = $this->archiveQueueMapper->countByStatus([ArchiveQueue::STATUS_PENDING, ArchiveQueue::STATUS_PROCESSING]);
+        $failed = $this->archiveQueueMapper->countByStatus([ArchiveQueue::STATUS_FAILED]);
 
         return $this->successResponse([
             'configured' => !empty($this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_USER)),

@@ -953,9 +953,10 @@ class PdfService {
             $file->delete();
             return true;
         } catch (FilesNotFoundException) {
-            return false;
-        } catch (\Exception) {
+            // Already gone — nothing to delete.
             return false;
         }
+        // Other errors (permissions, storage) propagate so the calling
+        // controller can log them instead of failing silently.
     }
 }
