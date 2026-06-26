@@ -89,7 +89,10 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
 	const perms = store.getters['permissions/permissions']
 
-	if (to.meta.requiresSettings && !perms.canManageSettings) {
+	// Settings-Bereich: Admin (canManageSettings) ODER HR (canManageEmployees).
+	// Admin-only-Sektionen bleiben in der SettingsView per v-if gegated; HR sieht
+	// nur Mitarbeiter/Projekte/Feiertage/Jahresuebertrag (#394).
+	if (to.meta.requiresSettings && !perms.canManageSettings && !perms.canManageEmployees) {
 		return next('/')
 	}
 	if (to.meta.requiresApprove && !perms.canApprove && !perms.isAdmin && !perms.isHrManager) {
