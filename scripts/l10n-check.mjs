@@ -180,7 +180,7 @@ function main() {
 	}
 
 	// --- Ausgabe / Fix ---
-	console.log(dim(`Quelle: ${canonical.size} eindeutige t('${APP_ID}', …)-Keys aus src/`))
+	console.log(dim(`Quelle: ${canonical.size} eindeutige Keys aus Quellcode (src/, lib/, templates/, appinfo/)`))
 
 	if (FIX) {
 		applyFix(canonical, catalogs)
