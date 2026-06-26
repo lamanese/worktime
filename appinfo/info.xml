@@ -44,7 +44,7 @@ Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland.
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
 
-    <version>0.12.0</version>
+    <version>0.12.1</version>
     <licence>AGPL-3.0-or-later</licence>
 
     <author mail="axel.deffner@cpcmomentum.com" homepage="https://github.com/cpcMomentum">Axel Deffner</author>
@@ -63,7 +63,7 @@ Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-project-evaluation.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-absences.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-approval-workflow.png</screenshot>
-    <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-hr-correction.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-team.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-audit-log.png</screenshot>
     <screenshot>https://raw.githubusercontent.com/cpcMomentum/worktime/main/screenshots/screenshot-settings.png</screenshot>
 
