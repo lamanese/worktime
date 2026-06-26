@@ -11,6 +11,7 @@ use OCA\WorkTime\Db\ProjectMapper;
 use OCA\WorkTime\Db\TimeEntry;
 use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\PdfService;
+use OCA\WorkTime\Service\WorkScheduleService;
 use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -30,6 +31,7 @@ class PdfServiceTest extends TestCase {
             $this->createMock(CompanySettingsService::class),
             $this->createMock(IRootFolder::class),
             $this->createMock(ProjectMapper::class),
+            $this->createMock(WorkScheduleService::class),
         );
         $this->buildDayRows = new ReflectionMethod(PdfService::class, 'buildDayRows');
         $this->buildDayRows->setAccessible(true);

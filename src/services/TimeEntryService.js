@@ -11,6 +11,15 @@ export default {
         }
     },
 
+    async getApprovedMonths() {
+        try {
+            const response = await api.get('/time-entries/approved-months')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getByEmployee(employeeId, year = null, month = null) {
         try {
             const params = { employeeId }
@@ -155,6 +164,16 @@ export default {
     async retryArchive(id) {
         try {
             const response = await api.post(`/time-entries/archive-retry/${id}`)
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+            throw error
+        }
+    },
+
+    async archiveNow(employeeId, year, month) {
+        try {
+            const response = await api.post('/time-entries/archive-now', { employeeId, year, month })
             return response.data
         } catch (error) {
             handleApiError(error)

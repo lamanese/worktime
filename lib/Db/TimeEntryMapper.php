@@ -332,6 +332,31 @@ class TimeEntryMapper extends QBMapper {
         return $this->findEntities($qb);
     }
 
+    /**
+     * All approved time entries for the given employees, newest approval first.
+     * Grouped into months by the service for the "approved months" view (#387).
+     *
+     * @param int[] $employeeIds
+     * @return TimeEntry[]
+     */
+    public function findApprovedByEmployeeIds(array $employeeIds): array {
+        if (empty($employeeIds)) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('status', $qb->createNamedParameter(TimeEntry::STATUS_APPROVED)))
+            ->andWhere($qb->expr()->in(
+                'employee_id',
+                $qb->createNamedParameter($employeeIds, IQueryBuilder::PARAM_INT_ARRAY)
+            ))
+            ->orderBy('approved_at', 'DESC');
+
+        return $this->findEntities($qb);
+    }
+
     public function sumWorkMinutesByEmployeeAndMonth(int $employeeId, int $year, int $month): int {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');

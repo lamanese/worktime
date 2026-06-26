@@ -13,10 +13,23 @@ import EvaluationView from '../views/EvaluationView.vue'
 
 Vue.use(VueRouter)
 
+// Rollenabhaengiges Default-Ziel (#394): Mitarbeiter -> Zeiterfassung, sonst die
+// erste fuer die Rolle sinnvolle Ansicht. Verhindert, dass ein Approver/HR ohne
+// eigenes Mitarbeiter-Profil per Default-Redirect auf einer leeren Zeiterfassung
+// landet. /tracking bleibt bewusst ungeguardet (universeller, loop-sicherer
+// Fallback fuer den degenerierten Fall ohne jede Rolle).
+const defaultRoute = () => {
+	const perms = store.getters['permissions/permissions']
+	if (perms.employeeId) return '/tracking'
+	if (perms.canManageSettings || perms.canManageEmployees) return '/settings'
+	if (perms.canApprove || perms.isAdmin || perms.isHrManager) return '/approvals'
+	return '/tracking'
+}
+
 const routes = [
 	{
 		path: '/',
-		redirect: '/tracking',
+		redirect: defaultRoute,
 	},
 	{
 		path: '/tracking',
@@ -27,6 +40,7 @@ const routes = [
 		path: '/absences',
 		name: 'absences',
 		component: AbsenceView,
+		meta: { requiresEmployee: true },
 	},
 	{
 		// Zusammengeführt in Abwesenheit → Team-Tab
@@ -36,14 +50,17 @@ const routes = [
 	{
 		path: '/team',
 		name: 'team',
+		// Gemeinsamer Reiter: jeder Mitarbeiter sieht das Team (Daten-Scoping
+		// im Backend — Admin/HR alle, Vorgesetzte ihr Team, MA self + geteilte).
 		component: TeamView,
-		meta: { requiresApprove: true },
+		meta: { requiresEmployee: true },
 	},
 	{
 		path: '/approvals',
 		name: 'approvals',
 		component: ApprovalOverviewView,
-		meta: { requiresAdminOrHr: true },
+		// Vorgesetzte (canApprove) genehmigen ihr Team — nicht nur Admin/HR (#357).
+		meta: { requiresApprove: true },
 	},
 	{
 		path: '/evaluation',
@@ -72,7 +89,7 @@ const routes = [
 	// Fallback: unbekannte Routes -> Zeiterfassung
 	{
 		path: '*',
-		redirect: '/tracking',
+		redirect: defaultRoute,
 	},
 ]
 
@@ -86,7 +103,10 @@ const router = new VueRouter({
 router.beforeEach((to, from, next) => {
 	const perms = store.getters['permissions/permissions']
 
-	if (to.meta.requiresSettings && !perms.canManageSettings) {
+	// Settings-Bereich: Admin (canManageSettings) ODER HR (canManageEmployees).
+	// Admin-only-Sektionen bleiben in der SettingsView per v-if gegated; HR sieht
+	// nur Mitarbeiter/Projekte/Feiertage/Jahresuebertrag (#394).
+	if (to.meta.requiresSettings && !perms.canManageSettings && !perms.canManageEmployees) {
 		return next('/')
 	}
 	if (to.meta.requiresApprove && !perms.canApprove && !perms.isAdmin && !perms.isHrManager) {

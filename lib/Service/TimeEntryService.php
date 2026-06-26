@@ -866,6 +866,75 @@ class TimeEntryService {
     }
 
     /**
+     * Approved months for the given employees, newest approval first (#387).
+     * Lets HR find and reopen a recently approved month for correction.
+     *
+     * @param int[] $employeeIds
+     */
+    public function findApprovedMonths(array $employeeIds): array {
+        $entries = $this->timeEntryMapper->findApprovedByEmployeeIds($employeeIds);
+
+        $groups = [];
+        foreach ($entries as $entry) {
+            $employeeId = $entry->getEmployeeId();
+            $date = $entry->getDate();
+            $year = (int)$date->format('Y');
+            $month = (int)$date->format('n');
+            $key = $employeeId . '-' . $year . '-' . $month;
+
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'employeeId' => $employeeId,
+                    'year' => $year,
+                    'month' => $month,
+                    'actualMinutes' => 0,
+                    'entryCount' => 0,
+                    'approvedAt' => null,
+                ];
+            }
+            $groups[$key]['actualMinutes'] += $entry->getWorkMinutes();
+            $groups[$key]['entryCount']++;
+
+            // Newest approval timestamp of the month (for sorting newest first).
+            $approvedAt = $entry->getApprovedAt();
+            if ($approvedAt !== null) {
+                $iso = $approvedAt->format('c');
+                if ($groups[$key]['approvedAt'] === null || $iso > $groups[$key]['approvedAt']) {
+                    $groups[$key]['approvedAt'] = $iso;
+                }
+            }
+        }
+
+        $employeeCache = [];
+        $items = [];
+        foreach ($groups as $group) {
+            $employeeId = $group['employeeId'];
+            if (!isset($employeeCache[$employeeId])) {
+                try {
+                    $employeeCache[$employeeId] = $this->employeeMapper->find($employeeId);
+                } catch (\Exception) {
+                    $employeeCache[$employeeId] = null;
+                }
+            }
+            $employee = $employeeCache[$employeeId];
+            $group['employeeName'] = $employee?->getFullName() ?? '';
+            $group['employeeUserId'] = $employee?->getUserId() ?? '';
+            $items[] = $group;
+        }
+
+        // Newest approval first.
+        usort($items, static function (array $a, array $b): int {
+            $byTime = ($b['approvedAt'] ?? '') <=> ($a['approvedAt'] ?? '');
+            if ($byTime !== 0) {
+                return $byTime;
+            }
+            return [$b['year'], $b['month']] <=> [$a['year'], $a['month']];
+        });
+
+        return $items;
+    }
+
+    /**
      * Check if a month is fully approved (all time entries approved)
      */
     public function isMonthApproved(int $employeeId, int $year, int $month): bool {

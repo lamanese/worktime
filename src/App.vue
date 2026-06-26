@@ -38,7 +38,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="canApprove"
+				v-if="isAdmin || isHrManager"
 				:name="t('worktime', 'Auswertung')"
 				to="/evaluation">
 				<template #icon>
@@ -65,7 +65,7 @@
 					</template>
 				</NcAppNavigationItem>
 				<NcAppNavigationItem
-					v-if="canManageSettings"
+					v-if="canManageSettings || canManageEmployees"
 					:name="t('worktime', 'Einstellungen')"
 					to="/settings">
 					<template #icon>
@@ -164,7 +164,7 @@ export default {
 		WrenchIcon,
 	},
 	computed: {
-		...mapGetters('permissions', ['isEmployee', 'isAdmin', 'isHrManager', 'hasEmployees', 'canManageSettings', 'canApprove', 'isCorrectionMode', 'correctionEmployeeName']),
+		...mapGetters('permissions', ['isEmployee', 'isAdmin', 'isHrManager', 'hasEmployees', 'canManageSettings', 'canManageEmployees', 'canApprove', 'isCorrectionMode', 'correctionEmployeeName']),
 	},
 	created() {
 		this.initializeApp()

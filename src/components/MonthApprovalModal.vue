@@ -40,11 +40,20 @@
             </div>
 
             <div class="month-detail__actions">
+                <NcCheckboxRadioSwitch v-if="archiveConfigured"
+                    :checked.sync="archiveAfterApprove"
+                    class="month-detail__archive-toggle">
+                    {{ t('worktime', 'PDF nach dem Genehmigen sofort archivieren') }}
+                </NcCheckboxRadioSwitch>
+                <NcButton type="tertiary" @click="downloadPdf">
+                    <template #icon><FilePdfBoxIcon :size="18" /></template>
+                    {{ t('worktime', 'Monatsbericht als PDF') }}
+                </NcButton>
                 <NcButton type="tertiary" @click="$emit('reject')">
                     <template #icon><RestoreIcon :size="18" /></template>
                     {{ t('worktime', 'Zurückweisen') }}
                 </NcButton>
-                <NcButton type="primary" @click="$emit('approve')">
+                <NcButton type="primary" @click="$emit('approve', archiveAfterApprove)">
                     <template #icon><CheckIcon :size="18" /></template>
                     {{ t('worktime', 'Genehmigen') }}
                 </NcButton>
@@ -57,11 +66,14 @@
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import { showError } from '@nextcloud/dialogs'
 import TimeEntryService from '../services/TimeEntryService.js'
 import ProjectService from '../services/ProjectService.js'
+import ReportService from '../services/ReportService.js'
 import { formatDate, getMonthName } from '../utils/dateUtils.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 
@@ -71,13 +83,19 @@ export default {
         NcModal,
         NcButton,
         NcLoadingIcon,
+        NcCheckboxRadioSwitch,
         CheckIcon,
         RestoreIcon,
+        FilePdfBoxIcon,
     },
     props: {
         item: {
             type: Object,
             required: true,
+        },
+        archiveConfigured: {
+            type: Boolean,
+            default: false,
         },
     },
     emits: ['approve', 'reject', 'close'],
@@ -86,6 +104,7 @@ export default {
             entries: [],
             projects: [],
             loading: true,
+            archiveAfterApprove: false,
         }
     },
     computed: {
@@ -120,6 +139,9 @@ export default {
     },
     methods: {
         formatDate,
+        downloadPdf() {
+            ReportService.downloadPdf(this.item.employeeId, this.item.year, this.item.month)
+        },
         projectName(projectId) {
             if (!projectId) return ''
             const project = this.projects.find(p => p.id === projectId)
@@ -217,6 +239,7 @@ export default {
 /* Aktionsleiste bleibt beim Scrollen langer Monate immer sichtbar */
 .month-detail__actions {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
     position: sticky;
@@ -225,5 +248,10 @@ export default {
     padding: 14px 24px;
     background: var(--color-main-background);
     border-top: 1px solid var(--color-border);
+}
+
+/* Archiv-Schalter links, Buttons bleiben rechts */
+.month-detail__archive-toggle {
+    margin-right: auto;
 }
 </style>

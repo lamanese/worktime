@@ -32,6 +32,7 @@ class PdfService {
         private CompanySettingsService $settingsService,
         private IRootFolder $rootFolder,
         private ProjectMapper $projectMapper,
+        private WorkScheduleService $workScheduleService,
     ) {
     }
 
@@ -101,7 +102,7 @@ class PdfService {
         $pdf = $this->createPdf();
 
         // Header
-        $this->addHeader($pdf, $employee, $periodLabel);
+        $this->addHeader($pdf, $employee, $periodLabel, $startDate);
 
         // Time entries table
         $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $startDate, $endDate);
@@ -334,7 +335,7 @@ class PdfService {
     /**
      * Add header with company name and employee info
      */
-    private function addHeader(TCPDF $pdf, Employee $employee, string $periodLabel): void {
+    private function addHeader(TCPDF $pdf, Employee $employee, string $periodLabel, DateTime $periodStart): void {
         $companyName = $this->settingsService->getCompanyName();
 
         // Company name
@@ -368,7 +369,11 @@ class PdfService {
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
         $pdf->Cell(40, 6, 'Wochenstunden:', 0, 0);
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-        $pdf->Cell(0, 6, number_format((float)$employee->getWeeklyHours(), 1, ',', '.') . ' Std.', 0, 1);
+        // Wochenstunden des im Berichtszeitraum gültigen Arbeitszeitprofils anzeigen,
+        // nicht das aktuelle Mitarbeiter-Feld – sonst weicht der Kopf bei mehreren
+        // Profilen von der zeitraumgültigen Soll-Berechnung ab (#356).
+        $weeklyHours = $this->workScheduleService->getScheduleForDate($employee->getId(), $periodStart)->getWeeklyHours();
+        $pdf->Cell(0, 6, number_format($weeklyHours, 1, ',', '.') . ' Std.', 0, 1);
 
         $pdf->Ln(5);
     }
@@ -958,5 +963,40 @@ class PdfService {
         }
         // Other errors (permissions, storage) propagate so the calling
         // controller can log them instead of failing silently.
+    }
+
+    /**
+     * Whether an archived report already exists for this month (#323),
+     * so callers can distinguish a fresh archive from a replacement.
+     */
+    public function archivedReportExists(
+        string $adminUserId,
+        Employee $employee,
+        int $year,
+        int $month
+    ): bool {
+        $archivePath = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_PATH);
+        if (empty($archivePath)) {
+            return false;
+        }
+
+        $folderPath = sprintf(
+            '%s/%d/%s_%s',
+            trim($archivePath, '/'),
+            $year,
+            $employee->getLastName(),
+            $employee->getFirstName()
+        );
+        $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
+        $relativePath = ltrim($folderPath . '/' . $filename, '/');
+
+        try {
+            $this->rootFolder->getUserFolder($adminUserId)->get($relativePath);
+            return true;
+        } catch (FilesNotFoundException) {
+            return false;
+        } catch (\Exception) {
+            return false;
+        }
     }
 }

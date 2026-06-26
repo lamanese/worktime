@@ -129,7 +129,7 @@ export default {
         detailOptions() {
             return [
                 { id: 'hidden', label: this.t('worktime', 'Nur „Abwesend" anzeigen') },
-                { id: 'detailed', label: this.t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, …)') },
+                { id: 'detailed', label: this.t('worktime', 'Grund anzeigen (Urlaub, Fortbildung, ...)') },
             ]
         },
         selectedVisibility: {
