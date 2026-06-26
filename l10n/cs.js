@@ -500,7 +500,7 @@ OC.L10N.register(
     "Mein Team" : "Můj tým",
     "Keine Mitarbeiter sichtbar" : "Žádní viditelní zaměstnanci",
     "Detailgrad" : "Úroveň detailu",
-    "Nur „Abwesend\" anzeigen" : "Zobrazit pouze „Nepřítomen\"",
+    "Nur „Abwesend\" anzeigen" : "Zobrazit pouze \"Nepřítomen\"",
     "Grund anzeigen (Urlaub, Fortbildung, ...)" : "Zobrazit důvod (dovolená, školení, ...)",
     "Nur \\\"Abwesend\\\" anzeigen" : "Zobrazit pouze \\\"Nepřítomen\\\"",
     "Abwesenheiten sichtbar für" : "Nepřítomnosti viditelné pro",
