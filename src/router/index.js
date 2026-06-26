@@ -13,10 +13,23 @@ import EvaluationView from '../views/EvaluationView.vue'
 
 Vue.use(VueRouter)
 
+// Rollenabhaengiges Default-Ziel (#394): Mitarbeiter -> Zeiterfassung, sonst die
+// erste fuer die Rolle sinnvolle Ansicht. Verhindert, dass ein Approver/HR ohne
+// eigenes Mitarbeiter-Profil per Default-Redirect auf einer leeren Zeiterfassung
+// landet. /tracking bleibt bewusst ungeguardet (universeller, loop-sicherer
+// Fallback fuer den degenerierten Fall ohne jede Rolle).
+const defaultRoute = () => {
+	const perms = store.getters['permissions/permissions']
+	if (perms.employeeId) return '/tracking'
+	if (perms.canManageSettings || perms.canManageEmployees) return '/settings'
+	if (perms.canApprove || perms.isAdmin || perms.isHrManager) return '/approvals'
+	return '/tracking'
+}
+
 const routes = [
 	{
 		path: '/',
-		redirect: '/tracking',
+		redirect: defaultRoute,
 	},
 	{
 		path: '/tracking',
@@ -27,6 +40,7 @@ const routes = [
 		path: '/absences',
 		name: 'absences',
 		component: AbsenceView,
+		meta: { requiresEmployee: true },
 	},
 	{
 		// Zusammengeführt in Abwesenheit → Team-Tab
@@ -75,7 +89,7 @@ const routes = [
 	// Fallback: unbekannte Routes -> Zeiterfassung
 	{
 		path: '*',
-		redirect: '/tracking',
+		redirect: defaultRoute,
 	},
 ]
 
