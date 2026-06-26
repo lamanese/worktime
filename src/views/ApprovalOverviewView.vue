@@ -7,6 +7,18 @@
         <NcLoadingIcon v-if="loading" :size="44" class="loading" />
 
         <template v-else>
+            <div class="view-toolbar status-toolbar">
+                <div class="layout-seg" role="group" :aria-label="t('worktime', 'Status')">
+                    <button class="seg-btn" :class="{ active: statusView === 'open' }" @click="statusView = 'open'">
+                        {{ t('worktime', 'Offen') }}
+                    </button>
+                    <button class="seg-btn" :class="{ active: statusView === 'approved' }" @click="showApproved()">
+                        {{ t('worktime', 'Genehmigt') }}
+                    </button>
+                </div>
+            </div>
+
+            <template v-if="statusView === 'open'">
             <!-- Eingangsliste: Urlaubsanträge + Monatsabschlüsse, älteste zuerst (#344/#240) -->
             <section v-if="inboxItems.length > 0" class="inbox">
                 <div class="view-toolbar">
@@ -125,6 +137,51 @@
                     {{ t('worktime', 'Aktuell wartet nichts auf Ihre Genehmigung.') }}
                 </template>
             </NcEmptyContent>
+            </template>
+
+            <!-- Genehmigte Monate (#387): HR kann eine Genehmigung zurücknehmen (Korrektur) -->
+            <template v-else>
+                <NcLoadingIcon v-if="approvedLoading" :size="44" class="loading" />
+                <div v-else-if="approvedMonths.length" class="approval-card">
+                <table class="approval-table">
+                    <thead>
+                        <tr>
+                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
+                            <th>{{ t('worktime', 'Zeitraum') }}</th>
+                            <th>{{ t('worktime', 'Genehmigt am') }}</th>
+                            <th class="actions-col">{{ t('worktime', 'Aktion') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="m in visibleApprovedMonths" :key="approvedKey(m)">
+                            <td>
+                                <div class="who">
+                                    <NcAvatar :user="m.employeeUserId" :display-name="m.employeeName" :size="30" />
+                                    <span class="employee-name">{{ m.employeeName }}</span>
+                                </div>
+                            </td>
+                            <td class="detail">{{ approvedMonthLabel(m) }} · {{ hoursLabel(m.actualMinutes) }}</td>
+                            <td class="detail">{{ m.approvedAt ? formatDate(m.approvedAt) : '–' }}</td>
+                            <td class="actions-col">
+                                <div class="actions">
+                                    <NcButton type="tertiary"
+                                        :disabled="reopeningKey === approvedKey(m)"
+                                        @click="openReopenApproved(m)">
+                                        <template #icon><RestoreIcon :size="18" /></template>
+                                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                                    </NcButton>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div ref="approvedSentinel" class="approved-sentinel"></div>
+                </div>
+                <NcEmptyContent v-else
+                    :name="t('worktime', 'Keine genehmigten Monate')">
+                    <template #icon><CheckIcon /></template>
+                </NcEmptyContent>
+            </template>
         </template>
 
         <!-- Monat zurückweisen (Grund erforderlich) -->
@@ -141,6 +198,26 @@
                         :disabled="!rejectReason.trim() || rejectingKey !== null"
                         @click="submitReject">
                         {{ t('worktime', 'Zurückweisen') }}
+                    </NcButton>
+                </div>
+            </div>
+        </NcModal>
+
+        <!-- Genehmigung zurücknehmen (#387, Grund erforderlich) -->
+        <NcModal v-if="showReopenModal" @close="closeReopenModal">
+            <div class="reject-modal">
+                <h3>{{ t('worktime', 'Genehmigung zurücknehmen') }}</h3>
+                <p>{{ reopenTarget ? getMonthName(reopenTarget.month) + ' ' + reopenTarget.year + ' – ' + reopenTarget.employeeName : '' }}</p>
+                <p class="reopen-hint">{{ t('worktime', 'Der Monat wird wieder zur Bearbeitung freigegeben. Der Mitarbeiter kann korrigieren und erneut einreichen.') }}</p>
+                <label for="reopen-reason">{{ t('worktime', 'Begründung') }}</label>
+                <textarea id="reopen-reason" v-model="reopenReason" rows="3"
+                    :placeholder="t('worktime', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
+                <div class="form-actions">
+                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
+                    <NcButton type="primary"
+                        :disabled="!reopenReason.trim() || reopeningKey !== null"
+                        @click="submitReopenApproved">
+                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
                     </NcButton>
                 </div>
             </div>
@@ -167,6 +244,7 @@ import CloseIcon from 'vue-material-design-icons/Close.vue'
 import FormatListBulletedIcon from 'vue-material-design-icons/FormatListBulleted.vue'
 import CalendarIcon from 'vue-material-design-icons/Calendar.vue'
 import ClockOutlineIcon from 'vue-material-design-icons/ClockOutline.vue'
+import RestoreIcon from 'vue-material-design-icons/Restore.vue'
 import TimeEntryService from '../services/TimeEntryService.js'
 import AbsenceService from '../services/AbsenceService.js'
 import { formatDate } from '../utils/dateUtils.js'
@@ -191,6 +269,7 @@ export default {
         FormatListBulletedIcon,
         CalendarIcon,
         ClockOutlineIcon,
+        RestoreIcon,
     },
     data() {
         return {
@@ -207,6 +286,16 @@ export default {
             rejectingKey: null,
             detailItem: null,
             archiveConfigured: false,
+            // Genehmigte Monate (#387)
+            statusView: 'open',
+            approvedMonths: [],
+            approvedLoaded: false,
+            approvedLoading: false,
+            approvedVisible: 50,
+            showReopenModal: false,
+            reopenTarget: null,
+            reopenReason: '',
+            reopeningKey: null,
         }
     },
     computed: {
@@ -249,9 +338,17 @@ export default {
             if (this.kindFilter === 'all') return this.inboxItems
             return this.inboxItems.filter(i => i.kind === this.kindFilter)
         },
+        visibleApprovedMonths() {
+            return this.approvedMonths.slice(0, this.approvedVisible)
+        },
     },
     created() {
         this.loadData()
+    },
+    beforeDestroy() {
+        if (this._approvedObserver) {
+            this._approvedObserver.disconnect()
+        }
     },
     methods: {
         getAbsenceTypeLabel,
@@ -264,6 +361,74 @@ export default {
                 t('worktime', 'Oktober'), t('worktime', 'November'), t('worktime', 'Dezember'),
             ]
             return names[month - 1] || String(month)
+        },
+        approvedKey(m) {
+            return `${m.employeeId}-${m.year}-${m.month}`
+        },
+        approvedMonthLabel(m) {
+            return `${this.getMonthName(m.month)} ${m.year}`
+        },
+        hoursLabel(minutes) {
+            return `${formatMinutes(minutes)} h`
+        },
+        async showApproved() {
+            this.statusView = 'approved'
+            if (!this.approvedLoaded) {
+                await this.loadApprovedMonths()
+            }
+            this.$nextTick(() => this.setupApprovedObserver())
+        },
+        async loadApprovedMonths() {
+            this.approvedLoading = true
+            try {
+                const months = await TimeEntryService.getApprovedMonths()
+                this.approvedMonths = months || []
+                this.approvedVisible = 50
+                this.approvedLoaded = true
+            } catch (e) {
+                console.error('Failed to load approved months:', e)
+            } finally {
+                this.approvedLoading = false
+            }
+        },
+        setupApprovedObserver() {
+            if (this._approvedObserver) {
+                this._approvedObserver.disconnect()
+            }
+            const el = this.$refs.approvedSentinel
+            if (!el || typeof IntersectionObserver === 'undefined') return
+            this._approvedObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && this.approvedVisible < this.approvedMonths.length) {
+                    this.approvedVisible += 50
+                }
+            })
+            this._approvedObserver.observe(el)
+        },
+        openReopenApproved(m) {
+            this.reopenTarget = m
+            this.reopenReason = ''
+            this.showReopenModal = true
+        },
+        closeReopenModal() {
+            this.showReopenModal = false
+            this.reopenTarget = null
+            this.reopenReason = ''
+        },
+        async submitReopenApproved() {
+            if (!this.reopenTarget || !this.reopenReason.trim()) return
+            const m = this.reopenTarget
+            this.reopeningKey = this.approvedKey(m)
+            try {
+                const result = await TimeEntryService.reopenMonth(m.employeeId, m.year, m.month, this.reopenReason.trim())
+                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
+                this.closeReopenModal()
+                await this.loadApprovedMonths()
+            } catch (error) {
+                console.error('Failed to reopen month:', error)
+                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
+            } finally {
+                this.reopeningKey = null
+            }
         },
         async loadData() {
             this.loading = true
@@ -572,6 +737,20 @@ export default {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.status-toolbar {
+    margin-bottom: 16px;
+}
+
+.reopen-hint {
+    color: var(--color-text-maxcontrast);
+    font-size: 13px;
+    margin: 4px 0 10px;
+}
+
+.approved-sentinel {
+    height: 1px;
 }
 
 .reject-modal {

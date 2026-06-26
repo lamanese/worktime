@@ -11,6 +11,15 @@ export default {
         }
     },
 
+    async getApprovedMonths() {
+        try {
+            const response = await api.get('/time-entries/approved-months')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getByEmployee(employeeId, year = null, month = null) {
         try {
             const params = { employeeId }

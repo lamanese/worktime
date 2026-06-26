@@ -83,6 +83,24 @@ class TimeEntryController extends BaseController {
         return $this->successResponse($this->timeEntryService->findSubmittedMonths($employeeIds));
     }
 
+    /**
+     * Already-approved months in the requester's scope, newest approval first (#387),
+     * so HR can find and reopen a month for correction.
+     */
+    #[NoAdminRequired]
+    public function approvedMonths(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        $employeeIds = array_map(
+            static fn($employee) => $employee->getId(),
+            $this->permissionService->getTeamMembers($this->userId)
+        );
+
+        return $this->successResponse($this->timeEntryService->findApprovedMonths($employeeIds));
+    }
+
     #[NoAdminRequired]
     public function show(int $id): JSONResponse {
         if ($authError = $this->requireAuth()) {
