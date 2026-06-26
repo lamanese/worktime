@@ -527,6 +527,7 @@ OC.L10N.register(
     "Mein Team" : "My Team",
     "Keine Mitarbeiter sichtbar" : "No employees visible",
     "Detailgrad" : "Detail Level",
+    "Nur „Abwesend\" anzeigen" : "Only show \"Absent\"",
     "Grund anzeigen (Urlaub, Fortbildung, ...)" : "Show reason (vacation, training, ...)",
     "Nur \\\"Abwesend\\\" anzeigen" : "Only show \\\"Absent\\\"",
     "Abwesenheiten sichtbar für" : "Absences visible for",

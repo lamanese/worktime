@@ -527,6 +527,7 @@ OC.L10N.register(
     "Mein Team" : "Mein Team",
     "Keine Mitarbeiter sichtbar" : "Keine Mitarbeiter sichtbar",
     "Detailgrad" : "Detailgrad",
+    "Nur „Abwesend\" anzeigen" : "Nur „Abwesend\" anzeigen",
     "Grund anzeigen (Urlaub, Fortbildung, ...)" : "Grund anzeigen (Urlaub, Fortbildung, ...)",
     "Nur \\\"Abwesend\\\" anzeigen" : "Nur \\\"Abwesend\\\" anzeigen",
     "Abwesenheiten sichtbar für" : "Abwesenheiten sichtbar für",
