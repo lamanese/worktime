@@ -38,7 +38,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="canApprove"
+				v-if="isAdmin || isHrManager"
 				:name="t('worktime', 'Auswertung')"
 				to="/evaluation">
 				<template #icon>

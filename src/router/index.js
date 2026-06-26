@@ -36,14 +36,17 @@ const routes = [
 	{
 		path: '/team',
 		name: 'team',
+		// Gemeinsamer Reiter: jeder Mitarbeiter sieht das Team (Daten-Scoping
+		// im Backend — Admin/HR alle, Vorgesetzte ihr Team, MA self + geteilte).
 		component: TeamView,
-		meta: { requiresApprove: true },
+		meta: { requiresEmployee: true },
 	},
 	{
 		path: '/approvals',
 		name: 'approvals',
 		component: ApprovalOverviewView,
-		meta: { requiresAdminOrHr: true },
+		// Vorgesetzte (canApprove) genehmigen ihr Team — nicht nur Admin/HR (#357).
+		meta: { requiresApprove: true },
 	},
 	{
 		path: '/evaluation',
