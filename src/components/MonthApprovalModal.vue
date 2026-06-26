@@ -45,6 +45,10 @@
                     class="month-detail__archive-toggle">
                     {{ t('worktime', 'PDF nach dem Genehmigen sofort archivieren') }}
                 </NcCheckboxRadioSwitch>
+                <NcButton type="tertiary" @click="downloadPdf">
+                    <template #icon><FilePdfBoxIcon :size="18" /></template>
+                    {{ t('worktime', 'Monatsbericht als PDF') }}
+                </NcButton>
                 <NcButton type="tertiary" @click="$emit('reject')">
                     <template #icon><RestoreIcon :size="18" /></template>
                     {{ t('worktime', 'Zurückweisen') }}
@@ -65,9 +69,11 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import CheckIcon from 'vue-material-design-icons/Check.vue'
 import RestoreIcon from 'vue-material-design-icons/Restore.vue'
+import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import { showError } from '@nextcloud/dialogs'
 import TimeEntryService from '../services/TimeEntryService.js'
 import ProjectService from '../services/ProjectService.js'
+import ReportService from '../services/ReportService.js'
 import { formatDate, getMonthName } from '../utils/dateUtils.js'
 import { formatMinutes } from '../utils/timeUtils.js'
 
@@ -80,6 +86,7 @@ export default {
         NcCheckboxRadioSwitch,
         CheckIcon,
         RestoreIcon,
+        FilePdfBoxIcon,
     },
     props: {
         item: {
@@ -132,6 +139,9 @@ export default {
     },
     methods: {
         formatDate,
+        downloadPdf() {
+            ReportService.downloadPdf(this.item.employeeId, this.item.year, this.item.month)
+        },
         projectName(projectId) {
             if (!projectId) return ''
             const project = this.projects.find(p => p.id === projectId)
