@@ -671,8 +671,6 @@ class TimeEntryService {
             $grossMinutes += 24 * 60;
         }
 
-        $grossHours = $grossMinutes / 60;
-
         // Get configured break times from settings
         $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
         $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
