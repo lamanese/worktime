@@ -204,7 +204,7 @@
         </NcModal>
 
         <!-- Genehmigung zurücknehmen (#387, Grund erforderlich) -->
-        <NcModal v-if="showReopenModal" @close="closeReopenModal2">
+        <NcModal v-if="showReopenModal" @close="closeReopenModal">
             <div class="reject-modal">
                 <h3>{{ t('worktime', 'Genehmigung zurücknehmen') }}</h3>
                 <p>{{ reopenTarget ? getMonthName(reopenTarget.month) + ' ' + reopenTarget.year + ' – ' + reopenTarget.employeeName : '' }}</p>
@@ -213,7 +213,7 @@
                 <textarea id="reopen-reason" v-model="reopenReason" rows="3"
                     :placeholder="t('worktime', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
                 <div class="form-actions">
-                    <NcButton type="tertiary" @click="closeReopenModal2">{{ t('worktime', 'Abbrechen') }}</NcButton>
+                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
                     <NcButton type="primary"
                         :disabled="!reopenReason.trim() || reopeningKey !== null"
                         @click="submitReopenApproved">
@@ -409,7 +409,7 @@ export default {
             this.reopenReason = ''
             this.showReopenModal = true
         },
-        closeReopenModal2() {
+        closeReopenModal() {
             this.showReopenModal = false
             this.reopenTarget = null
             this.reopenReason = ''
@@ -421,7 +421,7 @@ export default {
             try {
                 const result = await TimeEntryService.reopenMonth(m.employeeId, m.year, m.month, this.reopenReason.trim())
                 showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
-                this.closeReopenModal2()
+                this.closeReopenModal()
                 await this.loadApprovedMonths()
             } catch (error) {
                 console.error('Failed to reopen month:', error)
