@@ -7,6 +7,20 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-06-26
+
+### Added
+- **Aktives Archivieren beim Genehmigen (#323)**: Beim Genehmigen eines Monats lässt sich die PDF jetzt sofort ins Archiv schreiben, mit unmittelbarer Rückmeldung, ob sie neu erstellt, aktualisiert oder ersetzt wurde.
+
+### Fixed
+- **Genehmigungen für Vorgesetzte wieder zugänglich (#357)**: Nach dem 0.12.0-Redesign sahen Vorgesetzte (ohne Admin-/HR-Rolle) die Tabs „Genehmigungen" und „Auswertung", konnten sie aber nicht öffnen — ein Klick warf sie zurück auf die Zeiterfassung. Die Zugriffsregeln sind wieder konsistent: Vorgesetzte öffnen jetzt die Genehmigungen, die org-weite Auswertung bleibt Admin/HR vorbehalten, und der Team-Tab ist für alle Mitarbeitenden nutzbar.
+- **HR-Manager erreichen die Mitarbeiterverwaltung (#394)**: HR-Managern fehlte der Zugang zu Einstellungen → Mitarbeiter, Projekte und Jahresübertrag, obwohl sie die Berechtigung dafür haben. Der Einstellungs-Bereich ist jetzt auch für HR erreichbar; reine Admin-Bereiche bleiben verborgen.
+- **Korrektur genehmigter Monate wieder auffindbar (#387)**: Die Schaltfläche zum erneuten Öffnen eines bereits genehmigten Monats war im 0.12.0-Redesign verloren gegangen und ist wieder da.
+- **PDF-Download in der Genehmigung (#394)**: Der direkte „Monatsbericht als PDF"-Button pro Mitarbeiter ist im Monats-Dialog der Genehmigungsansicht wieder verfügbar.
+- **Wochenstunden im PDF-Arbeitszeitnachweis (#356)**: Bei mehreren Arbeitszeitprofilen zeigte der PDF-Kopf die falschen Wochenstunden. Es wird jetzt das im jeweiligen Monat gültige Profil verwendet.
+- **Genehmigende ohne eigenes Profil (#394)**: Approver bzw. HR ohne eigenen Mitarbeiter-Eintrag landeten beim Start auf einer leeren Zeiterfassung; sie werden jetzt auf eine passende Ansicht geleitet.
+- **Englische und tschechische Übersetzungen (#396)**: Mehrere Oberflächentexte erschienen in der englischen und tschechischen Ansicht auf Deutsch, weil Katalogeinträge nicht exakt zum Code passten. Abweichende und fehlende Übersetzungen wurden korrigiert (30 Einträge ergänzt).
+
 ## [0.12.0] - 2026-06-25
 
 ### Added
