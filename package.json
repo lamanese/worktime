@@ -9,7 +9,9 @@
         "watch": "webpack --node-env development --progress --watch",
         "serve": "webpack --node-env development serve --progress",
         "lint": "eslint --ext .js,.vue src",
-        "lint:fix": "eslint --ext .js,.vue src --fix"
+        "lint:fix": "eslint --ext .js,.vue src --fix",
+        "l10n:check": "node scripts/l10n-check.mjs",
+        "l10n:fix": "node scripts/l10n-check.mjs --fix"
     },
     "repository": {
         "type": "git",
