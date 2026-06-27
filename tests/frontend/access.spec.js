@@ -1,0 +1,88 @@
+import { accessRules, canAccess, isNavVisible } from '../../src/router/access.js'
+
+/**
+ * Regression lock for the 0.12.0 "tote Tabs" bug (#357): the navigation must
+ * never show a tab that the router guard blocks. 0.12.0 widened the nav but
+ * forgot the guards, so employees clicked a visible "Team" tab and got bounced.
+ *
+ * The invariant `isNavVisible ⟹ canAccess` is asserted across the full role ×
+ * route matrix, so any future drift between nav and guard fails CI.
+ */
+
+// Permission profiles per role, shaped like the store getter permissions/permissions.
+const ROLES = {
+	admin: {
+		isAdmin: true, isHrManager: false, isSupervisor: false, isEmployee: true,
+		employeeId: 1, hasEmployees: true,
+		canManageEmployees: true, canManageSettings: true,
+		canManageProjects: true, canManageHolidays: true, canApprove: true,
+	},
+	hrManager: {
+		isAdmin: false, isHrManager: true, isSupervisor: false, isEmployee: true,
+		employeeId: 2, hasEmployees: true,
+		canManageEmployees: true, canManageSettings: false,
+		canManageProjects: true, canManageHolidays: true, canApprove: true,
+	},
+	supervisor: {
+		isAdmin: false, isHrManager: false, isSupervisor: true, isEmployee: true,
+		employeeId: 3, hasEmployees: true,
+		canManageEmployees: false, canManageSettings: false,
+		canManageProjects: false, canManageHolidays: false, canApprove: true,
+	},
+	employee: {
+		isAdmin: false, isHrManager: false, isSupervisor: false, isEmployee: true,
+		employeeId: 4, hasEmployees: false,
+		canManageEmployees: false, canManageSettings: false,
+		canManageProjects: false, canManageHolidays: false, canApprove: false,
+	},
+	// Degenerate: authenticated user with no employee record and no role at all.
+	bare: {
+		isAdmin: false, isHrManager: false, isSupervisor: false, isEmployee: false,
+		employeeId: null, hasEmployees: false,
+		canManageEmployees: false, canManageSettings: false,
+		canManageProjects: false, canManageHolidays: false, canApprove: false,
+	},
+}
+
+const ROUTES = Object.keys(accessRules)
+
+describe('route access matrix', () => {
+	// The core anti-0.12.0 invariant.
+	describe.each(Object.entries(ROLES))('role: %s', (roleName, perms) => {
+		it.each(ROUTES)('nav tab "%s" is never visible-but-blocked', (route) => {
+			if (isNavVisible(route, perms)) {
+				expect(canAccess(route, perms)).toBe(true)
+			}
+		})
+	})
+
+	// Pin the concrete regression: a plain employee can open the Team tab (#357/#392).
+	it('employee can access AND see the Team tab', () => {
+		expect(canAccess('team', ROLES.employee)).toBe(true)
+	})
+
+	// Pin the degenerate fallback: a roleless user is bounced everywhere except
+	// the universal /tracking fallback, and sees no tabs.
+	it('bare user can only reach tracking', () => {
+		expect(canAccess('tracking', ROLES.bare)).toBe(true)
+		for (const route of ROUTES.filter((r) => r !== 'tracking')) {
+			expect(canAccess(route, ROLES.bare)).toBe(false)
+		}
+		expect(ROUTES.some((r) => isNavVisible(r, ROLES.bare))).toBe(false)
+	})
+
+	// Expected nav visibility per role — a change here must be deliberate.
+	it('matches the expected nav-visibility snapshot', () => {
+		const snapshot = {}
+		for (const [roleName, perms] of Object.entries(ROLES)) {
+			snapshot[roleName] = ROUTES.filter((r) => isNavVisible(r, perms))
+		}
+		expect(snapshot).toEqual({
+			admin: ['tracking', 'absences', 'team', 'approvals', 'evaluation', 'my-settings', 'settings', 'audit'],
+			hrManager: ['tracking', 'absences', 'team', 'approvals', 'evaluation', 'my-settings', 'settings', 'audit'],
+			supervisor: ['tracking', 'absences', 'team', 'approvals', 'my-settings'],
+			employee: ['tracking', 'absences', 'my-settings'],
+			bare: [],
+		})
+	})
+})

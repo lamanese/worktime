@@ -10,6 +10,8 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'tests/frontend/**'
+      - 'jest.config.js'
       - 'package.json'
       - 'package-lock.json'
       - 'webpack.config.js'
@@ -34,6 +36,9 @@ jobs:
 
       - name: ESLint
         run: npm run lint
+
+      - name: Frontend-Unit-Tests (Rolle×Route-Matrix, 0.12.0-Schutz)
+        run: npm test
 
       - name: Produktions-Build
         run: npm run build
