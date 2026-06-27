@@ -96,32 +96,37 @@ export function calculateGrossMinutes(startTime, endTime) {
 }
 
 /**
- * Suggest break time based on company settings
+ * Minimum legally required break (§4 ArbZG) for a given gross attendance span.
+ *
+ * §4 ArbZG knüpft die Schwellen an die ARBEITSZEIT (netto, ohne Pause) an
+ * (§2 Abs. 1 ArbZG). Da die Pause selbst von der Arbeitszeit abhängt, wird die
+ * kleinste gesetzlich ausreichende Pause bestimmt — äquivalent: die Brutto-
+ * Schwellen liegen bei 6 h und (9 h + Pause-ab-6h). Beispiel: 9 h 01 Anwesenheit
+ * mit 30 min Pause = 8 h 31 Arbeitszeit ≤ 9 h → 30 min genügen (nicht 45). #403
+ *
  * @param {number} grossMinutes
- * @param {number} break6h - Min break for >6h (from settings, default 30)
- * @param {number} break9h - Min break for >9h (from settings, default 45)
+ * @param {number} break6h - Min break for >6h working time (from settings, default 30)
+ * @param {number} break9h - Min break for >9h working time (from settings, default 45)
  * @returns {number}
  */
 export function suggestBreak(grossMinutes, break6h = 30, break9h = 45) {
-    const hours = grossMinutes / 60
-    if (hours <= 6) return 0
-    if (hours <= 9) return break6h
+    if (grossMinutes <= 6 * 60) return 0
+    if (grossMinutes <= 9 * 60 + break6h) return break6h
     return break9h
 }
 
 /**
- * Validate break time against company settings
+ * Validate that a break meets the §4 ArbZG minimum for the given gross span.
+ * Uses the same threshold as suggestBreak() so the validation gate matches the
+ * displayed minimum. #403
  * @param {number} grossMinutes
  * @param {number} breakMinutes
- * @param {number} break6h - Min break for >6h (from settings, default 30)
- * @param {number} break9h - Min break for >9h (from settings, default 45)
+ * @param {number} break6h - Min break for >6h working time (from settings, default 30)
+ * @param {number} break9h - Min break for >9h working time (from settings, default 45)
  * @returns {boolean}
  */
 export function validateBreak(grossMinutes, breakMinutes, break6h = 30, break9h = 45) {
-    const hours = grossMinutes / 60
-    if (hours <= 6) return true
-    if (hours <= 9) return breakMinutes >= break6h
-    return breakMinutes >= break9h
+    return breakMinutes >= suggestBreak(grossMinutes, break6h, break9h)
 }
 
 /**
