@@ -15,9 +15,11 @@ use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\PdfService;
 use OCA\WorkTime\Service\PermissionService;
+use OCA\WorkTime\Service\ProjectService;
 use OCA\WorkTime\Service\TimeEntryService;
 use OCA\WorkTime\Service\WorkScheduleService;
 use OCA\WorkTime\Service\YearlyCarryoverService;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -51,6 +53,8 @@ class ProportionalOvertimeTodayTest extends TestCase {
 			$this->createMock(PdfService::class),
 			$schedule,
 			$this->createMock(YearlyCarryoverService::class),
+			$this->createMock(ProjectService::class),
+			$this->createMock(IL10N::class),
 		) extends ReportController {
 			public string $pinnedToday = '';
 			protected function currentDate(): DateTime {

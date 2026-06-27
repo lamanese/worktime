@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import store from '../store/index.js'
+import { canAccess } from './access.js'
 
 import TimeTrackingView from '../views/TimeTrackingView.vue'
 import AbsenceView from '../views/AbsenceView.vue'
@@ -40,7 +41,6 @@ const routes = [
 		path: '/absences',
 		name: 'absences',
 		component: AbsenceView,
-		meta: { requiresEmployee: true },
 	},
 	{
 		// Zusammengeführt in Abwesenheit → Team-Tab
@@ -53,38 +53,31 @@ const routes = [
 		// Gemeinsamer Reiter: jeder Mitarbeiter sieht das Team (Daten-Scoping
 		// im Backend — Admin/HR alle, Vorgesetzte ihr Team, MA self + geteilte).
 		component: TeamView,
-		meta: { requiresEmployee: true },
 	},
 	{
 		path: '/approvals',
 		name: 'approvals',
 		component: ApprovalOverviewView,
-		// Vorgesetzte (canApprove) genehmigen ihr Team — nicht nur Admin/HR (#357).
-		meta: { requiresApprove: true },
 	},
 	{
 		path: '/evaluation',
 		name: 'evaluation',
 		component: EvaluationView,
-		meta: { requiresAdminOrHr: true },
 	},
 	{
 		path: '/my-settings',
 		name: 'my-settings',
 		component: MySettingsView,
-		meta: { requiresEmployee: true },
 	},
 	{
 		path: '/settings',
 		name: 'settings',
 		component: SettingsView,
-		meta: { requiresSettings: true },
 	},
 	{
 		path: '/audit',
 		name: 'audit',
 		component: AuditView,
-		meta: { requiresAdminOrHr: true },
 	},
 	// Fallback: unbekannte Routes -> Zeiterfassung
 	{
@@ -99,23 +92,11 @@ const router = new VueRouter({
 	routes,
 })
 
-// Route guards: enforce meta permissions
+// Route guard: single source of truth in access.js — the same rules feed the
+// App.vue navigation, so a tab can never be visible-but-blocked (0.12.0 #357).
 router.beforeEach((to, from, next) => {
 	const perms = store.getters['permissions/permissions']
-
-	// Settings-Bereich: Admin (canManageSettings) ODER HR (canManageEmployees).
-	// Admin-only-Sektionen bleiben in der SettingsView per v-if gegated; HR sieht
-	// nur Mitarbeiter/Projekte/Feiertage/Jahresuebertrag (#394).
-	if (to.meta.requiresSettings && !perms.canManageSettings && !perms.canManageEmployees) {
-		return next('/')
-	}
-	if (to.meta.requiresApprove && !perms.canApprove && !perms.isAdmin && !perms.isHrManager) {
-		return next('/')
-	}
-	if (to.meta.requiresAdminOrHr && !perms.isAdmin && !perms.isHrManager) {
-		return next('/')
-	}
-	if (to.meta.requiresEmployee && !perms.employeeId) {
+	if (!canAccess(to.name, perms)) {
 		return next('/')
 	}
 	next()

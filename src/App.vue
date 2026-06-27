@@ -2,7 +2,7 @@
 	<NcContent app-name="worktime">
 		<NcAppNavigation>
 			<NcAppNavigationItem
-				v-if="isEmployee"
+				v-if="navVisible('tracking')"
 				:name="t('worktime', 'Zeiterfassung')"
 				to="/tracking">
 				<template #icon>
@@ -11,7 +11,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="isEmployee"
+				v-if="navVisible('absences')"
 				:name="t('worktime', 'Abwesenheiten')"
 				to="/absences">
 				<template #icon>
@@ -20,7 +20,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="isEmployee && hasEmployees"
+				v-if="navVisible('team')"
 				:name="t('worktime', 'Team')"
 				to="/team">
 				<template #icon>
@@ -29,7 +29,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="canApprove && hasEmployees"
+				v-if="navVisible('approvals')"
 				:name="t('worktime', 'Genehmigungen')"
 				to="/approvals">
 				<template #icon>
@@ -38,7 +38,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="isAdmin || isHrManager"
+				v-if="navVisible('evaluation')"
 				:name="t('worktime', 'Auswertung')"
 				to="/evaluation">
 				<template #icon>
@@ -47,7 +47,7 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
-				v-if="isAdmin || isHrManager"
+				v-if="navVisible('audit')"
 				:name="t('worktime', 'Audit-Log')"
 				to="/audit">
 				<template #icon>
@@ -57,7 +57,7 @@
 
 			<template #footer>
 				<NcAppNavigationItem
-					v-if="isEmployee"
+					v-if="navVisible('my-settings')"
 					:name="t('worktime', 'Meine Einstellungen')"
 					to="/my-settings">
 					<template #icon>
@@ -65,7 +65,7 @@
 					</template>
 				</NcAppNavigationItem>
 				<NcAppNavigationItem
-					v-if="canManageSettings || canManageEmployees"
+					v-if="navVisible('settings')"
 					:name="t('worktime', 'Einstellungen')"
 					to="/settings">
 					<template #icon>
@@ -142,6 +142,7 @@ import ShieldIcon from 'vue-material-design-icons/Shield.vue'
 import ChartBarIcon from 'vue-material-design-icons/ChartBar.vue'
 import WrenchIcon from 'vue-material-design-icons/Wrench.vue'
 import { mapGetters, mapActions } from 'vuex'
+import { isNavVisible } from './router/access.js'
 
 export default {
 	name: 'App',
@@ -164,12 +165,17 @@ export default {
 		WrenchIcon,
 	},
 	computed: {
-		...mapGetters('permissions', ['isEmployee', 'isAdmin', 'isHrManager', 'hasEmployees', 'canManageSettings', 'canManageEmployees', 'canApprove', 'isCorrectionMode', 'correctionEmployeeName']),
+		...mapGetters('permissions', ['permissions', 'isEmployee', 'hasEmployees', 'canManageSettings', 'canApprove', 'isCorrectionMode', 'correctionEmployeeName']),
 	},
 	created() {
 		this.initializeApp()
 	},
 	methods: {
+		// Single source of truth (src/router/access.js): a tab is shown only if the
+		// router guard would also let this role in — prevents 0.12.0 "tote Tabs".
+		navVisible(routeName) {
+			return isNavVisible(routeName, this.permissions)
+		},
 		...mapActions('employees', ['fetchCurrentEmployee', 'fetchFederalStates']),
 		...mapActions('projects', ['fetchProjects']),
 		...mapActions('absences', ['fetchAbsenceTypes']),

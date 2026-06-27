@@ -10,6 +10,7 @@
         "serve": "webpack --node-env development serve --progress",
         "lint": "eslint --ext .js,.vue src",
         "lint:fix": "eslint --ext .js,.vue src --fix",
+        "test": "jest",
         "l10n:check": "node scripts/l10n-check.mjs",
         "l10n:fix": "node scripts/l10n-check.mjs --fix"
     },
@@ -38,9 +39,13 @@
         "vuex": "^3.6.2"
     },
     "devDependencies": {
+        "@babel/core": "^7.29.7",
+        "@babel/preset-env": "^7.29.7",
         "@nextcloud/eslint-config": "^8.4.1",
         "@nextcloud/webpack-vue-config": "^6.1.1",
+        "babel-jest": "^29.7.0",
         "eslint": "^8.57.0",
+        "jest": "^29.7.0",
         "vue-loader": "^15.11.1",
         "webpack": "^5.94.0",
         "webpack-cli": "^6.0.1"
