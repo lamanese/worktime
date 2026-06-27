@@ -636,18 +636,31 @@ class TimeEntryService {
     }
 
     /**
-     * Calculate suggested break time based on German labor law (§4 ArbZG)
+     * Calculate suggested break time based on German labor law (§4 ArbZG).
      *
-     * Rules:
+     * §4 ArbZG ties the thresholds to the WORKING time (net, without the break;
+     * §2 Abs. 1 ArbZG). Because the break itself reduces the working time, the
+     * smallest legally sufficient break is determined — equivalently, the gross
+     * (attendance) thresholds are 6h and (9h + break6h). Example: 9h01 attendance
+     * with a 30 min break = 8h31 working time ≤ 9h → 30 min suffice, not 45. (#403)
+     *
+     * Rules (on working time):
      * - ≤6h working time: 0 min break
-     * - >6h to 9h working time: 30 min break
-     * - >9h working time: 45 min break
+     * - >6h to 9h working time: break6h (default 30)
+     * - >9h working time: break9h (default 45)
      */
     public function suggestBreak(string $startTime, string $endTime): int {
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime);
+        $startErrors = DateTime::getLastErrors();
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime);
+        $endErrors = DateTime::getLastErrors();
 
-        if (!$startTimeObj || !$endTimeObj) {
+        // createFromFormat('H:i', ...) is lenient: '25:00' rolls over to the next
+        // day instead of failing. Reject any overflow/invalid input (e.g. hour > 23)
+        // via getLastErrors so garbage does not produce a bogus break suggestion.
+        if (!$startTimeObj || !$endTimeObj
+            || ($startErrors && ($startErrors['warning_count'] || $startErrors['error_count']))
+            || ($endErrors && ($endErrors['warning_count'] || $endErrors['error_count']))) {
             return 0;
         }
 
@@ -658,15 +671,13 @@ class TimeEntryService {
             $grossMinutes += 24 * 60;
         }
 
-        $grossHours = $grossMinutes / 60;
-
         // Get configured break times from settings
         $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
         $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
 
-        if ($grossHours <= 6) {
+        if ($grossMinutes <= 6 * 60) {
             return 0;
-        } elseif ($grossHours <= 9) {
+        } elseif ($grossMinutes <= 9 * 60 + $break6h) {
             return $break6h;
         } else {
             return $break9h;
@@ -674,17 +685,17 @@ class TimeEntryService {
     }
 
     /**
-     * Validate break time against labor law requirements
+     * Validate break time against labor law requirements (§4 ArbZG).
+     * Uses the same threshold as suggestBreak() so the gate matches the suggested
+     * minimum: the upper step is 9h + break6h gross, not a flat 9h. (#403)
      */
     public function validateBreak(int $grossMinutes, int $breakMinutes): bool {
-        $grossHours = $grossMinutes / 60;
-
         $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
         $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
 
-        if ($grossHours <= 6) {
+        if ($grossMinutes <= 6 * 60) {
             return true; // No break required
-        } elseif ($grossHours <= 9) {
+        } elseif ($grossMinutes <= 9 * 60 + $break6h) {
             return $breakMinutes >= $break6h;
         } else {
             return $breakMinutes >= $break9h;
@@ -750,13 +761,15 @@ class TimeEntryService {
         $warnings = [];
         $grossHours = $totalGrossMinutes / 60;
 
-        // §4 ArbZG minimum break, evaluated on the whole day.
+        // §4 ArbZG minimum break, evaluated on the whole day. Upper step is
+        // 9h + break6h gross (not a flat 9h), consistent with suggestBreak()/
+        // validateBreak(): the threshold targets the WORKING time (#403).
         $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
         $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
         $requiredBreak = 0;
-        if ($grossHours > 9) {
+        if ($totalGrossMinutes > 9 * 60 + $break6h) {
             $requiredBreak = $break9h;
-        } elseif ($grossHours > 6) {
+        } elseif ($totalGrossMinutes > 6 * 60) {
             $requiredBreak = $break6h;
         }
         if ($requiredBreak > 0 && $totalBreakMinutes < $requiredBreak) {

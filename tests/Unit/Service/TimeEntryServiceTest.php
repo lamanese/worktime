@@ -106,10 +106,11 @@ class TimeEntryServiceTest extends TestCase {
     }
 
     /**
-     * §4 ArbZG:
-     * - ≤6h: keine Pause erforderlich (0 min)
-     * - >6h bis 9h: 30 min Pause
-     * - >9h: 45 min Pause
+     * §4 ArbZG knüpft an die ARBEITSZEIT (netto) an. Auf die Brutto-Anwesenheit
+     * umgerechnet liegen die Schwellen bei 6h und (9h + break6h = 9,5h): (#403)
+     * - ≤6h Anwesenheit: keine Pause (0 min)
+     * - >6h bis 9,5h Anwesenheit: 30 min (Arbeitszeit ≤ 9h)
+     * - >9,5h Anwesenheit: 45 min
      */
     public static function breakSuggestionProvider(): array {
         return [
@@ -120,15 +121,18 @@ class TimeEntryServiceTest extends TestCase {
             ['10:00', '15:00', 0],  // 5h
             ['07:00', '13:00', 0],  // 6h exactly
 
-            // 30 min break (>6h to ≤9h)
+            // 30 min break (>6h gross, up to 9h + 30min = 9.5h gross)
             ['08:00', '14:01', 30], // 6h 1min -> 30min break
             ['08:00', '15:00', 30], // 7h
             ['07:00', '15:00', 30], // 8h
             ['08:00', '17:00', 30], // 9h exactly
             ['06:00', '14:30', 30], // 8.5h
+            ['08:00', '17:01', 30], // 9h 1min -> 30 (Arbeitszeit mit 30min = 8h31 ≤ 9h) #403
+            ['07:43', '16:44', 30], // Sören Schneider, gemeldeter Fall (9h01) -> 30 #403
+            ['08:00', '17:30', 30], // 9h30 gross = obere Grenze -> 30 #403
 
-            // 45 min break (>9h)
-            ['08:00', '17:01', 45], // 9h 1min -> 45min break
+            // 45 min break (>9.5h gross)
+            ['08:00', '17:31', 45], // 9h31 gross -> 45 (mit 30min Pause wäre Arbeitszeit 9h01 > 9h) #403
             ['07:00', '17:30', 45], // 10.5h
             ['06:00', '17:00', 45], // 11h
             ['06:00', '18:00', 45], // 12h
@@ -159,19 +163,25 @@ class TimeEntryServiceTest extends TestCase {
             [360, 30, true],  // 6h, 30min break
             [300, 0, true],   // 5h, 0min break
 
-            // >6h to ≤9h - need 30min break
+            // >6h gross, up to 9h + 30min = 570 -> need 30min break (#403)
             [361, 0, false],  // 6h 1min, 0min break
             [361, 29, false], // 6h 1min, 29min break
             [361, 30, true],  // 6h 1min, 30min break
             [480, 30, true],  // 8h, 30min break
             [540, 30, true],  // 9h, 30min break
+            [541, 30, true],  // 9h 1min, 30min -> valid (Arbeitszeit 8h31 ≤ 9h) #403
+            [541, 44, true],  // 9h 1min, 44min -> valid #403
+            [541, 29, false], // 9h 1min, 29min -> invalid (unter 30) #403
+            [570, 30, true],  // 9h30 gross = obere Grenze -> 30 genügt #403
+            [570, 0, false],  // 9h30 gross, 0min -> invalid
 
-            // >9h - need 45min break
-            [541, 30, false], // 9h 1min, 30min break
-            [541, 44, false], // 9h 1min, 44min break
-            [541, 45, true],  // 9h 1min, 45min break
+            // >9.5h gross (>570) -> need 45min break (#403)
+            [571, 30, false], // 9h31 gross, 30min -> invalid (need 45)
+            [571, 44, false], // 9h31 gross, 44min -> invalid
+            [571, 45, true],  // 9h31 gross, 45min -> valid
             [600, 45, true],  // 10h, 45min break
             [600, 60, true],  // 10h, 60min break
+            [600, 30, false], // 10h, 30min -> invalid
         ];
     }
 
@@ -547,6 +557,38 @@ class TimeEntryServiceTest extends TestCase {
         ]);
 
         $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #403: two SEAMLESS entries (no gap) totalling 9h01 gross with a 30 min
+     * break are compliant — §4 ties the threshold to the working time, and
+     * 8h31 net ≤ 9h only requires 30 min. Before #403 the day-level check used
+     * the gross attendance and falsely demanded 45 min, raising a warning.
+     */
+    public function testDayWarningsSeamlessNineHourBandWith30MinIsClean(): void {
+        // 08:00–12:00 + 12:00–17:01 = 9h01 gross, no gap, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '12:00', 30),
+            $this->makeEntry('12:00', '17:01', 0),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #403: the same seamless split but totalling 9h31 gross with only 30 min
+     * break must still warn — the net working time would exceed 9h, so 45 min
+     * are required.
+     */
+    public function testDayWarningsSeamlessAboveNineAndAHalfStillWarns(): void {
+        // 08:00–12:00 + 12:00–17:31 = 9h31 gross, no gap, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '12:00', 30),
+            $this->makeEntry('12:00', '17:31', 0),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Mindestpause', $warnings[0]);
     }
 
     /**
