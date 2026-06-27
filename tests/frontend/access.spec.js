@@ -57,7 +57,7 @@ describe('route access matrix', () => {
 	})
 
 	// Pin the concrete regression: a plain employee can open the Team tab (#357/#392).
-	it('employee can access AND see the Team tab', () => {
+	it('employee can access the Team tab (router guard passes, nav hidden when hasEmployees=false)', () => {
 		expect(canAccess('team', ROLES.employee)).toBe(true)
 	})
 
