@@ -21,6 +21,10 @@
             "OCA\\WorkTime\\": "lib/"
         }
     },
+    "scripts": {
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite Unit"
+    },
     "config": {
         "platform": {
             "php": "8.2"
