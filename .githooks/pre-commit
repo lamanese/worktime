@@ -37,7 +37,7 @@ ${MATCHES}
     fi
 fi
 
-# --- Check 3: l10n-Katalog-Konsistenz (worktime#259) ---
+# --- Check 2: l10n-Katalog-Konsistenz (worktime#259) ---
 # Quelle der Wahrheit sind die t()/->t()-Aufrufe im Code. Bei Aenderungen an
 # Code- oder Katalog-Dateien pruefen, dass die Kataloge nicht driften
 # (fehlende/tote Keys, .js != .json). Beheben: npm run l10n:fix
@@ -57,7 +57,7 @@ if [ -n "$L10N_RELEVANT" ]; then
     fi
 fi
 
-# --- Check 2: OCP-only API usage in PHP files ---
+# --- Check 3: OCP-only API usage in PHP files ---
 PATTERN='(^|[^A-Za-z])OC_[A-Z][a-zA-Z_]*::|\\OC::|\\OC\\[A-Z]|^use OC\\[A-Z]|^use OC;'
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.php$' || true)
