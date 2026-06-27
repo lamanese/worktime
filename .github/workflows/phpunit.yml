@@ -1,0 +1,49 @@
+name: phpunit
+
+# Backend-Test-Gate (worktime#405). Laeuft die Unit-Suite container-frei gegen
+# die nextcloud/ocp-Stubs (tests/bootstrap-unit.php) — in einer Matrix ueber die
+# unterstuetzten PHP- und Nextcloud-OCP-Versionen, damit kuenftige Konstruktor-
+# oder API-Aenderungen sofort rot werden statt still zu verrotten.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'tests/**'
+      - 'composer.json'
+      - 'phpunit.xml'
+      - '.github/workflows/phpunit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Raender des unterstuetzten Bereichs: PHP ^8.2 (info.xml) x NC 32-33.
+        php-version: ['8.2', '8.4']
+        ocp-version: ['^32.0', '^33.0']
+    name: PHP ${{ matrix.php-version }} / ocp ${{ matrix.ocp-version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: composer:v2
+
+      - name: nextcloud/ocp auf ${{ matrix.ocp-version }} pinnen
+        run: composer require --dev --no-update "nextcloud/ocp:${{ matrix.ocp-version }}"
+
+      - name: Abhaengigkeiten installieren
+        run: composer update --no-interaction --no-progress --prefer-dist
+
+      - name: Unit-Tests
+        run: composer test
