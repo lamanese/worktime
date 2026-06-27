@@ -7,6 +7,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-06-27
+
+### Fixed
+- **Automatische Pausenberechnung nach §4 ArbZG (#403)**: Die gesetzliche Mindestpause wurde anhand der Anwesenheitszeit (Kommen bis Gehen) statt der tatsächlichen Arbeitszeit bestimmt. Bei knapp über 9 Stunden Anwesenheit wurden dadurch 45 statt der ausreichenden 30 Minuten vorgeschlagen und beim Speichern verlangt. Die Schwellen orientieren sich jetzt an der Arbeitszeit ohne Pause (§2 Abs. 1 ArbZG): bei einer Anwesenheit bis 9,5 Stunden genügen 30 Minuten. Gilt für den Pausenvorschlag im Eintragsformular und die Tagesprüfung über mehrere nahtlose Einträge.
+
+### Added
+- **Vollständigere tschechische Übersetzung (#259)**: 48 bisher unübersetzte Oberflächentexte wurden ins Tschechische übersetzt.
+
+### Changed
+- **Übersetzungs-Konsistenzprüfung (#259)**: Ein Wächter (Pre-Commit-Hook + CI) stellt sicher, dass die Übersetzungskataloge exakt zum Code passen, damit Texte nicht mehr unbemerkt auf den deutschen Quelltext zurückfallen.
+
 ## [0.12.1] - 2026-06-26
 
 ### Added
