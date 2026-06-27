@@ -560,6 +560,38 @@ class TimeEntryServiceTest extends TestCase {
     }
 
     /**
+     * #403: two SEAMLESS entries (no gap) totalling 9h01 gross with a 30 min
+     * break are compliant — §4 ties the threshold to the working time, and
+     * 8h31 net ≤ 9h only requires 30 min. Before #403 the day-level check used
+     * the gross attendance and falsely demanded 45 min, raising a warning.
+     */
+    public function testDayWarningsSeamlessNineHourBandWith30MinIsClean(): void {
+        // 08:00–12:00 + 12:00–17:01 = 9h01 gross, no gap, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '12:00', 30),
+            $this->makeEntry('12:00', '17:01', 0),
+        ]);
+
+        $this->assertSame([], $warnings);
+    }
+
+    /**
+     * #403: the same seamless split but totalling 9h31 gross with only 30 min
+     * break must still warn — the net working time would exceed 9h, so 45 min
+     * are required.
+     */
+    public function testDayWarningsSeamlessAboveNineAndAHalfStillWarns(): void {
+        // 08:00–12:00 + 12:00–17:31 = 9h31 gross, no gap, 30 min recorded break.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '12:00', 30),
+            $this->makeEntry('12:00', '17:31', 0),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Mindestpause', $warnings[0]);
+    }
+
+    /**
      * #338: a day whose total exceeds the configured maximum daily hours (12h in
      * the test settings) warns — break is satisfied here so only the max-hours
      * warning is expected.
