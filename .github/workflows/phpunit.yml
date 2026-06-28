@@ -9,14 +9,9 @@ name: phpunit
 on:
   push:
     branches: [main, develop]
+  # Laeuft auf ALLEN PRs (kein paths-Filter): als Required-Status-Check muss der
+  # Workflow immer melden, sonst blockiert ein nie-startender Check den Merge.
   pull_request:
-    paths:
-      - 'lib/**'
-      - 'tests/**'
-      - 'composer.json'
-      - 'phpunit.xml'
-      - 'appinfo/info.xml'
-      - '.github/workflows/phpunit.yml'
 
 permissions:
   contents: read
