@@ -1,9 +1,10 @@
 name: phpunit
 
-# Backend-Test-Gate (worktime#405). Laeuft die Unit-Suite container-frei gegen
-# die nextcloud/ocp-Stubs (tests/bootstrap-unit.php) — in einer Matrix ueber die
-# unterstuetzten PHP- und Nextcloud-OCP-Versionen, damit kuenftige Konstruktor-
-# oder API-Aenderungen sofort rot werden statt still zu verrotten.
+# Backend-Test-Gate (worktime#405, #21). Laeuft die Unit-Suite container-frei
+# gegen die nextcloud/ocp-Stubs (tests/bootstrap-unit.php) — in einer Matrix
+# ueber PHP und die in info.xml deklarierten Nextcloud-Versionen. Die NC-Matrix
+# wird AUS info.xml abgeleitet (#21): ein max-version-Bump zieht die getesteten
+# ocp-Versionen automatisch mit, ohne diesen Workflow anzufassen.
 
 on:
   push:
@@ -14,20 +15,43 @@ on:
       - 'tests/**'
       - 'composer.json'
       - 'phpunit.xml'
+      - 'appinfo/info.xml'
       - '.github/workflows/phpunit.yml'
 
 permissions:
   contents: read
 
 jobs:
+  # Leitet die zu testenden nextcloud/ocp-Versionen aus info.xml ab
+  # (<nextcloud min-version max-version/>). NC 32-33 -> ["^32.0","^33.0"].
+  versions:
+    runs-on: ubuntu-latest
+    outputs:
+      ocp: ${{ steps.derive.outputs.ocp }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: derive
+        name: NC-Versionen aus info.xml ableiten
+        run: |
+          line=$(grep -oE '<nextcloud[^>]*/>' appinfo/info.xml)
+          min=$(printf '%s' "$line" | grep -oE 'min-version="[0-9]+"' | grep -oE '[0-9]+')
+          max=$(printf '%s' "$line" | grep -oE 'max-version="[0-9]+"' | grep -oE '[0-9]+')
+          if [ -z "$min" ] || [ -z "$max" ]; then
+            echo "::error::Konnte min/max-version nicht aus info.xml lesen"; exit 1
+          fi
+          ocp=$(seq "$min" "$max" | sed 's/.*/"^&.0"/' | paste -sd, -)
+          echo "ocp=[$ocp]" >> "$GITHUB_OUTPUT"
+          echo "Abgeleitete ocp-Matrix: [$ocp]"
+
   phpunit:
+    needs: versions
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # Raender des unterstuetzten Bereichs: PHP ^8.2 (info.xml) x NC 32-33.
+        # PHP-Raender des unterstuetzten Bereichs; NC/ocp aus info.xml (#21).
         php-version: ['8.2', '8.4']
-        ocp-version: ['^32.0', '^33.0']
+        ocp-version: ${{ fromJson(needs.versions.outputs.ocp) }}
     name: PHP ${{ matrix.php-version }} / ocp ${{ matrix.ocp-version }}
     steps:
       - uses: actions/checkout@v4
