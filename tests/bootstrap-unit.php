@@ -11,6 +11,9 @@ declare(strict_types=1);
  * booting the full platform or a database.
  */
 
+// Shims for private OC\* symbols referenced by the ocp stubs (container-free runs).
+require __DIR__ . '/stubs/oc-shims.php';
+
 $ocpRoot = __DIR__ . '/../vendor/nextcloud/ocp';
 
 spl_autoload_register(static function (string $class) use ($ocpRoot): void {

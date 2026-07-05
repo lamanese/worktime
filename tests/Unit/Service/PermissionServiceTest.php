@@ -32,6 +32,21 @@ class PermissionServiceTest extends TestCase {
         );
     }
 
+    /**
+     * Echte Employee-Entity statt Mock: getId() ist in der NC-Entity final und
+     * daher nicht mockbar. setId()/setSupervisorId() füllen die Felder direkt.
+     */
+    private function makeEmployee(?int $id = null, ?int $supervisorId = null): Employee {
+        $employee = new Employee();
+        if ($id !== null) {
+            $employee->setId($id);
+        }
+        if ($supervisorId !== null) {
+            $employee->setSupervisorId($supervisorId);
+        }
+        return $employee;
+    }
+
     public function testIsAdminReturnsTrueForAdmin(): void {
         $this->groupManager->method('isAdmin')
             ->with('admin_user')
@@ -77,14 +92,13 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testIsSupervisorWithTeamMembers(): void {
-        $supervisor = $this->createMock(Employee::class);
-        $supervisor->method('getId')->willReturn(1);
+        $supervisor = $this->makeEmployee(1);
 
         $this->employeeMapper->method('findByUserId')
             ->with('supervisor_user')
             ->willReturn($supervisor);
 
-        $teamMember = $this->createMock(Employee::class);
+        $teamMember = $this->makeEmployee();
         $this->employeeMapper->method('findBySupervisor')
             ->with(1)
             ->willReturn([$teamMember]);
@@ -93,8 +107,7 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testIsSupervisorWithoutTeamMembers(): void {
-        $employee = $this->createMock(Employee::class);
-        $employee->method('getId')->willReturn(1);
+        $employee = $this->makeEmployee(1);
 
         $this->employeeMapper->method('findByUserId')
             ->with('employee_user')
@@ -187,8 +200,7 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testCanViewEmployeeOwnData(): void {
-        $employee = $this->createMock(Employee::class);
-        $employee->method('getId')->willReturn(1);
+        $employee = $this->makeEmployee(1);
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');
@@ -199,11 +211,9 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testCanViewEmployeeAsSupervisor(): void {
-        $supervisor = $this->createMock(Employee::class);
-        $supervisor->method('getId')->willReturn(1);
+        $supervisor = $this->makeEmployee(1);
 
-        $teamMember = $this->createMock(Employee::class);
-        $teamMember->method('getSupervisorId')->willReturn(1);
+        $teamMember = $this->makeEmployee(null, 1);
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');
@@ -220,11 +230,9 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testCanViewEmployeeDenied(): void {
-        $employee = $this->createMock(Employee::class);
-        $employee->method('getId')->willReturn(1);
+        $employee = $this->makeEmployee(1);
 
-        $otherEmployee = $this->createMock(Employee::class);
-        $otherEmployee->method('getSupervisorId')->willReturn(99); // Different supervisor
+        $otherEmployee = $this->makeEmployee(null, 99); // Different supervisor
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');
@@ -241,11 +249,9 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testCanApproveAsSupervisor(): void {
-        $supervisor = $this->createMock(Employee::class);
-        $supervisor->method('getId')->willReturn(1);
+        $supervisor = $this->makeEmployee(1);
 
-        $teamMember = $this->createMock(Employee::class);
-        $teamMember->method('getSupervisorId')->willReturn(1);
+        $teamMember = $this->makeEmployee(null, 1);
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');
@@ -262,11 +268,9 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testCanApproveDeniedForNonSupervisor(): void {
-        $employee = $this->createMock(Employee::class);
-        $employee->method('getId')->willReturn(1);
+        $employee = $this->makeEmployee(1);
 
-        $otherEmployee = $this->createMock(Employee::class);
-        $otherEmployee->method('getSupervisorId')->willReturn(99);
+        $otherEmployee = $this->makeEmployee(null, 99);
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');
@@ -283,8 +287,7 @@ class PermissionServiceTest extends TestCase {
     }
 
     public function testGetPermissionInfo(): void {
-        $employee = $this->createMock(Employee::class);
-        $employee->method('getId')->willReturn(5);
+        $employee = $this->makeEmployee(5);
 
         $this->groupManager->method('isAdmin')->willReturn(false);
         $this->config->method('getAppValue')->willReturn('[]');

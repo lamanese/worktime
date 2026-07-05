@@ -5,24 +5,32 @@ declare(strict_types=1);
 namespace OCA\WorkTime\Tests\Unit\Service;
 
 use DateTime;
+use OCA\WorkTime\Db\CompanySettingMapper;
 use OCA\WorkTime\Db\HolidayMapper;
 use OCA\WorkTime\Service\AuditLogService;
 use OCA\WorkTime\Service\HolidayService;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class HolidayServiceTest extends TestCase {
 
     private HolidayService $service;
     private HolidayMapper $holidayMapper;
+    private CompanySettingMapper $settingsMapper;
     private AuditLogService $auditLogService;
+    private LoggerInterface $logger;
 
     protected function setUp(): void {
         $this->holidayMapper = $this->createMock(HolidayMapper::class);
+        $this->settingsMapper = $this->createMock(CompanySettingMapper::class);
         $this->auditLogService = $this->createMock(AuditLogService::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new HolidayService(
             $this->holidayMapper,
-            $this->auditLogService
+            $this->settingsMapper,
+            $this->auditLogService,
+            $this->logger,
         );
     }
 
