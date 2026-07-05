@@ -7,6 +7,18 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-07-05
+
+### Added
+- **Nextcloud 34 („Hub 26 Spring") unterstützt (#402)**: Die App ist jetzt für Nextcloud 34 freigegeben und darauf installierbar. Zuvor blockierte die deklarierte Höchstversion (33) die Installation auf NC 34. Die Kompatibilität wurde geprüft (ausschließlich OCP-APIs, keine der in NC 34 entfernten Legacy-Zugriffe), es waren keine Code-Anpassungen nötig.
+- **Überstunden-Auszahlung (#401)**: Manager und HR können angesammelte Überstunden in Geld vergüten. Der ausgezahlte Betrag (in Stunden) reduziert den Überstundensaldo — analog zum Freizeitausgleich. Erfassen und Löschen sind möglich (Korrektur = löschen + neu), jede Aktion wird protokolliert. Neuer Einstellungsbereich „Konten" (Jahresübertrag + Auszahlungen).
+
+### Fixed
+- **Auszahlung kann den Saldo nicht mehr überziehen (#426, #428)**: Eine Auszahlung wird jetzt server-seitig gegen den verfügbaren Überstundensaldo geprüft und abgelehnt, wenn sie ihn überschreiten würde. Die Prüfung ist gegen gleichzeitige Anfragen abgesichert (Transaktion mit Sperre auf die betroffene Mitarbeiter-Zeile).
+
+### Changed
+- **Test- und CI-Härtung (#405, #21)**: Container-freie PHPUnit-Baseline, Test-Matrix über mehrere PHP-/Nextcloud-Versionen (inkl. Frühwarnung gegen die NC-Entwicklungsversion) und ein Build-/Lint-Gate. Rein intern, keine Auswirkung auf die Funktion.
+
 ## [0.12.2] - 2026-06-27
 
 ### Fixed
