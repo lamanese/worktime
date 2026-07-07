@@ -7,6 +7,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-07-07
+
+### Fixed
+- **Maximale tägliche Arbeitszeit wird an der Arbeitszeit statt der Anwesenheit gemessen (#437)**: Die Warnung „Maximale tägliche Arbeitszeit überschritten" bezog sich auf die Anwesenheit (inklusive Pause) statt auf die tatsächliche Arbeitszeit. Ein Tag mit z. B. 9:55 Arbeitszeit (10:40 Anwesenheit, 45 Minuten Pause) löste dadurch fälschlich die Warnung aus. Die 10-Stunden-Grenze (§3 ArbZG) bezieht sich jetzt korrekt auf die Arbeitszeit ohne Pause, analog zur Pausenprüfung aus 0.12.2.
+- **Urlaub über den Jahreswechsel wird korrekt behandelt (#439)**: Eine Abwesenheit, die über den Jahreswechsel läuft (z. B. Weihnachtsurlaub vom 29.12. bis 02.01.), fehlte in der persönlichen Abwesenheitsliste und wurde nicht vom Urlaubskonto abgezogen, war in der Team-Ansicht aber sichtbar. Solche Urlaube erscheinen jetzt wieder in der eigenen Liste, bleiben ein einziger Eintrag (bearbeit- und stornierbar) und werden tagegenau auf beide Jahre verteilt angerechnet.
+
+### Changed
+- **Release-fokussiertes Code-Review in der CI (#435)**: Rein intern, keine Auswirkung auf die Funktion.
+
 ## [0.12.3] - 2026-07-05
 
 ### Added
