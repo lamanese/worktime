@@ -1,9 +1,9 @@
 {
     "hashes": {
-        "CHANGELOG.md": "12efabfe8e9c9c1f8fcb654c94dc00064bd020f200c08b49cf9b2849687a3c87d54af247979296c1243d00a1ad44ccfc29044e62e99fe80841f7e48d50d3fed5",
+        "CHANGELOG.md": "82fc139d645aa9edf1f63a096fdf0292c7d3e71f8868c57886ff4dac82d8c41775e346c7bc6b7ca072aae8fd9a420cd3140433e66f7f533873f86a3707fd0ae8",
         "LICENSE": "3568a76677f3d55dbbc7fc33c4073b4714cc6f68d92cd842a9ca2b230e8bd2140e59c3fc3cce34be34ffed78d75ab6e9d991ba59bf7c4addde7fb96648d3375d",
         "README.md": "e1ea095e791e588f038d999d22a190ec267b1146f4fbfa5582b2b18faf21b1a8f55c41258df708a4b7639d03a695afcdf753ce6107f0d5074c61f6f36dae7175",
-        "appinfo\/info.xml": "fa9b1fcaaf619d1978aa82f4d03c9670112303aa66d06cbbe721fe018c142a109bfc3be632c3ddd22c1f12c3d5d5eb13b648beb37279a64cc521ea5029c439cc",
+        "appinfo\/info.xml": "7ccae42eed4655e657f6415866af3b33659c6fa6f3b39c33b3c078571c834dbaeac60b7af426b126b66525ec96417d18d91e39d7d74cf4ea8ce672788ef11609",
         "appinfo\/routes.php": "d0d5fced1c8e7c031f23aa0b02d856b0f108b9a250fc0aae4f7b246e3e31c93c7564a32e645e5178981d7bc722deb2c9a02d136ad6460e5994157a6dc252d580",
         "img\/app-dark.svg": "d7eae0ce39e99f05f315a4f0c2387a8d4987d9bb4bf498bbc89e3844c2f76d485c12fd191a9c327fd76066fe8d393fb73b4c00c7f174ff217127c3d0967239c1",
         "img\/app.svg": "72157d282e54255774f345423a59f021ab4b6d73610526f33ade8db8ded3122c87fc0653bca6f57614a8f2e0ff79083ed66b29b49376f8b1c2e5242de68cf1a6",
@@ -37,7 +37,7 @@
         "lib\/Controller\/YearlyCarryoverController.php": "83a88c666a2ca9c7aedb82199e35efb5b1813d91f18b414520e61ec2bae1279ab2eeed70eaffc4d8262278e20a4cf265219f35b98004eff86ca4877d830080cb",
         "lib\/Db\/.gitkeep": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
         "lib\/Db\/Absence.php": "0f61c552bd611b07e6d4f13302e96f921c5257f376ba4d4fc996e3eada794b5260317d74958be6ba120ea6c10bbda4663ae99661eb041e91a89a9b0f1c9c5b54",
-        "lib\/Db\/AbsenceMapper.php": "d61c2a37f3a3922907cafa1c12dc9998bc7e87a8318edbdf29a7901ee724497560e11a8b508770f88a68ba4e6a143a962be84b7862f99ff32a8bb15fbddf14e1",
+        "lib\/Db\/AbsenceMapper.php": "fb600d684ac4a8982dae5695784ba4a12b91319f3315117e6d79e7dee69d1bab3ca410dd4b55f4435e684c4ae49a1ccdb155382915b7c4a75165dd83ef7386ac",
         "lib\/Db\/ArchiveQueue.php": "5cfc7dad96a85b1ec1f8280285daf5377ae785255857794f28357d9dc3e52715ac54cdc91a999eb7078e6de5636421371a86cd50b902cc25c2635b1e8f4ff2cc",
         "lib\/Db\/ArchiveQueueMapper.php": "55046f34ed1af2b4b5845eae0ce781357230e5b033549de19da77eef4d9553fc5d32ebffcaf727623a2d8b4336ca13628ae4cd2ea2ff5a57f91d8e1de271ad8a",
         "lib\/Db\/AuditLog.php": "834d6ac671b205257f22231f1b3c1c8e350414a5fafba850b91d7aba27bfd8ceaa4b2e5dcf5102bd306bc24eac160f5cffbba65847e1e34e5f57f8ac368d2d9b",
@@ -84,7 +84,7 @@
         "lib\/Notification\/NotificationService.php": "19846edae917c0bff40e3f03c5938063824c76caf04b2efc4c41c0db2feb1620bb0105de2cf4eeb9b7c315ba14394d8bef5593ca71da3dc6b10c492ebc386710",
         "lib\/Notification\/Notifier.php": "b92442113c14f9c07f94818cf8ba37fedb4f3925489e93ca95d1ce270baa417bbc70a6e635e1f05854beaf48dfe08aaa26650a4409af8d171b528e0cea377493",
         "lib\/Service\/.gitkeep": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
-        "lib\/Service\/AbsenceService.php": "4e7385754297cd8c461beb0d6cdbaf5cee1eaf0c1f4ef170fe70a570210efeb955f39ecba48f9a1af6f56c5ccde2f2c01473903f4567ed31320a5177aff7e9df",
+        "lib\/Service\/AbsenceService.php": "b01af87fbcca82856d5c410f3553abb0e5066e8ba8792cc976894e62e8d8d2479b2eefe4d893ee5eee6ee43300ae3964f0f6a3093ad083ca26eea551a55d7558",
         "lib\/Service\/ArchiveService.php": "b3a6f6f0353876bc52cf2bab32f2894941d0eedee6f32c5f17ec689b7ca2a04db0a2f2e9ac152fd568a7d889775a93990858fc08e28dff9ba4d21822e415df4f",
         "lib\/Service\/AuditLogService.php": "c7e1befeb87cea88fcd1a43089b269b22676ae68d45965bf36692c5981283e31bdab7b2252503a404aeac0e0a665f35cb3987df5b830e04548a81690537a1d7b",
         "lib\/Service\/CompanySettingsService.php": "7f61ad53608f9a6160fb36f93bfdab338937debd7dc41e2a6d005a74e998aabf417cdd44cb7a86526b6d6bd86f9d4d9e89784baf7d4339ed4eb8793821dc8bc4",
@@ -97,7 +97,7 @@
         "lib\/Service\/PdfService.php": "8eacedab7816afc43658cad7da879f8c22e065fe784dde4671d7d0ed9e5e6a551e1ac02da23aefd0ba517167abfe7b3e0cde655e648c2f9676ddd88a259565a9",
         "lib\/Service\/PermissionService.php": "9211a44af6272ac828b83d24c323305d0061304e58737b47408b12b32f749b4dcd549bb4b250cf82acf48fc95fa97699260a427688146df3b69605bf4ca8838f",
         "lib\/Service\/ProjectService.php": "2ce55a69b1c9bf8b64e4c779955ab2d77791260c1ad25e2ae3b9e04b746fb3297de5d2f2d97357002dffe05a097c7595f1bf4f853f3ad95782ef63c7e26e5226",
-        "lib\/Service\/TimeEntryService.php": "303caceaae780366070f42d33cd431aac91dcd518e07cc5a90eab74f1e2925e48006d5b32950abf7dabfaf0131d3552e61a040dee264ddcd94b100cb7d8dd958",
+        "lib\/Service\/TimeEntryService.php": "823f8f91701549428673cd2fdedd36425a48244cfdd1e428d6ee94210db4290bf9211a2772508d7c5bd2e5a2cb1b33801f62aa877bfb20611f53aacead572570",
         "lib\/Service\/ValidationException.php": "db71f3b9ef477cdf2ff000d3ea15c6e2a0c6178e9c48a800603015073b513606b34714c7f36bbb6e196d1735c42998d45902b1eafd511b1364afe88fd0bb3d0c",
         "lib\/Service\/WorkScheduleService.php": "e096a55b32e80f1247149ddb3c394247af33635ee8be422d1658f875e552bc4a02c0179b0aa22b691ea3ea9bf4cca8cb1b4666ce460acf4b147318c2e56881c7",
         "lib\/Service\/YearlyCarryoverService.php": "7459710bfe68169490bd51dc1934a96d4606ec41e8427d9d08d9a4de4101fa761ef27e5299f1aae6a955458ab9a350698e7de1ab7edf8141ecada86c6c99f825",
@@ -179,6 +179,6 @@
         "vendor\/tecnickcom\/tcpdf\/tools\/convert_fonts_examples.txt": "c4c8e617248924852aca34f4d0030377ca451e2e5de775ddc4d5cef353af1e7d2061c7ef7bf038a7fb9f9d4149acef8101d4e1fef168deb48c61a0eefe859227",
         "vendor\/tecnickcom\/tcpdf\/tools\/tcpdf_addfont.php": "f94b7d68e38f4def7f079efea17bdffae67f0ddfd92ff579d7d36967eef326329562e23786b9ad664281b63c9853b7ef750adfa7c856a0d7bbe511be850fbf30"
     },
-    "signature": "SJDPUXXdqM6kuma4zLGZHLYphnBRQxgkfaJw6lFZO8WsL9OsSOoU8w0jFGKtSusiyQ7xe2KfOKNZQImM+KnCHnMZxb0O\/Ny6hQcTdCzBjQjtiChWZi42DuVzN6mOhxdtHHfBJiCPtjqaBchCtRBwViAZXIVUOLshsv3h8m0Kmr\/zthTkNajASLA5vTrIaMYxl2dutq2\/6oLpLtyKgQfrvyn9QF0WEo08hUH1\/CnncbLWnDEeGJMLewWHyjuY4Ff2BwKyz+ueIujHSCYt7fc4tftCGJfjeX2nhlU49XnUuXD6A\/4tkMVK3R\/eLoUSlXXwEq6jUBl6BTjBCyBm0dB77g==",
+    "signature": "dm4UPVE4TXM8qLLgcmTWCjWvn16eVgUCGcM5u3RPC+54RonVmawS2w9d+kiIwIv6Cc5Fg3O52hcsPhEdBKVo6B3DTWB1iIYMSPSFFDxAH548uppkBkwszRxAn0x29tpbT79jqBN3bvWS23vO+quFzItfDE3eccv3YD63oEAqfx+NtYFTzRIUSu7oXJk85wQD2Ok3QSi6P3Z6AD0ZHcOzt2WXejh2+Dr5MExyXRsqmFgXOkR5ubr2xlKDSOOy1jm3h5OeMCTzpL5PxwM0waV1nouSYu2Hav9lLx6PHYLZQAQZnVcpg\/WD9gyCclMeZz8P3OVkPmdV4lAUjBqvt8CCGQ==",
     "certificate": "-----BEGIN CERTIFICATE-----\r\nMIIDAzCCAesCAhLvMA0GCSqGSIb3DQEBCwUAMHsxCzAJBgNVBAYTAkRFMRswGQYD\r\nVQQIDBJCYWRlbi1XdWVydHRlbWJlcmcxFzAVBgNVBAoMDk5leHRjbG91ZCBHbWJI\r\nMTYwNAYDVQQDDC1OZXh0Y2xvdWQgQ29kZSBTaWduaW5nIEludGVybWVkaWF0ZSBB\r\ndXRob3JpdHkwHhcNMjYwMjA2MTgwNzAyWhcNMzYwNTE0MTgwNzAyWjATMREwDwYD\r\nVQQDDAh3b3JrdGltZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL\/b\r\n9iUR\/hnnlbkchImfamKpEfnMyIiM6Ewe58W3JrJGA6pycVkamLyeUEcaRMbaZmbK\r\n5oosZ8g\/mVjLSZcAbM8F2rV4pOsSD6ToJ7S419gCHYBMVsm9HDdYbej65DXXqOJn\r\nVV4xfdj8KSaxsgH\/1aVWvKBil8sjLiBUEIHdOCytY3EEzISn8p+Ma5cUC+1Bf9kh\r\nffY5i0YvZ38R8cdI0SeraLmHBpUy4m91P7Kg03uZspiWwYZBupTZxhlBAawKU\/Za\r\nxcViP7+JY8p4lll0io1Q1ViXPnFcj8C9uvnU43k13wRbAWqYV8pUEQcKKbA60Gk\/\r\nZB+Z4b1l+5V0Sp1a0NUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAgOYI54EXGsPe\r\n3aXvprtL4CvR33fEBJguelgz4pqrxSQRgnxJySB6Fo+ocj7wxQt0\/\/sw4bds60cH\r\n82rC6uF23lA7GE0\/sdHQPrc9UW\/C93oU5pgC54CKWUMqUBgWiBjTe4tStf5gE0C1\r\n5Jad2eMKpEnNO8x7v+OnxOzJYhUZvbN0E3UM5NVjzcZV\/lsVQxnmhtXkd4dJ6twy\r\n+QAQlmifHcw4beyvF1A4e1Hwcc4\/b9O64RdI\/oZ\/ehU41uP5zdF61B6A6cF+IbS+\r\nUdTPcyqRqEsFQRw52JpSdkKnFtG76Dg8rD0o5PyrmKOtHMnssPdJicehEoFe144e\r\nOdhkeyiR8w==\r\n-----END CERTIFICATE-----"
 }

@@ -710,10 +710,11 @@ class TimeEntryService {
      * and returned as non-blocking warnings.
      *
      * Convention (kept consistent with validateBreak()/suggestBreak()): the §4
-     * threshold and the max-hours check are evaluated against the total GROSS
-     * minutes of the day (sum of each entry's start→end span, excluding the gaps
-     * between entries). Gaps between consecutive entries count as break time, on
-     * top of the explicitly recorded break minutes.
+     * threshold is evaluated against the total GROSS minutes of the day (sum of
+     * each entry's start→end span, excluding the gaps between entries), while the
+     * §3 max-hours check is evaluated against the total NET minutes (gross minus
+     * breaks, #437). Gaps between consecutive entries count as break time, on top
+     * of the explicitly recorded break minutes.
      *
      * @param TimeEntry[] $entries All time entries of one day (same date).
      * @return string[] Human-readable warning messages (empty when compliant).
@@ -759,7 +760,6 @@ class TimeEntryService {
         }
 
         $warnings = [];
-        $grossHours = $totalGrossMinutes / 60;
 
         // §4 ArbZG minimum break, evaluated on the whole day. Upper step is
         // 9h + break6h gross (not a flat 9h), consistent with suggestBreak()/
@@ -779,12 +779,17 @@ class TimeEntryService {
             );
         }
 
-        // Maximum daily working hours, evaluated on the whole day.
+        // Maximum daily working hours (§3 ArbZG). The legal cap targets the
+        // WORKING time (net), not the presence span — mirrors suggestBreak()/
+        // dayWarnings §4 above and the fix in #403. Comparing gross wrongly
+        // flagged days whose net time is within the limit (#437).
+        $netMinutes = max(0, $totalGrossMinutes - $totalBreakMinutes);
+        $netHours = $netMinutes / 60;
         $maxHours = $this->settingsMapper->getValueAsFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
-        if ($maxHours > 0 && $grossHours > $maxHours) {
+        if ($maxHours > 0 && $netHours > $maxHours) {
             $warnings[] = $this->l->t(
                 'Maximale tägliche Arbeitszeit (%1$s Std.) überschritten: an diesem Tag sind %2$s Std. erfasst.',
-                [(string)$maxHours, (string)round($grossHours, 2)]
+                [(string)$maxHours, (string)round($netHours, 2)]
             );
         }
 
