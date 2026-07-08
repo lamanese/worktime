@@ -610,6 +610,8 @@ OC.L10N.register(
     "Fehler beim Eintragen" : "Error while saving",
     "Betriebsferien entfernt." : "Company holidays removed.",
     "Betriebsferien" : "Company holidays",
-    "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein." : "Enter company holidays centrally as vacation for all or selected employees."
+    "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein." : "Enter company holidays centrally as vacation for all or selected employees.",
+    "{count} ausgewählt" : "{count} selected",
+    "Kein Mitarbeiter gefunden." : "No employee found."
 },
 "nplurals=2; plural=(n != 1);");

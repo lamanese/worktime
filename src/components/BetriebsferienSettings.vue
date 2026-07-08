@@ -22,11 +22,21 @@
                 </NcCheckboxRadioSwitch>
             </div>
 
-            <div v-if="form.target === 'selected'" class="bf-employees">
-                <NcCheckboxRadioSwitch v-for="emp in activeEmployees" :key="emp.id"
-                    :checked.sync="selectedEmployeeIds" :value="String(emp.id)" name="bf-emp">
-                    {{ emp.firstName }} {{ emp.lastName }}
-                </NcCheckboxRadioSwitch>
+            <div v-if="form.target === 'selected'" class="bf-select">
+                <input v-model="employeeFilter" type="text" class="input-field bf-filter"
+                    :placeholder="t('worktime', 'Mitarbeiter suchen …')">
+                <p class="bf-selected-count">
+                    {{ t('worktime', '{count} ausgewählt', { count: selectedEmployeeIds.length }) }}
+                </p>
+                <div class="bf-employees">
+                    <NcCheckboxRadioSwitch v-for="emp in filteredEmployees" :key="emp.id"
+                        :checked.sync="selectedEmployeeIds" :value="String(emp.id)" name="bf-emp">
+                        {{ emp.firstName }} {{ emp.lastName }}
+                    </NcCheckboxRadioSwitch>
+                    <p v-if="!filteredEmployees.length" class="help-text">
+                        {{ t('worktime', 'Kein Mitarbeiter gefunden.') }}
+                    </p>
+                </div>
             </div>
 
             <div class="form-group">
@@ -122,6 +132,7 @@ export default {
                 note: '',
             },
             selectedEmployeeIds: [],
+            employeeFilter: '',
             saving: false,
             result: null,
             central: [],
@@ -130,6 +141,12 @@ export default {
     computed: {
         activeEmployees() {
             return this.employees.filter(e => e.isActive)
+        },
+        filteredEmployees() {
+            const q = this.employeeFilter.trim().toLowerCase()
+            if (!q) return this.activeEmployees
+            return this.activeEmployees.filter(e =>
+                `${e.firstName} ${e.lastName}`.toLowerCase().includes(q))
         },
         canSubmit() {
             if (!this.form.startDate || !this.form.endDate) return false
@@ -223,6 +240,19 @@ export default {
 }
 .form-group label {
     font-weight: bold;
+}
+.bf-select {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.bf-filter {
+    max-width: 400px;
+}
+.bf-selected-count {
+    margin: 0;
+    color: var(--color-text-maxcontrast);
+    font-size: 0.9em;
 }
 .bf-employees {
     max-height: 240px;
