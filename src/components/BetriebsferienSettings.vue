@@ -45,7 +45,6 @@
                     :checked.sync="form.overageHandling" :value="opt.value" name="bf-overage" type="radio">
                     {{ opt.label }}
                 </NcCheckboxRadioSwitch>
-                <p class="bf-overage-hint">{{ selectedOverageOption.description }}</p>
             </div>
 
             <div class="form-group">
@@ -54,9 +53,9 @@
                     :placeholder="t('worktime', 'z. B. Betriebsferien Weihnachten')">
             </div>
 
-            <NcNoteCard type="warning">
-                {{ warningText }}
-            </NcNoteCard>
+            <p class="help-text">
+                {{ t('worktime', 'Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht, sondern Ihnen aufgelistet.') }}
+            </p>
 
             <NcButton type="primary" :disabled="!canSubmit || saving" @click="submit">
                 {{ t('worktime', 'Betriebsferien eintragen') }}
@@ -163,43 +162,13 @@ export default {
         },
         overageOptions() {
             // #15 Stufe 2: bewusste Admin-Auswahl, keine Rechtswertung durch die App.
+            // Die Konsequenz der gewählten Option erklärt die Warnbox darunter.
             return [
-                {
-                    value: 'skip',
-                    label: this.t('worktime', 'Nicht buchen, nur auflisten'),
-                    description: this.t('worktime', 'Mitarbeiter ohne ausreichenden Resturlaub werden nicht gebucht und Ihnen gemeldet. Sie klären diese Fälle einzeln.'),
-                },
-                {
-                    value: 'closure',
-                    label: this.t('worktime', 'Bezahlte Freistellung (Betriebsschließung)'),
-                    description: this.t('worktime', 'Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage werden als bezahlte Betriebsschließung gebucht – ohne Urlaubs- oder Überstundenabzug.'),
-                },
-                {
-                    value: 'compensatory',
-                    label: this.t('worktime', 'Freizeitausgleich'),
-                    description: this.t('worktime', 'Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage bauen Überstunden ab. Nur wählen, wenn Betriebsvereinbarung oder Arbeitsvertrag dies decken.'),
-                },
-                {
-                    value: 'negative',
-                    label: this.t('worktime', 'Urlaub ins Minus'),
-                    description: this.t('worktime', 'Alle Tage werden als Urlaub gebucht, das Urlaubskonto kann ins Minus gehen (Vorgriff auf das Folgejahr). Nur mit entsprechender Vereinbarung wählen.'),
-                },
+                { value: 'skip', label: this.t('worktime', 'Nicht buchen, nur auflisten') },
+                { value: 'closure', label: this.t('worktime', 'Bezahlte Freistellung (Betriebsschließung)') },
+                { value: 'compensatory', label: this.t('worktime', 'Freizeitausgleich') },
+                { value: 'negative', label: this.t('worktime', 'Urlaub ins Minus') },
             ]
-        },
-        selectedOverageOption() {
-            return this.overageOptions.find(o => o.value === this.form.overageHandling) || this.overageOptions[0]
-        },
-        warningText() {
-            switch (this.form.overageHandling) {
-            case 'closure':
-                return this.t('worktime', 'Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als bezahlte Betriebsschließung gebucht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.')
-            case 'compensatory':
-                return this.t('worktime', 'Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als Freizeitausgleich gebucht und vom Überstundenkonto abgezogen. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.')
-            case 'negative':
-                return this.t('worktime', 'Die Betriebsferien werden vollständig als genehmigter Urlaub gebucht, auch wenn das Urlaubskonto dadurch ins Minus geht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.')
-            default:
-                return this.t('worktime', 'Die Betriebsferien werden als genehmigter Urlaub bei den betroffenen Mitarbeitern gebucht und vom Urlaubskonto abgezogen. Mitarbeiter ohne ausreichenden Resturlaub oder mit bereits erfassten Zeiten in dem Zeitraum werden nicht gebucht und Ihnen aufgelistet.')
-            }
         },
         bookedWithOverage() {
             if (!this.result || !this.result.booked) return []
@@ -342,12 +311,6 @@ export default {
     margin: 0;
     color: var(--color-text-maxcontrast);
     font-size: 0.9em;
-}
-.bf-overage-hint {
-    margin: 4px 0 0;
-    color: var(--color-text-maxcontrast);
-    font-size: 0.9em;
-    max-width: 560px;
 }
 .bf-employees {
     max-height: 240px;

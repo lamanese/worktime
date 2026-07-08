@@ -597,7 +597,6 @@
 		"Alle aktiven Mitarbeiter": "All active employees",
 		"Ausgewählte Mitarbeiter": "Selected employees",
 		"z. B. Betriebsferien Weihnachten": "e.g. Christmas company holidays",
-		"Die Betriebsferien werden als genehmigter Urlaub bei den betroffenen Mitarbeitern gebucht und vom Urlaubskonto abgezogen. Mitarbeiter ohne ausreichenden Resturlaub oder mit bereits erfassten Zeiten in dem Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "Company holidays are booked as approved vacation for the affected employees and deducted from their vacation balance. Employees without enough remaining vacation, or with time entries already recorded in the period, are not booked and are listed for you.",
 		"Betriebsferien eintragen": "Add company holidays",
 		"{count} Mitarbeiter eingetragen.": "{count} employees added.",
 		"Nicht gebucht – bitte einzeln klären:": "Not booked – please handle individually:",
@@ -617,17 +616,11 @@
 		"Wenn der Resturlaub nicht reicht": "If the remaining vacation is not enough",
 		"Resturlaub reichte nicht – aufgeteilt gebucht:": "Remaining vacation was not enough – booked split:",
 		"Nicht buchen, nur auflisten": "Do not book, only list",
-		"Mitarbeiter ohne ausreichenden Resturlaub werden nicht gebucht und Ihnen gemeldet. Sie klären diese Fälle einzeln.": "Employees without sufficient remaining vacation are not booked and are reported to you. You handle these cases individually.",
 		"Bezahlte Freistellung (Betriebsschließung)": "Paid leave (company closure)",
-		"Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage werden als bezahlte Betriebsschließung gebucht – ohne Urlaubs- oder Überstundenabzug.": "The remaining vacation is used up to 0, the remaining days are booked as paid company closure – without vacation or overtime deduction.",
-		"Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage bauen Überstunden ab. Nur wählen, wenn Betriebsvereinbarung oder Arbeitsvertrag dies decken.": "The remaining vacation is used up to 0, the remaining days reduce overtime. Only choose this if a works agreement or the employment contract covers it.",
 		"Urlaub ins Minus": "Vacation into negative",
-		"Alle Tage werden als Urlaub gebucht, das Urlaubskonto kann ins Minus gehen (Vorgriff auf das Folgejahr). Nur mit entsprechender Vereinbarung wählen.": "All days are booked as vacation, the vacation account may go negative (advance on next year). Only choose this with a corresponding agreement.",
-		"Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als bezahlte Betriebsschließung gebucht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked as approved vacation and deducted from the vacation account. If the remaining vacation is not enough, the remaining days are booked as paid company closure. Employees with time entries already recorded in the period are not booked and are listed for you.",
-		"Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als Freizeitausgleich gebucht und vom Überstundenkonto abgezogen. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked as approved vacation and deducted from the vacation account. If the remaining vacation is not enough, the remaining days are booked as compensatory time and deducted from the overtime account. Employees with time entries already recorded in the period are not booked and are listed for you.",
-		"Die Betriebsferien werden vollständig als genehmigter Urlaub gebucht, auch wenn das Urlaubskonto dadurch ins Minus geht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked entirely as approved vacation, even if the vacation account goes negative as a result. Employees with time entries already recorded in the period are not booked and are listed for you.",
 		"{name} – {vacation} Tage Urlaub + {overage} Tage {type}": "{name} – {vacation} days vacation + {overage} days {type}",
-		"Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden": "Company closure can only be set centrally via the company vacation settings"
+		"Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden": "Company closure can only be set centrally via the company vacation settings",
+		"Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht, sondern Ihnen aufgelistet.": "Employees with time entries already recorded in the period are not booked but listed for you."
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
