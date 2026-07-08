@@ -610,6 +610,8 @@ OC.L10N.register(
     "Fehler beim Eintragen" : "Fehler beim Eintragen",
     "Betriebsferien entfernt." : "Betriebsferien entfernt.",
     "Betriebsferien" : "Betriebsferien",
-    "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein." : "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein."
+    "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein." : "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein.",
+    "{count} ausgewählt" : "{count} ausgewählt",
+    "Kein Mitarbeiter gefunden." : "Kein Mitarbeiter gefunden."
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");
