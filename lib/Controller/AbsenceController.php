@@ -308,7 +308,8 @@ class AbsenceController extends BaseController {
         string $startDate = '',
         string $endDate = '',
         ?array $employeeIds = null,
-        ?string $note = null
+        ?string $note = null,
+        string $overageHandling = AbsenceService::OVERAGE_SKIP
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -318,7 +319,7 @@ class AbsenceController extends BaseController {
         }
 
         try {
-            $result = $this->absenceService->createCompanyVacation($startDate, $endDate, $employeeIds, $note, $this->userId);
+            $result = $this->absenceService->createCompanyVacation($startDate, $endDate, $employeeIds, $note, $this->userId, $overageHandling);
             return $this->createdResponse($result);
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -341,10 +342,12 @@ class AbsenceController extends BaseController {
     }
 
     /**
-     * #15: remove a whole Betriebsferien operation (all central entries for the range).
+     * #15: remove a whole Betriebsferien operation. Preferred: by group id
+     * (Stufe 2, covers split entries); fallback: by exact range (legacy
+     * entries created before the group id existed).
      */
     #[NoAdminRequired]
-    public function deleteCompanyVacation(string $startDate = '', string $endDate = ''): JSONResponse {
+    public function deleteCompanyVacation(string $group = '', string $startDate = '', string $endDate = ''): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
@@ -353,7 +356,11 @@ class AbsenceController extends BaseController {
         }
 
         try {
-            $count = $this->absenceService->deleteCompanyVacation($startDate, $endDate, $this->userId);
+            if ($group !== '') {
+                $count = $this->absenceService->deleteCompanyVacationByGroup($group, $this->userId);
+            } else {
+                $count = $this->absenceService->deleteCompanyVacation($startDate, $endDate, $this->userId);
+            }
             return $this->successResponse(['removed' => $count]);
         } catch (\Exception $e) {
             return $this->handleException($e);

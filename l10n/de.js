@@ -612,6 +612,22 @@ OC.L10N.register(
     "Betriebsferien" : "Betriebsferien",
     "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein." : "Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein.",
     "{count} ausgewählt" : "{count} ausgewählt",
-    "Kein Mitarbeiter gefunden." : "Kein Mitarbeiter gefunden."
+    "Kein Mitarbeiter gefunden." : "Kein Mitarbeiter gefunden.",
+    "Betriebsschließung" : "Betriebsschließung",
+    "Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug." : "Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.",
+    "Wenn der Resturlaub nicht reicht" : "Wenn der Resturlaub nicht reicht",
+    "Resturlaub reichte nicht – aufgeteilt gebucht:" : "Resturlaub reichte nicht – aufgeteilt gebucht:",
+    "Nicht buchen, nur auflisten" : "Nicht buchen, nur auflisten",
+    "Mitarbeiter ohne ausreichenden Resturlaub werden nicht gebucht und Ihnen gemeldet. Sie klären diese Fälle einzeln." : "Mitarbeiter ohne ausreichenden Resturlaub werden nicht gebucht und Ihnen gemeldet. Sie klären diese Fälle einzeln.",
+    "Bezahlte Freistellung (Betriebsschließung)" : "Bezahlte Freistellung (Betriebsschließung)",
+    "Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage werden als bezahlte Betriebsschließung gebucht – ohne Urlaubs- oder Überstundenabzug." : "Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage werden als bezahlte Betriebsschließung gebucht – ohne Urlaubs- oder Überstundenabzug.",
+    "Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage bauen Überstunden ab. Nur wählen, wenn Betriebsvereinbarung oder Arbeitsvertrag dies decken." : "Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage bauen Überstunden ab. Nur wählen, wenn Betriebsvereinbarung oder Arbeitsvertrag dies decken.",
+    "Urlaub ins Minus" : "Urlaub ins Minus",
+    "Alle Tage werden als Urlaub gebucht, das Urlaubskonto kann ins Minus gehen (Vorgriff auf das Folgejahr). Nur mit entsprechender Vereinbarung wählen." : "Alle Tage werden als Urlaub gebucht, das Urlaubskonto kann ins Minus gehen (Vorgriff auf das Folgejahr). Nur mit entsprechender Vereinbarung wählen.",
+    "Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als bezahlte Betriebsschließung gebucht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet." : "Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als bezahlte Betriebsschließung gebucht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.",
+    "Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als Freizeitausgleich gebucht und vom Überstundenkonto abgezogen. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet." : "Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als Freizeitausgleich gebucht und vom Überstundenkonto abgezogen. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.",
+    "Die Betriebsferien werden vollständig als genehmigter Urlaub gebucht, auch wenn das Urlaubskonto dadurch ins Minus geht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet." : "Die Betriebsferien werden vollständig als genehmigter Urlaub gebucht, auch wenn das Urlaubskonto dadurch ins Minus geht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.",
+    "{name} – {vacation} Tage Urlaub + {overage} Tage {type}" : "{name} – {vacation} Tage Urlaub + {overage} Tage {type}",
+    "Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden" : "Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden"
 },
 "nplurals=2; plural=(n != 1);");

@@ -411,4 +411,20 @@ class AbsenceMapper extends QBMapper {
 
         return $this->findEntities($qb);
     }
+
+    /**
+     * All entries of one central Betriebsferien operation (#15 Stufe 2) — split
+     * entries share the group id even when their date ranges differ.
+     *
+     * @return Absence[]
+     */
+    public function findCentralByGroup(string $group): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_central', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('central_group', $qb->createNamedParameter($group)));
+
+        return $this->findEntities($qb);
+    }
 }

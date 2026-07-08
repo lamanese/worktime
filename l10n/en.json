@@ -611,7 +611,23 @@
 		"Betriebsferien": "Company holidays",
 		"Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein.": "Enter company holidays centrally as vacation for all or selected employees.",
 		"{count} ausgewählt": "{count} selected",
-		"Kein Mitarbeiter gefunden.": "No employee found."
+		"Kein Mitarbeiter gefunden.": "No employee found.",
+		"Betriebsschließung": "Company closure",
+		"Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.": "Paid leave during company vacation. No vacation or overtime deduction.",
+		"Wenn der Resturlaub nicht reicht": "If the remaining vacation is not enough",
+		"Resturlaub reichte nicht – aufgeteilt gebucht:": "Remaining vacation was not enough – booked split:",
+		"Nicht buchen, nur auflisten": "Do not book, only list",
+		"Mitarbeiter ohne ausreichenden Resturlaub werden nicht gebucht und Ihnen gemeldet. Sie klären diese Fälle einzeln.": "Employees without sufficient remaining vacation are not booked and are reported to you. You handle these cases individually.",
+		"Bezahlte Freistellung (Betriebsschließung)": "Paid leave (company closure)",
+		"Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage werden als bezahlte Betriebsschließung gebucht – ohne Urlaubs- oder Überstundenabzug.": "The remaining vacation is used up to 0, the remaining days are booked as paid company closure – without vacation or overtime deduction.",
+		"Der Resturlaub wird bis 0 aufgebraucht, die übrigen Tage bauen Überstunden ab. Nur wählen, wenn Betriebsvereinbarung oder Arbeitsvertrag dies decken.": "The remaining vacation is used up to 0, the remaining days reduce overtime. Only choose this if a works agreement or the employment contract covers it.",
+		"Urlaub ins Minus": "Vacation into negative",
+		"Alle Tage werden als Urlaub gebucht, das Urlaubskonto kann ins Minus gehen (Vorgriff auf das Folgejahr). Nur mit entsprechender Vereinbarung wählen.": "All days are booked as vacation, the vacation account may go negative (advance on next year). Only choose this with a corresponding agreement.",
+		"Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als bezahlte Betriebsschließung gebucht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked as approved vacation and deducted from the vacation account. If the remaining vacation is not enough, the remaining days are booked as paid company closure. Employees with time entries already recorded in the period are not booked and are listed for you.",
+		"Die Betriebsferien werden als genehmigter Urlaub gebucht und vom Urlaubskonto abgezogen. Reicht der Resturlaub nicht, werden die übrigen Tage als Freizeitausgleich gebucht und vom Überstundenkonto abgezogen. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked as approved vacation and deducted from the vacation account. If the remaining vacation is not enough, the remaining days are booked as compensatory time and deducted from the overtime account. Employees with time entries already recorded in the period are not booked and are listed for you.",
+		"Die Betriebsferien werden vollständig als genehmigter Urlaub gebucht, auch wenn das Urlaubskonto dadurch ins Minus geht. Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht und Ihnen aufgelistet.": "The company vacation is booked entirely as approved vacation, even if the vacation account goes negative as a result. Employees with time entries already recorded in the period are not booked and are listed for you.",
+		"{name} – {vacation} Tage Urlaub + {overage} Tage {type}": "{name} – {vacation} days vacation + {overage} days {type}",
+		"Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden": "Company closure can only be set centrally via the company vacation settings"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
