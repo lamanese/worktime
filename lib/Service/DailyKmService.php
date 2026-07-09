@@ -66,13 +66,20 @@ class DailyKmService {
             throw new ValidationException(['date' => 'Kilometer können nur an einem externen Tag erfasst werden.']);
         }
 
-        // Monatsabschluss (#148): abgeschlossene Monate (voll genehmigt oder
-        // Vorjahr) sind auch für Kilometer gesperrt — sonst liessen sich
-        // Vergütungsbeträge nach der Genehmigung noch ändern. Gilt auch für das
-        // Löschen (km=0). HR öffnet den Monat bei Bedarf über den bestehenden
-        // Korrektur-Flow (reopenMonth) und passt die Kilometer danach an.
-        if ($this->timeEntryService->isMonthLocked($employeeId, (int)$date->format('Y'), (int)$date->format('n'))) {
-            throw new ValidationException(['date' => 'Dieser Zeitraum ist abgeschlossen. Bitte wende dich an HR.']);
+        // Eingereichte/abgeschlossene Monate sind auch für Kilometer gesperrt
+        // (gilt auch für das Löschen, km=0) — sonst liessen sich Vergütungs-
+        // beträge unter einer laufenden Genehmigung oder nach dem Abschluss noch
+        // ändern. "Eingereicht" entspricht der UI-Semantik: es gibt Einträge und
+        // keiner ist mehr Entwurf/abgelehnt. Dazu die Sperre aus #148 (voll
+        // genehmigt oder Vorjahr). HR öffnet den Monat bei Bedarf über den
+        // bestehenden Korrektur-Flow (reopenMonth) und passt die km danach an.
+        $year = (int)$date->format('Y');
+        $month = (int)$date->format('n');
+        $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
+        $totalEntries = $summary['draft'] + $summary['submitted'] + $summary['approved'] + $summary['rejected'];
+        $monthFrozen = $totalEntries > 0 && $summary['draft'] === 0 && $summary['rejected'] === 0;
+        if ($monthFrozen || $this->timeEntryService->isMonthLocked($employeeId, $year, $month)) {
+            throw new ValidationException(['date' => 'Dieser Zeitraum ist eingereicht oder abgeschlossen. Bitte wende dich an HR.']);
         }
 
         $existing = $this->dailyKmMapper->findByEmployeeAndDate($employeeId, $date);

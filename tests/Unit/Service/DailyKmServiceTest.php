@@ -38,7 +38,14 @@ class DailyKmServiceTest extends TestCase {
      * @param Absence[] $dayAbsences
      * @param string[] $externAbsenceTypes
      */
-    private function makeService(array $dayEntries, array $projects, array $dayAbsences = [], array $externAbsenceTypes = [], bool $monthLocked = false): DailyKmService {
+    private function makeService(
+        array $dayEntries,
+        array $projects,
+        array $dayAbsences = [],
+        array $externAbsenceTypes = [],
+        bool $monthLocked = false,
+        array $statusSummary = ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0],
+    ): DailyKmService {
         $this->dailyKmMapper = $this->createMock(DailyKmMapper::class);
         $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
         $this->projectMapper = $this->createMock(ProjectMapper::class);
@@ -46,6 +53,7 @@ class DailyKmServiceTest extends TestCase {
         $this->settings = $this->createMock(CompanySettingsService::class);
 
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn($dayEntries);
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')->willReturn($statusSummary);
         $this->projectMapper->method('findAll')->willReturn($projects);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn($dayAbsences);
         $this->settings->method('getExternAbsenceTypes')->willReturn($externAbsenceTypes);
@@ -155,5 +163,33 @@ class DailyKmServiceTest extends TestCase {
 
         $this->expectException(ValidationException::class);
         $service->upsert(5, new DateTime('2026-07-06'), 0, 'user');
+    }
+
+    public function testUpsertRejectedInSubmittedMonth(): void {
+        // Nach der Einreichung (alle Einträge eingereicht, noch nicht genehmigt)
+        // sind km eingefroren — wie die eingereichten Zeiteinträge selbst.
+        $service = $this->makeService(
+            [$this->entry(1)],
+            [$this->project(1, true)],
+            statusSummary: ['draft' => 0, 'submitted' => 3, 'approved' => 0, 'rejected' => 0],
+        );
+
+        $this->expectException(ValidationException::class);
+        $service->upsert(5, new DateTime('2026-07-06'), 42, 'user');
+    }
+
+    public function testUpsertAllowedAgainAfterRejection(): void {
+        // Ein abgelehnter Monat ist wieder in Bearbeitung — km wieder änderbar.
+        $service = $this->makeService(
+            [$this->entry(1)],
+            [$this->project(1, true)],
+            statusSummary: ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 2],
+        );
+        $this->dailyKmMapper->method('findByEmployeeAndDate')->willReturn(null);
+        $this->dailyKmMapper->method('insert')->willReturnArgument(0);
+
+        $result = $service->upsert(5, new DateTime('2026-07-06'), 42, 'user');
+
+        $this->assertSame(42, $result->getKilometers());
     }
 }
