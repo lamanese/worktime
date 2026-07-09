@@ -553,4 +553,211 @@ class AbsenceServiceTest extends TestCase {
         $this->assertCount(1, $result['skipped']);
         $this->assertSame('time_entry_conflict', $result['skipped'][0]['reason']);
     }
+
+    // ---------------------------------------------------------------------
+    // #15 Stufe 2: Überhang-Behandlung (closure / compensatory / negative)
+    // ---------------------------------------------------------------------
+
+    /**
+     * Weekday-aware working days (Mon-Fri = 1.0), so the day-walk of the
+     * split logic sees realistic single-day values.
+     */
+    private function mockWeekdayWorkingDays(): void {
+        $this->workScheduleService->method('countWorkingDays')->willReturnCallback(
+            static function (int $empId, DateTime $start, DateTime $end, array $holidays): float {
+                $days = 0.0;
+                for ($d = clone $start; $d <= $end; $d->modify('+1 day')) {
+                    if ((int)$d->format('N') <= 5) {
+                        $days += 1.0;
+                    }
+                }
+                return $days;
+            }
+        );
+    }
+
+    /** @return Absence[] collected inserts */
+    private function &collectInserts(): array {
+        $inserted = [];
+        $this->absenceMapper->method('insert')->willReturnCallback(
+            static function (Absence $a) use (&$inserted): Absence {
+                $a->setId(100 + count($inserted));
+                $inserted[] = $a;
+                return $a;
+            }
+        );
+        return $inserted;
+    }
+
+    public function testCompanyVacationClosureSplitsWhenQuotaExhausted(): void {
+        // 3 remaining vacation days, 5 working days needed → 3 Tage Urlaub
+        // (Mo-Mi), 2 Tage Betriebsschließung (Do-Fr).
+        $emp = $this->cvEmployee(1, 'Anna', 3);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $result = $this->service->createCompanyVacation(
+            '2026-08-03', '2026-08-07', [1], 'Sommer', 'admin', AbsenceService::OVERAGE_CLOSURE
+        );
+
+        $this->assertCount(1, $result['booked']);
+        $this->assertSame(3.0, $result['booked'][0]['vacationDays']);
+        $this->assertSame(2.0, $result['booked'][0]['overageDays']);
+        $this->assertSame(5.0, $result['booked'][0]['days']);
+        $this->assertCount(0, $result['skipped']);
+
+        $this->assertCount(2, $inserted);
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[0]->getType());
+        $this->assertSame('2026-08-03', $inserted[0]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2026-08-05', $inserted[0]->getEndDate()->format('Y-m-d'));
+        $this->assertSame(3.0, (float)$inserted[0]->getDays());
+
+        $this->assertSame(Absence::TYPE_COMPANY_CLOSURE, $inserted[1]->getType());
+        $this->assertSame('2026-08-06', $inserted[1]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2026-08-07', $inserted[1]->getEndDate()->format('Y-m-d'));
+        $this->assertSame(2.0, (float)$inserted[1]->getDays());
+
+        // Both entries are approved, central, and tied to the same group.
+        foreach ($inserted as $a) {
+            $this->assertTrue($a->isCentral());
+            $this->assertSame(Absence::STATUS_APPROVED, $a->getStatus());
+            $this->assertSame($result['group'], $a->getCentralGroup());
+        }
+    }
+
+    public function testCompanyVacationClosureBooksSingleVacationEntryWhenQuotaSuffices(): void {
+        $emp = $this->cvEmployee(1, 'Anna', 30);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $result = $this->service->createCompanyVacation(
+            '2026-08-03', '2026-08-07', [1], null, 'admin', AbsenceService::OVERAGE_CLOSURE
+        );
+
+        $this->assertCount(1, $inserted);
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[0]->getType());
+        $this->assertSame(5.0, (float)$inserted[0]->getDays());
+        $this->assertSame(5.0, $result['booked'][0]['vacationDays']);
+        $this->assertSame(0.0, $result['booked'][0]['overageDays']);
+    }
+
+    public function testCompanyVacationClosureBooksWholePeriodAsClosureWhenNoVacationLeft(): void {
+        $emp = $this->cvEmployee(1, 'Anna', 0);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $result = $this->service->createCompanyVacation(
+            '2026-08-03', '2026-08-07', [1], null, 'admin', AbsenceService::OVERAGE_CLOSURE
+        );
+
+        $this->assertCount(1, $inserted);
+        $this->assertSame(Absence::TYPE_COMPANY_CLOSURE, $inserted[0]->getType());
+        $this->assertSame('2026-08-03', $inserted[0]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2026-08-07', $inserted[0]->getEndDate()->format('Y-m-d'));
+        $this->assertSame(0.0, $result['booked'][0]['vacationDays']);
+        $this->assertSame(5.0, $result['booked'][0]['overageDays']);
+    }
+
+    public function testCompanyVacationCompensatoryUsesCompensatoryTypeForOverage(): void {
+        $emp = $this->cvEmployee(1, 'Anna', 3);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $this->service->createCompanyVacation(
+            '2026-08-03', '2026-08-07', [1], null, 'admin', AbsenceService::OVERAGE_COMPENSATORY
+        );
+
+        $this->assertCount(2, $inserted);
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[0]->getType());
+        $this->assertSame(Absence::TYPE_COMPENSATORY, $inserted[1]->getType());
+    }
+
+    public function testCompanyVacationNegativeBooksEverythingAsVacation(): void {
+        // Only 3 vacation days left, but OVERAGE_NEGATIVE books all 5 as
+        // vacation — the account goes into advance on next year.
+        $emp = $this->cvEmployee(1, 'Anna', 3);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $result = $this->service->createCompanyVacation(
+            '2026-08-03', '2026-08-07', [1], null, 'admin', AbsenceService::OVERAGE_NEGATIVE
+        );
+
+        $this->assertCount(1, $inserted);
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[0]->getType());
+        $this->assertSame(5.0, (float)$inserted[0]->getDays());
+        $this->assertCount(0, $result['skipped']);
+        $this->assertSame(5.0, $result['booked'][0]['vacationDays']);
+    }
+
+    public function testCompanyVacationSplitIsYearAware(): void {
+        // 2026-12-28 (Mon) – 2027-01-05 (Tue), 2 vacation days per year.
+        // 2026: Mon 28 + Tue 29 vacation, Wed 30 + Thu 31 closure.
+        // 2027: fresh quota — Fri 1 + Mon 4 vacation, Tue 5 closure.
+        $emp = $this->cvEmployee(1, 'Anna', 2);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
+        $this->mockWeekdayWorkingDays();
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $inserted = &$this->collectInserts();
+
+        $result = $this->service->createCompanyVacation(
+            '2026-12-28', '2027-01-05', [1], null, 'admin', AbsenceService::OVERAGE_CLOSURE
+        );
+
+        $this->assertCount(4, $inserted);
+
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[0]->getType());
+        $this->assertSame('2026-12-28', $inserted[0]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2026-12-29', $inserted[0]->getEndDate()->format('Y-m-d'));
+
+        $this->assertSame(Absence::TYPE_COMPANY_CLOSURE, $inserted[1]->getType());
+        $this->assertSame('2026-12-30', $inserted[1]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2026-12-31', $inserted[1]->getEndDate()->format('Y-m-d'));
+
+        $this->assertSame(Absence::TYPE_VACATION, $inserted[2]->getType());
+        $this->assertSame('2027-01-01', $inserted[2]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2027-01-04', $inserted[2]->getEndDate()->format('Y-m-d'));
+
+        $this->assertSame(Absence::TYPE_COMPANY_CLOSURE, $inserted[3]->getType());
+        $this->assertSame('2027-01-05', $inserted[3]->getStartDate()->format('Y-m-d'));
+        $this->assertSame('2027-01-05', $inserted[3]->getEndDate()->format('Y-m-d'));
+
+        $this->assertSame(4.0, $result['booked'][0]['vacationDays']);
+        $this->assertSame(3.0, $result['booked'][0]['overageDays']);
+    }
+
+    public function testCompanyVacationRejectsInvalidOverageOption(): void {
+        $this->expectException(ValidationException::class);
+        $this->service->createCompanyVacation('2026-08-03', '2026-08-07', [1], null, 'admin', 'whatever');
+    }
+
+    public function testCreateRejectsCompanyClosureType(): void {
+        // Betriebsschließung ist nicht beantragbar — nur der zentrale Weg darf sie setzen.
+        $this->absenceMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ValidationException::class);
+        $this->service->create(1, Absence::TYPE_COMPANY_CLOSURE, '2026-08-03', '2026-08-07');
+    }
 }

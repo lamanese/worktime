@@ -40,14 +40,22 @@
             </div>
 
             <div class="form-group">
+                <label>{{ t('worktime', 'Wenn der Resturlaub nicht reicht') }}</label>
+                <NcCheckboxRadioSwitch v-for="opt in overageOptions" :key="opt.value"
+                    :checked.sync="form.overageHandling" :value="opt.value" name="bf-overage" type="radio">
+                    {{ opt.label }}
+                </NcCheckboxRadioSwitch>
+            </div>
+
+            <div class="form-group">
                 <label for="bf-note">{{ t('worktime', 'Bemerkung') }}</label>
                 <input id="bf-note" v-model="form.note" type="text" class="input-field"
                     :placeholder="t('worktime', 'z. B. Betriebsferien Weihnachten')">
             </div>
 
-            <NcNoteCard type="warning">
-                {{ t('worktime', 'Die Betriebsferien werden als genehmigter Urlaub bei den betroffenen Mitarbeitern gebucht und vom Urlaubskonto abgezogen. Mitarbeiter ohne ausreichenden Resturlaub oder mit bereits erfassten Zeiten in dem Zeitraum werden nicht gebucht und Ihnen aufgelistet.') }}
-            </NcNoteCard>
+            <p class="help-text">
+                {{ t('worktime', 'Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht, sondern Ihnen aufgelistet.') }}
+            </p>
 
             <NcButton type="primary" :disabled="!canSubmit || saving" @click="submit">
                 {{ t('worktime', 'Betriebsferien eintragen') }}
@@ -57,6 +65,14 @@
         <div v-if="result" class="bf-result">
             <NcNoteCard type="success">
                 {{ t('worktime', '{count} Mitarbeiter eingetragen.', { count: result.booked.length }) }}
+            </NcNoteCard>
+            <NcNoteCard v-if="bookedWithOverage.length" type="info">
+                <strong>{{ t('worktime', 'Resturlaub reichte nicht – aufgeteilt gebucht:') }}</strong>
+                <ul class="bf-skipped">
+                    <li v-for="b in bookedWithOverage" :key="b.employeeId">
+                        {{ overageSplitLabel(b) }}
+                    </li>
+                </ul>
             </NcNoteCard>
             <NcNoteCard v-if="result.skipped.length" type="warning">
                 <strong>{{ t('worktime', 'Nicht gebucht – bitte einzeln klären:') }}</strong>
@@ -129,18 +145,34 @@ export default {
                 startDate: null,
                 endDate: null,
                 target: 'all',
+                overageHandling: 'skip',
                 note: '',
             },
             selectedEmployeeIds: [],
             employeeFilter: '',
             saving: false,
             result: null,
+            resultOverageHandling: 'skip',
             central: [],
         }
     },
     computed: {
         activeEmployees() {
             return this.employees.filter(e => e.isActive)
+        },
+        overageOptions() {
+            // #15 Stufe 2: bewusste Admin-Auswahl, keine Rechtswertung durch die App.
+            // Die Konsequenz der gewählten Option erklärt die Warnbox darunter.
+            return [
+                { value: 'skip', label: this.t('worktime', 'Nicht buchen, nur auflisten') },
+                { value: 'closure', label: this.t('worktime', 'Bezahlte Freistellung (Betriebsschließung)') },
+                { value: 'compensatory', label: this.t('worktime', 'Freizeitausgleich') },
+                { value: 'negative', label: this.t('worktime', 'Urlaub ins Minus') },
+            ]
+        },
+        bookedWithOverage() {
+            if (!this.result || !this.result.booked) return []
+            return this.result.booked.filter(b => (b.overageDays || 0) > 0)
         },
         filteredEmployees() {
             const q = this.employeeFilter.trim().toLowerCase()
@@ -154,22 +186,35 @@ export default {
             return true
         },
         groups() {
+            // #15 Stufe 2: Einträge eines Vorgangs hängen an der centralGroup
+            // (Split-Einträge haben unterschiedliche Teilzeiträume). Fallback für
+            // Alt-Einträge ohne Gruppe: exakter Zeitraum + Bemerkung.
             const map = {}
             this.central.forEach(a => {
-                const key = `${a.startDate}|${a.endDate}|${a.note || ''}`
+                const key = a.centralGroup || `${a.startDate}|${a.endDate}|${a.note || ''}`
                 if (!map[key]) {
                     map[key] = {
                         key,
+                        group: a.centralGroup || null,
                         startDate: a.startDate,
                         endDate: a.endDate,
                         note: a.note || '',
-                        count: 0,
-                        label: this.rangeLabel(a.startDate, a.endDate),
+                        employeeIds: new Set(),
                     }
                 }
-                map[key].count++
+                const g = map[key]
+                if (a.startDate < g.startDate) g.startDate = a.startDate
+                if (a.endDate > g.endDate) g.endDate = a.endDate
+                if (!g.note && a.note) g.note = a.note
+                g.employeeIds.add(a.employeeId)
             })
-            return Object.values(map).sort((a, b) => b.startDate.localeCompare(a.startDate))
+            return Object.values(map)
+                .map(g => ({
+                    ...g,
+                    count: g.employeeIds.size,
+                    label: this.rangeLabel(g.startDate, g.endDate),
+                }))
+                .sort((a, b) => b.startDate.localeCompare(a.startDate))
         },
     },
     mounted() {
@@ -197,8 +242,10 @@ export default {
                     endDate: formatDateISO(this.form.endDate),
                     employeeIds: this.form.target === 'all' ? null : this.selectedEmployeeIds.map(Number),
                     note: this.form.note || null,
+                    overageHandling: this.form.overageHandling,
                 }
                 this.result = await AbsenceService.createCompanyVacation(payload)
+                this.resultOverageHandling = payload.overageHandling
                 showSuccess(this.t('worktime', 'Betriebsferien eingetragen.'))
                 await this.load()
             } catch (error) {
@@ -207,9 +254,20 @@ export default {
                 this.saving = false
             }
         },
+        overageSplitLabel(b) {
+            const overageName = this.resultOverageHandling === 'compensatory'
+                ? this.t('worktime', 'Freizeitausgleich')
+                : this.t('worktime', 'Betriebsschließung')
+            return this.t('worktime', '{name} – {vacation} Tage Urlaub + {overage} Tage {type}', {
+                name: b.name,
+                vacation: b.vacationDays,
+                overage: b.overageDays,
+                type: overageName,
+            })
+        },
         async remove(group) {
             try {
-                await AbsenceService.deleteCompanyVacation(group.startDate, group.endDate)
+                await AbsenceService.deleteCompanyVacation(group.startDate, group.endDate, group.group)
                 showSuccess(this.t('worktime', 'Betriebsferien entfernt.'))
                 this.result = null
                 await this.load()

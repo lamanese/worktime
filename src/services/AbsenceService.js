@@ -144,9 +144,11 @@ export default {
         }
     },
 
-    async deleteCompanyVacation(startDate, endDate) {
+    async deleteCompanyVacation(startDate, endDate, group = null) {
         try {
-            const response = await api.post('/absences/company-vacation/delete', { startDate, endDate })
+            // #15 Stufe 2: bevorzugt per Gruppen-ID (deckt Split-Einträge ab),
+            // Zeitraum bleibt als Fallback für Alt-Einträge ohne Gruppe.
+            const response = await api.post('/absences/company-vacation/delete', { startDate, endDate, group: group || '' })
             return response.data
         } catch (error) {
             handleApiError(error)
