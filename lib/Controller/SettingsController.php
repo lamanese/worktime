@@ -30,6 +30,7 @@ class SettingsController extends BaseController {
         CompanySetting::KEY_REQUIRE_DESCRIPTION,
         CompanySetting::KEY_ALLOW_FUTURE_ENTRIES,
         CompanySetting::KEY_APPROVAL_REQUIRED,
+        CompanySetting::KEY_EXTERN_ABSENCE_TYPES,
     ];
 
     public function __construct(

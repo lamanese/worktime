@@ -8,6 +8,7 @@ use DateTime;
 use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Service\AbsenceService;
+use OCA\WorkTime\Service\AllowanceService;
 use OCA\WorkTime\Service\ArchiveService;
 use OCA\WorkTime\Service\CompanySettingsService;
 use OCA\WorkTime\Service\EmployeeService;
@@ -35,6 +36,7 @@ class CompensatoryOvertimeArchiveTest extends TestCase {
 			$this->createMock(HolidayService::class),
 			$schedule,
 			$this->createMock(PdfService::class),
+			$this->createMock(AllowanceService::class),
 		);
 	}
 

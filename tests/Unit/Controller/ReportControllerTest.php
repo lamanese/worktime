@@ -6,12 +6,14 @@ namespace OCA\WorkTime\Tests\Unit\Controller;
 
 use OCA\WorkTime\Controller\ReportController;
 use OCA\WorkTime\Db\AbsenceMapper;
+use OCA\WorkTime\Db\DailyKmMapper;
 use DateTime;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\Project;
 use OCA\WorkTime\Db\TimeEntry;
 use OCA\WorkTime\Db\TimeEntryMapper;
 use OCA\WorkTime\Service\AbsenceService;
+use OCA\WorkTime\Service\AllowanceService;
 use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\PdfService;
@@ -61,6 +63,8 @@ class ReportControllerTest extends TestCase {
             $this->createMock(OvertimePayoutService::class),
             $this->createMock(OvertimeCalculationService::class),
             $this->projectService,
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
         );
     }
@@ -150,6 +154,8 @@ class ReportControllerTest extends TestCase {
             $this->createMock(PdfService::class), $this->createMock(WorkScheduleService::class),
             $this->createMock(YearlyCarryoverService::class), $this->createMock(OvertimePayoutService::class),
             $this->createMock(OvertimeCalculationService::class), $this->projectService,
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
         );
 

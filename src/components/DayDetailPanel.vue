@@ -77,6 +77,24 @@
             </NcButton>
         </template>
 
+        <!-- Extern-Kilometer: nur an Tagen mit Extern-Projekt oder externem Abwesenheitstyp -->
+        <div v-if="externEligible" class="dp-km">
+            <label :for="'dp-km-' + day.date" class="dp-km-label">
+                {{ t('worktime', 'Gefahrene Kilometer (Extern)') }}
+            </label>
+            <div class="dp-km-row">
+                <input :id="'dp-km-' + day.date"
+                    v-model.number="kmValue"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="dp-km-input"
+                    :disabled="readonly"
+                    @change="saveKilometers">
+                <span class="dp-km-unit">km</span>
+            </div>
+        </div>
+
         <CorrectionReasonModal v-if="pendingDeleteEntry"
             @confirm="onDeleteReasonConfirm"
             @close="pendingDeleteEntry = null" />
@@ -94,6 +112,7 @@ import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import { mapActions, mapGetters } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import CorrectionReasonModal from './CorrectionReasonModal.vue'
+import DailyKmService from '../services/DailyKmService.js'
 import { formatDateWithWeekday, getToday } from '../utils/dateUtils.js'
 import { formatMinutes, getCurrentTime } from '../utils/timeUtils.js'
 import { getAbsenceColorClass } from '../utils/formatters.js'
@@ -125,6 +144,14 @@ export default {
             type: String,
             default: null,
         },
+        employeeId: {
+            type: Number,
+            default: null,
+        },
+        externAbsenceTypes: {
+            type: Array,
+            default: () => [],
+        },
     },
     emits: ['refresh'],
     data() {
@@ -132,6 +159,7 @@ export default {
             formMode: null, // 'add' | 'edit' | null
             editingEntry: null,
             pendingDeleteEntry: null,
+            kmValue: 0,
         }
     },
     computed: {
@@ -177,11 +205,31 @@ export default {
             if (!this.day.entries.length) return null
             return this.day.date === getToday() ? getCurrentTime() : ''
         },
+        // Tag ist "extern" (km-fähig). Autorität ist das Backend (day.externEligible,
+        // kennt auch inaktive Extern-Projekte); die lokale Prüfung deckt frisch
+        // erfasste Buchungen/Abwesenheiten vor dem nächsten Reload ab — sie sieht
+        // aber nur die aktiven Projekte des Mitarbeiters.
+        externEligible() {
+            if (this.day.externEligible) return true
+            const hasExternProject = this.day.entries.some(e => {
+                const project = this.projects.find(p => p.id === e.projectId)
+                return project && project.isExtern
+            })
+            if (hasExternProject) return true
+            return !!this.day.absence && this.externAbsenceTypes.includes(this.day.absence.type)
+        },
     },
     watch: {
         // Beim Wechsel des ausgewählten Tages offene Formulare schließen
         'day.date'() {
             this.closeForm()
+        },
+        // Kilometerwert aus dem (neu geladenen) Tag übernehmen.
+        day: {
+            immediate: true,
+            handler() {
+                this.kmValue = this.day.kilometers || 0
+            },
         },
     },
     methods: {
@@ -195,6 +243,17 @@ export default {
             return project?.name || project?.displayName || ''
         },
         absenceColorClass: getAbsenceColorClass,
+        async saveKilometers() {
+            if (this.readonly || !this.employeeId) return
+            try {
+                const km = Math.max(0, Math.round(this.kmValue || 0))
+                await DailyKmService.upsert(this.employeeId, this.day.date, km)
+                showSuccessMessage(this.t('worktime', 'Kilometer gespeichert'))
+                this.$emit('refresh')
+            } catch (error) {
+                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Speichern der Kilometer'))
+            }
+        },
         startAdd() {
             this.editingEntry = null
             this.formMode = 'add'
@@ -380,6 +439,38 @@ export default {
     border-radius: var(--border-radius);
     padding: 10px 12px;
     font-size: 13px;
+    color: var(--color-text-maxcontrast);
+}
+
+.dp-km {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.dp-km-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.dp-km-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dp-km-input {
+    width: 100px;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-main-background);
+    color: var(--color-main-text);
+}
+
+.dp-km-unit {
     color: var(--color-text-maxcontrast);
 }
 </style>

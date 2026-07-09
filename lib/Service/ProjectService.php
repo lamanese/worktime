@@ -64,7 +64,9 @@ class ProjectService {
         string $currentUserId = '',
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): Project {
         // Validate
         $errors = $this->validate($name, $code);
@@ -81,6 +83,8 @@ class ProjectService {
         $project->setIsActive($isActive);
         $project->setIsBillable($isBillable);
         $project->setAllEmployees($allEmployees);
+        $project->setIsFieldWork($isFieldWork);
+        $project->setIsExtern($isExtern);
         $project->setCreatedAt(new DateTime());
         $project->setUpdatedAt(new DateTime());
 
@@ -113,7 +117,9 @@ class ProjectService {
         string $currentUserId = '',
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): Project {
         $project = $this->find($id);
         $oldValues = $project->jsonSerialize();
@@ -132,6 +138,8 @@ class ProjectService {
         $project->setIsActive($isActive);
         $project->setIsBillable($isBillable);
         $project->setAllEmployees($allEmployees);
+        $project->setIsFieldWork($isFieldWork);
+        $project->setIsExtern($isExtern);
         $project->setUpdatedAt(new DateTime());
 
         $project = $this->projectMapper->update($project);

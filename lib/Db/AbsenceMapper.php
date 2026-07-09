@@ -111,6 +111,27 @@ class AbsenceMapper extends QBMapper {
     }
 
     /**
+     * Alle Abwesenheiten aller Mitarbeiter, die den Zeitraum überlappen
+     * (für die Spesen-/km-Berechnung der Projektauswertung, eine Query statt N).
+     *
+     * @return Absence[]
+     */
+    public function findByDateRange(DateTime $startDate, DateTime $endDate): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->lte('start_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE)),
+                    $qb->expr()->gte('end_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE))
+                )
+            )
+            ->orderBy('start_date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
      * Batch-load absences for multiple employees in a single month.
      *
      * @param int[] $employeeIds

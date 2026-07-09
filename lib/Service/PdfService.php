@@ -57,13 +57,14 @@ class PdfService {
         array $absences,
         array $holidays,
         array $statistics,
-        ?array $approvalInfo = null
+        ?array $approvalInfo = null,
+        ?array $allowance = null
     ): string {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
         $periodLabel = $this->getGermanMonthName($month) . ' ' . $year;
 
-        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo);
+        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo, 'Arbeitstage im Monat:', $allowance);
     }
 
     /**
@@ -78,10 +79,11 @@ class PdfService {
         array $absences,
         array $holidays,
         array $statistics,
-        ?array $approvalInfo = null
+        ?array $approvalInfo = null,
+        ?array $allowance = null
     ): string {
         $periodLabel = $startDate->format('d.m.Y') . ' – ' . $endDate->format('d.m.Y');
-        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo, 'Arbeitstage im Zeitraum:');
+        return $this->renderReport($employee, $periodLabel, $startDate, $endDate, $timeEntries, $absences, $holidays, $statistics, $approvalInfo, 'Arbeitstage im Zeitraum:', $allowance);
     }
 
     /**
@@ -97,7 +99,8 @@ class PdfService {
         array $holidays,
         array $statistics,
         ?array $approvalInfo = null,
-        string $workingDaysLabel = 'Arbeitstage im Monat:'
+        string $workingDaysLabel = 'Arbeitstage im Monat:',
+        ?array $allowance = null
     ): string {
         $pdf = $this->createPdf();
 
@@ -114,6 +117,11 @@ class PdfService {
 
         // Summary
         $this->addSummary($pdf, $employee, $statistics, $workingDaysLabel);
+
+        // Spesen & Kilometer (nur wenn im Zeitraum etwas angefallen ist)
+        if ($allowance !== null && (($allowance['allowanceDays'] ?? 0) > 0 || ($allowance['kilometers'] ?? 0) > 0)) {
+            $this->addAllowanceSection($pdf, $allowance);
+        }
 
         // Signature section
         $this->addSignatureSection($pdf);
@@ -135,7 +143,7 @@ class PdfService {
      * @param array{totalMinutes: int, billableMinutes: int} $totals
      * @return string PDF content
      */
-    public function generateProjectEvaluation(string $label, array $entries, array $totals, array $filter = []): string {
+    public function generateProjectEvaluation(string $label, array $entries, array $totals, array $filter = [], array $allowanceRows = []): string {
         $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
         $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
         $pdf->SetCreator('WorkTime Nextcloud App');
@@ -203,6 +211,8 @@ class PdfService {
         $pdf->Cell(83, 7, '', 1, 0, 'L');
         $pdf->Ln();
 
+        $this->addAllowanceByEmployeeTable($pdf, $allowanceRows);
+
         return $pdf->Output('', 'S');
     }
 
@@ -213,7 +223,7 @@ class PdfService {
      * @param array<array{name: string, minutes: int}> $rows
      * @return string PDF content
      */
-    public function generateProjectAggregate(string $label, array $rows, int $totalMinutes, array $filter = []): string {
+    public function generateProjectAggregate(string $label, array $rows, int $totalMinutes, array $filter = [], array $allowanceRows = []): string {
         $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
         $pdf->SetCreator('WorkTime Nextcloud App');
@@ -263,6 +273,8 @@ class PdfService {
         $pdf->Cell(35, 7, $this->minutesToHours($totalMinutes), 1, 0, 'R');
         $pdf->Cell(35, 7, '100 %', 1, 0, 'R');
         $pdf->Ln();
+
+        $this->addAllowanceByEmployeeTable($pdf, $allowanceRows);
 
         return $pdf->Output('', 'S');
     }
@@ -743,6 +755,111 @@ class PdfService {
         }
 
         $pdf->Ln(5);
+    }
+
+    /**
+     * Spesen- und Kilometer-Block im Arbeitszeitnachweis. Wird nur gerendert,
+     * wenn im Zeitraum Spesen-Tage oder Kilometer angefallen sind.
+     *
+     * @param array{allowanceDays: int, allowancePerDay: float, allowanceAmount: float, kilometers: int, mileageRate: float, mileageAmount: float, total: float} $allowance
+     */
+    private function addAllowanceSection(TCPDF $pdf, array $allowance): void {
+        // Keep the whole block on one page.
+        $this->ensureSpace($pdf, 32);
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(0, 8, 'Spesen & Kilometer', 0, 1);
+
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+
+        $pdf->Cell(50, 6, 'Spesen (Aussendienst):', 0, 0);
+        $pdf->Cell(0, 6, sprintf(
+            '%d Tage × %s = %s',
+            $allowance['allowanceDays'],
+            $this->formatEuro($allowance['allowancePerDay']),
+            $this->formatEuro($allowance['allowanceAmount'])
+        ), 0, 1);
+
+        $pdf->Cell(50, 6, 'Kilometer (extern):', 0, 0);
+        $pdf->Cell(0, 6, sprintf(
+            '%d km × %s = %s',
+            $allowance['kilometers'],
+            $this->formatEuro($allowance['mileageRate']),
+            $this->formatEuro($allowance['mileageAmount'])
+        ), 0, 1);
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(50, 6, 'Summe:', 0, 0);
+        $pdf->Cell(0, 6, $this->formatEuro($allowance['total']), 0, 1);
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+
+        $pdf->Ln(5);
+    }
+
+    /**
+     * Tabelle "Spesen & Kilometer je Mitarbeiter" für die Projekt-Exporte.
+     * Die Werte gelten je Mitarbeiter für den gesamten Zeitraum und sind
+     * unabhängig von der Projektauswahl (Spesen/km sind tages-, nicht
+     * projektgebunden) — der Hinweis wird mitgedruckt.
+     *
+     * @param array<array{name: string, allowanceDays: int, allowanceAmount: float, kilometers: int, mileageAmount: float, total: float}> $rows
+     */
+    private function addAllowanceByEmployeeTable(TCPDF $pdf, array $rows): void {
+        if (empty($rows)) {
+            return;
+        }
+
+        $this->ensureSpace($pdf, 24 + min(count($rows), 3) * 6);
+
+        $pdf->Ln(6);
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(0, 8, 'Spesen & Kilometer je Mitarbeiter', 0, 1, 'L');
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        $pdf->SetTextColor(90, 90, 90);
+        $pdf->Cell(0, 5, 'Je Mitarbeiter für den gesamten Zeitraum, unabhängig von der Projektauswahl.', 0, 1, 'L');
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Ln(1);
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell(60, 7, 'Mitarbeiter', 1, 0, 'L', true);
+        $pdf->Cell(22, 7, 'Spesen-Tage', 1, 0, 'R', true);
+        $pdf->Cell(24, 7, 'Spesen', 1, 0, 'R', true);
+        $pdf->Cell(22, 7, 'Kilometer', 1, 0, 'R', true);
+        $pdf->Cell(26, 7, 'Kilometergeld', 1, 0, 'R', true);
+        $pdf->Cell(26, 7, 'Summe', 1, 0, 'R', true);
+        $pdf->Ln();
+
+        $totals = ['allowanceDays' => 0, 'allowanceAmount' => 0.0, 'kilometers' => 0, 'mileageAmount' => 0.0, 'total' => 0.0];
+        $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
+        foreach ($rows as $row) {
+            $pdf->Cell(60, 6, $this->truncate($row['name'], 60), 1, 0, 'L');
+            $pdf->Cell(22, 6, (string)$row['allowanceDays'], 1, 0, 'R');
+            $pdf->Cell(24, 6, $this->formatEuro($row['allowanceAmount']), 1, 0, 'R');
+            $pdf->Cell(22, 6, (string)$row['kilometers'], 1, 0, 'R');
+            $pdf->Cell(26, 6, $this->formatEuro($row['mileageAmount']), 1, 0, 'R');
+            $pdf->Cell(26, 6, $this->formatEuro($row['total']), 1, 0, 'R');
+            $pdf->Ln();
+
+            $totals['allowanceDays'] += $row['allowanceDays'];
+            $totals['allowanceAmount'] += $row['allowanceAmount'];
+            $totals['kilometers'] += $row['kilometers'];
+            $totals['mileageAmount'] += $row['mileageAmount'];
+            $totals['total'] += $row['total'];
+        }
+
+        $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
+        $pdf->Cell(60, 7, 'Gesamt', 1, 0, 'R');
+        $pdf->Cell(22, 7, (string)$totals['allowanceDays'], 1, 0, 'R');
+        $pdf->Cell(24, 7, $this->formatEuro($totals['allowanceAmount']), 1, 0, 'R');
+        $pdf->Cell(22, 7, (string)$totals['kilometers'], 1, 0, 'R');
+        $pdf->Cell(26, 7, $this->formatEuro($totals['mileageAmount']), 1, 0, 'R');
+        $pdf->Cell(26, 7, $this->formatEuro($totals['total']), 1, 0, 'R');
+        $pdf->Ln();
+    }
+
+    private function formatEuro(float $amount): string {
+        return number_format($amount, 2, ',', '.') . ' €';
     }
 
     /**

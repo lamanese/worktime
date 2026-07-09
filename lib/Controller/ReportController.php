@@ -11,10 +11,12 @@ namespace OCA\WorkTime\Controller;
 
 use DateTime;
 use OCA\WorkTime\Db\AbsenceMapper;
+use OCA\WorkTime\Db\DailyKmMapper;
 use OCA\WorkTime\Db\Employee;
 use OCA\WorkTime\Db\Absence;
 use OCA\WorkTime\Db\TimeEntryMapper;
 use OCA\WorkTime\Service\AbsenceService;
+use OCA\WorkTime\Service\AllowanceService;
 use OCA\WorkTime\Service\EmployeeService;
 use OCA\WorkTime\Service\HolidayService;
 use OCA\WorkTime\Service\OvertimeCalculationService;
@@ -53,6 +55,8 @@ class ReportController extends BaseController {
         private OvertimePayoutService $payoutService,
         private OvertimeCalculationService $overtimeCalc,
         private ProjectService $projectService,
+        private AllowanceService $allowanceService,
+        private DailyKmMapper $dailyKmMapper,
         private IL10N $l,
     ) {
         parent::__construct($request, $userId);
@@ -93,6 +97,8 @@ class ReportController extends BaseController {
             // daily hours, evaluated across all entries of each day.
             $dayWarnings = $this->buildDayWarnings($timeEntries, $absences);
 
+            $allowance = $this->allowanceService->getMonthlySummary($employeeId, $year, $month, $timeEntries, $absences);
+
             return $this->successResponse([
                 'employee' => $employee,
                 'year' => $year,
@@ -102,6 +108,7 @@ class ReportController extends BaseController {
                 'holidays' => $holidays,
                 'statistics' => $stats,
                 'dayWarnings' => $dayWarnings,
+                'allowance' => $allowance,
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -243,6 +250,8 @@ class ReportController extends BaseController {
                 $employeeIds[$agg['employeeId']] = true;
             }
 
+            $allowanceByEmployee = $this->collectAllowanceByEmployee($start, $end, $employees);
+
             return $this->successResponse([
                 'period' => [
                     'year' => $year,
@@ -259,6 +268,7 @@ class ReportController extends BaseController {
                     'employeeCount' => count($employeeIds),
                 ],
                 'rows' => $rows,
+                'allowanceByEmployee' => array_values($allowanceByEmployee),
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -298,7 +308,8 @@ class ReportController extends BaseController {
             return $this->forbiddenResponse();
         }
         try {
-            [, , $label, $entries, $totals] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $this->parseIds($projectIds), $this->parseIds($employeeIds));
+            $eIds = $this->parseIds($employeeIds);
+            [$start, $end, $label, $entries, $totals, , $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $this->parseIds($projectIds), $eIds);
 
             if ($mode === 'agg') {
                 $total = max(1, $totals['totalMinutes']);
@@ -325,6 +336,38 @@ class ReportController extends BaseController {
                     ]));
                 }
             }
+
+            // Spesen & Kilometer je Mitarbeiter als eigener Block (tages-, nicht
+            // projektgebunden — gilt für den gesamten Zeitraum).
+            $allowanceRows = $this->allowanceExportRows($this->collectAllowanceByEmployee($start, $end, $employees), $eIds);
+            if (!empty($allowanceRows)) {
+                $lines[] = '';
+                $lines[] = $this->csvCell('Spesen & Kilometer je Mitarbeiter (gesamter Zeitraum, unabhängig von der Projektauswahl)');
+                $lines[] = implode(';', array_map([$this, 'csvCell'], ['Mitarbeiter', 'Spesen-Tage', 'Spesen (EUR)', 'Kilometer', 'Kilometergeld (EUR)', 'Summe (EUR)']));
+                $totalRow = ['allowanceDays' => 0, 'allowanceAmount' => 0.0, 'kilometers' => 0, 'mileageAmount' => 0.0, 'total' => 0.0];
+                foreach ($allowanceRows as $row) {
+                    $lines[] = implode(';', array_map([$this, 'csvCell'], [
+                        $row['name'],
+                        (string)$row['allowanceDays'],
+                        number_format($row['allowanceAmount'], 2, ',', ''),
+                        (string)$row['kilometers'],
+                        number_format($row['mileageAmount'], 2, ',', ''),
+                        number_format($row['total'], 2, ',', ''),
+                    ]));
+                    foreach ($totalRow as $key => $value) {
+                        $totalRow[$key] += $row[$key];
+                    }
+                }
+                $lines[] = implode(';', array_map([$this, 'csvCell'], [
+                    'Gesamt',
+                    (string)$totalRow['allowanceDays'],
+                    number_format($totalRow['allowanceAmount'], 2, ',', ''),
+                    (string)$totalRow['kilometers'],
+                    number_format($totalRow['mileageAmount'], 2, ',', ''),
+                    number_format($totalRow['total'], 2, ',', ''),
+                ]));
+            }
+
             // UTF-8 BOM so Excel detects the encoding.
             $csv = "\xEF\xBB\xBF" . implode("\r\n", $lines) . "\r\n";
 
@@ -346,11 +389,12 @@ class ReportController extends BaseController {
         try {
             $pIds = $this->parseIds($projectIds);
             $eIds = $this->parseIds($employeeIds);
-            [, , $label, $entries, $totals, $projects, $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
+            [$start, $end, $label, $entries, $totals, $projects, $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
             $filter = $this->selectionLabels($pIds, $eIds, $projects, $employees);
+            $allowanceRows = $this->allowanceExportRows($this->collectAllowanceByEmployee($start, $end, $employees), $eIds);
             $pdf = $mode === 'agg'
-                ? $this->pdfService->generateProjectAggregate($label, $this->aggregateByEmployee($entries), $totals['totalMinutes'], $filter)
-                : $this->pdfService->generateProjectEvaluation($label, $entries, $totals, $filter);
+                ? $this->pdfService->generateProjectAggregate($label, $this->aggregateByEmployee($entries), $totals['totalMinutes'], $filter, $allowanceRows)
+                : $this->pdfService->generateProjectEvaluation($label, $entries, $totals, $filter, $allowanceRows);
             return new DataDownloadResponse($pdf, $this->exportFilename($label) . '.pdf', 'application/pdf');
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -419,6 +463,87 @@ class ReportController extends BaseController {
         }
 
         return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes], $projects, $employees];
+    }
+
+    /**
+     * Spesen/Kilometer je Mitarbeiter über den Zeitraum (projektunabhängig,
+     * da Spesen/km tages- und nicht projektgebunden sind). Drei Batch-Queries
+     * (Zeiteinträge, Abwesenheiten, km) statt N pro Mitarbeiter; die reine
+     * Berechnung übernimmt AllowanceService::calculate(). Nur Mitarbeiter mit
+     * Spesen-Tagen oder Kilometern werden zurückgegeben.
+     *
+     * @param array<int, Employee> $employees id-keyed map (für die Namen)
+     * @return array<int, array> employeeId => allowance summary + employeeId/employeeName
+     */
+    private function collectAllowanceByEmployee(DateTime $start, DateTime $end, array $employees): array {
+        $entriesByEmployee = [];
+        foreach ($this->timeEntryMapper->findByDateRange($start, $end) as $entry) {
+            $entriesByEmployee[$entry->getEmployeeId()][] = $entry;
+        }
+
+        $absencesByEmployee = [];
+        foreach ($this->absenceMapper->findByDateRange($start, $end) as $absence) {
+            $absencesByEmployee[$absence->getEmployeeId()][] = $absence;
+        }
+
+        $kmByEmployee = [];
+        foreach ($this->dailyKmMapper->findByDateRange($start, $end) as $record) {
+            $kmByEmployee[$record->getEmployeeId()][] = $record;
+        }
+
+        $employeeIds = array_unique(array_merge(
+            array_keys($entriesByEmployee),
+            array_keys($absencesByEmployee),
+            array_keys($kmByEmployee)
+        ));
+
+        $result = [];
+        foreach ($employeeIds as $employeeId) {
+            $summary = $this->allowanceService->calculate(
+                $entriesByEmployee[$employeeId] ?? [],
+                $absencesByEmployee[$employeeId] ?? [],
+                $kmByEmployee[$employeeId] ?? [],
+                $start,
+                $end
+            );
+            if ($summary['allowanceDays'] <= 0 && $summary['kilometers'] <= 0) {
+                continue;
+            }
+            $result[$employeeId] = array_merge($summary, [
+                'employeeId' => $employeeId,
+                'employeeName' => isset($employees[$employeeId]) ? $employees[$employeeId]->getFullName() : null,
+            ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Allowance-Zeilen für die Exporte (CSV/PDF), optional auf die gewählten
+     * Mitarbeiter eingeschränkt und nach Name sortiert.
+     *
+     * @param array<int, array> $allowanceByEmployee
+     * @param int[] $employeeIds Filter (leer = alle)
+     * @return array<array{name: string, allowanceDays: int, allowanceAmount: float, kilometers: int, mileageAmount: float, total: float}>
+     */
+    private function allowanceExportRows(array $allowanceByEmployee, array $employeeIds): array {
+        $filter = array_flip($employeeIds);
+        $rows = [];
+        foreach ($allowanceByEmployee as $employeeId => $summary) {
+            if (!empty($filter) && !isset($filter[$employeeId])) {
+                continue;
+            }
+            $rows[] = [
+                'name' => $summary['employeeName'] ?? 'Unbekannt',
+                'allowanceDays' => $summary['allowanceDays'],
+                'allowanceAmount' => $summary['allowanceAmount'],
+                'kilometers' => $summary['kilometers'],
+                'mileageAmount' => $summary['mileageAmount'],
+                'total' => $summary['total'],
+            ];
+        }
+        usort($rows, static fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+        return $rows;
     }
 
     /**
@@ -552,6 +677,7 @@ class ReportController extends BaseController {
             $holidays = $this->holidayService->findByMonth($year, $month, $employee->getFederalState());
 
             $stats = $this->overtimeCalc->getMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
+            $allowance = $this->allowanceService->getMonthlySummary($employeeId, $year, $month, $timeEntries, $absences);
 
             $pdfContent = $this->pdfService->generateMonthlyReport(
                 $employee,
@@ -560,7 +686,9 @@ class ReportController extends BaseController {
                 $timeEntries,
                 $absences,
                 $holidays,
-                $stats
+                $stats,
+                null,
+                $allowance
             );
 
             $filename = sprintf(
@@ -613,6 +741,7 @@ class ReportController extends BaseController {
             $holidays = $this->holidayService->findHolidaysInRange($start, $end, $employee->getFederalState());
 
             $stats = $this->overtimeCalc->getRangeStats($employee, $start, $end, $timeEntries, $absences, $holidays);
+            $allowance = $this->allowanceService->getRangeSummary($employeeId, $start, $end, $timeEntries, $absences);
 
             $pdfContent = $this->pdfService->generateRangeReport(
                 $employee,
@@ -621,7 +750,9 @@ class ReportController extends BaseController {
                 $timeEntries,
                 $absences,
                 $holidays,
-                $stats
+                $stats,
+                null,
+                $allowance
             );
 
             $filename = sprintf(
@@ -670,6 +801,7 @@ class ReportController extends BaseController {
             $report[] = [
                 'employee' => $employee,
                 'statistics' => $stats,
+                'allowance' => $this->allowanceService->getMonthlySummary($empId, $year, $month, $timeEntries, $absences),
                 'monthStatus' => [
                     'draft' => $statusSummary['draft'],
                     'submitted' => $statusSummary['submitted'],
@@ -701,6 +833,14 @@ class ReportController extends BaseController {
         $employeeIds = array_map(fn(Employee $e) => $e->getId(), $teamMembers);
         $allTimeEntries = $this->timeEntryMapper->findByEmployeeIdsAndYear($employeeIds, $year);
         $allAbsences = $this->absenceMapper->findByEmployeeIdsAndYear($employeeIds, $year);
+
+        // km-Datensätze des Jahres für die Spesen-/Kilometer-Spalte (eine Query)
+        $yearStart = new DateTime("$year-01-01");
+        $yearEnd = new DateTime("$year-12-31");
+        $kmByEmployee = [];
+        foreach ($this->dailyKmMapper->findByDateRange($yearStart, $yearEnd) as $record) {
+            $kmByEmployee[$record->getEmployeeId()][] = $record;
+        }
 
         // Batch-load status summaries for all months (12 queries total, not 12×N)
         $allStatusByMonth = [];
@@ -821,6 +961,7 @@ class ReportController extends BaseController {
                 ],
                 'vacationStats' => $vacationStats,
                 'months' => $months,
+                'allowance' => $this->allowanceService->calculate($empTimeEntries, $empAbsences, $kmByEmployee[$empId] ?? [], $yearStart, $yearEnd),
                 'carryoverMinutes' => $overtimeCarryover,
                 'paidOutMinutes' => $paidOutMinutes,
                 'totalOvertimeMinutes' => $totalOvertimeMinutes + $overtimeCarryover - $paidOutMinutes,

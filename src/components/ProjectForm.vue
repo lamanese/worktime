@@ -60,6 +60,18 @@
         </div>
 
         <div class="form-group">
+            <label class="form-group-label">{{ t('worktime', 'Aussendienst & Extern') }}</label>
+            <NcCheckboxRadioSwitch :checked.sync="form.isFieldWork" type="switch">
+                {{ t('worktime', 'Aussendienst (Spesen)') }}
+            </NcCheckboxRadioSwitch>
+            <p class="header-hint">{{ t('worktime', 'Tage mit Buchung auf diesem Projekt lösen ab der eingestellten Stundenschwelle die Spesen-Pauschale aus.') }}</p>
+            <NcCheckboxRadioSwitch :checked.sync="form.isExtern" type="switch">
+                {{ t('worktime', 'Extern (Kilometer)') }}
+            </NcCheckboxRadioSwitch>
+            <p class="header-hint">{{ t('worktime', 'An Tagen mit Buchung auf diesem Projekt können gefahrene Kilometer erfasst werden.') }}</p>
+        </div>
+
+        <div class="form-group">
             <label class="form-group-label">{{ t('worktime', 'Buchungsberechtigung') }}</label>
             <NcCheckboxRadioSwitch :checked.sync="bookingMode"
                 value="all"
@@ -126,6 +138,8 @@ export default {
                 isActive: true,
                 isBillable: true,
                 allEmployees: true,
+                isFieldWork: false,
+                isExtern: false,
                 memberIds: [],
             },
         }
@@ -175,6 +189,8 @@ export default {
                         isActive: project.isActive ?? true,
                         isBillable: project.isBillable ?? true,
                         allEmployees: project.allEmployees ?? true,
+                        isFieldWork: project.isFieldWork ?? false,
+                        isExtern: project.isExtern ?? false,
                         memberIds: Array.isArray(project.memberIds) ? [...project.memberIds] : [],
                     }
                 } else {
@@ -201,6 +217,8 @@ export default {
                 isActive: true,
                 isBillable: true,
                 allEmployees: true,
+                isFieldWork: false,
+                isExtern: false,
                 memberIds: [],
             }
         },
@@ -218,6 +236,8 @@ export default {
                     isActive: this.form.isActive,
                     isBillable: this.form.isBillable,
                     allEmployees: this.form.allEmployees,
+                    isFieldWork: this.form.isFieldWork,
+                    isExtern: this.form.isExtern,
                     memberIds: this.form.allEmployees ? [] : this.form.memberIds,
                 }
 

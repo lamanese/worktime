@@ -79,6 +79,10 @@ return [
         ['name' => 'project#update', 'url' => '/api/projects/{id}', 'verb' => 'PUT'],
         ['name' => 'project#destroy', 'url' => '/api/projects/{id}', 'verb' => 'DELETE'],
 
+        // Daily Kilometers API (Extern)
+        ['name' => 'daily_km#index', 'url' => '/api/daily-km', 'verb' => 'GET'],
+        ['name' => 'daily_km#upsert', 'url' => '/api/daily-km', 'verb' => 'PUT'],
+
         // Settings API (specific routes before {key})
         ['name' => 'settings#resetAll', 'url' => '/api/settings/reset-all', 'verb' => 'POST'],
         ['name' => 'settings#permissions', 'url' => '/api/settings/permissions', 'verb' => 'GET'],
