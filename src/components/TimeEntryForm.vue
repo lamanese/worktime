@@ -145,6 +145,10 @@ export default {
             },
             showReasonModal: false,
             pendingData: null,
+            // Merker fürs automatisch vorgewählte Standard-Projekt: nur ein
+            // solches wird beim Projektlisten-Refresh wieder zurückgenommen,
+            // eine bewusste Nutzerwahl nicht.
+            autoAppliedProjectId: null,
         }
     },
     computed: {
@@ -224,10 +228,18 @@ export default {
         },
         // Die Projektliste lädt asynchron: Standard-Projekt nachträglich
         // vorauswählen, sobald sie da ist (nur bei neuem, noch leerem Eintrag).
+        // Umgekehrt ein bereits automatisch vorgewähltes Projekt zurücknehmen,
+        // wenn es in der aktualisierten Liste nicht mehr buchbar ist — sonst
+        // würde eine veraltete Projekt-ID unsichtbar mitgespeichert.
         activeProjects() {
-            if (!this.entry) {
-                this.applyDefaultProject()
+            if (this.entry) return
+            if (this.form.projectId
+                && this.form.projectId === this.autoAppliedProjectId
+                && !this.activeProjects.some(p => p.id === this.form.projectId)) {
+                this.form.projectId = null
+                this.autoAppliedProjectId = null
             }
+            this.applyDefaultProject()
         },
     },
     async created() {
@@ -264,6 +276,7 @@ export default {
                 projectId: null,
                 description: this.defaultDescriptionPrefill(),
             }
+            this.autoAppliedProjectId = null
             this.applyDefaultProject()
             // Recalculate break based on default times
             this.$nextTick(() => {
@@ -282,6 +295,7 @@ export default {
             const defaultId = this.currentEmployee?.defaultProjectId
             if (defaultId && this.activeProjects.some(p => p.id === defaultId)) {
                 this.form.projectId = defaultId
+                this.autoAppliedProjectId = defaultId
             }
         },
         onTimeChange() {

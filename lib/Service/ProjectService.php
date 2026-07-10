@@ -208,11 +208,16 @@ class ProjectService {
 
     /**
      * Whether the given employee may book on the given project (#58).
+     * Deaktivierte Projekte sind nicht (mehr) buchbar — bestehende Einträge
+     * bleiben unberührt, weil das Update unveränderte Projekte grandfathert.
      */
     public function isProjectAllowedForEmployee(int $projectId, int $employeeId): bool {
         try {
             $project = $this->find($projectId);
         } catch (NotFoundException $e) {
+            return false;
+        }
+        if (!(bool)$project->getIsActive()) {
             return false;
         }
         if ((bool)$project->getAllEmployees()) {

@@ -63,6 +63,17 @@ class ProjectServiceTest extends TestCase {
         $this->assertFalse($this->service->isProjectAllowedForEmployee(2, 99));
     }
 
+    public function testInactiveProjectDeniedEvenForAssignedEmployee(): void {
+        // Deaktivierte Projekte sind nicht mehr buchbar — auch nicht über eine
+        // veraltete Vorauswahl (z.B. persönliches Standard-Projekt) oder für
+        // zugewiesene Mitarbeiter.
+        $inactive = $this->makeProject(1, true);
+        $inactive->setIsActive(false);
+        $this->projectMapper->method('find')->willReturn($inactive);
+
+        $this->assertFalse($this->service->isProjectAllowedForEmployee(1, 5));
+    }
+
     public function testGetProjectsForEmployeeReturnsGlobalsPlusAssigned(): void {
         $global = $this->makeProject(1, true);
         $restrictedAssigned = $this->makeProject(2, false);
