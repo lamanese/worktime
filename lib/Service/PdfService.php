@@ -384,17 +384,20 @@ class PdfService {
         $pdf->Cell($colWidth, 8, $periodLabel, 0, 1, 'R');
         $pdf->Ln(3);
 
-        // Mitarbeiter, Personalnummer und Wochenstunden je auf eigener Zeile
+        // Mitarbeiter, Personalnummer und Wochenstunden je auf eigener Zeile.
+        // TCPDF-Cell schneidet Überlänge nicht ab — die Werte werden auf die
+        // verbleibende Zeilenbreite gekürzt (greift nur bei Extremlängen).
+        $valueWidth = $pdf->getPageWidth() - $margins['left'] - $margins['right'] - 40;
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
         $pdf->Cell(40, 6, 'Mitarbeiter:', 0, 0);
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-        $pdf->Cell(0, 6, $employee->getFullName(), 0, 1);
+        $pdf->Cell(0, 6, $this->truncateToWidth($pdf, $employee->getFullName(), $valueWidth), 0, 1);
 
         if ($employee->getPersonnelNumber()) {
             $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
             $pdf->Cell(40, 6, 'Personalnummer:', 0, 0);
             $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-            $pdf->Cell(0, 6, $employee->getPersonnelNumber(), 0, 1);
+            $pdf->Cell(0, 6, $this->truncateToWidth($pdf, $employee->getPersonnelNumber(), $valueWidth), 0, 1);
         }
 
         // Wochenstunden auf eigener Zeile
