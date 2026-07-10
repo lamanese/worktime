@@ -315,6 +315,21 @@ class PdfService {
     }
 
     /**
+     * Text exakt auf eine Zellenbreite kürzen (mit der aktuell gesetzten
+     * Schrift gemessen), damit TCPDF::Cell nicht in die Nachbarzelle läuft.
+     */
+    private function truncateToWidth(TCPDF $pdf, string $text, float $widthMm): string {
+        $available = $widthMm - 1; // kleiner Puffer zum Zellenrand
+        if ($pdf->GetStringWidth($text) <= $available) {
+            return $text;
+        }
+        while (mb_strlen($text) > 1 && $pdf->GetStringWidth($text . '…') > $available) {
+            $text = mb_substr($text, 0, -1);
+        }
+        return $text . '…';
+    }
+
+    /**
      * Create and configure TCPDF instance
      */
     private function createPdf(): TCPDF {
@@ -363,22 +378,25 @@ class PdfService {
         $colWidth = ($pdf->getPageWidth() - $margins['left'] - $margins['right']) / 3;
 
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_HEADER);
-        $pdf->Cell($colWidth, 8, $this->truncate($companyName, $colWidth * 0.7), 0, 0, 'L');
+        $pdf->Cell($colWidth, 8, $this->truncateToWidth($pdf, $companyName, $colWidth), 0, 0, 'L');
         $pdf->Cell($colWidth, 8, 'Arbeitszeitnachweis', 0, 0, 'C');
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_HEADER);
         $pdf->Cell($colWidth, 8, $periodLabel, 0, 1, 'R');
         $pdf->Ln(3);
 
-        // Mitarbeiter + Personalnummer in einer Zeile
+        // Mitarbeiter + Personalnummer in einer Zeile. TCPDF-Cell schneidet
+        // Überlänge nicht ab, daher werden die Werte auf ihre Zellenbreite
+        // gekürzt, damit ein langer Name nicht ins nächste Label läuft.
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
         $pdf->Cell(32, 6, 'Mitarbeiter:', 0, 0);
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
         if ($employee->getPersonnelNumber()) {
-            $pdf->Cell(60, 6, $employee->getFullName(), 0, 0);
+            $remaining = $pdf->getPageWidth() - $margins['left'] - $margins['right'] - 32 - 60 - 38;
+            $pdf->Cell(60, 6, $this->truncateToWidth($pdf, $employee->getFullName(), 60), 0, 0);
             $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
             $pdf->Cell(38, 6, 'Personalnummer:', 0, 0);
             $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-            $pdf->Cell(0, 6, $employee->getPersonnelNumber(), 0, 1);
+            $pdf->Cell(0, 6, $this->truncateToWidth($pdf, $employee->getPersonnelNumber(), $remaining), 0, 1);
         } else {
             $pdf->Cell(0, 6, $employee->getFullName(), 0, 1);
         }
