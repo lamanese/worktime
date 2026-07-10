@@ -137,15 +137,21 @@ class AllowanceService {
         // Kilometer nur an aktuell externen Tagen vergüten (keine veraltete Basis).
         $externDates = $this->externDates($timeEntries, $absences, $rangeStart, $rangeEnd);
         $kilometers = 0;
+        $kilometersByDate = [];
         foreach ($kmRecords as $record) {
             $recordDate = $record->getWorkDate()?->format('Y-m-d');
             if ($recordDate !== null && isset($externDates[$recordDate])) {
                 $kilometers += $record->getKilometers();
+                $kilometersByDate[$recordDate] = ($kilometersByDate[$recordDate] ?? 0) + $record->getKilometers();
             }
         }
+        ksort($kilometersByDate);
 
         $mileageRate = $this->settings->getMileageRate();
         $mileageAmount = round($kilometers * $mileageRate, 2);
+
+        $allowanceDateList = array_keys($allowanceDates);
+        sort($allowanceDateList);
 
         return [
             'allowanceDays' => $allowanceDays,
@@ -155,6 +161,10 @@ class AllowanceService {
             'mileageRate' => $mileageRate,
             'mileageAmount' => $mileageAmount,
             'total' => round($allowanceAmount + $mileageAmount, 2),
+            // Tagesdetails für die Tagesliste im PDF: an welchen Tagen die
+            // Pauschale ausgelöst wurde und wie viele km je Tag zählen.
+            'allowanceDates' => $allowanceDateList,
+            'kilometersByDate' => $kilometersByDate,
         ];
     }
 

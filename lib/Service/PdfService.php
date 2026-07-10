@@ -107,8 +107,8 @@ class PdfService {
         // Header
         $this->addHeader($pdf, $employee, $periodLabel, $startDate);
 
-        // Time entries table
-        $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $startDate, $endDate);
+        // Time entries table (mit km-/Spesen-Spalten, wenn im Zeitraum vorhanden)
+        $this->addTimeEntriesTable($pdf, $timeEntries, $absences, $holidays, $startDate, $endDate, $allowance);
 
         // Absences section
         if (!empty($absences)) {
@@ -391,29 +391,49 @@ class PdfService {
     }
 
     /**
-     * Add time entries table
+     * Add time entries table. Wenn im Zeitraum Spesen-Tage oder Kilometer
+     * angefallen sind, bekommt die Tagesliste zwei zusätzliche Spalten (km,
+     * Spesen) — die Summen stehen weiterhin im Block "Spesen & Kilometer".
      */
-    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate): void {
+    private function addTimeEntriesTable(TCPDF $pdf, array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate, ?array $allowance = null): void {
         // Project id -> name lookup (including inactive projects for historical entries).
         $projectNames = [];
         foreach ($this->projectMapper->findAll() as $project) {
             $projectNames[$project->getId()] = $project->getName();
         }
 
-        $rows = $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames);
+        $kmByDate = $allowance['kilometersByDate'] ?? [];
+        $spesenDates = array_fill_keys($allowance['allowanceDates'] ?? [], true);
+        $spesenPerDay = (float)($allowance['allowancePerDay'] ?? 0);
+        $withAllowance = !empty($kmByDate) || !empty($spesenDates);
+
+        $rows = $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames, $kmByDate, $spesenDates, $spesenPerDay);
 
         // Table header
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
         $pdf->SetFillColor(230, 230, 230);
 
-        $pdf->Cell(22, 7, 'Datum', 1, 0, 'C', true);
-        $pdf->Cell(12, 7, 'Tag', 1, 0, 'C', true);
-        $pdf->Cell(17, 7, 'Beginn', 1, 0, 'C', true);
-        $pdf->Cell(17, 7, 'Ende', 1, 0, 'C', true);
-        $pdf->Cell(17, 7, 'Pause', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'Arbeitszeit', 1, 0, 'C', true);
-        $pdf->Cell(28, 7, 'Projekt', 1, 0, 'C', true);
-        $pdf->Cell(0, 7, 'Bemerkung', 1, 1, 'C', true);
+        if ($withAllowance) {
+            $pdf->Cell(20, 7, 'Datum', 1, 0, 'C', true);
+            $pdf->Cell(10, 7, 'Tag', 1, 0, 'C', true);
+            $pdf->Cell(15, 7, 'Beginn', 1, 0, 'C', true);
+            $pdf->Cell(15, 7, 'Ende', 1, 0, 'C', true);
+            $pdf->Cell(14, 7, 'Pause', 1, 0, 'C', true);
+            $pdf->Cell(18, 7, 'Arbeitszeit', 1, 0, 'C', true);
+            $pdf->Cell(22, 7, 'Projekt', 1, 0, 'C', true);
+            $pdf->Cell(12, 7, 'km', 1, 0, 'C', true);
+            $pdf->Cell(16, 7, 'Spesen', 1, 0, 'C', true);
+            $pdf->Cell(0, 7, 'Bemerkung', 1, 1, 'C', true);
+        } else {
+            $pdf->Cell(22, 7, 'Datum', 1, 0, 'C', true);
+            $pdf->Cell(12, 7, 'Tag', 1, 0, 'C', true);
+            $pdf->Cell(17, 7, 'Beginn', 1, 0, 'C', true);
+            $pdf->Cell(17, 7, 'Ende', 1, 0, 'C', true);
+            $pdf->Cell(17, 7, 'Pause', 1, 0, 'C', true);
+            $pdf->Cell(20, 7, 'Arbeitszeit', 1, 0, 'C', true);
+            $pdf->Cell(28, 7, 'Projekt', 1, 0, 'C', true);
+            $pdf->Cell(0, 7, 'Bemerkung', 1, 1, 'C', true);
+        }
 
         // Table body
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
@@ -423,7 +443,9 @@ class PdfService {
             }
             $this->renderTimeEntryRow(
                 $pdf, $row['date'], $row['day'], $row['start'], $row['end'],
-                $row['break'], $row['work'], $row['project'], $row['note'], $row['fill']
+                $row['break'], $row['work'], $row['project'], $row['note'], $row['fill'],
+                $withAllowance ? ($row['km'] ?? '') : null,
+                $withAllowance ? ($row['spesen'] ?? '') : null
             );
         }
 
@@ -450,10 +472,10 @@ class PdfService {
      * @param array<int, string> $projectNames id => name
      * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}>
      */
-    private function buildDayRows(array $timeEntries, array $absences, array $holidays, int $year, int $month, array $projectNames): array {
+    private function buildDayRows(array $timeEntries, array $absences, array $holidays, int $year, int $month, array $projectNames, array $kmByDate = [], array $spesenDates = [], float $spesenPerDay = 0): array {
         $startDate = new DateTime("$year-$month-01");
         $endDate = (clone $startDate)->modify('last day of this month');
-        return $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames);
+        return $this->buildDayRowsBetween($timeEntries, $absences, $holidays, $startDate, $endDate, $projectNames, $kmByDate, $spesenDates, $spesenPerDay);
     }
 
     /**
@@ -464,9 +486,11 @@ class PdfService {
      * @param Absence[] $absences
      * @param Holiday[] $holidays
      * @param array<int, string> $projectNames id => name
-     * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}>
+     * @param array<string, int> $kmByDate Y-m-d => zählende Kilometer des Tages
+     * @param array<string, bool> $spesenDates Y-m-d => true für Spesen-Tage
+     * @return list<array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool, km: string, spesen: string}>
      */
-    private function buildDayRowsBetween(array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate, array $projectNames): array {
+    private function buildDayRowsBetween(array $timeEntries, array $absences, array $holidays, DateTime $startDate, DateTime $endDate, array $projectNames, array $kmByDate = [], array $spesenDates = [], float $spesenPerDay = 0): array {
         // Holiday lookup
         $holidayDates = [];
         foreach ($holidays as $holiday) {
@@ -513,6 +537,11 @@ class PdfService {
                 ? $absence->getTypeName() . ($absence->isHalfDay() ? ' (halber Tag)' : '')
                 : '';
 
+            // km/Spesen des Tages: wie das Datum nur auf der ersten Zeile des
+            // Tages ausgeben (danach geleert), damit nichts doppelt erscheint.
+            $km = isset($kmByDate[$dateStr]) ? (string)$kmByDate[$dateStr] : '';
+            $spesen = isset($spesenDates[$dateStr]) ? $this->formatEuro($spesenPerDay) : '';
+
             if (isset($entriesByDate[$dateStr])) {
                 foreach ($entriesByDate[$dateStr] as $entry) {
                     $rows[] = [
@@ -525,9 +554,13 @@ class PdfService {
                         'project' => $entry->getProjectId() !== null ? ($projectNames[$entry->getProjectId()] ?? '') : '',
                         'note' => $entry->getDescription() ?? '',
                         'fill' => $fill,
+                        'km' => $km,
+                        'spesen' => $spesen,
                     ];
                     $date = ''; // Clear for subsequent entries on the same day
                     $day = '';
+                    $km = '';
+                    $spesen = '';
                 }
                 // Only a genuine half-day absence is shown alongside a booking
                 // (morning work + afternoon off). A full-day absence never
@@ -538,21 +571,23 @@ class PdfService {
                 }
             } elseif ($absence !== null) {
                 // Absence day (#318): show the type directly in the day row.
-                $rows[] = $this->markerRow($date, $day, $absenceLabel, $fill);
+                // km/Spesen sind hier möglich (externer Abwesenheitstyp).
+                $rows[] = $this->markerRow($date, $day, $absenceLabel, $fill, $km, $spesen);
             } elseif ($isHoliday) {
-                $rows[] = $this->markerRow($date, $day, 'Feiertag: ' . $holidayDates[$dateStr], $fill);
+                $rows[] = $this->markerRow($date, $day, 'Feiertag: ' . $holidayDates[$dateStr], $fill, $km, $spesen);
             } elseif (!$isWeekend) {
                 // Regular workday without entry: blank cells signal a gap
                 // (a missing booking that may need attention).
                 $rows[] = [
                     'date' => $date, 'day' => $day, 'start' => '', 'end' => '',
                     'break' => '', 'work' => '', 'project' => '', 'note' => '', 'fill' => $fill,
+                    'km' => $km, 'spesen' => $spesen,
                 ];
             } else {
                 // Weekend without entry/absence: show the day so the overview is
                 // gap-free (#318), with dashes and no label — the "Sa"/"So" day
                 // and grey shading already mark it as a non-working day.
-                $rows[] = $this->markerRow($date, $day, '', $fill);
+                $rows[] = $this->markerRow($date, $day, '', $fill, $km, $spesen);
             }
 
             $current->modify('+1 day');
@@ -564,12 +599,13 @@ class PdfService {
     /**
      * A non-working day row: dashes in the time columns plus an optional note.
      *
-     * @return array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool}
+     * @return array{date: string, day: string, start: string, end: string, break: string, work: string, project: string, note: string, fill: bool, km: string, spesen: string}
      */
-    private function markerRow(string $date, string $day, string $note, bool $fill): array {
+    private function markerRow(string $date, string $day, string $note, bool $fill, string $km = '', string $spesen = ''): array {
         return [
             'date' => $date, 'day' => $day, 'start' => '-', 'end' => '-',
             'break' => '-', 'work' => '-', 'project' => '', 'note' => $note, 'fill' => $fill,
+            'km' => $km, 'spesen' => $spesen,
         ];
     }
 
@@ -642,6 +678,7 @@ class PdfService {
 
     /**
      * Render one row of the time entries table; the note column wraps and dictates row height.
+     * $km/$spesen null = Tabelle ohne die Zusatzspalten (kompaktes Standard-Layout).
      */
     private function renderTimeEntryRow(
         TCPDF $pdf,
@@ -653,18 +690,33 @@ class PdfService {
         string $work,
         string $project,
         string $note,
-        bool $fill
+        bool $fill,
+        ?string $km = null,
+        ?string $spesen = null
     ): void {
-        $noteWidth = $this->getNoteCellWidth($pdf, 133.0);
+        $withAllowance = $km !== null;
+        $noteWidth = $this->getNoteCellWidth($pdf, $withAllowance ? 142.0 : 133.0);
         $rowHeight = $this->calculateRowHeight($pdf, $note, $noteWidth);
 
-        $pdf->Cell(22, $rowHeight, $date, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(12, $rowHeight, $day, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(17, $rowHeight, $start, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(17, $rowHeight, $end, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(17, $rowHeight, $break, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(20, $rowHeight, $work, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
-        $pdf->Cell(28, $rowHeight, $this->truncate($project, 28), 1, 0, 'L', $fill, '', 0, false, 'T', 'M');
+        if ($withAllowance) {
+            $pdf->Cell(20, $rowHeight, $date, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(10, $rowHeight, $day, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(15, $rowHeight, $start, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(15, $rowHeight, $end, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(14, $rowHeight, $break, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(18, $rowHeight, $work, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(22, $rowHeight, $this->truncate($project, 22), 1, 0, 'L', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(12, $rowHeight, $km, 1, 0, 'R', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(16, $rowHeight, $spesen ?? '', 1, 0, 'R', $fill, '', 0, false, 'T', 'M');
+        } else {
+            $pdf->Cell(22, $rowHeight, $date, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(12, $rowHeight, $day, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(17, $rowHeight, $start, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(17, $rowHeight, $end, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(17, $rowHeight, $break, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(20, $rowHeight, $work, 1, 0, 'C', $fill, '', 0, false, 'T', 'M');
+            $pdf->Cell(28, $rowHeight, $this->truncate($project, 28), 1, 0, 'L', $fill, '', 0, false, 'T', 'M');
+        }
         $pdf->MultiCell($noteWidth, $rowHeight, $note, 1, 'L', $fill, 1, '', '', true, 0, false, true, 0, 'M');
     }
 
