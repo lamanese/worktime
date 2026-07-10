@@ -184,6 +184,18 @@
                         {{ t('worktime', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('worktime', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_project"
+                        @update:checked="saveSettingBool('allow_employee_default_project')">
+                        {{ t('worktime', 'Mitarbeiter dürfen ein Standard-Projekt festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_description"
+                        @update:checked="saveSettingBool('allow_employee_default_description')">
+                        {{ t('worktime', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
@@ -1256,6 +1268,8 @@ export default {
                     christmas_eve_half_day: settings.christmas_eve_half_day === '1',
                     new_years_eve_half_day: settings.new_years_eve_half_day === '1',
                     fieldwork_allowance_on_extern_absence: settings.fieldwork_allowance_on_extern_absence === '1',
+                    allow_employee_default_project: settings.allow_employee_default_project === '1',
+                    allow_employee_default_description: settings.allow_employee_default_description === '1',
                 }
             } catch (error) {
                 console.error('Failed to load settings:', error)

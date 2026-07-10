@@ -657,6 +657,17 @@ OC.L10N.register(
     "Hinzufügen" : "Hinzufügen",
     "Möchten Sie die erfassten Kilometer wirklich löschen?" : "Möchten Sie die erfassten Kilometer wirklich löschen?",
     "Kilometer löschen" : "Kilometer löschen",
-    "Kilometer gelöscht" : "Kilometer gelöscht"
+    "Kilometer gelöscht" : "Kilometer gelöscht",
+    "Standard-Vorgaben für Zeiteinträge" : "Standard-Vorgaben für Zeiteinträge",
+    "Diese Werte werden beim Anlegen neuer Zeiteinträge vorausgefüllt und lassen sich dort jederzeit ändern." : "Diese Werte werden beim Anlegen neuer Zeiteinträge vorausgefüllt und lassen sich dort jederzeit ändern.",
+    "Standard-Projekt" : "Standard-Projekt",
+    "Kein Standard-Projekt" : "Kein Standard-Projekt",
+    "Standard-Beschreibung" : "Standard-Beschreibung",
+    "z.B. Support und Wartung" : "z.B. Support und Wartung",
+    "Leer lassen, um keine Beschreibung vorauszufüllen." : "Leer lassen, um keine Beschreibung vorauszufüllen.",
+    "Mitarbeiter dürfen ein Standard-Projekt festlegen" : "Mitarbeiter dürfen ein Standard-Projekt festlegen",
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist." : "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.",
+    "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Mitarbeiter dürfen eine Standard-Beschreibung festlegen",
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist."
 },
 "nplurals=2; plural=(n != 1);");

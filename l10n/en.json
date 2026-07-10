@@ -656,7 +656,18 @@
 		"Hinzufügen": "Add",
 		"Möchten Sie die erfassten Kilometer wirklich löschen?": "Do you really want to delete the recorded kilometers?",
 		"Kilometer löschen": "Delete kilometers",
-		"Kilometer gelöscht": "Kilometers deleted"
+		"Kilometer gelöscht": "Kilometers deleted",
+		"Standard-Vorgaben für Zeiteinträge": "Default values for time entries",
+		"Diese Werte werden beim Anlegen neuer Zeiteinträge vorausgefüllt und lassen sich dort jederzeit ändern.": "These values are prefilled when creating new time entries and can be changed there at any time.",
+		"Standard-Projekt": "Default project",
+		"Kein Standard-Projekt": "No default project",
+		"Standard-Beschreibung": "Default description",
+		"z.B. Support und Wartung": "e.g. support and maintenance",
+		"Leer lassen, um keine Beschreibung vorauszufüllen.": "Leave empty to not prefill a description.",
+		"Mitarbeiter dürfen ein Standard-Projekt festlegen": "Employees may set a default project",
+		"Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.": "If enabled, employees can choose a project under “My settings” that is preselected for new time entries.",
+		"Mitarbeiter dürfen eine Standard-Beschreibung festlegen": "Employees may set a default description",
+		"Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.": "If enabled, employees can store a text under “My settings” that is prefilled as the description for new time entries."
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

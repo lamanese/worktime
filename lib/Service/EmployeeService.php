@@ -27,6 +27,8 @@ class EmployeeService {
         private AuditLogService $auditLogService,
         private IUserManager $userManager,
         private LoggerInterface $logger,
+        private CompanySettingsService $companySettings,
+        private ProjectService $projectService,
     ) {
     }
 
@@ -304,7 +306,13 @@ class EmployeeService {
     }
 
     /**
-     * Update the current user's default working times.
+     * Update the current user's personal defaults for new time entries.
+     *
+     * Partial-Update-Semantik: null = Feld unverändert lassen. Leeren:
+     * Zeiten/Beschreibung mit '' (Leerstring), Projekt mit 0.
+     *
+     * Standard-Projekt und Standard-Beschreibung sind nur änderbar, wenn der
+     * Admin das über die Firmen-Einstellungen freigegeben hat.
      *
      * @throws NotFoundException
      */
@@ -313,21 +321,59 @@ class EmployeeService {
         ?string $defaultStartTime = null,
         ?string $defaultEndTime = null,
         ?string $absenceVisibility = null,
-        ?string $absenceDetail = null
+        ?string $absenceDetail = null,
+        ?int $defaultProjectId = null,
+        ?string $defaultDescription = null
     ): Employee {
         $employee = $this->findByUserId($userId);
         $oldValues = $employee->jsonSerialize();
 
-        // Validate time format (HH:MM)
-        if ($defaultStartTime !== null && !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $defaultStartTime)) {
+        // Validate time format (HH:MM); '' clears the value.
+        if ($defaultStartTime !== null && $defaultStartTime !== '' && !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $defaultStartTime)) {
             throw ValidationException::fromSingleError('defaultStartTime', 'Invalid time format. Use HH:MM.');
         }
-        if ($defaultEndTime !== null && !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $defaultEndTime)) {
+        if ($defaultEndTime !== null && $defaultEndTime !== '' && !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $defaultEndTime)) {
             throw ValidationException::fromSingleError('defaultEndTime', 'Invalid time format. Use HH:MM.');
         }
 
-        $employee->setDefaultStartTime($defaultStartTime ? new DateTime($defaultStartTime) : null);
-        $employee->setDefaultEndTime($defaultEndTime ? new DateTime($defaultEndTime) : null);
+        // Nur explizit übergebene Felder ändern — ein Partial-Update (z.B. nur
+        // Sichtbarkeit) darf die gespeicherten Zeiten nicht löschen.
+        if ($defaultStartTime !== null) {
+            $employee->setDefaultStartTime($defaultStartTime !== '' ? new DateTime($defaultStartTime) : null);
+        }
+        if ($defaultEndTime !== null) {
+            $employee->setDefaultEndTime($defaultEndTime !== '' ? new DateTime($defaultEndTime) : null);
+        }
+
+        if ($defaultProjectId !== null) {
+            if (!$this->companySettings->isEmployeeDefaultProjectAllowed()) {
+                throw ValidationException::fromSingleError('defaultProjectId', 'Das Festlegen eines Standard-Projekts ist nicht freigegeben.');
+            }
+            if ($defaultProjectId === 0) {
+                $employee->setDefaultProjectId(null);
+            } else {
+                // Nur Projekte, die der Mitarbeiter auch buchen darf.
+                $allowedIds = array_map(
+                    static fn ($p) => $p->getId(),
+                    $this->projectService->getProjectsForEmployee($employee->getId())
+                );
+                if (!in_array($defaultProjectId, $allowedIds, true)) {
+                    throw ValidationException::fromSingleError('defaultProjectId', 'Ungültiges Projekt.');
+                }
+                $employee->setDefaultProjectId($defaultProjectId);
+            }
+        }
+
+        if ($defaultDescription !== null) {
+            if (!$this->companySettings->isEmployeeDefaultDescriptionAllowed()) {
+                throw ValidationException::fromSingleError('defaultDescription', 'Das Festlegen einer Standard-Beschreibung ist nicht freigegeben.');
+            }
+            $defaultDescription = trim($defaultDescription);
+            if (mb_strlen($defaultDescription) > 500) {
+                throw ValidationException::fromSingleError('defaultDescription', 'Die Standard-Beschreibung darf höchstens 500 Zeichen lang sein.');
+            }
+            $employee->setDefaultDescription($defaultDescription !== '' ? $defaultDescription : null);
+        }
 
         if ($absenceVisibility !== null && in_array($absenceVisibility, ['all', 'team', 'none'], true)) {
             $employee->setAbsenceVisibility($absenceVisibility);

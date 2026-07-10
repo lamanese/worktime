@@ -202,7 +202,7 @@ class EmployeeController extends BaseController {
     }
 
     #[NoAdminRequired]
-    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null, ?string $absenceVisibility = null, ?string $absenceDetail = null): JSONResponse {
+    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null, ?string $absenceVisibility = null, ?string $absenceDetail = null, ?int $defaultProjectId = null, ?string $defaultDescription = null): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
@@ -213,7 +213,9 @@ class EmployeeController extends BaseController {
                 $defaultStartTime,
                 $defaultEndTime,
                 $absenceVisibility,
-                $absenceDetail
+                $absenceDetail,
+                $defaultProjectId,
+                $defaultDescription
             );
 
             return $this->successResponse($employee);

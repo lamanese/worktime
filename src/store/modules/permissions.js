@@ -20,6 +20,9 @@ const state = {
     // Company rules for time-entry fields (#329)
     requireProject: false,
     requireDescription: false,
+    // Freigaben für persönliche Standard-Vorgaben (Projekt/Beschreibung)
+    allowDefaultProject: false,
+    allowDefaultDescription: false,
     // HR/Admin correction context (#148): when set, the tracking and absence
     // views operate on this employee instead of the logged-in user.
     correction: {
@@ -33,6 +36,8 @@ const getters = {
     approvalRequired: (state) => state.approvalRequired,
     requireProject: (state) => state.requireProject,
     requireDescription: (state) => state.requireDescription,
+    allowDefaultProject: (state) => state.allowDefaultProject,
+    allowDefaultDescription: (state) => state.allowDefaultDescription,
     isCorrectionMode: (state) => state.correction.targetEmployeeId !== null,
     correctionEmployeeName: (state) => state.correction.employeeName,
     // The employee whose data the views should load/edit: the correction target
@@ -68,6 +73,10 @@ const mutations = {
         state.requireProject = requireProject
         state.requireDescription = requireDescription
     },
+    SET_DEFAULTS_ALLOWED(state, { allowDefaultProject, allowDefaultDescription }) {
+        state.allowDefaultProject = allowDefaultProject
+        state.allowDefaultDescription = allowDefaultDescription
+    },
     SET_CORRECTION(state, { targetEmployeeId, employeeName }) {
         state.correction = { targetEmployeeId, employeeName }
     },
@@ -99,6 +108,10 @@ const actions = {
 
     setRequiredFields({ commit }, { requireProject, requireDescription }) {
         commit('SET_REQUIRED_FIELDS', { requireProject, requireDescription })
+    },
+
+    setDefaultsAllowed({ commit }, { allowDefaultProject, allowDefaultDescription }) {
+        commit('SET_DEFAULTS_ALLOWED', { allowDefaultProject, allowDefaultDescription })
     },
 
     startCorrection({ commit }, { employeeId, employeeName }) {

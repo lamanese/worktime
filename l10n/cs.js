@@ -657,6 +657,17 @@ OC.L10N.register(
     "Hinzufügen" : "Přidat",
     "Möchten Sie die erfassten Kilometer wirklich löschen?" : "Opravdu chcete smazat zaznamenané kilometry?",
     "Kilometer löschen" : "Smazat kilometry",
-    "Kilometer gelöscht" : "Kilometry smazány"
+    "Kilometer gelöscht" : "Kilometry smazány",
+    "Standard-Vorgaben für Zeiteinträge" : "Výchozí hodnoty pro časové záznamy",
+    "Diese Werte werden beim Anlegen neuer Zeiteinträge vorausgefüllt und lassen sich dort jederzeit ändern." : "Tyto hodnoty se předvyplní při vytváření nových časových záznamů a lze je tam kdykoli změnit.",
+    "Standard-Projekt" : "Výchozí projekt",
+    "Kein Standard-Projekt" : "Žádný výchozí projekt",
+    "Standard-Beschreibung" : "Výchozí popis",
+    "z.B. Support und Wartung" : "např. podpora a údržba",
+    "Leer lassen, um keine Beschreibung vorauszufüllen." : "Ponechte prázdné, pokud nechcete popis předvyplňovat.",
+    "Mitarbeiter dürfen ein Standard-Projekt festlegen" : "Zaměstnanci smí nastavit výchozí projekt",
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ zvolit projekt, který bude u nových časových záznamů předvybrán.",
+    "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Zaměstnanci smí nastavit výchozí popis",
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ uložit text, který se u nových časových záznamů předvyplní jako popis."
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");

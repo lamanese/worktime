@@ -256,4 +256,18 @@ class CompanySettingsService {
         }
         return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn (string $t) => $t !== ''));
     }
+
+    /**
+     * Dürfen Mitarbeiter ein persönliches Standard-Projekt festlegen?
+     */
+    public function isEmployeeDefaultProjectAllowed(): bool {
+        return $this->getBool(CompanySetting::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT);
+    }
+
+    /**
+     * Dürfen Mitarbeiter eine persönliche Standard-Beschreibung festlegen?
+     */
+    public function isEmployeeDefaultDescriptionAllowed(): bool {
+        return $this->getBool(CompanySetting::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION);
+    }
 }

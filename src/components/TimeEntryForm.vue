@@ -148,7 +148,7 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('permissions', ['isCorrectionMode', 'requireProject', 'requireDescription']),
+        ...mapGetters('permissions', ['isCorrectionMode', 'requireProject', 'requireDescription', 'allowDefaultProject', 'allowDefaultDescription']),
         ...mapGetters('projects', ['activeProjects']),
         ...mapGetters('employees', ['currentEmployee']),
         requiredBreak() {
@@ -222,6 +222,13 @@ export default {
                 }
             },
         },
+        // Die Projektliste lädt asynchron: Standard-Projekt nachträglich
+        // vorauswählen, sobald sie da ist (nur bei neuem, noch leerem Eintrag).
+        activeProjects() {
+            if (!this.entry) {
+                this.applyDefaultProject()
+            }
+        },
     },
     async created() {
         this.$store.dispatch('projects/fetchProjects')
@@ -255,12 +262,27 @@ export default {
                 endTime: this.prefillEnd !== null ? this.prefillEnd : defaultEnd,
                 breakMinutes: 30,
                 projectId: null,
-                description: '',
+                description: this.defaultDescriptionPrefill(),
             }
+            this.applyDefaultProject()
             // Recalculate break based on default times
             this.$nextTick(() => {
                 this.onTimeChange()
             })
+        },
+        // Persönliche Standard-Beschreibung (nur solange vom Admin freigegeben).
+        defaultDescriptionPrefill() {
+            return (this.allowDefaultDescription && this.currentEmployee?.defaultDescription) || ''
+        },
+        // Persönliches Standard-Projekt vorauswählen — nur wenn freigegeben und
+        // das Projekt (noch) in der buchbaren Liste ist. Die Projektliste lädt
+        // asynchron; der activeProjects-Watcher holt die Vorauswahl dann nach.
+        applyDefaultProject() {
+            if (!this.allowDefaultProject || this.form.projectId) return
+            const defaultId = this.currentEmployee?.defaultProjectId
+            if (defaultId && this.activeProjects.some(p => p.id === defaultId)) {
+                this.form.projectId = defaultId
+            }
         },
         onTimeChange() {
             // Automatisch die konfigurierte Mindestpause eintragen

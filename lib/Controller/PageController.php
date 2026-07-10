@@ -50,6 +50,10 @@ class PageController extends Controller {
         $this->initialState->provideInitialState('requireProject', $this->settingsService->isProjectRequired());
         $this->initialState->provideInitialState('requireDescription', $this->settingsService->isDescriptionRequired());
 
+        // Freigaben für persönliche Standard-Vorgaben (Projekt/Beschreibung)
+        $this->initialState->provideInitialState('allowDefaultProject', $this->settingsService->isEmployeeDefaultProjectAllowed());
+        $this->initialState->provideInitialState('allowDefaultDescription', $this->settingsService->isEmployeeDefaultDescriptionAllowed());
+
         return new TemplateResponse(
             Application::APP_ID,
             'main'

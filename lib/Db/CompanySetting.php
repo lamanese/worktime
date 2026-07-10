@@ -56,6 +56,12 @@ class CompanySetting extends Entity implements JsonSerializable {
     /** Komma-separierte Abwesenheitstyp-Keys, die als "extern" gelten (km-faehig) */
     public const KEY_EXTERN_ABSENCE_TYPES = 'extern_absence_types';
 
+    // Persönliche Standard-Vorgaben für Zeiteinträge (Freigabe durch Admin)
+    /** 1 = Mitarbeiter dürfen ein Standard-Projekt festlegen */
+    public const KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT = 'allow_employee_default_project';
+    /** 1 = Mitarbeiter dürfen eine Standard-Beschreibung festlegen */
+    public const KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION = 'allow_employee_default_description';
+
     public const OPERATOR_GTE = 'gte';
     public const OPERATOR_GT = 'gt';
     public const BASIS_GROSS = 'gross';
@@ -84,6 +90,8 @@ class CompanySetting extends Entity implements JsonSerializable {
         self::KEY_FIELDWORK_ALLOWANCE_ON_EXTERN_ABSENCE => '0',
         self::KEY_MILEAGE_RATE => '0.30',
         self::KEY_EXTERN_ABSENCE_TYPES => '',
+        self::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT => '0',
+        self::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION => '0',
     ];
 
     protected string $settingKey = '';
