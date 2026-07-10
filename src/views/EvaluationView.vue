@@ -571,8 +571,36 @@ export default {
                 (!this.selectedProjects.size || this.selectedProjects.has(e.projectId))
                 && (!this.selectedEmployees.size || this.selectedEmployees.has(e.employeeId)),
             )
+            // Die tagesbezogenen km-/Spesen-Beträge liegen backend-seitig auf der
+            // ersten Buchung des Tages — die kann hier weggefiltert sein (Filter
+            // laufen client-seitig). Deshalb die Tagesbeträge auf die erste
+            // SICHTBARE Buchung des Tages umhängen (stabil nach Datum/ID),
+            // damit Projektfilter keine km/Spesen verschlucken.
+            const dayAmounts = {}
+            for (const e of this.entries) {
+                if ((e.mileageAmount || 0) > 0 || (e.allowanceAmount || 0) > 0) {
+                    dayAmounts[`${e.employeeId}|${e.date}`] = {
+                        mileageAmount: e.mileageAmount || 0,
+                        allowanceAmount: e.allowanceAmount || 0,
+                    }
+                }
+            }
+            const assigned = new Set()
+            const rows = filtered.slice()
+                .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id))
+                .map(e => {
+                    const key = `${e.employeeId}|${e.date}`
+                    let mileageAmount = 0
+                    let allowanceAmount = 0
+                    if (dayAmounts[key] && !assigned.has(key)) {
+                        assigned.add(key)
+                        mileageAmount = dayAmounts[key].mileageAmount
+                        allowanceAmount = dayAmounts[key].allowanceAmount
+                    }
+                    return { ...e, mileageAmount, allowanceAmount }
+                })
             const s = this.sort
-            return filtered.slice().sort((a, b) => {
+            return rows.sort((a, b) => {
                 if (s.key === 'name') return s.dir * (a.employeeName || '').localeCompare(b.employeeName || '')
                 if (s.key === 'minutes') return s.dir * (a.minutes - b.minutes)
                 return s.dir * a.date.localeCompare(b.date)
