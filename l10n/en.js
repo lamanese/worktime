@@ -668,6 +668,8 @@ OC.L10N.register(
     "Mitarbeiter dürfen ein Standard-Projekt festlegen" : "Employees may set a default project",
     "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist." : "If enabled, employees can choose a project under “My settings” that is preselected for new time entries.",
     "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Employees may set a default description",
-    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "If enabled, employees can store a text under “My settings” that is prefilled as the description for new time entries."
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "If enabled, employees can store a text under “My settings” that is prefilled as the description for new time entries.",
+    "Kilometergeld" : "Mileage allowance",
+    "Spesen" : "Daily allowance"
 },
 "nplurals=2; plural=(n != 1);");

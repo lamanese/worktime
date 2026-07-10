@@ -668,6 +668,8 @@ OC.L10N.register(
     "Mitarbeiter dürfen ein Standard-Projekt festlegen" : "Zaměstnanci smí nastavit výchozí projekt",
     "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ zvolit projekt, který bude u nových časových záznamů předvybrán.",
     "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Zaměstnanci smí nastavit výchozí popis",
-    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ uložit text, který se u nových časových záznamů předvyplní jako popis."
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ uložit text, který se u nových časových záznamů předvyplní jako popis.",
+    "Kilometergeld" : "Náhrada za kilometry",
+    "Spesen" : "Diety"
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");

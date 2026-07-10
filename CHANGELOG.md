@@ -7,6 +7,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Changed
+- **Einzelbuchungen der Projektauswertung mit Kilometergeld und Spesen**: Die Einzelbuchungsliste (HTML-Ansicht, CSV- und PDF-Export) zeigt jetzt je Buchung die Spalten „Kilometergeld" und „Spesen"; die Spalte „Kunde" entfällt. Die Beträge sind tagesbezogen und stehen auf der ersten Buchung des Tages eines Mitarbeiters, damit Spaltensummen nichts doppelt zählen; die Summenzeile weist beide Beträge aus. Die aggregierte Ansicht und der Block „Spesen & Kilometer je Mitarbeiter" am Dokumentende bleiben unverändert.
+
 ## [0.13.1] - 2026-07-10
 
 ### Added
