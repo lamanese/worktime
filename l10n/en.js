@@ -653,6 +653,10 @@ OC.L10N.register(
     "Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung." : "If enabled, the daily allowance is granted on every weekday with an external absence type — without checking hours.",
     "Spesen (Aussendienst)" : "Daily allowance (field work)",
     "Kilometer (Extern)" : "Kilometers (external)",
-    "Summe" : "Total"
+    "Summe" : "Total",
+    "Hinzufügen" : "Add",
+    "Möchten Sie die erfassten Kilometer wirklich löschen?" : "Do you really want to delete the recorded kilometers?",
+    "Kilometer löschen" : "Delete kilometers",
+    "Kilometer gelöscht" : "Kilometers deleted"
 },
 "nplurals=2; plural=(n != 1);");

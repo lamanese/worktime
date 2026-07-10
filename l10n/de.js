@@ -653,6 +653,10 @@ OC.L10N.register(
     "Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung." : "Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung.",
     "Spesen (Aussendienst)" : "Spesen (Aussendienst)",
     "Kilometer (Extern)" : "Kilometer (Extern)",
-    "Summe" : "Summe"
+    "Summe" : "Summe",
+    "Hinzufügen" : "Hinzufügen",
+    "Möchten Sie die erfassten Kilometer wirklich löschen?" : "Möchten Sie die erfassten Kilometer wirklich löschen?",
+    "Kilometer löschen" : "Kilometer löschen",
+    "Kilometer gelöscht" : "Kilometer gelöscht"
 },
 "nplurals=2; plural=(n != 1);");

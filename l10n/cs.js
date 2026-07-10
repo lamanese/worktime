@@ -653,6 +653,10 @@ OC.L10N.register(
     "Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung." : "Pokud je aktivní, denní paušál se přiznává každý pracovní den s externím typem nepřítomnosti — bez kontroly hodin.",
     "Spesen (Aussendienst)" : "Diety (terénní práce)",
     "Kilometer (Extern)" : "Kilometry (externí)",
-    "Summe" : "Celkem"
+    "Summe" : "Celkem",
+    "Hinzufügen" : "Přidat",
+    "Möchten Sie die erfassten Kilometer wirklich löschen?" : "Opravdu chcete smazat zaznamenané kilometry?",
+    "Kilometer löschen" : "Smazat kilometry",
+    "Kilometer gelöscht" : "Kilometry smazány"
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");
