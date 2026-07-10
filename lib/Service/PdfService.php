@@ -366,9 +366,9 @@ class PdfService {
      * Add header with company name and employee info.
      *
      * Kompakter Kopf: Firma links, Titel mittig, Zeitraum rechts in EINER
-     * Zeile; darunter Mitarbeiter + Personalnummer in einer Zeile und die
-     * Wochenstunden auf einer eigenen — spart Höhe für die Tagesliste
-     * (mehrzeilige Bemerkungen).
+     * Zeile — spart Höhe für die Tagesliste (mehrzeilige Bemerkungen).
+     * Darunter Mitarbeiter, Personalnummer und Wochenstunden je auf einer
+     * eigenen Zeile.
      */
     private function addHeader(TCPDF $pdf, Employee $employee, string $periodLabel, DateTime $periodStart): void {
         $companyName = $this->settingsService->getCompanyName();
@@ -384,26 +384,22 @@ class PdfService {
         $pdf->Cell($colWidth, 8, $periodLabel, 0, 1, 'R');
         $pdf->Ln(3);
 
-        // Mitarbeiter + Personalnummer in einer Zeile. TCPDF-Cell schneidet
-        // Überlänge nicht ab, daher werden die Werte auf ihre Zellenbreite
-        // gekürzt, damit ein langer Name nicht ins nächste Label läuft.
+        // Mitarbeiter, Personalnummer und Wochenstunden je auf eigener Zeile
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
-        $pdf->Cell(32, 6, 'Mitarbeiter:', 0, 0);
+        $pdf->Cell(40, 6, 'Mitarbeiter:', 0, 0);
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
+        $pdf->Cell(0, 6, $employee->getFullName(), 0, 1);
+
         if ($employee->getPersonnelNumber()) {
-            $remaining = $pdf->getPageWidth() - $margins['left'] - $margins['right'] - 32 - 60 - 38;
-            $pdf->Cell(60, 6, $this->truncateToWidth($pdf, $employee->getFullName(), 60), 0, 0);
             $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
-            $pdf->Cell(38, 6, 'Personalnummer:', 0, 0);
+            $pdf->Cell(40, 6, 'Personalnummer:', 0, 0);
             $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
-            $pdf->Cell(0, 6, $this->truncateToWidth($pdf, $employee->getPersonnelNumber(), $remaining), 0, 1);
-        } else {
-            $pdf->Cell(0, 6, $employee->getFullName(), 0, 1);
+            $pdf->Cell(0, 6, $employee->getPersonnelNumber(), 0, 1);
         }
 
         // Wochenstunden auf eigener Zeile
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_NORMAL);
-        $pdf->Cell(32, 6, 'Wochenstunden:', 0, 0);
+        $pdf->Cell(40, 6, 'Wochenstunden:', 0, 0);
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_NORMAL);
         // Wochenstunden des im Berichtszeitraum gültigen Arbeitszeitprofils anzeigen,
         // nicht das aktuelle Mitarbeiter-Feld – sonst weicht der Kopf bei mehreren
