@@ -309,7 +309,7 @@ class ReportController extends BaseController {
         }
         try {
             $eIds = $this->parseIds($employeeIds);
-            [$start, $end, $label, $entries, $totals, , $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $this->parseIds($projectIds), $eIds);
+            [, , $label, $entries, $totals, , , $allowanceByEmployee] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $this->parseIds($projectIds), $eIds);
 
             if ($mode === 'agg') {
                 $total = max(1, $totals['totalMinutes']);
@@ -322,16 +322,17 @@ class ReportController extends BaseController {
                     ]));
                 }
             } else {
-                $headers = ['Datum', 'Projekt', 'Projektcode', 'Kunde', 'Mitarbeiter', 'Stunden', 'Tätigkeit'];
+                $headers = ['Datum', 'Projekt', 'Projektcode', 'Mitarbeiter', 'Stunden', 'Kilometergeld (EUR)', 'Spesen (EUR)', 'Tätigkeit'];
                 $lines = [implode(';', array_map([$this, 'csvCell'], $headers))];
                 foreach ($entries as $entry) {
                     $lines[] = implode(';', array_map([$this, 'csvCell'], [
                         (new DateTime($entry['date']))->format('d.m.Y'),
                         $entry['projectName'] ?? 'Kein Projekt',
                         $entry['projectCode'] ?? '',
-                        $entry['customer'] ?? '',
                         $entry['employeeName'] ?? '',
                         $this->minutesToDecimal($entry['minutes']),
+                        $entry['mileageAmount'] > 0 ? number_format($entry['mileageAmount'], 2, ',', '') : '',
+                        $entry['allowanceAmount'] > 0 ? number_format($entry['allowanceAmount'], 2, ',', '') : '',
                         $entry['description'] ?? '',
                     ]));
                 }
@@ -339,7 +340,7 @@ class ReportController extends BaseController {
 
             // Spesen & Kilometer je Mitarbeiter als eigener Block (tages-, nicht
             // projektgebunden — gilt für den gesamten Zeitraum).
-            $allowanceRows = $this->allowanceExportRows($this->collectAllowanceByEmployee($start, $end, $employees), $eIds);
+            $allowanceRows = $this->allowanceExportRows($allowanceByEmployee, $eIds);
             if (!empty($allowanceRows)) {
                 $lines[] = '';
                 $lines[] = $this->csvCell('Spesen & Kilometer je Mitarbeiter (gesamter Zeitraum, unabhängig von der Projektauswahl)');
@@ -389,9 +390,9 @@ class ReportController extends BaseController {
         try {
             $pIds = $this->parseIds($projectIds);
             $eIds = $this->parseIds($employeeIds);
-            [$start, $end, $label, $entries, $totals, $projects, $employees] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
+            [, , $label, $entries, $totals, $projects, $employees, $allowanceByEmployee] = $this->collectProjectEntries($year, $month, $period, $billableOnly, $pIds, $eIds);
             $filter = $this->selectionLabels($pIds, $eIds, $projects, $employees);
-            $allowanceRows = $this->allowanceExportRows($this->collectAllowanceByEmployee($start, $end, $employees), $eIds);
+            $allowanceRows = $this->allowanceExportRows($allowanceByEmployee, $eIds);
             $pdf = $mode === 'agg'
                 ? $this->pdfService->generateProjectAggregate($label, $this->aggregateByEmployee($entries), $totals['totalMinutes'], $filter, $allowanceRows)
                 : $this->pdfService->generateProjectEvaluation($label, $entries, $totals, $filter, $allowanceRows);
@@ -405,9 +406,15 @@ class ReportController extends BaseController {
      * Collect individual bookings for the period, enriched with project and
      * employee metadata. Shared by the JSON, CSV and PDF endpoints.
      *
+     * Kilometergeld und Spesen sind tages-, nicht buchungsgebunden: sie werden
+     * an der ERSTEN (nach Filterung enthaltenen) Buchung des Tages eines
+     * Mitarbeiters ausgewiesen, damit Spaltensummen nichts doppelt zählen.
+     * km/Spesen an Tagen ganz ohne Buchung (z.B. externer Abwesenheitstag)
+     * erscheinen nur im Block «Spesen & Kilometer je Mitarbeiter».
+     *
      * @param int[] $projectIds optional filter (empty = all)
      * @param int[] $employeeIds optional filter (empty = all)
-     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}, 5: array<int, \OCA\WorkTime\Db\Project>, 6: array<int, \OCA\WorkTime\Db\Employee>}
+     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}, 5: array<int, \OCA\WorkTime\Db\Project>, 6: array<int, \OCA\WorkTime\Db\Employee>, 7: array<int, array>}
      */
     private function collectProjectEntries(int $year, int $month, string $period, bool $billableOnly, array $projectIds = [], array $employeeIds = []): array {
         [$start, $end, $label] = $this->resolvePeriod($year, $month, $period);
@@ -424,9 +431,12 @@ class ReportController extends BaseController {
             $employees[$e->getId()] = $e;
         }
 
+        $allowanceByEmployee = $this->collectAllowanceByEmployee($start, $end, $employees);
+
         $entries = [];
         $totalMinutes = 0;
         $billableMinutes = 0;
+        $seenEmployeeDays = [];
         foreach ($this->timeEntryMapper->findByDateRange($start, $end) as $te) {
             $projectId = (int)($te->getProjectId() ?? 0);
             $project = $projects[$projectId] ?? null;
@@ -442,9 +452,27 @@ class ReportController extends BaseController {
             }
             $employee = $employees[$te->getEmployeeId()] ?? null;
             $minutes = (int)$te->getWorkMinutes();
+            $dateStr = $te->getDate()->format('Y-m-d');
+
+            // km/Spesen des Tages nur auf der ersten enthaltenen Buchung.
+            $mileageAmount = 0.0;
+            $allowanceAmount = 0.0;
+            $dayKey = $te->getEmployeeId() . '|' . $dateStr;
+            if (!isset($seenEmployeeDays[$dayKey])) {
+                $seenEmployeeDays[$dayKey] = true;
+                $summary = $allowanceByEmployee[$te->getEmployeeId()] ?? null;
+                if ($summary !== null) {
+                    $dayKm = $summary['kilometersByDate'][$dateStr] ?? 0;
+                    $mileageAmount = round($dayKm * (float)($summary['mileageRate'] ?? 0), 2);
+                    if (in_array($dateStr, $summary['allowanceDates'] ?? [], true)) {
+                        $allowanceAmount = (float)($summary['allowancePerDay'] ?? 0);
+                    }
+                }
+            }
+
             $entries[] = [
                 'id' => $te->getId(),
-                'date' => $te->getDate()->format('Y-m-d'),
+                'date' => $dateStr,
                 'projectId' => $projectId,
                 'projectName' => $project?->getName(),
                 'projectCode' => $project?->getCode(),
@@ -455,6 +483,8 @@ class ReportController extends BaseController {
                 'employeeName' => $employee?->getFullName(),
                 'minutes' => $minutes,
                 'description' => $te->getDescription(),
+                'mileageAmount' => $mileageAmount,
+                'allowanceAmount' => $allowanceAmount,
             ];
             $totalMinutes += $minutes;
             if ($isBillable) {
@@ -462,7 +492,7 @@ class ReportController extends BaseController {
             }
         }
 
-        return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes], $projects, $employees];
+        return [$start, $end, $label, $entries, ['totalMinutes' => $totalMinutes, 'billableMinutes' => $billableMinutes], $projects, $employees, $allowanceByEmployee];
     }
 
     /**
@@ -506,7 +536,7 @@ class ReportController extends BaseController {
                 $start,
                 $end
             );
-            if ($summary['allowanceDays'] <= 0 && $summary['kilometers'] <= 0) {
+            if (($summary['allowanceDays'] ?? 0) <= 0 && ($summary['kilometers'] ?? 0) <= 0) {
                 continue;
             }
             $result[$employeeId] = array_merge($summary, [

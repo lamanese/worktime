@@ -668,6 +668,8 @@ OC.L10N.register(
     "Mitarbeiter dürfen ein Standard-Projekt festlegen" : "Mitarbeiter dürfen ein Standard-Projekt festlegen",
     "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist." : "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.",
     "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Mitarbeiter dürfen eine Standard-Beschreibung festlegen",
-    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist."
+    "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.",
+    "Kilometergeld" : "Kilometergeld",
+    "Spesen" : "Spesen"
 },
 "nplurals=2; plural=(n != 1);");

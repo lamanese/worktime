@@ -293,9 +293,10 @@
                 <tr>
                     <th class="sortable" @click="sortBy('date')">{{ t('worktime', 'Datum') }}{{ sortArrow('date') }}</th>
                     <th>{{ t('worktime', 'Projekt') }}</th>
-                    <th>{{ t('worktime', 'Kunde') }}</th>
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
+                    <th class="ev-num">{{ t('worktime', 'Kilometergeld') }}</th>
+                    <th class="ev-num">{{ t('worktime', 'Spesen') }}</th>
                     <th>{{ t('worktime', 'Beschreibung') }}</th>
                 </tr>
             </thead>
@@ -306,16 +307,19 @@
                         <span class="ev-cdot" :style="{ background: entry.color || 'var(--color-border-dark)' }" />
                         <span>{{ entry.projectName || t('worktime', 'Kein Projekt') }}</span>
                     </td>
-                    <td class="ev-muted">{{ entry.customer || '–' }}</td>
                     <td>{{ entry.employeeName || t('worktime', 'Unbekannt') }}</td>
                     <td class="ev-num">{{ hours(entry.minutes) }}</td>
+                    <td class="ev-num">{{ entry.mileageAmount > 0 ? formatEuro(entry.mileageAmount) : '–' }}</td>
+                    <td class="ev-num">{{ entry.allowanceAmount > 0 ? formatEuro(entry.allowanceAmount) : '–' }}</td>
                     <td class="ev-muted">{{ entry.description || '' }}</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="4">{{ t('worktime', 'Gesamt') }}</td>
+                    <td colspan="3">{{ t('worktime', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
+                    <td class="ev-num">{{ formatEuro(detailTotals.mileageAmount) }}</td>
+                    <td class="ev-num">{{ formatEuro(detailTotals.allowanceAmount) }}</td>
                     <td />
                 </tr>
             </tfoot>
@@ -567,12 +571,53 @@ export default {
                 (!this.selectedProjects.size || this.selectedProjects.has(e.projectId))
                 && (!this.selectedEmployees.size || this.selectedEmployees.has(e.employeeId)),
             )
+            // Die tagesbezogenen km-/Spesen-Beträge liegen backend-seitig auf der
+            // ersten Buchung des Tages — die kann hier weggefiltert sein (Filter
+            // laufen client-seitig). Deshalb die Tagesbeträge auf die erste
+            // SICHTBARE Buchung des Tages umhängen (stabil nach Datum/ID),
+            // damit Projektfilter keine km/Spesen verschlucken.
+            const dayAmounts = {}
+            for (const e of this.entries) {
+                if ((e.mileageAmount || 0) > 0 || (e.allowanceAmount || 0) > 0) {
+                    dayAmounts[`${e.employeeId}|${e.date}`] = {
+                        mileageAmount: e.mileageAmount || 0,
+                        allowanceAmount: e.allowanceAmount || 0,
+                    }
+                }
+            }
+            const assigned = new Set()
+            const rows = filtered.slice()
+                .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id))
+                .map(e => {
+                    const key = `${e.employeeId}|${e.date}`
+                    let mileageAmount = 0
+                    let allowanceAmount = 0
+                    if (dayAmounts[key] && !assigned.has(key)) {
+                        assigned.add(key)
+                        mileageAmount = dayAmounts[key].mileageAmount
+                        allowanceAmount = dayAmounts[key].allowanceAmount
+                    }
+                    return { ...e, mileageAmount, allowanceAmount }
+                })
             const s = this.sort
-            return filtered.slice().sort((a, b) => {
+            return rows.sort((a, b) => {
                 if (s.key === 'name') return s.dir * (a.employeeName || '').localeCompare(b.employeeName || '')
                 if (s.key === 'minutes') return s.dir * (a.minutes - b.minutes)
                 return s.dir * a.date.localeCompare(b.date)
             })
+        },
+        // Summen der tagesbezogenen km-/Spesen-Beträge in der Einzelbuchungsliste.
+        detailTotals() {
+            let mileageAmount = 0
+            let allowanceAmount = 0
+            for (const e of this.detailRows) {
+                mileageAmount += e.mileageAmount || 0
+                allowanceAmount += e.allowanceAmount || 0
+            }
+            return {
+                mileageAmount: Math.round(mileageAmount * 100) / 100,
+                allowanceAmount: Math.round(allowanceAmount * 100) / 100,
+            }
         },
     },
     watch: {
@@ -1105,11 +1150,12 @@ export default {
 }
 
 .ev-entries th:nth-child(1) { width: 9%; }   /* Datum */
-.ev-entries th:nth-child(2) { width: 21%; }  /* Projekt */
-.ev-entries th:nth-child(3) { width: 14%; }  /* Kunde */
-.ev-entries th:nth-child(4) { width: 15%; }  /* Mitarbeiter */
-.ev-entries th:nth-child(5) { width: 9%; }   /* Stunden */
-.ev-entries th:nth-child(6) { width: 32%; }  /* Beschreibung */
+.ev-entries th:nth-child(2) { width: 20%; }  /* Projekt */
+.ev-entries th:nth-child(3) { width: 15%; }  /* Mitarbeiter */
+.ev-entries th:nth-child(4) { width: 8%; }   /* Stunden */
+.ev-entries th:nth-child(5) { width: 10%; }  /* Kilometergeld */
+.ev-entries th:nth-child(6) { width: 8%; }   /* Spesen */
+.ev-entries th:nth-child(7) { width: 30%; }  /* Beschreibung */
 
 .ev-table td {
     padding: 8px 12px;

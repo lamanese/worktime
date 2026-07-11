@@ -179,6 +179,50 @@ class ReportControllerTest extends TestCase {
         $this->assertTrue($entry['isBillable']);
     }
 
+    public function testProjectEntriesCarryDayMileageAndAllowanceOnFirstRowOnly(): void {
+        // km/Spesen sind tagesbezogen: sie erscheinen auf der ersten Buchung
+        // des Tages eines Mitarbeiters, Folgebuchungen bleiben leer.
+        $allowance = $this->createMock(AllowanceService::class);
+        $allowance->method('calculate')->willReturn([
+            'allowanceDays' => 1,
+            'allowancePerDay' => 14.0,
+            'allowanceAmount' => 14.0,
+            'kilometers' => 120,
+            'mileageRate' => 0.30,
+            'mileageAmount' => 36.0,
+            'total' => 50.0,
+            'allowanceDates' => ['2026-06-15'],
+            'kilometersByDate' => ['2026-06-15' => 120],
+        ]);
+        $controller = new ReportController(
+            $this->createMock(IRequest::class), 'admin',
+            $this->createMock(TimeEntryService::class), $this->timeEntryMapper,
+            $this->createMock(AbsenceMapper::class), $this->createMock(AbsenceService::class),
+            $this->employeeService, $this->createMock(HolidayService::class), $this->permissionService,
+            $this->createMock(PdfService::class), $this->createMock(WorkScheduleService::class),
+            $this->createMock(YearlyCarryoverService::class), $this->createMock(OvertimePayoutService::class),
+            $this->createMock(OvertimeCalculationService::class), $this->projectService,
+            $allowance,
+            $this->createMock(DailyKmMapper::class),
+            $this->createMock(IL10N::class),
+        );
+
+        $this->projectService->method('findAll')->willReturn([$this->project(2, 'Acme', true)]);
+        $this->employeeService->method('findAll')->willReturn([$this->employee(5, 'Test', 'User')]);
+        $this->timeEntryMapper->method('findByDateRange')->willReturn([
+            $this->timeEntry(10, '2026-06-15', 2, 5, 120, 'Vormittag'),
+            $this->timeEntry(11, '2026-06-15', 2, 5, 60, 'Nachmittag'),
+        ]);
+
+        $data = $controller->projectEntries(2026, 6, 'month')->getData();
+
+        $this->assertCount(2, $data['entries']);
+        $this->assertSame(36.0, $data['entries'][0]['mileageAmount']);
+        $this->assertSame(14.0, $data['entries'][0]['allowanceAmount']);
+        $this->assertSame(0.0, $data['entries'][1]['mileageAmount']);
+        $this->assertSame(0.0, $data['entries'][1]['allowanceAmount']);
+    }
+
     public function testProjectsCsvDetailContainsBookingRow(): void {
         $this->projectService->method('findAll')->willReturn([$this->project(2, 'Acme', true)]);
         $this->employeeService->method('findAll')->willReturn([$this->employee(5, 'Test', 'User')]);

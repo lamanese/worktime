@@ -173,14 +173,16 @@ class PdfService {
         $this->addFilterContext($pdf, $filter);
         $pdf->Ln(4);
 
-        // Column widths (landscape A4 content width ~267mm)
+        // Column widths (landscape A4 content width ~267mm). km/Spesen stehen
+        // tagesbezogen auf der ersten Buchung des Tages (siehe ReportController).
         $cols = [
             ['Datum', 24, 'L'],
             ['Projekt', 55, 'L'],
-            ['Kunde', 40, 'L'],
             ['Mitarbeiter', 45, 'L'],
             ['Stunden', 20, 'R'],
-            ['Tätigkeit', 83, 'L'],
+            ['Kilometergeld', 26, 'R'],
+            ['Spesen', 22, 'R'],
+            ['Tätigkeit', 75, 'L'],
         ];
 
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
@@ -190,15 +192,22 @@ class PdfService {
         }
         $pdf->Ln();
 
+        $mileageTotal = 0.0;
+        $allowanceTotal = 0.0;
         $pdf->SetFont(self::FONT_FAMILY, '', self::FONT_SIZE_SMALL);
         foreach ($entries as $entry) {
             $date = (new DateTime($entry['date']))->format('d.m.Y');
+            $mileageAmount = (float)($entry['mileageAmount'] ?? 0);
+            $allowanceAmount = (float)($entry['allowanceAmount'] ?? 0);
+            $mileageTotal += $mileageAmount;
+            $allowanceTotal += $allowanceAmount;
             $row = [
                 $date,
                 $entry['projectName'] ?? 'Kein Projekt',
-                $entry['customer'] ?? '',
                 $entry['employeeName'] ?? '',
                 $this->minutesToHours($entry['minutes']),
+                $mileageAmount > 0 ? $this->formatEuro($mileageAmount) : '',
+                $allowanceAmount > 0 ? $this->formatEuro($allowanceAmount) : '',
                 $entry['description'] ?? '',
             ];
             foreach ($cols as $i => $col) {
@@ -209,9 +218,11 @@ class PdfService {
 
         // Totals
         $pdf->SetFont(self::FONT_FAMILY, 'B', self::FONT_SIZE_SMALL);
-        $pdf->Cell(164, 7, 'Gesamt', 1, 0, 'R');
+        $pdf->Cell(124, 7, 'Gesamt', 1, 0, 'R');
         $pdf->Cell(20, 7, $this->minutesToHours($totals['totalMinutes']), 1, 0, 'R');
-        $pdf->Cell(83, 7, '', 1, 0, 'L');
+        $pdf->Cell(26, 7, $this->formatEuro($mileageTotal), 1, 0, 'R');
+        $pdf->Cell(22, 7, $this->formatEuro($allowanceTotal), 1, 0, 'R');
+        $pdf->Cell(75, 7, '', 1, 0, 'L');
         $pdf->Ln();
 
         $this->addAllowanceByEmployeeTable($pdf, $allowanceRows);
