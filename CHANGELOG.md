@@ -7,6 +7,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Changed
+- **App-Metadaten auf den Fork aktualisiert**: Die App-Beschreibung (Apps-Verwaltung) nennt jetzt die Fork-Features (Außendienst-Spesen, Extern-Kilometer, persönliche Standard-Vorgaben, Projekt-Auswertung, Tschechisch) und weist den Fork als eigenständig gepflegt aus. Ahmad Gilbeau-Hammoud ist als Maintainer eingetragen (Axel Deffner bleibt als Originalautor genannt), Bug- und Repository-Links zeigen auf `lamanese/worktime`, der Spenden-Link des Originals wurde entfernt. README mit Fork-Hinweis ergänzt. Keine funktionalen Änderungen.
+
 ## [0.13.2] - 2026-07-11
 
 ### Changed
