@@ -56,6 +56,10 @@
                     <div class="kpi-lab">{{ t('worktime', 'Urlaub genommen') }}</div>
                     <div class="kpi-num">{{ teamKpis.vacationUsed }} <span class="kpi-sub">/ {{ teamKpis.vacationTotal }} {{ t('worktime', 'Tage') }}</span></div>
                 </div>
+                <div v-if="teamKpis.allowanceTotal > 0" class="kpi-card">
+                    <div class="kpi-lab">{{ t('worktime', 'Spesen & Kilometer') }}</div>
+                    <div class="kpi-num">{{ formatEuro(teamKpis.allowanceTotal) }}</div>
+                </div>
             </div>
             <NcLoadingIcon v-if="teamLoading" :size="44" />
             <template v-else-if="teamReport.length > 0">
@@ -80,6 +84,7 @@
                                 <th class="sortable" @click="teamSortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ teamSortArrow('name') }}</th>
                                 <th class="ev-num sortable" @click="teamSortBy('overtime')">{{ t('worktime', 'Überstunden') }}{{ teamSortArrow('overtime') }}</th>
                                 <th class="sortable" @click="teamSortBy('vacation')">{{ t('worktime', 'Resturlaub') }}{{ teamSortArrow('vacation') }}</th>
+                                <th class="ev-num sortable" @click="teamSortBy('allowance')">{{ t('worktime', 'Spesen & km') }}{{ teamSortArrow('allowance') }}</th>
                                 <th>{{ t('worktime', 'Status') }}</th>
                             </tr>
                         </thead>
@@ -101,6 +106,13 @@
                                         <span class="ev-vac-track"><span class="ev-vac-fill" :style="{ width: row.vacationPercent + '%' }" /></span>
                                     </div>
                                 </td>
+                                <td class="ev-num">
+                                    <template v-if="row.allowanceTotal > 0">
+                                        <div>{{ formatEuro(row.allowanceTotal) }}</div>
+                                        <div class="ev-emp-sub">{{ allowanceSub(row.allowance) }}</div>
+                                    </template>
+                                    <span v-else class="ev-muted">–</span>
+                                </td>
                                 <td>
                                     <span v-if="row.openMonths > 0" class="ev-stchip ev-stchip--open">{{ t('worktime', 'Offen: {n}', { n: row.openMonths }) }}</span>
                                     <span v-else class="ev-stchip ev-stchip--ok">{{ t('worktime', '✓ aktuell') }}</span>
@@ -112,6 +124,7 @@
                                 <td>{{ t('worktime', 'Team gesamt') }}</td>
                                 <td class="ev-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</td>
                                 <td>{{ teamKpis.vacationTotal - teamKpis.vacationUsed }} / {{ teamKpis.vacationTotal }}</td>
+                                <td class="ev-num">{{ teamKpis.allowanceTotal > 0 ? formatEuro(teamKpis.allowanceTotal) : '–' }}</td>
                                 <td />
                             </tr>
                         </tfoot>
@@ -195,6 +208,10 @@
                 <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
                 <div class="kpi-num">{{ totals.employeeCount }}</div>
             </div>
+            <div v-if="allowanceKpiTotal > 0" class="kpi-card">
+                <div class="kpi-lab">{{ t('worktime', 'Spesen & Kilometer') }}</div>
+                <div class="kpi-num">{{ formatEuro(allowanceKpiTotal) }}</div>
+            </div>
         </div>
 
         <div class="ev-tabs">
@@ -230,6 +247,7 @@
                     <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
                     <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
                     <th>{{ t('worktime', 'Anteil') }}</th>
+                    <th v-if="allowanceKpiTotal > 0" class="ev-num">{{ t('worktime', 'Spesen & km') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -245,6 +263,13 @@
                             <span class="ev-muted">{{ pct(r.minutes) }} %</span>
                         </div>
                     </td>
+                    <td v-if="allowanceKpiTotal > 0" class="ev-num">
+                        <template v-if="r.allowance && r.allowance.total > 0">
+                            <div>{{ formatEuro(r.allowance.total) }}</div>
+                            <div class="ev-emp-sub">{{ allowanceSub(r.allowance) }}</div>
+                        </template>
+                        <span v-else class="ev-muted">–</span>
+                    </td>
                 </tr>
             </tbody>
             <tfoot>
@@ -252,9 +277,13 @@
                     <td>{{ t('worktime', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
                     <td class="ev-muted">100 %</td>
+                    <td v-if="allowanceKpiTotal > 0" class="ev-num">{{ formatEuro(allowanceKpiTotal) }}</td>
                 </tr>
             </tfoot>
         </table>
+        <p v-if="allowanceKpiTotal > 0" class="ev-note">
+            {{ t('worktime', 'Spesen & Kilometer gelten je Mitarbeiter für den gesamten Zeitraum, unabhängig von der Projektauswahl.') }}
+        </p>
         </div>
 
         <!-- Einzelbuchungen -->
@@ -323,7 +352,7 @@ import YearPicker from '../components/YearPicker.vue'
 import TeamYearTable from '../components/TeamYearTable.vue'
 import ReportService from '../services/ReportService.js'
 import { formatMinutes } from '../utils/timeUtils.js'
-import { formatDate as formatDateUtil, getMonthName } from '../utils/dateUtils.js'
+import { formatDate as formatDateUtil, getMonthName, getLocale } from '../utils/dateUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 
 export default {
@@ -366,6 +395,7 @@ export default {
             loading: false,
             entriesLoading: false,
             rows: [],
+            allowances: [],
             entries: [],
             entriesLoadedKey: null,
             selectedProjects: new Set(),
@@ -385,12 +415,14 @@ export default {
             let overtimeMinutes = 0
             let vacationUsed = 0
             let vacationTotal = 0
+            let allowanceTotal = 0
             for (const m of this.teamReport) {
                 overtimeMinutes += m.totalOvertimeMinutes || 0
                 vacationUsed += m.vacationStats?.used || 0
                 vacationTotal += m.vacationStats?.total || 0
+                allowanceTotal += m.allowance?.total || 0
             }
-            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal }
+            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal, allowanceTotal }
         },
         teamOverviewRows() {
             const rows = this.teamReport.map(m => {
@@ -403,6 +435,8 @@ export default {
                     userId: m.employee.userId,
                     name: m.employee.fullName,
                     weeklyHours: m.employee.weeklyHours,
+                    allowance: m.allowance || null,
+                    allowanceTotal: m.allowance?.total || 0,
                     overtimeMinutes: m.totalOvertimeMinutes || 0,
                     vacationTotal: total,
                     vacationRemaining: remaining,
@@ -415,6 +449,7 @@ export default {
                 let cmp = 0
                 if (key === 'overtime') cmp = a.overtimeMinutes - b.overtimeMinutes
                 else if (key === 'vacation') cmp = a.vacationRemaining - b.vacationRemaining
+                else if (key === 'allowance') cmp = a.allowanceTotal - b.allowanceTotal
                 else cmp = a.name.localeCompare(b.name)
                 return cmp * dir
             })
@@ -505,11 +540,27 @@ export default {
                 }
                 byEmp[r.employeeId].minutes += r.minutes
             }
+            // Mitarbeiter mit Spesen/km, aber ohne Buchungen in der Auswahl,
+            // erscheinen mit 0 Stunden (Spesen/km sind projektunabhängig).
+            for (const a of this.filteredAllowances) {
+                if (!byEmp[a.employeeId]) {
+                    byEmp[a.employeeId] = { id: a.employeeId, name: a.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[a.employeeId] ?? null }
+                }
+                byEmp[a.employeeId].allowance = a
+            }
             const arr = Object.values(byEmp)
             arr.sort((a, b) => this.sort.key === 'name'
                 ? this.sort.dir * a.name.localeCompare(b.name)
                 : this.sort.dir * (a.minutes - b.minutes))
             return arr
+        },
+        filteredAllowances() {
+            return this.allowances.filter(a => !this.selectedEmployees.size || this.selectedEmployees.has(a.employeeId))
+        },
+        allowanceKpiTotal() {
+            let total = 0
+            for (const a of this.filteredAllowances) total += a.total || 0
+            return Math.round(total * 100) / 100
         },
         detailRows() {
             const filtered = this.entries.filter(e =>
@@ -549,6 +600,16 @@ export default {
             this.loadTeamReport()
         },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
+        formatEuro(value) {
+            return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'EUR' }).format(value || 0)
+        },
+        // Kurzform "3 Tage · 120 km" unter dem Spesen/km-Betrag
+        allowanceSub(allowance) {
+            const parts = []
+            if (allowance?.allowanceDays > 0) parts.push(`${allowance.allowanceDays} ${this.t('worktime', 'Tage')}`)
+            if (allowance?.kilometers > 0) parts.push(`${allowance.kilometers} km`)
+            return parts.join(' · ')
+        },
         // Wochenstunden ohne überflüssige Nullen: "40.00" → "40", "37.50" → "37.5"
         weeklyLabel(h) {
             if (h == null || h === '') return ''
@@ -649,6 +710,7 @@ export default {
                     year: this.year, month: this.month, period: this.period,
                 })
                 this.rows = data?.rows || []
+                this.allowances = data?.allowanceByEmployee || []
             } catch (error) {
                 showErrorMessage(error.message || this.t('worktime', 'Fehler beim Laden der Auswertung'))
             } finally {
@@ -1118,6 +1180,12 @@ export default {
 .ev-empty {
     margin-top: 40px;
     text-align: center;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-note {
+    margin: 8px 4px 6px;
+    font-size: 12.5px;
     color: var(--color-text-maxcontrast);
 }
 </style>

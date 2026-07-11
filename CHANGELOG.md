@@ -7,6 +7,29 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-07-10
+
+### Added
+- **Persönliche Standard-Vorgaben für Zeiteinträge**: Mitarbeitende können unter „Meine Einstellungen" zusätzlich zu den Standard-Arbeitszeiten ein Standard-Projekt (aus ihren buchbaren Projekten) und eine Standard-Beschreibung hinterlegen. Beides wird bei neuen Zeiteinträgen vorausgefüllt und ist dort jederzeit änderbar. Der Admin gibt jede der beiden Vorgaben einzeln frei (zwei neue Schalter in der Zeiterfassungs-Sektion, standardmäßig aus); die Freigabe wird auch server-seitig erzwungen, und als Standard-Projekt sind nur die eigenen buchbaren Projekte zulässig.
+
+### Fixed
+- **Partial-Update löschte Standard-Arbeitszeiten**: Das Speichern einzelner „Meine Einstellungen"-Werte (z. B. nur der Abwesenheits-Sichtbarkeit) löschte bisher stillschweigend die hinterlegten Standard-Arbeitszeiten. Die Schnittstelle hat jetzt saubere Partial-Update-Semantik: nicht übergebene Felder bleiben unverändert.
+- **Deaktivierte Projekte sind nicht mehr buchbar**: Die Projekt-Berechtigungsprüfung akzeptierte auch deaktivierte Projekte, sodass sich über eine veraltete Vorauswahl (z. B. ein Standard-Projekt aus einer noch nicht aktualisierten Projektliste) Zeit unbemerkt auf ein deaktiviertes Projekt buchen ließ. Neue Buchungen auf deaktivierte Projekte werden jetzt abgelehnt; bestehende Einträge bleiben editierbar. Zusätzlich nimmt das Eintragsformular ein automatisch vorgewähltes Standard-Projekt zurück, sobald es nicht mehr in der buchbaren Liste ist.
+
+## [0.13.0] - 2026-07-10
+
+### Added
+- **Außendienst-Spesen und Extern-Kilometer**: Zwei neue Zusatzvergütungen. Projekte lassen sich als „Außendienst" (löst ab einer konfigurierbaren Tages-Stundenschwelle die Spesen-Pauschale aus, Standard 14 € ab 8 h) und/oder „Extern" (erlaubt die tageweise Kilometer-Erfassung, Standard 0,30 €/km) markieren. Alles ist über die Firmen-Einstellungen konfigurierbar: Pauschale, Schwelle, Vergleichsoperator (≥/>), Berechnungsbasis (brutto inkl. Pause/netto), Kilometer-Satz, externe Abwesenheitstypen sowie optional die Spesen-Pauschale an externen Abwesenheitstagen.
+- **Kilometer-Erfassung im Tagesdetail**: An externen Tagen (Buchung auf einem Extern-Projekt oder externer Abwesenheitstyp) lassen sich gefahrene Kilometer erfassen — als eigene Zeile im Stil der Zeiteinträge, mit „Hinzufügen", Bearbeiten (Stift) und Löschen (Papierkorb mit Bestätigung). Welche Tage km-fähig sind, bestimmt der Server (kennt auch inzwischen deaktivierte Extern-Projekte).
+- **Spesen & Kilometer in den Auswertungen**: Monatsübersicht und Team liefern die Zusatzvergütung; die Auswertung erhält je Mitarbeiter eine Spalte „Spesen & km" plus KPI-Karte (Projekte-Modus zeitraumbezogen, Mitarbeiter-Modus jahresbezogen). CSV- und PDF-Exporte der Projektauswertung enthalten einen eigenen Block „Spesen & Kilometer je Mitarbeiter".
+- **Spesen & Kilometer im Arbeitszeitnachweis-PDF**: Die Tagesliste zeigt pro Tag die zählenden Kilometer und die ausgelöste Spesen-Pauschale als eigene Spalten (nur eingeblendet, wenn im Zeitraum etwas angefallen ist), dazu ein Summenblock „Spesen & Kilometer". Gilt für Monats-, Zeitraum- und Archiv-PDF.
+
+### Changed
+- **Kompakteres PDF-Layout**: Der Kopf des Arbeitszeitnachweises steht jetzt in einer Zeile (Firmenname links, Titel mittig, Monat/Zeitraum rechts); Mitarbeiter, Personalnummer und Wochenstunden folgen je auf einer eigenen Zeile. Überlange Namen werden auf die Zellenbreite gekürzt statt in Nachbarspalten zu laufen. Der Schlussblock (Zusammenfassung, Spesen & Kilometer, Unterschriften, Genehmigungsvermerk) beginnt immer auf einer eigenen Seite.
+
+### Security
+- **Kilometer-Integrität server-seitig abgesichert**: Ein positiver km-Wert ist nur an einem tatsächlich externen Tag speicherbar (UI-Beschränkung allein genügt nicht), Änderungen sind in eingereichten und abgeschlossenen Monaten gesperrt (analog zu den Zeiteinträgen; HR korrigiert über das bestehende Wiedereröffnen), und vergütet werden nur Kilometer, deren Extern-Basis zum Berechnungszeitpunkt noch besteht — eine später entfallene oder abgelehnte Grundlage erzeugt kein Geld.
+
 ## [0.12.4] - 2026-07-07
 
 ### Fixed

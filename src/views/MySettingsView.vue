@@ -41,6 +41,47 @@
             </div>
         </NcSettingsSection>
 
+        <NcSettingsSection v-if="allowDefaultProject || allowDefaultDescription"
+            :name="t('worktime', 'Standard-Vorgaben für Zeiteinträge')"
+            :description="t('worktime', 'Diese Werte werden beim Anlegen neuer Zeiteinträge vorausgefüllt und lassen sich dort jederzeit ändern.')">
+
+            <div class="settings-form">
+                <div v-if="allowDefaultProject" class="form-group">
+                    <label for="defaultProject">{{ t('worktime', 'Standard-Projekt') }}</label>
+                    <div class="visibility-row">
+                        <NcSelect id="defaultProject"
+                            v-model="selectedDefaultProject"
+                            :options="projectOptions"
+                            :clearable="true"
+                            :placeholder="t('worktime', 'Kein Standard-Projekt')"
+                            :disabled="savingDefaultProject"
+                            class="visibility-select"
+                            @input="saveDefaultProject" />
+                        <NcLoadingIcon v-if="savingDefaultProject" :size="20" />
+                        <span v-if="defaultProjectSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
+                    </div>
+                </div>
+
+                <div v-if="allowDefaultDescription" class="form-group">
+                    <label for="defaultDescription">{{ t('worktime', 'Standard-Beschreibung') }}</label>
+                    <div class="visibility-row">
+                        <input id="defaultDescription"
+                            v-model="form.defaultDescription"
+                            type="text"
+                            maxlength="500"
+                            class="description-input"
+                            :placeholder="t('worktime', 'z.B. Support und Wartung')"
+                            @change="saveDefaultDescription">
+                        <NcLoadingIcon v-if="savingDefaultDescription" :size="20" />
+                        <span v-if="defaultDescriptionSaved" class="saved-hint">{{ t('worktime', 'Gespeichert') }}</span>
+                    </div>
+                    <p class="hint">
+                        {{ t('worktime', 'Leer lassen, um keine Beschreibung vorauszufüllen.') }}
+                    </p>
+                </div>
+            </div>
+        </NcSettingsSection>
+
         <NcSettingsSection :name="t('worktime', 'Datenschutz')"
             :description="t('worktime', 'Legen Sie fest, wer Ihre Abwesenheiten in der Abwesenheitsübersicht sehen kann. Vorgesetzte und HR sehen Ihre Abwesenheiten immer.')">
 
@@ -100,17 +141,25 @@ export default {
             form: {
                 defaultStartTime: '',
                 defaultEndTime: '',
+                defaultProjectId: null,
+                defaultDescription: '',
                 absenceVisibility: 'none',
                 absenceDetail: 'hidden',
             },
             originalValues: {
                 defaultStartTime: '',
                 defaultEndTime: '',
+                defaultProjectId: null,
+                defaultDescription: '',
                 absenceVisibility: 'none',
                 absenceDetail: 'hidden',
             },
             savingWorkTimes: false,
             workTimesSaved: false,
+            savingDefaultProject: false,
+            defaultProjectSaved: false,
+            savingDefaultDescription: false,
+            defaultDescriptionSaved: false,
             savingVisibility: false,
             visibilitySaved: false,
             savingDetail: false,
@@ -119,6 +168,22 @@ export default {
     },
     computed: {
         ...mapGetters('employees', ['currentEmployee']),
+        ...mapGetters('permissions', ['allowDefaultProject', 'allowDefaultDescription']),
+        ...mapGetters('projects', ['activeProjects']),
+        projectOptions() {
+            return this.activeProjects.map(p => ({
+                id: p.id,
+                label: p.displayName || p.name,
+            }))
+        },
+        selectedDefaultProject: {
+            get() {
+                return this.projectOptions.find(o => o.id === this.form.defaultProjectId) || null
+            },
+            set(value) {
+                this.form.defaultProjectId = value?.id || null
+            },
+        },
         visibilityOptions() {
             return [
                 { id: 'none', label: this.t('worktime', 'Niemand') },
@@ -159,25 +224,73 @@ export default {
             },
         },
     },
+    created() {
+        if (this.allowDefaultProject) {
+            this.$store.dispatch('projects/fetchProjects')
+        }
+    },
     methods: {
         ...mapActions('employees', ['updateMyDefaults']),
         loadFromEmployee(employee) {
             this.form.defaultStartTime = employee.defaultStartTime || '08:00'
             this.form.defaultEndTime = employee.defaultEndTime || '17:00'
+            this.form.defaultProjectId = employee.defaultProjectId || null
+            this.form.defaultDescription = employee.defaultDescription || ''
             this.form.absenceVisibility = employee.absenceVisibility || 'none'
             this.form.absenceDetail = employee.absenceDetail || 'hidden'
             this.originalValues.defaultStartTime = this.form.defaultStartTime
             this.originalValues.defaultEndTime = this.form.defaultEndTime
+            this.originalValues.defaultProjectId = this.form.defaultProjectId
+            this.originalValues.defaultDescription = this.form.defaultDescription
             this.originalValues.absenceVisibility = this.form.absenceVisibility
             this.originalValues.absenceDetail = this.form.absenceDetail
+        },
+        async saveDefaultProject() {
+            this.savingDefaultProject = true
+            this.defaultProjectSaved = false
+            try {
+                // 0 = Standard-Projekt entfernen (null hiesse "unverändert")
+                await this.updateMyDefaults({
+                    defaultProjectId: this.form.defaultProjectId || 0,
+                })
+                this.originalValues.defaultProjectId = this.form.defaultProjectId
+                this.defaultProjectSaved = true
+                setTimeout(() => { this.defaultProjectSaved = false }, 2000)
+            } catch (error) {
+                console.error('Failed to save default project:', error)
+                showError(t('worktime', 'Fehler beim Speichern'))
+                this.form.defaultProjectId = this.originalValues.defaultProjectId
+            } finally {
+                this.savingDefaultProject = false
+            }
+        },
+        async saveDefaultDescription() {
+            this.savingDefaultDescription = true
+            this.defaultDescriptionSaved = false
+            try {
+                // '' = Standard-Beschreibung entfernen (null hiesse "unverändert")
+                await this.updateMyDefaults({
+                    defaultDescription: this.form.defaultDescription || '',
+                })
+                this.originalValues.defaultDescription = this.form.defaultDescription
+                this.defaultDescriptionSaved = true
+                setTimeout(() => { this.defaultDescriptionSaved = false }, 2000)
+            } catch (error) {
+                console.error('Failed to save default description:', error)
+                showError(t('worktime', 'Fehler beim Speichern'))
+                this.form.defaultDescription = this.originalValues.defaultDescription
+            } finally {
+                this.savingDefaultDescription = false
+            }
         },
         async saveWorkTimes() {
             this.savingWorkTimes = true
             this.workTimesSaved = false
             try {
+                // '' = Wert löschen (null hiesse "unverändert")
                 await this.updateMyDefaults({
-                    defaultStartTime: this.form.defaultStartTime || null,
-                    defaultEndTime: this.form.defaultEndTime || null,
+                    defaultStartTime: this.form.defaultStartTime || '',
+                    defaultEndTime: this.form.defaultEndTime || '',
                 })
                 this.originalValues.defaultStartTime = this.form.defaultStartTime
                 this.originalValues.defaultEndTime = this.form.defaultEndTime
@@ -295,6 +408,14 @@ export default {
 
 .visibility-select {
     min-width: 16rem;
+}
+
+.description-input {
+    width: 24rem;
+    max-width: 100%;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
 }
 
 .saved-hint {

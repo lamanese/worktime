@@ -27,6 +27,12 @@ store.dispatch('permissions/setRequiredFields', {
 	requireDescription: loadState('worktime', 'requireDescription', false),
 })
 
+// Freigaben für persönliche Standard-Vorgaben (Projekt/Beschreibung)
+store.dispatch('permissions/setDefaultsAllowed', {
+	allowDefaultProject: loadState('worktime', 'allowDefaultProject', false),
+	allowDefaultDescription: loadState('worktime', 'allowDefaultDescription', false),
+})
+
 // Restore last view from localStorage (if not already on a valid route)
 const savedView = localStorage.getItem('worktime_last_view')
 if (savedView && savedView !== '/' && router.currentRoute.path === '/') {

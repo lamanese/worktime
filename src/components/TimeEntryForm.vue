@@ -145,10 +145,14 @@ export default {
             },
             showReasonModal: false,
             pendingData: null,
+            // Merker fürs automatisch vorgewählte Standard-Projekt: nur ein
+            // solches wird beim Projektlisten-Refresh wieder zurückgenommen,
+            // eine bewusste Nutzerwahl nicht.
+            autoAppliedProjectId: null,
         }
     },
     computed: {
-        ...mapGetters('permissions', ['isCorrectionMode', 'requireProject', 'requireDescription']),
+        ...mapGetters('permissions', ['isCorrectionMode', 'requireProject', 'requireDescription', 'allowDefaultProject', 'allowDefaultDescription']),
         ...mapGetters('projects', ['activeProjects']),
         ...mapGetters('employees', ['currentEmployee']),
         requiredBreak() {
@@ -222,6 +226,21 @@ export default {
                 }
             },
         },
+        // Die Projektliste lädt asynchron: Standard-Projekt nachträglich
+        // vorauswählen, sobald sie da ist (nur bei neuem, noch leerem Eintrag).
+        // Umgekehrt ein bereits automatisch vorgewähltes Projekt zurücknehmen,
+        // wenn es in der aktualisierten Liste nicht mehr buchbar ist — sonst
+        // würde eine veraltete Projekt-ID unsichtbar mitgespeichert.
+        activeProjects() {
+            if (this.entry) return
+            if (this.form.projectId
+                && this.form.projectId === this.autoAppliedProjectId
+                && !this.activeProjects.some(p => p.id === this.form.projectId)) {
+                this.form.projectId = null
+                this.autoAppliedProjectId = null
+            }
+            this.applyDefaultProject()
+        },
     },
     async created() {
         this.$store.dispatch('projects/fetchProjects')
@@ -255,12 +274,29 @@ export default {
                 endTime: this.prefillEnd !== null ? this.prefillEnd : defaultEnd,
                 breakMinutes: 30,
                 projectId: null,
-                description: '',
+                description: this.defaultDescriptionPrefill(),
             }
+            this.autoAppliedProjectId = null
+            this.applyDefaultProject()
             // Recalculate break based on default times
             this.$nextTick(() => {
                 this.onTimeChange()
             })
+        },
+        // Persönliche Standard-Beschreibung (nur solange vom Admin freigegeben).
+        defaultDescriptionPrefill() {
+            return (this.allowDefaultDescription && this.currentEmployee?.defaultDescription) || ''
+        },
+        // Persönliches Standard-Projekt vorauswählen — nur wenn freigegeben und
+        // das Projekt (noch) in der buchbaren Liste ist. Die Projektliste lädt
+        // asynchron; der activeProjects-Watcher holt die Vorauswahl dann nach.
+        applyDefaultProject() {
+            if (!this.allowDefaultProject || this.form.projectId) return
+            const defaultId = this.currentEmployee?.defaultProjectId
+            if (defaultId && this.activeProjects.some(p => p.id === defaultId)) {
+                this.form.projectId = defaultId
+                this.autoAppliedProjectId = defaultId
+            }
         },
         onTimeChange() {
             // Automatisch die konfigurierte Mindestpause eintragen

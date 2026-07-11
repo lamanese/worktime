@@ -41,6 +41,32 @@ class CompanySetting extends Entity implements JsonSerializable {
     public const KEY_CHRISTMAS_EVE_HALF_DAY = 'christmas_eve_half_day';
     public const KEY_NEW_YEARS_EVE_HALF_DAY = 'new_years_eve_half_day';
 
+    // Aussendienst-Spesen (an Tagen mit Aussendienst-Projektbuchung ab Schwelle)
+    public const KEY_FIELDWORK_ALLOWANCE_AMOUNT = 'fieldwork_allowance_amount';
+    public const KEY_FIELDWORK_ALLOWANCE_THRESHOLD_HOURS = 'fieldwork_allowance_threshold_hours';
+    /** 'gte' = >= Schwelle, 'gt' = > Schwelle */
+    public const KEY_FIELDWORK_ALLOWANCE_OPERATOR = 'fieldwork_allowance_operator';
+    /** 'gross' = Tageszeit inkl. Pause, 'net' = reine Arbeitszeit */
+    public const KEY_FIELDWORK_ALLOWANCE_BASIS = 'fieldwork_allowance_basis';
+    /** 1 = Spesen-Pauschale auch an Tagen mit externem Abwesenheitstyp */
+    public const KEY_FIELDWORK_ALLOWANCE_ON_EXTERN_ABSENCE = 'fieldwork_allowance_on_extern_absence';
+
+    // Extern-Kilometer
+    public const KEY_MILEAGE_RATE = 'mileage_rate';
+    /** Komma-separierte Abwesenheitstyp-Keys, die als "extern" gelten (km-faehig) */
+    public const KEY_EXTERN_ABSENCE_TYPES = 'extern_absence_types';
+
+    // Persönliche Standard-Vorgaben für Zeiteinträge (Freigabe durch Admin)
+    /** 1 = Mitarbeiter dürfen ein Standard-Projekt festlegen */
+    public const KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT = 'allow_employee_default_project';
+    /** 1 = Mitarbeiter dürfen eine Standard-Beschreibung festlegen */
+    public const KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION = 'allow_employee_default_description';
+
+    public const OPERATOR_GTE = 'gte';
+    public const OPERATOR_GT = 'gt';
+    public const BASIS_GROSS = 'gross';
+    public const BASIS_NET = 'net';
+
     public const DEFAULTS = [
         self::KEY_COMPANY_NAME => '',
         self::KEY_DEFAULT_FEDERAL_STATE => 'BY',
@@ -57,6 +83,15 @@ class CompanySetting extends Entity implements JsonSerializable {
         self::KEY_PDF_ARCHIVE_USER => '',
         self::KEY_CHRISTMAS_EVE_HALF_DAY => '1',
         self::KEY_NEW_YEARS_EVE_HALF_DAY => '1',
+        self::KEY_FIELDWORK_ALLOWANCE_AMOUNT => '14.00',
+        self::KEY_FIELDWORK_ALLOWANCE_THRESHOLD_HOURS => '8',
+        self::KEY_FIELDWORK_ALLOWANCE_OPERATOR => self::OPERATOR_GTE,
+        self::KEY_FIELDWORK_ALLOWANCE_BASIS => self::BASIS_GROSS,
+        self::KEY_FIELDWORK_ALLOWANCE_ON_EXTERN_ABSENCE => '0',
+        self::KEY_MILEAGE_RATE => '0.30',
+        self::KEY_EXTERN_ABSENCE_TYPES => '',
+        self::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT => '0',
+        self::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION => '0',
     ];
 
     protected string $settingKey = '';

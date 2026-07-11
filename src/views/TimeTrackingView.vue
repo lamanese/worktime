@@ -102,6 +102,22 @@
             :vacation-total="vacationTotal"
             :year="overviewYear" />
 
+        <div v-if="!isYearMode && allowance && (allowance.allowanceDays > 0 || allowance.kilometers > 0)"
+            class="allowance-card card">
+            <div class="allowance-item">
+                <span class="allowance-label">{{ t('worktime', 'Spesen (Aussendienst)') }}</span>
+                <span class="allowance-value">{{ allowance.allowanceDays }} {{ t('worktime', 'Tage') }} · {{ formatEuro(allowance.allowanceAmount) }}</span>
+            </div>
+            <div class="allowance-item">
+                <span class="allowance-label">{{ t('worktime', 'Kilometer (Extern)') }}</span>
+                <span class="allowance-value">{{ allowance.kilometers }} km · {{ formatEuro(allowance.mileageAmount) }}</span>
+            </div>
+            <div class="allowance-item allowance-total">
+                <span class="allowance-label">{{ t('worktime', 'Summe') }}</span>
+                <span class="allowance-value">{{ formatEuro(allowance.total) }}</span>
+            </div>
+        </div>
+
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <!-- Jahresansicht: Tabelle als Vollbreiten-Card -->
@@ -132,6 +148,8 @@
                 <DayDetailPanel :day="selectedDay"
                     :projects="projects"
                     :month-status="monthStatus"
+                    :employee-id="activeEmployeeId"
+                    :extern-absence-types="externAbsenceTypes"
                     @refresh="loadData" />
             </div>
         </div>
@@ -143,6 +161,8 @@
                 <DayDetailPanel :day="selectedDay"
                     :projects="projects"
                     :month-status="monthStatus"
+                    :employee-id="activeEmployeeId"
+                    :extern-absence-types="externAbsenceTypes"
                     @refresh="loadData" />
             </div>
         </NcModal>
@@ -213,6 +233,8 @@ import DayDetailPanel from '../components/DayDetailPanel.vue'
 import ReportService from '../services/ReportService.js'
 import AbsenceService from '../services/AbsenceService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
+import DailyKmService from '../services/DailyKmService.js'
+import SettingsService from '../services/SettingsService.js'
 
 export default {
     name: 'TimeTrackingView',
@@ -241,9 +263,13 @@ export default {
     data() {
         return {
             statistics: null,
+            allowance: null,
             reportAbsences: [],
             reportHolidays: [],
             reportDayWarnings: {},
+            dailyKmByDate: {},
+            externDaysByDate: {},
+            externAbsenceTypes: [],
             vacationRemaining: null,
             vacationCarryover: 0,
             vacationTotal: null,
@@ -379,6 +405,8 @@ export default {
                     absence: this.absenceByDate[s.date] || null,
                     holiday: holidayByDate[s.date] || null,
                     warnings: this.reportDayWarnings[s.date] || [],
+                    kilometers: this.dailyKmByDate[s.date] || 0,
+                    externEligible: !!this.externDaysByDate[s.date],
                     isToday: s.date === todayStr,
                     isFuture: s.date > todayStr,
                 }
@@ -405,6 +433,7 @@ export default {
     },
     mounted() {
         this.$store.dispatch('projects/fetchProjects')
+        this.loadExternAbsenceTypes()
         this.updateIsNarrow()
         window.addEventListener('resize', this.updateIsNarrow)
     },
@@ -449,7 +478,40 @@ export default {
                 this.loadStatistics(),
                 this.loadVacationStats(),
                 this.loadOvertime(),
+                this.loadDailyKm(),
             ])
+        },
+        async loadDailyKm() {
+            if (!this.activeEmployeeId) return
+            try {
+                const { year, month } = this.selectedMonth
+                const data = await DailyKmService.getByMonth(this.activeEmployeeId, year, month)
+                const map = {}
+                for (const rec of (data?.records || [])) {
+                    map[rec.date] = rec.kilometers
+                }
+                this.dailyKmByDate = map
+                // Serverseitig bestimmte km-fähige Tage — kennt im Gegensatz zur
+                // Projektliste des Mitarbeiters auch inaktive Extern-Projekte.
+                const externMap = {}
+                for (const date of (data?.externDays || [])) {
+                    externMap[date] = true
+                }
+                this.externDaysByDate = externMap
+            } catch (error) {
+                console.error('Failed to load daily km:', error)
+            }
+        },
+        async loadExternAbsenceTypes() {
+            try {
+                const raw = await SettingsService.get('extern_absence_types')
+                this.externAbsenceTypes = (raw || '').split(',').map(s => s.trim()).filter(Boolean)
+            } catch (error) {
+                this.externAbsenceTypes = []
+            }
+        },
+        formatEuro(value) {
+            return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'EUR' }).format(value || 0)
         },
         async loadOvertime() {
             if (!this.activeEmployeeId) return
@@ -471,6 +533,7 @@ export default {
                     this.selectedMonth.month
                 )
                 this.statistics = report.statistics
+                this.allowance = report.allowance || null
                 this.reportAbsences = (report.absences || []).filter(a => a.status === 'approved')
                 this.reportHolidays = report.holidays || []
                 this.reportDayWarnings = report.dayWarnings || {}
@@ -738,5 +801,32 @@ export default {
     justify-content: flex-end;
     gap: 8px;
     margin-top: 20px;
+}
+
+.allowance-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+}
+
+.allowance-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.allowance-label {
+    font-size: 0.8em;
+    color: var(--color-text-maxcontrast);
+}
+
+.allowance-value {
+    font-weight: 600;
+}
+
+.allowance-total .allowance-value {
+    color: var(--color-primary-element);
 }
 </style>

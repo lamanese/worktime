@@ -184,6 +184,18 @@
                         {{ t('worktime', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('worktime', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_project"
+                        @update:checked="saveSettingBool('allow_employee_default_project')">
+                        {{ t('worktime', 'Mitarbeiter dürfen ein Standard-Projekt festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_description"
+                        @update:checked="saveSettingBool('allow_employee_default_description')">
+                        {{ t('worktime', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
@@ -223,6 +235,90 @@
                             class="input-field input-small"
                             @change="saveSetting('min_break_minutes_9h')">
                     </div>
+                </div>
+            </NcSettingsSection>
+
+            <NcSettingsSection v-if="canManageSettings"
+                v-show="activeSection === 'sec-spesen'"
+                id="sec-spesen" :name="t('worktime', 'Spesen & Kilometer')"
+                :description="t('worktime', 'Aussendienst-Spesen und Kilometer-Vergütung für externe Projekte. Die Flags «Aussendienst» und «Extern» werden je Projekt gesetzt.')">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fieldworkAmount">{{ t('worktime', 'Spesen-Pauschale (€ pro Tag)') }} <InfoIcon>{{ t('worktime', 'Wird pro Tag gutgeschrieben, an dem die Aussendienst-Arbeitszeit die Stundenschwelle erreicht.') }}</InfoIcon></label>
+                        <input id="fieldworkAmount"
+                            v-model.number="settings.fieldwork_allowance_amount"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            class="input-field input-small"
+                            @change="saveSetting('fieldwork_allowance_amount')">
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldworkThreshold">{{ t('worktime', 'Stundenschwelle pro Tag') }} <InfoIcon>{{ t('worktime', 'Nur die Zeit auf Aussendienst-Projekten zählt gegen diese Schwelle.') }}</InfoIcon></label>
+                        <input id="fieldworkThreshold"
+                            v-model.number="settings.fieldwork_allowance_threshold_hours"
+                            type="number"
+                            min="0"
+                            max="24"
+                            step="0.5"
+                            class="input-field input-small"
+                            @change="saveSetting('fieldwork_allowance_threshold_hours')">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-group-label">{{ t('worktime', 'Schwellen-Vergleich') }}</label>
+                    <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_operator"
+                        value="gte" name="fieldwork-operator" type="radio"
+                        @update:checked="saveSetting('fieldwork_allowance_operator')">
+                        {{ t('worktime', 'Grösser oder gleich der Schwelle (≥)') }}
+                    </NcCheckboxRadioSwitch>
+                    <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_operator"
+                        value="gt" name="fieldwork-operator" type="radio"
+                        @update:checked="saveSetting('fieldwork_allowance_operator')">
+                        {{ t('worktime', 'Grösser als die Schwelle (>)') }}
+                    </NcCheckboxRadioSwitch>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-group-label">{{ t('worktime', 'Berechnungsbasis') }}</label>
+                    <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_basis"
+                        value="gross" name="fieldwork-basis" type="radio"
+                        @update:checked="saveSetting('fieldwork_allowance_basis')">
+                        {{ t('worktime', 'Bruttozeit (inkl. Pause)') }}
+                    </NcCheckboxRadioSwitch>
+                    <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_basis"
+                        value="net" name="fieldwork-basis" type="radio"
+                        @update:checked="saveSetting('fieldwork_allowance_basis')">
+                        {{ t('worktime', 'Nettozeit (reine Arbeitszeit)') }}
+                    </NcCheckboxRadioSwitch>
+                </div>
+
+                <div class="form-group">
+                    <label for="mileageRate">{{ t('worktime', 'Kilometer-Satz (€ pro km)') }} <InfoIcon>{{ t('worktime', 'Vergütung je gefahrenem Kilometer. Die Kilometer werden tageweise erfasst und am Monatsende summiert.') }}</InfoIcon></label>
+                    <input id="mileageRate"
+                        v-model.number="settings.mileage_rate"
+                        type="number"
+                        min="0"
+                        step="0.05"
+                        class="input-field input-small"
+                        @change="saveSetting('mileage_rate')">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-group-label">{{ t('worktime', 'Externe Abwesenheitstypen') }} <InfoIcon>{{ t('worktime', 'Abwesenheitstypen, die als «extern» gelten. An solchen Tagen kann der Mitarbeiter Kilometer erfassen.') }}</InfoIcon></label>
+                    <NcSelect v-model="selectedExternAbsenceTypes"
+                        :options="externAbsenceTypeOptions"
+                        :multiple="true"
+                        :close-on-select="false"
+                        :placeholder="t('worktime', 'Typen auswählen (optional)')" />
+                </div>
+
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_on_extern_absence"
+                        @update:checked="saveSettingBool('fieldwork_allowance_on_extern_absence')">
+                        {{ t('worktime', 'Spesen-Pauschale auch an externen Abwesenheitstagen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
                 </div>
             </NcSettingsSection>
 
@@ -782,6 +878,7 @@ import CalendarStar from 'vue-material-design-icons/CalendarStar.vue'
 import Beach from 'vue-material-design-icons/Beach.vue'
 import SwapHorizontalBold from 'vue-material-design-icons/SwapHorizontalBold.vue'
 import CashMultiple from 'vue-material-design-icons/CashMultiple.vue'
+import Car from 'vue-material-design-icons/Car.vue'
 import { getFilePickerBuilder, FilePickerType, DialogBuilder } from '@nextcloud/dialogs'
 import { mapGetters, mapActions } from 'vuex'
 import SettingsService from '../services/SettingsService.js'
@@ -799,6 +896,7 @@ import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
 import { formatMinutes } from '../utils/timeUtils.js'
+import { ABSENCE_TYPE_LABELS } from '../constants.js'
 
 function round2(value) {
     return Math.round(value * 100) / 100
@@ -836,6 +934,7 @@ export default {
         Beach,
         SwapHorizontalBold,
         CashMultiple,
+        Car,
         EmployeeForm,
         EmployeeList,
         BetriebsferienSettings,
@@ -913,6 +1012,22 @@ export default {
         ...mapGetters('holidays', ['federalStates']),
         ...mapGetters('employees', { employees: 'employees' }),
         ...mapGetters('projects', { allProjects: 'projects' }),
+        externAbsenceTypeOptions() {
+            const labels = ABSENCE_TYPE_LABELS()
+            return Object.keys(labels).map(key => ({ id: key, label: labels[key] }))
+        },
+        selectedExternAbsenceTypes: {
+            get() {
+                const raw = this.settings.extern_absence_types || ''
+                const keys = raw.split(',').map(s => s.trim()).filter(Boolean)
+                return this.externAbsenceTypeOptions.filter(o => keys.includes(o.id))
+            },
+            set(value) {
+                const keys = (value || []).map(o => o.id)
+                this.settings.extern_absence_types = keys.join(',')
+                this.saveSetting('extern_absence_types')
+            },
+        },
         carryoverYearOptions() {
             const current = getCurrentYear()
             const years = []
@@ -1018,6 +1133,7 @@ export default {
                 group(this.t('worktime', 'Abläufe'), [
                     { id: 'sec-genehmigung', label: this.t('worktime', 'Genehmigung'), icon: 'CheckDecagram', visible: this.canManageSettings },
                     { id: 'sec-pausen', label: this.t('worktime', 'Pausenregelung'), icon: 'CoffeeOutline', visible: this.canManageSettings },
+                    { id: 'sec-spesen', label: this.t('worktime', 'Spesen & Kilometer'), icon: 'Car', visible: this.canManageSettings },
                     { id: 'sec-pdf', label: this.t('worktime', 'PDF-Archiv'), icon: 'FilePdfBox', visible: this.canManageSettings },
                 ]),
                 group(this.t('worktime', 'Kalender'), [
@@ -1151,6 +1267,9 @@ export default {
                     approval_required: settings.approval_required === '1',
                     christmas_eve_half_day: settings.christmas_eve_half_day === '1',
                     new_years_eve_half_day: settings.new_years_eve_half_day === '1',
+                    fieldwork_allowance_on_extern_absence: settings.fieldwork_allowance_on_extern_absence === '1',
+                    allow_employee_default_project: settings.allow_employee_default_project === '1',
+                    allow_employee_default_description: settings.allow_employee_default_description === '1',
                 }
             } catch (error) {
                 console.error('Failed to load settings:', error)
