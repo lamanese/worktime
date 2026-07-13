@@ -1,6 +1,6 @@
 {
-    "name": "worktime",
-    "version": "0.13.2",
+    "name": "zeitwerk",
+    "version": "0.14.0",
     "description": "Nextcloud App zur Arbeitszeiterfassung",
     "main": "src/main.js",
     "scripts": {
@@ -16,12 +16,12 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/cpcMomentum/worktime.git"
+        "url": "https://github.com/lamanese/worktime.git"
     },
     "keywords": [
         "nextcloud",
         "app",
-        "worktime",
+        "zeitwerk",
         "time-tracking"
     ],
     "author": "cpcMomentum GmbH",

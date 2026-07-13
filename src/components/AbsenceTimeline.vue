@@ -1,7 +1,7 @@
 <template>
 	<div class="absence-timeline">
 		<div class="timeline-header">
-			<div class="timeline-name-col">{{ t('worktime', 'Mitarbeiter') }}</div>
+			<div class="timeline-name-col">{{ t('zeitwerk', 'Mitarbeiter') }}</div>
 			<div class="timeline-days">
 				<div v-for="day in daysInMonth"
 					:key="day.date"
@@ -15,7 +15,7 @@
 		</div>
 
 		<div v-if="employees.length === 0" class="timeline-empty">
-			{{ t('worktime', 'Keine Mitarbeiter sichtbar') }}
+			{{ t('zeitwerk', 'Keine Mitarbeiter sichtbar') }}
 		</div>
 
 		<div v-for="emp in employees"
@@ -39,7 +39,7 @@
 		</div>
 
 		<div v-if="colorBy === 'status'" class="absence-legend">
-			<h3>{{ t('worktime', 'Status') }}</h3>
+			<h3>{{ t('zeitwerk', 'Status') }}</h3>
 			<div class="legend-grid">
 				<div v-for="item in statusLegendItems" :key="item.status" class="legend-item">
 					<span class="legend-color" :class="'status-' + item.status"></span>
@@ -51,7 +51,7 @@
 			</div>
 		</div>
 		<div v-else class="absence-legend">
-			<h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
+			<h3>{{ t('zeitwerk', 'Abwesenheitstypen') }}</h3>
 			<div class="legend-grid">
 				<div v-for="item in activeLegendItems"
 					:key="item.type"
@@ -102,21 +102,21 @@ export default {
 	computed: {
 		statusLegendItems() {
 			return [
-				{ status: 'approved', label: t('worktime', 'Genehmigt'), description: t('worktime', 'Bestätigte Abwesenheit.') },
-				{ status: 'pending', label: t('worktime', 'Beantragt'), description: t('worktime', 'Offener Antrag, noch nicht genehmigt.') },
+				{ status: 'approved', label: t('zeitwerk', 'Genehmigt'), description: t('zeitwerk', 'Bestätigte Abwesenheit.') },
+				{ status: 'pending', label: t('zeitwerk', 'Beantragt'), description: t('zeitwerk', 'Offener Antrag, noch nicht genehmigt.') },
 			]
 		},
 		activeLegendItems() {
 			const typeInfo = {
-				vacation: { label: t('worktime', 'Urlaub'), description: t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') },
-				absent: { label: t('worktime', 'Abwesend'), description: t('worktime', 'Mitarbeiter ist abwesend. Grund ist nur für Vorgesetzte sichtbar.') },
-				sick: { label: t('worktime', 'Krankheit'), description: t('worktime', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') },
-				child_sick: { label: t('worktime', 'Kind krank'), description: t('worktime', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') },
-				training: { label: t('worktime', 'Fortbildung'), description: t('worktime', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') },
-				special: { label: t('worktime', 'Sonderurlaub'), description: t('worktime', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') },
-				compensatory: { label: t('worktime', 'Freizeitausgleich'), description: t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') },
-				unpaid: { label: t('worktime', 'Unbezahlter Urlaub'), description: t('worktime', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') },
-				company_closure: { label: t('worktime', 'Betriebsschließung'), description: t('worktime', 'Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.') },
+				vacation: { label: t('zeitwerk', 'Urlaub'), description: t('zeitwerk', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') },
+				absent: { label: t('zeitwerk', 'Abwesend'), description: t('zeitwerk', 'Mitarbeiter ist abwesend. Grund ist nur für Vorgesetzte sichtbar.') },
+				sick: { label: t('zeitwerk', 'Krankheit'), description: t('zeitwerk', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') },
+				child_sick: { label: t('zeitwerk', 'Kind krank'), description: t('zeitwerk', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') },
+				training: { label: t('zeitwerk', 'Fortbildung'), description: t('zeitwerk', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') },
+				special: { label: t('zeitwerk', 'Sonderurlaub'), description: t('zeitwerk', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') },
+				compensatory: { label: t('zeitwerk', 'Freizeitausgleich'), description: t('zeitwerk', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') },
+				unpaid: { label: t('zeitwerk', 'Unbezahlter Urlaub'), description: t('zeitwerk', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') },
+				company_closure: { label: t('zeitwerk', 'Betriebsschließung'), description: t('zeitwerk', 'Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.') },
 			}
 			// Privilegierte User (Admin/HR/Supervisor) sehen immer die volle Legende
 			// ohne "Abwesend" (das ist nur die maskierte Anzeige für Kollegen)
@@ -136,9 +136,9 @@ export default {
 			const days = []
 			const date = new Date(this.year, this.month - 1, 1)
 			const weekdays = [
-					t('worktime', 'So'), t('worktime', 'Mo'), t('worktime', 'Di'),
-					t('worktime', 'Mi'), t('worktime', 'Do'), t('worktime', 'Fr'),
-					t('worktime', 'Sa'),
+					t('zeitwerk', 'So'), t('zeitwerk', 'Mo'), t('zeitwerk', 'Di'),
+					t('zeitwerk', 'Mi'), t('zeitwerk', 'Do'), t('zeitwerk', 'Fr'),
+					t('zeitwerk', 'Sa'),
 				]
 
 			while (date.getMonth() === this.month - 1) {
@@ -182,14 +182,14 @@ export default {
 			const start = this.formatDisplayDate(absence.startDate)
 			const end = this.formatDisplayDate(absence.endDate)
 			const typeLabels = {
-					vacation: t('worktime', 'Urlaub'),
-					sick: t('worktime', 'Krankheit'),
-					child_sick: t('worktime', 'Kind krank'),
-					special: t('worktime', 'Sonderurlaub'),
-					training: t('worktime', 'Fortbildung'),
-					compensatory: t('worktime', 'Freizeitausgleich'),
-					unpaid: t('worktime', 'Unbezahlter Urlaub'),
-					company_closure: t('worktime', 'Betriebsschließung'),
+					vacation: t('zeitwerk', 'Urlaub'),
+					sick: t('zeitwerk', 'Krankheit'),
+					child_sick: t('zeitwerk', 'Kind krank'),
+					special: t('zeitwerk', 'Sonderurlaub'),
+					training: t('zeitwerk', 'Fortbildung'),
+					compensatory: t('zeitwerk', 'Freizeitausgleich'),
+					unpaid: t('zeitwerk', 'Unbezahlter Urlaub'),
+					company_closure: t('zeitwerk', 'Betriebsschließung'),
 				}
 			const typeLabel = typeLabels[absence.type] || absence.typeName
 			return `${typeLabel}: ${start} - ${end}`

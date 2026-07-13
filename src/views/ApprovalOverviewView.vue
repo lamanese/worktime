@@ -1,19 +1,19 @@
 <template>
     <div class="approval-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Genehmigungen') }}</h2>
+            <h2>{{ t('zeitwerk', 'Genehmigungen') }}</h2>
         </div>
 
         <NcLoadingIcon v-if="loading" :size="44" class="loading" />
 
         <template v-else>
             <div class="view-toolbar status-toolbar">
-                <div class="layout-seg" role="group" :aria-label="t('worktime', 'Status')">
+                <div class="layout-seg" role="group" :aria-label="t('zeitwerk', 'Status')">
                     <button class="seg-btn" :class="{ active: statusView === 'open' }" @click="statusView = 'open'">
-                        {{ t('worktime', 'Offen') }}
+                        {{ t('zeitwerk', 'Offen') }}
                     </button>
                     <button class="seg-btn" :class="{ active: statusView === 'approved' }" @click="showApproved()">
-                        {{ t('worktime', 'Genehmigt') }}
+                        {{ t('zeitwerk', 'Genehmigt') }}
                     </button>
                 </div>
             </div>
@@ -22,18 +22,18 @@
             <!-- Eingangsliste: Urlaubsanträge + Monatsabschlüsse, älteste zuerst (#344/#240) -->
             <section v-if="inboxItems.length > 0" class="inbox">
                 <div class="view-toolbar">
-                    <div class="layout-seg" role="group" :aria-label="t('worktime', 'Filter')">
+                    <div class="layout-seg" role="group" :aria-label="t('zeitwerk', 'Filter')">
                         <button class="seg-btn" :class="{ active: kindFilter === 'all' }" @click="kindFilter = 'all'">
                             <FormatListBulletedIcon :size="18" />
-                            {{ t('worktime', 'Alle') }}
+                            {{ t('zeitwerk', 'Alle') }}
                         </button>
                         <button class="seg-btn" :class="{ active: kindFilter === 'absence' }" @click="kindFilter = 'absence'">
                             <CalendarIcon :size="18" />
-                            {{ t('worktime', 'Urlaub') }}
+                            {{ t('zeitwerk', 'Urlaub') }}
                         </button>
                         <button class="seg-btn" :class="{ active: kindFilter === 'month' }" @click="kindFilter = 'month'">
                             <ClockOutlineIcon :size="18" />
-                            {{ t('worktime', 'Zeiten') }}
+                            {{ t('zeitwerk', 'Zeiten') }}
                         </button>
                     </div>
                 </div>
@@ -42,10 +42,10 @@
                 <table class="approval-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                            <th>{{ t('worktime', 'Art') }}</th>
-                            <th>{{ t('worktime', 'Details') }}</th>
-                            <th class="actions-col">{{ t('worktime', 'Aktion') }}</th>
+                            <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
+                            <th>{{ t('zeitwerk', 'Art') }}</th>
+                            <th>{{ t('zeitwerk', 'Details') }}</th>
+                            <th class="actions-col">{{ t('zeitwerk', 'Aktion') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,7 +62,7 @@
                             <td>
                                 <span class="kind" :class="item.kind">
                                     <span class="kind-dot"></span>
-                                    {{ item.kind === 'month' ? t('worktime', 'Monat') : item.typeLabel }}
+                                    {{ item.kind === 'month' ? t('zeitwerk', 'Monat') : item.typeLabel }}
                                 </span>
                             </td>
                             <td class="detail">{{ item.detail }}</td>
@@ -73,13 +73,13 @@
                                             :disabled="processingAbsence === item.id"
                                             @click="approveAbsence(item.id)">
                                             <template #icon><CheckIcon :size="18" /></template>
-                                            {{ t('worktime', 'Genehmigen') }}
+                                            {{ t('zeitwerk', 'Genehmigen') }}
                                         </NcButton>
                                         <NcButton type="tertiary"
                                             :disabled="processingAbsence === item.id"
                                             @click="rejectAbsence(item.id)">
                                             <template #icon><CloseIcon :size="18" /></template>
-                                            {{ t('worktime', 'Ablehnen') }}
+                                            {{ t('zeitwerk', 'Ablehnen') }}
                                         </NcButton>
                                     </template>
                                     <template v-else>
@@ -87,13 +87,13 @@
                                             :disabled="processingMonth === item.key"
                                             @click="approveMonthItem(item)">
                                             <template #icon><CheckIcon :size="18" /></template>
-                                            {{ t('worktime', 'Genehmigen') }}
+                                            {{ t('zeitwerk', 'Genehmigen') }}
                                         </NcButton>
                                         <NcButton type="tertiary"
                                             :disabled="processingMonth === item.key"
                                             @click="openRejectModal(item)">
                                             <template #icon><CloseIcon :size="18" /></template>
-                                            {{ t('worktime', 'Zurückweisen') }}
+                                            {{ t('zeitwerk', 'Zurückweisen') }}
                                         </NcButton>
                                     </template>
                                 </div>
@@ -107,8 +107,8 @@
             <!-- Zur Kenntnisnahme: gemeldete Abwesenheiten (z.B. Krankheit), keine Genehmigung nötig -->
             <section v-if="informationalAbsences.length > 0" class="info-section">
                 <h3>
-                    {{ t('worktime', 'Zur Kenntnisnahme') }}
-                    <InfoIcon>{{ t('worktime', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon>
+                    {{ t('zeitwerk', 'Zur Kenntnisnahme') }}
+                    <InfoIcon>{{ t('zeitwerk', 'Diese Abwesenheiten (z.B. Krankheit) werden nur gemeldet und brauchen keine Genehmigung. Sie werden automatisch in der Sollberechnung berücksichtigt.') }}</InfoIcon>
                     ({{ informationalAbsences.length }})
                 </h3>
                 <div class="approval-card">
@@ -122,7 +122,7 @@
                                 </div>
                             </td>
                             <td><span class="kind sick"><span class="kind-dot"></span>{{ getAbsenceTypeLabel(absence.type) }}</span></td>
-                            <td class="detail">{{ formatDate(absence.startDate) }} – {{ formatDate(absence.endDate) }} · {{ absence.days }} {{ t('worktime', 'Tage') }}</td>
+                            <td class="detail">{{ formatDate(absence.startDate) }} – {{ formatDate(absence.endDate) }} · {{ absence.days }} {{ t('zeitwerk', 'Tage') }}</td>
                             <td class="actions-col"></td>
                         </tr>
                     </tbody>
@@ -131,10 +131,10 @@
             </section>
 
             <NcEmptyContent v-if="inboxItems.length === 0 && informationalAbsences.length === 0"
-                :name="t('worktime', 'Keine offenen Genehmigungen')">
+                :name="t('zeitwerk', 'Keine offenen Genehmigungen')">
                 <template #icon><CheckIcon /></template>
                 <template #description>
-                    {{ t('worktime', 'Aktuell wartet nichts auf Ihre Genehmigung.') }}
+                    {{ t('zeitwerk', 'Aktuell wartet nichts auf Ihre Genehmigung.') }}
                 </template>
             </NcEmptyContent>
             </template>
@@ -146,10 +146,10 @@
                 <table class="approval-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                            <th>{{ t('worktime', 'Zeitraum') }}</th>
-                            <th>{{ t('worktime', 'Genehmigt am') }}</th>
-                            <th class="actions-col">{{ t('worktime', 'Aktion') }}</th>
+                            <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
+                            <th>{{ t('zeitwerk', 'Zeitraum') }}</th>
+                            <th>{{ t('zeitwerk', 'Genehmigt am') }}</th>
+                            <th class="actions-col">{{ t('zeitwerk', 'Aktion') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -168,7 +168,7 @@
                                         :disabled="reopeningKey === approvedKey(m)"
                                         @click="openReopenApproved(m)">
                                         <template #icon><RestoreIcon :size="18" /></template>
-                                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                                        {{ t('zeitwerk', 'Genehmigung zurücknehmen') }}
                                     </NcButton>
                                 </div>
                             </td>
@@ -178,7 +178,7 @@
                 <div ref="approvedSentinel" class="approved-sentinel"></div>
                 </div>
                 <NcEmptyContent v-else
-                    :name="t('worktime', 'Keine genehmigten Monate')">
+                    :name="t('zeitwerk', 'Keine genehmigten Monate')">
                     <template #icon><CheckIcon /></template>
                 </NcEmptyContent>
             </template>
@@ -187,17 +187,17 @@
         <!-- Monat zurückweisen (Grund erforderlich) -->
         <NcModal v-if="showRejectModal" @close="closeRejectModal">
             <div class="reject-modal">
-                <h3>{{ t('worktime', 'Monat zurückweisen') }}</h3>
+                <h3>{{ t('zeitwerk', 'Monat zurückweisen') }}</h3>
                 <p>{{ rejectTarget ? getMonthName(rejectTarget.month) + ' ' + rejectTarget.year + ' – ' + rejectTarget.employeeName : '' }}</p>
-                <label for="reject-reason">{{ t('worktime', 'Begründung') }}</label>
+                <label for="reject-reason">{{ t('zeitwerk', 'Begründung') }}</label>
                 <textarea id="reject-reason" v-model="rejectReason" rows="3"
-                    :placeholder="t('worktime', 'Warum wird der Monat zurückgewiesen?')"></textarea>
+                    :placeholder="t('zeitwerk', 'Warum wird der Monat zurückgewiesen?')"></textarea>
                 <div class="form-actions">
-                    <NcButton type="tertiary" @click="closeRejectModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
+                    <NcButton type="tertiary" @click="closeRejectModal">{{ t('zeitwerk', 'Abbrechen') }}</NcButton>
                     <NcButton type="primary"
                         :disabled="!rejectReason.trim() || rejectingKey !== null"
                         @click="submitReject">
-                        {{ t('worktime', 'Zurückweisen') }}
+                        {{ t('zeitwerk', 'Zurückweisen') }}
                     </NcButton>
                 </div>
             </div>
@@ -206,18 +206,18 @@
         <!-- Genehmigung zurücknehmen (#387, Grund erforderlich) -->
         <NcModal v-if="showReopenModal" @close="closeReopenModal">
             <div class="reject-modal">
-                <h3>{{ t('worktime', 'Genehmigung zurücknehmen') }}</h3>
+                <h3>{{ t('zeitwerk', 'Genehmigung zurücknehmen') }}</h3>
                 <p>{{ reopenTarget ? getMonthName(reopenTarget.month) + ' ' + reopenTarget.year + ' – ' + reopenTarget.employeeName : '' }}</p>
-                <p class="reopen-hint">{{ t('worktime', 'Der Monat wird wieder zur Bearbeitung freigegeben. Der Mitarbeiter kann korrigieren und erneut einreichen.') }}</p>
-                <label for="reopen-reason">{{ t('worktime', 'Begründung') }}</label>
+                <p class="reopen-hint">{{ t('zeitwerk', 'Der Monat wird wieder zur Bearbeitung freigegeben. Der Mitarbeiter kann korrigieren und erneut einreichen.') }}</p>
+                <label for="reopen-reason">{{ t('zeitwerk', 'Begründung') }}</label>
                 <textarea id="reopen-reason" v-model="reopenReason" rows="3"
-                    :placeholder="t('worktime', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
+                    :placeholder="t('zeitwerk', 'Warum wird die Genehmigung zurückgenommen?')"></textarea>
                 <div class="form-actions">
-                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('worktime', 'Abbrechen') }}</NcButton>
+                    <NcButton type="tertiary" @click="closeReopenModal">{{ t('zeitwerk', 'Abbrechen') }}</NcButton>
                     <NcButton type="primary"
                         :disabled="!reopenReason.trim() || reopeningKey !== null"
                         @click="submitReopenApproved">
-                        {{ t('worktime', 'Genehmigung zurücknehmen') }}
+                        {{ t('zeitwerk', 'Genehmigung zurücknehmen') }}
                     </NcButton>
                 </div>
             </div>
@@ -307,7 +307,7 @@ export default {
                 employeeName: a.employeeName,
                 employeeUserId: a.employeeUserId,
                 typeLabel: getAbsenceTypeLabel(a.type),
-                detail: `${formatDate(a.startDate)} – ${formatDate(a.endDate)} · ${a.days} ${t('worktime', 'Tage')}`,
+                detail: `${formatDate(a.startDate)} – ${formatDate(a.endDate)} · ${a.days} ${t('zeitwerk', 'Tage')}`,
                 waitingSince: (a.createdAt || a.startDate || '').slice(0, 10),
             }))
         },
@@ -320,7 +320,7 @@ export default {
                 month: m.month,
                 employeeName: m.employeeName,
                 employeeUserId: m.employeeUserId,
-                detail: `${this.getMonthName(m.month)} ${m.year} · ${formatMinutes(m.actualMinutes)} h · ${m.entryCount} ${t('worktime', 'Einträge')}`,
+                detail: `${this.getMonthName(m.month)} ${m.year} · ${formatMinutes(m.actualMinutes)} h · ${m.entryCount} ${t('zeitwerk', 'Einträge')}`,
                 waitingSince: (m.submittedAt || `${m.year}-${String(m.month).padStart(2, '0')}-01`).slice(0, 10),
             }))
         },
@@ -355,10 +355,10 @@ export default {
         formatDate,
         getMonthName(month) {
             const names = [
-                t('worktime', 'Januar'), t('worktime', 'Februar'), t('worktime', 'März'),
-                t('worktime', 'April'), t('worktime', 'Mai'), t('worktime', 'Juni'),
-                t('worktime', 'Juli'), t('worktime', 'August'), t('worktime', 'September'),
-                t('worktime', 'Oktober'), t('worktime', 'November'), t('worktime', 'Dezember'),
+                t('zeitwerk', 'Januar'), t('zeitwerk', 'Februar'), t('zeitwerk', 'März'),
+                t('zeitwerk', 'April'), t('zeitwerk', 'Mai'), t('zeitwerk', 'Juni'),
+                t('zeitwerk', 'Juli'), t('zeitwerk', 'August'), t('zeitwerk', 'September'),
+                t('zeitwerk', 'Oktober'), t('zeitwerk', 'November'), t('zeitwerk', 'Dezember'),
             ]
             return names[month - 1] || String(month)
         },
@@ -420,12 +420,12 @@ export default {
             this.reopeningKey = this.approvedKey(m)
             try {
                 const result = await TimeEntryService.reopenMonth(m.employeeId, m.year, m.month, this.reopenReason.trim())
-                showSuccess(t('worktime', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
+                showSuccess(t('zeitwerk', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
                 this.closeReopenModal()
                 await this.loadApprovedMonths()
             } catch (error) {
                 console.error('Failed to reopen month:', error)
-                showError(t('worktime', 'Fehler beim Zurücknehmen der Genehmigung'))
+                showError(t('zeitwerk', 'Fehler beim Zurücknehmen der Genehmigung'))
             } finally {
                 this.reopeningKey = null
             }
@@ -454,11 +454,11 @@ export default {
             this.processingAbsence = absenceId
             try {
                 await AbsenceService.approve(absenceId)
-                showSuccess(t('worktime', 'Abwesenheit genehmigt'))
+                showSuccess(t('zeitwerk', 'Abwesenheit genehmigt'))
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to approve absence:', error)
-                showError(t('worktime', 'Fehler beim Genehmigen'))
+                showError(t('zeitwerk', 'Fehler beim Genehmigen'))
             } finally {
                 this.processingAbsence = null
             }
@@ -467,11 +467,11 @@ export default {
             this.processingAbsence = absenceId
             try {
                 await AbsenceService.reject(absenceId)
-                showSuccess(t('worktime', 'Abwesenheit abgelehnt'))
+                showSuccess(t('zeitwerk', 'Abwesenheit abgelehnt'))
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to reject absence:', error)
-                showError(t('worktime', 'Fehler beim Ablehnen'))
+                showError(t('zeitwerk', 'Fehler beim Ablehnen'))
             } finally {
                 this.processingAbsence = null
             }
@@ -498,14 +498,14 @@ export default {
                 if (withArchive) {
                     await this.archiveAndNotify(item, result.approved)
                 } else if (result.archiveQueued) {
-                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { count: result.approved }))
+                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { count: result.approved }))
                 } else {
-                    showSuccess(t('worktime', '{count} Einträge genehmigt', { count: result.approved }))
+                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt', { count: result.approved }))
                 }
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to approve month:', error)
-                showError(t('worktime', 'Fehler beim Genehmigen'))
+                showError(t('zeitwerk', 'Fehler beim Genehmigen'))
             } finally {
                 this.processingMonth = null
             }
@@ -514,15 +514,15 @@ export default {
             try {
                 const res = await TimeEntryService.archiveNow(item.employeeId, item.year, item.month)
                 if (res?.result === 'replaced') {
-                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF im Archiv aktualisiert.', { count: approvedCount }))
+                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF im Archiv aktualisiert.', { count: approvedCount }))
                 } else if (res?.result === 'created') {
-                    showSuccess(t('worktime', '{count} Einträge genehmigt – PDF im Archiv erstellt.', { count: approvedCount }))
+                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF im Archiv erstellt.', { count: approvedCount }))
                 } else {
-                    showSuccess(t('worktime', '{count} Einträge genehmigt', { count: approvedCount }))
+                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt', { count: approvedCount }))
                 }
             } catch (e) {
                 console.error('Archive now failed:', e)
-                showError(t('worktime', 'Genehmigt, aber Archivierung fehlgeschlagen.'))
+                showError(t('zeitwerk', 'Genehmigt, aber Archivierung fehlgeschlagen.'))
             }
         },
         openRejectModal(item) {
@@ -541,12 +541,12 @@ export default {
             this.rejectingKey = item.key
             try {
                 const result = await TimeEntryService.rejectMonth(item.employeeId, item.year, item.month, this.rejectReason.trim())
-                showSuccess(t('worktime', '{count} Einträge zurückgewiesen', { count: result.rejected }))
+                showSuccess(t('zeitwerk', '{count} Einträge zurückgewiesen', { count: result.rejected }))
                 this.closeRejectModal()
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to reject month:', error)
-                showError(t('worktime', 'Fehler beim Zurückweisen'))
+                showError(t('zeitwerk', 'Fehler beim Zurückweisen'))
             } finally {
                 this.rejectingKey = null
             }

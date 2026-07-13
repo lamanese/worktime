@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\WorkScheduleService;
-use OCA\WorkTime\Service\YearlyCarryoverService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;

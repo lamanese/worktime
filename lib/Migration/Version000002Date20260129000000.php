@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -24,8 +24,8 @@ class Version000002Date20260129000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_audit_logs')) {
-            $table = $schema->getTable('wt_audit_logs');
+        if ($schema->hasTable('zw_audit_logs')) {
+            $table = $schema->getTable('zw_audit_logs');
             $column = $table->getColumn('entity_id');
             $column->setNotnull(false);
         }

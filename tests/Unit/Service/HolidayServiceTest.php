@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\CompanySettingMapper;
-use OCA\WorkTime\Db\HolidayMapper;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\HolidayService;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\HolidayMapper;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\HolidayService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

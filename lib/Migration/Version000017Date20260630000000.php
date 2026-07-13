@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,7 +16,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create wt_overtime_payouts table: overtime paid out in money reduces the balance.
+ * Create zw_overtime_payouts table: overtime paid out in money reduces the balance.
  */
 class Version000017Date20260630000000 extends SimpleMigrationStep {
 
@@ -24,8 +24,8 @@ class Version000017Date20260630000000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('wt_overtime_payouts')) {
-			$table = $schema->createTable('wt_overtime_payouts');
+		if (!$schema->hasTable('zw_overtime_payouts')) {
+			$table = $schema->createTable('zw_overtime_payouts');
 
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
@@ -60,7 +60,7 @@ class Version000017Date20260630000000 extends SimpleMigrationStep {
 			]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addIndex(['employee_id', 'payout_date'], 'wt_payout_emp_date_idx');
+			$table->addIndex(['employee_id', 'payout_date'], 'zw_payout_emp_date_idx');
 		}
 
 		return $schema;

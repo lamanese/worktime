@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -17,11 +17,11 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Aussendienst-Spesen und Extern-Kilometer:
- * - wt_projects.is_field_work: 1 = Aussendienst-Projekt, loest die Spesen-Pauschale
+ * - zw_projects.is_field_work: 1 = Aussendienst-Projekt, loest die Spesen-Pauschale
  *   (z.B. 14 EUR ab Tagesschwelle) aus.
- * - wt_projects.is_extern: 1 = externes Projekt, erlaubt die tageweise
+ * - zw_projects.is_extern: 1 = externes Projekt, erlaubt die tageweise
  *   Kilometer-Erfassung (Verguetung pro km).
- * - wt_daily_km: ein Kilometerwert pro Mitarbeiter und Tag. Bewusst eine eigene
+ * - zw_daily_km: ein Kilometerwert pro Mitarbeiter und Tag. Bewusst eine eigene
  *   Tabelle statt eines Feldes am Zeiteintrag, weil km auch an reinen
  *   Abwesenheitstagen (externer Abwesenheitstyp) ohne Zeiteintrag anfallen koennen.
  */
@@ -31,8 +31,8 @@ class Version000020Date20260709000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_projects')) {
-            $projects = $schema->getTable('wt_projects');
+        if ($schema->hasTable('zw_projects')) {
+            $projects = $schema->getTable('zw_projects');
             if (!$projects->hasColumn('is_field_work')) {
                 $projects->addColumn('is_field_work', Types::SMALLINT, [
                     'notnull' => true,
@@ -47,8 +47,8 @@ class Version000020Date20260709000000 extends SimpleMigrationStep {
             }
         }
 
-        if (!$schema->hasTable('wt_daily_km')) {
-            $table = $schema->createTable('wt_daily_km');
+        if (!$schema->hasTable('zw_daily_km')) {
+            $table = $schema->createTable('zw_daily_km');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -72,8 +72,8 @@ class Version000020Date20260709000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['employee_id', 'work_date'], 'wt_dkm_emp_date_idx');
-            $table->addIndex(['work_date'], 'wt_dkm_date_idx');
+            $table->addUniqueIndex(['employee_id', 'work_date'], 'zw_dkm_emp_date_idx');
+            $table->addIndex(['work_date'], 'zw_dkm_date_idx');
         }
 
         return $schema;

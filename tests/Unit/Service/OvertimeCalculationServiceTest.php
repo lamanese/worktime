@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\OvertimePayoutMapper;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\OvertimeCalculationService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
-use OCA\WorkTime\Service\YearlyCarryoverService;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\OvertimePayoutMapper;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
 use PHPUnit\Framework\TestCase;
 
 /**

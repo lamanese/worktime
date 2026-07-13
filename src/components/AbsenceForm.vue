@@ -1,19 +1,19 @@
 <template>
     <div class="absence-form">
-        <h3>{{ isEdit ? t('worktime', 'Abwesenheit bearbeiten') : t('worktime', 'Neue Abwesenheit') }}</h3>
+        <h3>{{ isEdit ? t('zeitwerk', 'Abwesenheit bearbeiten') : t('zeitwerk', 'Neue Abwesenheit') }}</h3>
 
         <div class="form-group">
-            <label for="type">{{ t('worktime', 'Art') }}</label>
+            <label for="type">{{ t('zeitwerk', 'Art') }}</label>
             <NcSelect id="type"
                 v-model="selectedType"
                 :options="typeOptions"
-                :placeholder="t('worktime', 'Art auswählen')"
+                :placeholder="t('zeitwerk', 'Art auswählen')"
                 :clearable="false" />
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="startDate">{{ t('worktime', 'Von') }}</label>
+                <label for="startDate">{{ t('zeitwerk', 'Von') }}</label>
                 <NcDateTimePicker id="startDate"
                     v-model="form.startDate"
                     type="date"
@@ -22,7 +22,7 @@
             </div>
 
             <div class="form-group">
-                <label for="endDate">{{ t('worktime', 'Bis') }}</label>
+                <label for="endDate">{{ t('zeitwerk', 'Bis') }}</label>
                 <NcDateTimePicker id="endDate"
                     v-model="form.endDate"
                     type="date"
@@ -33,15 +33,15 @@
 
         <div class="form-group">
             <NcCheckboxRadioSwitch :checked.sync="form.isHalfDay" @update:checked="onHalfDayChange">
-                {{ t('worktime', 'Halber Tag') }}
+                {{ t('zeitwerk', 'Halber Tag') }}
             </NcCheckboxRadioSwitch>
             <p v-if="form.isHalfDay" class="half-day-hint">
-                {{ t('worktime', 'Halber Tag = 0,5 Tage. Start- und Enddatum sind identisch.') }}
+                {{ t('zeitwerk', 'Halber Tag = 0,5 Tage. Start- und Enddatum sind identisch.') }}
             </p>
         </div>
 
         <div class="form-group">
-            <label for="note">{{ t('worktime', 'Bemerkung') }}</label>
+            <label for="note">{{ t('zeitwerk', 'Bemerkung') }}</label>
             <textarea id="note"
                 v-model="form.note"
                 class="note-input"
@@ -49,15 +49,15 @@
         </div>
 
         <p v-if="showQuotaHint" class="quota-hint">
-            {{ t('worktime', 'Hinweis: Der Zeitraum umfasst ca. {requested} Werktage (Resturlaub: {available}). Abgezogen werden nur deine Arbeitstage laut Arbeitszeitmodell – bei Teilzeit also weniger.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+            {{ t('zeitwerk', 'Hinweis: Der Zeitraum umfasst ca. {requested} Werktage (Resturlaub: {available}). Abgezogen werden nur deine Arbeitstage laut Arbeitszeitmodell – bei Teilzeit also weniger.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
         </p>
 
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
-                {{ t('worktime', 'Abbrechen') }}
+                {{ t('zeitwerk', 'Abbrechen') }}
             </NcButton>
             <NcButton type="primary" :disabled="!isValid" @click="save">
-                {{ t('worktime', 'Speichern') }}
+                {{ t('zeitwerk', 'Speichern') }}
             </NcButton>
         </div>
     </div>

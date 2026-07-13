@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\AuditLog;
-use OCA\WorkTime\Db\AuditLogMapper;
+use OCA\Zeitwerk\Db\AuditLog;
+use OCA\Zeitwerk\Db\AuditLogMapper;
 use OCP\IRequest;
 
 class AuditLogService {

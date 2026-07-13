@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -18,10 +18,10 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Project-to-employee assignment (#58).
  *
- * - wt_projects.all_employees: when 1 (default), every employee may book on
+ * - zw_projects.all_employees: when 1 (default), every employee may book on
  *   the project (current behaviour, nothing breaks for existing projects).
- *   When 0, only the assigned employees in wt_project_employees may book.
- * - wt_project_employees: n:m mapping of which employees a restricted project
+ *   When 0, only the assigned employees in zw_project_employees may book.
+ * - zw_project_employees: n:m mapping of which employees a restricted project
  *   is assigned to.
  */
 class Version000016Date20260616120000 extends SimpleMigrationStep {
@@ -30,7 +30,7 @@ class Version000016Date20260616120000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		$projects = $schema->getTable('wt_projects');
+		$projects = $schema->getTable('zw_projects');
 		if (!$projects->hasColumn('all_employees')) {
 			$projects->addColumn('all_employees', Types::SMALLINT, [
 				'notnull' => true,
@@ -38,8 +38,8 @@ class Version000016Date20260616120000 extends SimpleMigrationStep {
 			]);
 		}
 
-		if (!$schema->hasTable('wt_project_employees')) {
-			$table = $schema->createTable('wt_project_employees');
+		if (!$schema->hasTable('zw_project_employees')) {
+			$table = $schema->createTable('zw_project_employees');
 
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
@@ -56,8 +56,8 @@ class Version000016Date20260616120000 extends SimpleMigrationStep {
 			]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['project_id', 'employee_id'], 'wt_proj_emp_uniq_idx');
-			$table->addIndex(['employee_id'], 'wt_proj_emp_emp_idx');
+			$table->addUniqueIndex(['project_id', 'employee_id'], 'zw_proj_emp_uniq_idx');
+			$table->addIndex(['employee_id'], 'zw_proj_emp_emp_idx');
 		}
 
 		return $schema;

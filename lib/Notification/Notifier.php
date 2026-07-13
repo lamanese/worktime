@@ -7,9 +7,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Notification;
+namespace OCA\Zeitwerk\Notification;
 
-use OCA\WorkTime\AppInfo\Application;
+use OCA\Zeitwerk\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -29,7 +29,7 @@ class Notifier implements INotifier {
 	}
 
 	public function getName(): string {
-		return 'WorkTime';
+		return 'Zeitwerk';
 	}
 
 	public function prepare(INotification $notification, string $languageCode): INotification {
@@ -179,7 +179,7 @@ class Notifier implements INotifier {
 			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
 		);
 		$notification->setLink(
-			$this->urlGenerator->linkToRouteAbsolute('worktime.page.index')
+			$this->urlGenerator->linkToRouteAbsolute('zeitwerk.page.index')
 		);
 
 		return $notification;

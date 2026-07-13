@@ -6,35 +6,35 @@ import { translate, translatePlural } from '@nextcloud/l10n'
 import { loadState } from '@nextcloud/initial-state'
 
 // eslint-disable-next-line
-__webpack_public_path__ = OC.linkTo('worktime', 'js/')
+__webpack_public_path__ = OC.linkTo('zeitwerk', 'js/')
 
 Vue.prototype.t = translate
 Vue.prototype.n = translatePlural
 
 // Get permissions from Nextcloud Initial State API
-const permissions = loadState('worktime', 'permissions', {})
+const permissions = loadState('zeitwerk', 'permissions', {})
 
 // Initialize permissions in store
 store.dispatch('permissions/initFromInitialState', permissions)
 
 // Whether the approval workflow is active for this instance
-const approvalRequired = loadState('worktime', 'approvalRequired', true)
+const approvalRequired = loadState('zeitwerk', 'approvalRequired', true)
 store.dispatch('permissions/setApprovalRequired', approvalRequired)
 
 // Company rules: required project / description on time entries (#329)
 store.dispatch('permissions/setRequiredFields', {
-	requireProject: loadState('worktime', 'requireProject', false),
-	requireDescription: loadState('worktime', 'requireDescription', false),
+	requireProject: loadState('zeitwerk', 'requireProject', false),
+	requireDescription: loadState('zeitwerk', 'requireDescription', false),
 })
 
 // Freigaben für persönliche Standard-Vorgaben (Projekt/Beschreibung)
 store.dispatch('permissions/setDefaultsAllowed', {
-	allowDefaultProject: loadState('worktime', 'allowDefaultProject', false),
-	allowDefaultDescription: loadState('worktime', 'allowDefaultDescription', false),
+	allowDefaultProject: loadState('zeitwerk', 'allowDefaultProject', false),
+	allowDefaultDescription: loadState('zeitwerk', 'allowDefaultDescription', false),
 })
 
 // Restore last view from localStorage (if not already on a valid route)
-const savedView = localStorage.getItem('worktime_last_view')
+const savedView = localStorage.getItem('zeitwerk_last_view')
 if (savedView && savedView !== '/' && router.currentRoute.path === '/') {
 	router.push(savedView).catch(() => {})
 }
@@ -43,4 +43,4 @@ new Vue({
 	router,
 	store,
 	render: h => h(App),
-}).$mount('.app-worktime')
+}).$mount('.app-zeitwerk')

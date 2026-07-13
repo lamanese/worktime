@@ -2,15 +2,15 @@
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 
-    <id>worktime</id>
-    <name>WorkTime</name>
+    <id>zeitwerk</id>
+    <name>Zeitwerk</name>
     <summary>Arbeitszeiterfassung für Nextcloud</summary>
     <description><![CDATA[
-# WorkTime - Arbeitszeiterfassung für Nextcloud
+# Zeitwerk - Arbeitszeiterfassung für Nextcloud
 
 Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland.
 
-Eigenständig gepflegter Fork von [cpcMomentum/worktime](https://github.com/cpcMomentum/worktime) (Original von Axel Deffner), erweitert um Aussendienst-Spesen, Extern-Kilometer und persönliche Standard-Vorgaben.
+Eigenständig gepflegter Fork der App WorkTime ([cpcMomentum/worktime](https://github.com/cpcMomentum/worktime), Original von Axel Deffner), erweitert um Aussendienst-Spesen, Extern-Kilometer und persönliche Standard-Vorgaben.
 
 ## Erfassung & Berechnung
 
@@ -54,13 +54,13 @@ Eigenständig gepflegter Fork von [cpcMomentum/worktime](https://github.com/cpcM
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
 
-    <version>0.13.2</version>
+    <version>0.14.0</version>
     <licence>AGPL-3.0-or-later</licence>
 
     <author mail="gilbeau.hammoud@gmail.com" homepage="https://github.com/lamanese">Ahmad Gilbeau-Hammoud</author>
     <author mail="axel.deffner@cpcmomentum.com" homepage="https://github.com/cpcMomentum">Axel Deffner</author>
 
-    <namespace>WorkTime</namespace>
+    <namespace>Zeitwerk</namespace>
 
     <category>organization</category>
     <category>office</category>
@@ -83,19 +83,19 @@ Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     </dependencies>
 
     <background-jobs>
-        <job>OCA\WorkTime\BackgroundJob\ArchivePdfJob</job>
+        <job>OCA\Zeitwerk\BackgroundJob\ArchivePdfJob</job>
     </background-jobs>
 
     <repair-steps>
         <post-migration>
-            <step>OCA\WorkTime\Migration\CleanupExtraFiles</step>
+            <step>OCA\Zeitwerk\Migration\CleanupExtraFiles</step>
         </post-migration>
     </repair-steps>
 
     <navigations>
         <navigation>
-            <name>WorkTime</name>
-            <route>worktime.page.index</route>
+            <name>Zeitwerk</name>
+            <route>zeitwerk.page.index</route>
             <icon>app.svg</icon>
             <order>10</order>
         </navigation>

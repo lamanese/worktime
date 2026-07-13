@@ -7,8 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-13
+
 ### Changed
-- **App-Metadaten auf den Fork aktualisiert**: Die App-Beschreibung (Apps-Verwaltung) nennt jetzt die Fork-Features (Außendienst-Spesen, Extern-Kilometer, persönliche Standard-Vorgaben, Projekt-Auswertung, Tschechisch) und weist den Fork als eigenständig gepflegt aus. Ahmad Gilbeau-Hammoud ist als Maintainer eingetragen (Axel Deffner bleibt als Originalautor genannt), Bug- und Repository-Links zeigen auf `lamanese/worktime`, der Spenden-Link des Originals wurde entfernt. README mit Fork-Hinweis ergänzt. Keine funktionalen Änderungen.
+- **Umbenennung zur eigenständigen App «Zeitwerk»**: Der Fork führt die App unter eigener Identität weiter — App-ID `zeitwerk` (vorher `worktime`), Anzeigename «Zeitwerk», PHP-Namespace `OCA\Zeitwerk`, JS-Bundle `js/zeitwerk-main.js`, l10n-Domain `zeitwerk`, Tabellen-Prefix `zw_` (vorher `wt_`). Die neue App startet mit frischem Datenbankschema; es findet kein Datenimport aus einer bestehenden WorkTime-Installation statt. Damit ist die App unabhängig vom App-Store-Eintrag des Originals (keine Verwechslung mit dessen Versionen/Changelog, kein versehentliches Überschreiben durch ein Store-Update) und kann bei Bedarf parallel zum Original betrieben werden. Lizenz bleibt AGPL-3.0-or-later, die Urheber-Vermerke des Originals (Axel Deffner / cpcMomentum) bleiben erhalten.
+- **App-Metadaten auf den Fork aktualisiert**: Die App-Beschreibung (Apps-Verwaltung) nennt jetzt die Fork-Features (Außendienst-Spesen, Extern-Kilometer, persönliche Standard-Vorgaben, Projekt-Auswertung, Tschechisch) und weist den Fork als eigenständig gepflegt aus. Ahmad Gilbeau-Hammoud ist als Maintainer eingetragen (Axel Deffner bleibt als Originalautor genannt), Bug- und Repository-Links zeigen auf `lamanese/worktime`, der Spenden-Link des Originals wurde entfernt. README mit Fork-Hinweis ergänzt.
 
 ## [0.13.2] - 2026-07-11
 

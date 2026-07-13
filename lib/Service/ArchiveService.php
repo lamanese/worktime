@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\Employee;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\Employee;
 
 /**
  * Generates and stores the monthly report PDF in the configured archive folder.

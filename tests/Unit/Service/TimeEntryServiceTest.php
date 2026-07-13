@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\CompanySettingMapper;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Notification\NotificationService;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\ValidationException;
-use OCA\WorkTime\Service\ForbiddenException;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Notification\NotificationService;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\ValidationException;
+use OCA\Zeitwerk\Service\ForbiddenException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -471,7 +471,7 @@ class TimeEntryServiceTest extends TestCase {
         $projectService = $this->createMock(ProjectService::class);
         $projectService->method('isProjectAllowedForEmployee')->willReturn(true);
         $projectService->method('getProjectsForEmployee')
-            ->willReturn($hasSelectableProject ? [new \OCA\WorkTime\Db\Project()] : []);
+            ->willReturn($hasSelectableProject ? [new \OCA\Zeitwerk\Db\Project()] : []);
         return new TimeEntryService(
             $this->timeEntryMapper,
             $settings,

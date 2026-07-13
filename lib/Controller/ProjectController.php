@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\ProjectService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\ProjectService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

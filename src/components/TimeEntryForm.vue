@@ -1,9 +1,9 @@
 <template>
     <div class="time-entry-form" :class="{ embedded }">
-        <h3 v-if="!embedded">{{ isEdit ? t('worktime', 'Eintrag bearbeiten') : t('worktime', 'Neuer Eintrag') }}</h3>
+        <h3 v-if="!embedded">{{ isEdit ? t('zeitwerk', 'Eintrag bearbeiten') : t('zeitwerk', 'Neuer Eintrag') }}</h3>
 
         <div v-if="!embedded || isEdit" class="form-group">
-            <label for="date">{{ t('worktime', 'Datum') }}</label>
+            <label for="date">{{ t('zeitwerk', 'Datum') }}</label>
             <NcDateTimePicker id="date"
                 v-model="form.date"
                 type="date"
@@ -12,7 +12,7 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="startTime">{{ t('worktime', 'Beginn') }}</label>
+                <label for="startTime">{{ t('zeitwerk', 'Beginn') }}</label>
                 <input id="startTime"
                     v-model="form.startTime"
                     type="time"
@@ -21,7 +21,7 @@
             </div>
 
             <div class="form-group">
-                <label for="endTime">{{ t('worktime', 'Ende') }}</label>
+                <label for="endTime">{{ t('zeitwerk', 'Ende') }}</label>
                 <input id="endTime"
                     v-model="form.endTime"
                     type="time"
@@ -31,51 +31,51 @@
         </div>
 
         <div class="form-group">
-            <label for="breakMinutes">{{ t('worktime', 'Pause (Minuten)') }}</label>
+            <label for="breakMinutes">{{ t('zeitwerk', 'Pause (Minuten)') }}</label>
             <input id="breakMinutes"
                 v-model.number="form.breakMinutes"
                 type="number"
                 min="0"
                 class="break-input">
             <p v-if="requiredBreak > 0" class="break-hint">
-                {{ t('worktime', 'Mindestpause: {minutes} min (§4 ArbZG)', { minutes: requiredBreak }) }} <InfoIcon>{{ t('worktime', 'Gesetzliche Pausenregelung: Ab 6 Stunden Arbeitszeit mindestens 30 Minuten, ab 9 Stunden mindestens 45 Minuten Pause.') }}</InfoIcon>
+                {{ t('zeitwerk', 'Mindestpause: {minutes} min (§4 ArbZG)', { minutes: requiredBreak }) }} <InfoIcon>{{ t('zeitwerk', 'Gesetzliche Pausenregelung: Ab 6 Stunden Arbeitszeit mindestens 30 Minuten, ab 9 Stunden mindestens 45 Minuten Pause.') }}</InfoIcon>
             </p>
         </div>
 
         <div class="form-group">
-            <label for="project">{{ t('worktime', 'Projekt') }}<span v-if="projectRequired"> *</span></label>
+            <label for="project">{{ t('zeitwerk', 'Projekt') }}<span v-if="projectRequired"> *</span></label>
             <NcSelect id="project"
                 v-model="selectedProject"
                 :options="projectOptions"
-                :placeholder="t('worktime', 'Projekt auswählen')"
+                :placeholder="t('zeitwerk', 'Projekt auswählen')"
                 :clearable="true"
                 :class="{ 'input-error': projectMissing }" />
             <p v-if="projectMissing" class="field-hint field-hint--error">
-                {{ t('worktime', 'Projekt ist erforderlich.') }}
+                {{ t('zeitwerk', 'Projekt ist erforderlich.') }}
             </p>
         </div>
 
         <div class="form-group">
-            <label for="description">{{ t('worktime', 'Beschreibung') }}<span v-if="requireDescription"> *</span></label>
+            <label for="description">{{ t('zeitwerk', 'Beschreibung') }}<span v-if="requireDescription"> *</span></label>
             <textarea id="description"
                 v-model="form.description"
                 :class="['description-input', { 'input-error': descriptionMissing }]"
                 rows="2" />
             <p v-if="descriptionMissing" class="field-hint field-hint--error">
-                {{ t('worktime', 'Beschreibung ist erforderlich.') }}
+                {{ t('zeitwerk', 'Beschreibung ist erforderlich.') }}
             </p>
         </div>
 
         <div v-if="calculatedWorkMinutes > 0" class="form-info">
-            {{ t('worktime', 'Arbeitszeit: {hours}', { hours: formatMinutes(calculatedWorkMinutes) }) }}
+            {{ t('zeitwerk', 'Arbeitszeit: {hours}', { hours: formatMinutes(calculatedWorkMinutes) }) }}
         </div>
 
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
-                {{ t('worktime', 'Abbrechen') }}
+                {{ t('zeitwerk', 'Abbrechen') }}
             </NcButton>
             <NcButton type="primary" :disabled="!isValid" @click="save">
-                {{ t('worktime', 'Speichern') }}
+                {{ t('zeitwerk', 'Speichern') }}
             </NcButton>
         </div>
 
@@ -343,7 +343,7 @@ export default {
                 this.$emit('saved')
             } catch (error) {
                 console.error('Failed to save time entry:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Speichern'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Speichern'))
             }
         },
     },

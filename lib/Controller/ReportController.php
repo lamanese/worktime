@@ -7,26 +7,26 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\DailyKmMapper;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\AllowanceService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\OvertimeCalculationService;
-use OCA\WorkTime\Service\OvertimePayoutService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
-use OCA\WorkTime\Service\YearlyCarryoverService;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\DailyKmMapper;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -120,7 +120,7 @@ class ReportController extends BaseController {
      * labor-law warnings (#338). Only days that actually have a warning are
      * included, keyed by their 'Y-m-d' date.
      *
-     * @param \OCA\WorkTime\Db\TimeEntry[] $timeEntries
+     * @param \OCA\Zeitwerk\Db\TimeEntry[] $timeEntries
      * @param Absence[] $absences
      * @return array<string, string[]>
      */
@@ -414,7 +414,7 @@ class ReportController extends BaseController {
      *
      * @param int[] $projectIds optional filter (empty = all)
      * @param int[] $employeeIds optional filter (empty = all)
-     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}, 5: array<int, \OCA\WorkTime\Db\Project>, 6: array<int, \OCA\WorkTime\Db\Employee>, 7: array<int, array>}
+     * @return array{0: DateTime, 1: DateTime, 2: string, 3: array, 4: array{totalMinutes: int, billableMinutes: int}, 5: array<int, \OCA\Zeitwerk\Db\Project>, 6: array<int, \OCA\Zeitwerk\Db\Employee>, 7: array<int, array>}
      */
     private function collectProjectEntries(int $year, int $month, string $period, bool $billableOnly, array $projectIds = [], array $employeeIds = []): array {
         [$start, $end, $label] = $this->resolvePeriod($year, $month, $period);
@@ -615,8 +615,8 @@ class ReportController extends BaseController {
      *
      * @param int[] $projectIds
      * @param int[] $employeeIds
-     * @param array<int, \OCA\WorkTime\Db\Project> $projects id-keyed map
-     * @param array<int, \OCA\WorkTime\Db\Employee> $employees id-keyed map
+     * @param array<int, \OCA\Zeitwerk\Db\Project> $projects id-keyed map
+     * @param array<int, \OCA\Zeitwerk\Db\Employee> $employees id-keyed map
      * @return array{projects: string, employees: string}
      */
     private function selectionLabels(array $projectIds, array $employeeIds, array $projects, array $employees): array {

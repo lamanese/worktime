@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -22,7 +22,7 @@ use OCP\IDBConnection;
 class DailyKmMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_daily_km', DailyKm::class);
+        parent::__construct($db, 'zw_daily_km', DailyKm::class);
     }
 
     /**

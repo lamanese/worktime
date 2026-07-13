@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\DailyKm;
-use OCA\WorkTime\Db\DailyKmMapper;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\DailyKm;
+use OCA\Zeitwerk\Db\DailyKmMapper;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
 
 /**
  * Verwaltet die tageweise gefahrenen Kilometer (Extern). Pro Mitarbeiter und Tag

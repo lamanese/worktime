@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -22,7 +22,7 @@ use OCP\IDBConnection;
 class AbsenceMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_absences', Absence::class);
+        parent::__construct($db, 'zw_absences', Absence::class);
     }
 
     /**
@@ -266,7 +266,7 @@ class AbsenceMapper extends QBMapper {
             $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
-                ->from('wt_employees')
+                ->from('zw_employees')
                 ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
@@ -301,7 +301,7 @@ class AbsenceMapper extends QBMapper {
             $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
-                ->from('wt_employees')
+                ->from('zw_employees')
                 ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));

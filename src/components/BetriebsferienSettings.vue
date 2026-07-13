@@ -3,30 +3,30 @@
         <div class="bf-form">
             <div class="form-row">
                 <div class="form-group">
-                    <label>{{ t('worktime', 'Von') }}</label>
+                    <label>{{ t('zeitwerk', 'Von') }}</label>
                     <NcDateTimePicker v-model="form.startDate" type="date" :format="'DD.MM.YYYY'" />
                 </div>
                 <div class="form-group">
-                    <label>{{ t('worktime', 'Bis') }}</label>
+                    <label>{{ t('zeitwerk', 'Bis') }}</label>
                     <NcDateTimePicker v-model="form.endDate" type="date" :format="'DD.MM.YYYY'" />
                 </div>
             </div>
 
             <div class="form-group">
-                <label>{{ t('worktime', 'Für wen') }}</label>
+                <label>{{ t('zeitwerk', 'Für wen') }}</label>
                 <NcCheckboxRadioSwitch :checked.sync="form.target" value="all" name="bf-target" type="radio">
-                    {{ t('worktime', 'Alle aktiven Mitarbeiter') }}
+                    {{ t('zeitwerk', 'Alle aktiven Mitarbeiter') }}
                 </NcCheckboxRadioSwitch>
                 <NcCheckboxRadioSwitch :checked.sync="form.target" value="selected" name="bf-target" type="radio">
-                    {{ t('worktime', 'Ausgewählte Mitarbeiter') }}
+                    {{ t('zeitwerk', 'Ausgewählte Mitarbeiter') }}
                 </NcCheckboxRadioSwitch>
             </div>
 
             <div v-if="form.target === 'selected'" class="bf-select">
                 <input v-model="employeeFilter" type="text" class="input-field bf-filter"
-                    :placeholder="t('worktime', 'Mitarbeiter suchen …')">
+                    :placeholder="t('zeitwerk', 'Mitarbeiter suchen …')">
                 <p class="bf-selected-count">
-                    {{ t('worktime', '{count} ausgewählt', { count: selectedEmployeeIds.length }) }}
+                    {{ t('zeitwerk', '{count} ausgewählt', { count: selectedEmployeeIds.length }) }}
                 </p>
                 <div class="bf-employees">
                     <NcCheckboxRadioSwitch v-for="emp in filteredEmployees" :key="emp.id"
@@ -34,13 +34,13 @@
                         {{ emp.firstName }} {{ emp.lastName }}
                     </NcCheckboxRadioSwitch>
                     <p v-if="!filteredEmployees.length" class="help-text">
-                        {{ t('worktime', 'Kein Mitarbeiter gefunden.') }}
+                        {{ t('zeitwerk', 'Kein Mitarbeiter gefunden.') }}
                     </p>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>{{ t('worktime', 'Wenn der Resturlaub nicht reicht') }}</label>
+                <label>{{ t('zeitwerk', 'Wenn der Resturlaub nicht reicht') }}</label>
                 <NcCheckboxRadioSwitch v-for="opt in overageOptions" :key="opt.value"
                     :checked.sync="form.overageHandling" :value="opt.value" name="bf-overage" type="radio">
                     {{ opt.label }}
@@ -48,26 +48,26 @@
             </div>
 
             <div class="form-group">
-                <label for="bf-note">{{ t('worktime', 'Bemerkung') }}</label>
+                <label for="bf-note">{{ t('zeitwerk', 'Bemerkung') }}</label>
                 <input id="bf-note" v-model="form.note" type="text" class="input-field"
-                    :placeholder="t('worktime', 'z. B. Betriebsferien Weihnachten')">
+                    :placeholder="t('zeitwerk', 'z. B. Betriebsferien Weihnachten')">
             </div>
 
             <p class="help-text">
-                {{ t('worktime', 'Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht, sondern Ihnen aufgelistet.') }}
+                {{ t('zeitwerk', 'Mitarbeiter mit bereits erfassten Zeiten im Zeitraum werden nicht gebucht, sondern Ihnen aufgelistet.') }}
             </p>
 
             <NcButton type="primary" :disabled="!canSubmit || saving" @click="submit">
-                {{ t('worktime', 'Betriebsferien eintragen') }}
+                {{ t('zeitwerk', 'Betriebsferien eintragen') }}
             </NcButton>
         </div>
 
         <div v-if="result" class="bf-result">
             <NcNoteCard type="success">
-                {{ t('worktime', '{count} Mitarbeiter eingetragen.', { count: result.booked.length }) }}
+                {{ t('zeitwerk', '{count} Mitarbeiter eingetragen.', { count: result.booked.length }) }}
             </NcNoteCard>
             <NcNoteCard v-if="bookedWithOverage.length" type="info">
-                <strong>{{ t('worktime', 'Resturlaub reichte nicht – aufgeteilt gebucht:') }}</strong>
+                <strong>{{ t('zeitwerk', 'Resturlaub reichte nicht – aufgeteilt gebucht:') }}</strong>
                 <ul class="bf-skipped">
                     <li v-for="b in bookedWithOverage" :key="b.employeeId">
                         {{ overageSplitLabel(b) }}
@@ -75,7 +75,7 @@
                 </ul>
             </NcNoteCard>
             <NcNoteCard v-if="result.skipped.length" type="warning">
-                <strong>{{ t('worktime', 'Nicht gebucht – bitte einzeln klären:') }}</strong>
+                <strong>{{ t('zeitwerk', 'Nicht gebucht – bitte einzeln klären:') }}</strong>
                 <ul class="bf-skipped">
                     <li v-for="s in result.skipped" :key="s.employeeId">
                         {{ s.name }} – {{ reasonLabel(s.reason) }}
@@ -85,16 +85,16 @@
         </div>
 
         <div class="bf-existing">
-            <h4>{{ t('worktime', 'Eingetragene Betriebsferien') }}</h4>
+            <h4>{{ t('zeitwerk', 'Eingetragene Betriebsferien') }}</h4>
             <p v-if="!groups.length" class="help-text">
-                {{ t('worktime', 'Noch keine Betriebsferien eingetragen.') }}
+                {{ t('zeitwerk', 'Noch keine Betriebsferien eingetragen.') }}
             </p>
             <table v-else class="bf-table">
                 <thead>
                     <tr>
-                        <th>{{ t('worktime', 'Zeitraum') }}</th>
-                        <th>{{ t('worktime', 'Bemerkung') }}</th>
-                        <th>{{ t('worktime', 'Mitarbeiter') }}</th>
+                        <th>{{ t('zeitwerk', 'Zeitraum') }}</th>
+                        <th>{{ t('zeitwerk', 'Bemerkung') }}</th>
+                        <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -105,7 +105,7 @@
                         <td>{{ g.count }}</td>
                         <td class="bf-actions">
                             <NcButton type="tertiary" @click="remove(g)">
-                                {{ t('worktime', 'Entfernen') }}
+                                {{ t('zeitwerk', 'Entfernen') }}
                             </NcButton>
                         </td>
                     </tr>
@@ -164,10 +164,10 @@ export default {
             // #15 Stufe 2: bewusste Admin-Auswahl, keine Rechtswertung durch die App.
             // Die Konsequenz der gewählten Option erklärt die Warnbox darunter.
             return [
-                { value: 'skip', label: this.t('worktime', 'Nicht buchen, nur auflisten') },
-                { value: 'closure', label: this.t('worktime', 'Bezahlte Freistellung (Betriebsschließung)') },
-                { value: 'compensatory', label: this.t('worktime', 'Freizeitausgleich') },
-                { value: 'negative', label: this.t('worktime', 'Urlaub ins Minus') },
+                { value: 'skip', label: this.t('zeitwerk', 'Nicht buchen, nur auflisten') },
+                { value: 'closure', label: this.t('zeitwerk', 'Bezahlte Freistellung (Betriebsschließung)') },
+                { value: 'compensatory', label: this.t('zeitwerk', 'Freizeitausgleich') },
+                { value: 'negative', label: this.t('zeitwerk', 'Urlaub ins Minus') },
             ]
         },
         bookedWithOverage() {
@@ -229,8 +229,8 @@ export default {
             return start === end ? de(start) : `${de(start)} – ${de(end)}`
         },
         reasonLabel(reason) {
-            if (reason === 'insufficient_vacation') return this.t('worktime', 'nicht genug Resturlaub')
-            if (reason === 'time_entry_conflict') return this.t('worktime', 'Zeiteinträge im Zeitraum vorhanden')
+            if (reason === 'insufficient_vacation') return this.t('zeitwerk', 'nicht genug Resturlaub')
+            if (reason === 'time_entry_conflict') return this.t('zeitwerk', 'Zeiteinträge im Zeitraum vorhanden')
             return reason
         },
         async submit() {
@@ -246,19 +246,19 @@ export default {
                 }
                 this.result = await AbsenceService.createCompanyVacation(payload)
                 this.resultOverageHandling = payload.overageHandling
-                showSuccess(this.t('worktime', 'Betriebsferien eingetragen.'))
+                showSuccess(this.t('zeitwerk', 'Betriebsferien eingetragen.'))
                 await this.load()
             } catch (error) {
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Eintragen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Eintragen'))
             } finally {
                 this.saving = false
             }
         },
         overageSplitLabel(b) {
             const overageName = this.resultOverageHandling === 'compensatory'
-                ? this.t('worktime', 'Freizeitausgleich')
-                : this.t('worktime', 'Betriebsschließung')
-            return this.t('worktime', '{name} – {vacation} Tage Urlaub + {overage} Tage {type}', {
+                ? this.t('zeitwerk', 'Freizeitausgleich')
+                : this.t('zeitwerk', 'Betriebsschließung')
+            return this.t('zeitwerk', '{name} – {vacation} Tage Urlaub + {overage} Tage {type}', {
                 name: b.name,
                 vacation: b.vacationDays,
                 overage: b.overageDays,
@@ -268,11 +268,11 @@ export default {
         async remove(group) {
             try {
                 await AbsenceService.deleteCompanyVacation(group.startDate, group.endDate, group.group)
-                showSuccess(this.t('worktime', 'Betriebsferien entfernt.'))
+                showSuccess(this.t('zeitwerk', 'Betriebsferien entfernt.'))
                 this.result = null
                 await this.load()
             } catch (error) {
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Entfernen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Entfernen'))
             }
         },
     },

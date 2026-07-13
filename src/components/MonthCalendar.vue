@@ -24,10 +24,10 @@
             </div>
         </div>
         <div class="leg">
-            <span><span class="dot vacation" /> {{ t('worktime', 'Urlaub') }}</span>
-            <span><span class="dot holiday" /> {{ t('worktime', 'Feiertag') }}</span>
-            <span><span class="dot sick" /> {{ t('worktime', 'Krank') }}</span>
-            <span><span class="dot other" /> {{ t('worktime', 'Erfasst') }}</span>
+            <span><span class="dot vacation" /> {{ t('zeitwerk', 'Urlaub') }}</span>
+            <span><span class="dot holiday" /> {{ t('zeitwerk', 'Feiertag') }}</span>
+            <span><span class="dot sick" /> {{ t('zeitwerk', 'Krank') }}</span>
+            <span><span class="dot other" /> {{ t('zeitwerk', 'Erfasst') }}</span>
         </div>
     </div>
 </template>
@@ -61,9 +61,9 @@ export default {
     computed: {
         dayNames() {
             return [
-                this.t('worktime', 'Mo'), this.t('worktime', 'Di'), this.t('worktime', 'Mi'),
-                this.t('worktime', 'Do'), this.t('worktime', 'Fr'), this.t('worktime', 'Sa'),
-                this.t('worktime', 'So'),
+                this.t('zeitwerk', 'Mo'), this.t('zeitwerk', 'Di'), this.t('zeitwerk', 'Mi'),
+                this.t('zeitwerk', 'Do'), this.t('zeitwerk', 'Fr'), this.t('zeitwerk', 'Sa'),
+                this.t('zeitwerk', 'So'),
             ]
         },
         cells() {

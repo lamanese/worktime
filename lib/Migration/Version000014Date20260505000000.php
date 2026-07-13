@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,7 +16,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Add lock and cancellation support to wt_yearly_carryover for compliance hardening.
+ * Add lock and cancellation support to zw_yearly_carryover for compliance hardening.
  *
  * New columns:
  * - locked_at: timestamp when carryover was locked (immutable after lock)
@@ -34,7 +34,7 @@ class Version000014Date20260505000000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		$table = $schema->getTable('wt_yearly_carryover');
+		$table = $schema->getTable('zw_yearly_carryover');
 
 		if (!$table->hasColumn('locked_at')) {
 			$table->addColumn('locked_at', Types::DATETIME, [
@@ -64,10 +64,10 @@ class Version000014Date20260505000000 extends SimpleMigrationStep {
 
 		// Drop old unique index and replace with non-unique index
 		// Business logic enforces one active record per employee+year
-		if ($table->hasIndex('wt_yc_emp_year_idx')) {
-			$table->dropIndex('wt_yc_emp_year_idx');
+		if ($table->hasIndex('zw_yc_emp_year_idx')) {
+			$table->dropIndex('zw_yc_emp_year_idx');
 		}
-		$table->addIndex(['employee_id', 'year'], 'wt_yc_emp_year_idx');
+		$table->addIndex(['employee_id', 'year'], 'zw_yc_emp_year_idx');
 
 		return $schema;
 	}

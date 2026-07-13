@@ -1,17 +1,17 @@
 <template>
     <div class="year-overview-card">
         <p v-if="isEmpty" class="empty-year">
-            {{ t('worktime', 'Keine Daten für dieses Jahr vorhanden.') }}
+            {{ t('zeitwerk', 'Keine Daten für dieses Jahr vorhanden.') }}
         </p>
         <table v-else class="year-table">
             <thead>
                 <tr>
-                    <th>{{ t('worktime', 'Monat') }}</th>
-                    <th class="text-right">{{ t('worktime', 'Soll') }}</th>
-                    <th class="text-right">{{ t('worktime', 'Ist') }}</th>
+                    <th>{{ t('zeitwerk', 'Monat') }}</th>
+                    <th class="text-right">{{ t('zeitwerk', 'Soll') }}</th>
+                    <th class="text-right">{{ t('zeitwerk', 'Ist') }}</th>
                     <th class="text-right">
-                        {{ t('worktime', 'Überstunden') }}
-                        <InfoIcon>{{ t('worktime', 'Differenz zwischen Soll und Ist. Im laufenden Monat kann sich der Wert noch ändern.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Überstunden') }}
+                        <InfoIcon>{{ t('zeitwerk', 'Differenz zwischen Soll und Ist. Im laufenden Monat kann sich der Wert noch ändern.') }}</InfoIcon>
                     </th>
                 </tr>
             </thead>
@@ -26,7 +26,7 @@
                     @keydown.space.prevent="onMonthClick(m.month)">
                     <td class="m-cell">
                         <span class="m-name">{{ getMonthName(m.month) }}</span>
-                        <span v-if="isCurrentMonth(m.month)" class="now-pill">{{ t('worktime', 'Jetzt') }}</span>
+                        <span v-if="isCurrentMonth(m.month)" class="now-pill">{{ t('zeitwerk', 'Jetzt') }}</span>
                     </td>
                     <td class="text-right num">
                         <template v-if="!isFutureMonth(m.month)">{{ formatMin(m.targetMinutes) }}</template>
@@ -48,7 +48,7 @@
             </tbody>
             <tfoot>
                 <tr v-if="carryoverMinutes !== 0" class="carryover-row">
-                    <td>{{ t('worktime', 'Übertrag Vorjahr') }}</td>
+                    <td>{{ t('zeitwerk', 'Übertrag Vorjahr') }}</td>
                     <td></td>
                     <td></td>
                     <td class="text-right num">
@@ -58,7 +58,7 @@
                     </td>
                 </tr>
                 <tr class="total-row">
-                    <td>{{ t('worktime', 'Gesamt bis heute') }}</td>
+                    <td>{{ t('zeitwerk', 'Gesamt bis heute') }}</td>
                     <td class="text-right num">{{ formatMin(totalTarget) }}</td>
                     <td class="text-right num">{{ formatMin(totalActual) }}</td>
                     <td class="text-right num">
@@ -70,7 +70,7 @@
             </tfoot>
         </table>
         <div class="year-foot-note">
-            {{ t('worktime', 'Klick auf einen Monat öffnet ihn in der Liste-Ansicht.') }}
+            {{ t('zeitwerk', 'Klick auf einen Monat öffnet ihn in der Liste-Ansicht.') }}
         </div>
     </div>
 </template>

@@ -1,6 +1,6 @@
 <template>
     <div class="work-schedule-editor">
-        <h4>{{ t('worktime', 'Arbeitszeitprofile') }}</h4>
+        <h4>{{ t('zeitwerk', 'Arbeitszeitprofile') }}</h4>
 
         <NcLoadingIcon v-if="loading" :size="28" />
 
@@ -8,17 +8,17 @@
             <table v-if="schedules.length > 0" class="schedules-table">
                 <thead>
                     <tr>
-                        <th>{{ t('worktime', 'Gültig ab') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Mo') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Di') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Mi') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Do') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Fr') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Sa') }}</th>
-                        <th class="text-right">{{ t('worktime', 'So') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Woche') }}</th>
-                        <th class="text-right">{{ t('worktime', 'Urlaub') }}</th>
-                        <th class="actions-col">{{ t('worktime', 'Aktionen') }}</th>
+                        <th>{{ t('zeitwerk', 'Gültig ab') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Mo') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Di') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Mi') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Do') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Fr') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Sa') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'So') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Woche') }}</th>
+                        <th class="text-right">{{ t('zeitwerk', 'Urlaub') }}</th>
+                        <th class="actions-col">{{ t('zeitwerk', 'Aktionen') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,7 +35,7 @@
                         <td class="text-right">{{ schedule.vacationDays }}</td>
                         <td class="actions-col">
                             <NcButton type="tertiary"
-                                :aria-label="t('worktime', 'Bearbeiten')"
+                                :aria-label="t('zeitwerk', 'Bearbeiten')"
                                 @click="startEdit(schedule)">
                                 <template #icon>
                                     <Pencil :size="20" />
@@ -43,7 +43,7 @@
                             </NcButton>
                             <NcButton v-if="schedules.length > 1"
                                 type="tertiary"
-                                :aria-label="t('worktime', 'Löschen')"
+                                :aria-label="t('zeitwerk', 'Löschen')"
                                 @click="confirmDelete(schedule)">
                                 <template #icon>
                                     <Close :size="20" />
@@ -59,15 +59,15 @@
                     <template #icon>
                         <Plus :size="20" />
                     </template>
-                    {{ t('worktime', 'Neues Profil') }}
+                    {{ t('zeitwerk', 'Neues Profil') }}
                 </NcButton>
             </div>
 
             <div v-if="showForm" class="schedule-form">
-                <h5>{{ editingSchedule ? t('worktime', 'Profil bearbeiten') : t('worktime', 'Neues Profil anlegen') }}</h5>
+                <h5>{{ editingSchedule ? t('zeitwerk', 'Profil bearbeiten') : t('zeitwerk', 'Neues Profil anlegen') }}</h5>
 
                 <div v-if="!editingSchedule" class="form-group">
-                    <label>{{ t('worktime', 'Gültig ab') }} *</label>
+                    <label>{{ t('zeitwerk', 'Gültig ab') }} *</label>
                     <NcDateTimePicker v-model="form.validFrom"
                         type="date"
                         :format="'DD.MM.YYYY'"
@@ -85,18 +85,18 @@
                             :class="['input-field', 'input-small', { 'input-error': form.dayHours[day.key] > maxDailyHours }]">
                     </div>
                 </div>
-                <p class="hint">{{ t('worktime', 'Max. {hours} Std./Tag', { hours: maxDailyHours }) }}</p>
+                <p class="hint">{{ t('zeitwerk', 'Max. {hours} Std./Tag', { hours: maxDailyHours }) }}</p>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>{{ t('worktime', 'Wochenstunden (berechnet)') }}</label>
+                        <label>{{ t('zeitwerk', 'Wochenstunden (berechnet)') }}</label>
                         <input :value="calculatedWeeklyHours"
                             type="text"
                             class="input-field input-small"
                             disabled>
                     </div>
                     <div class="form-group">
-                        <label>{{ t('worktime', 'Urlaubstage') }} *</label>
+                        <label>{{ t('zeitwerk', 'Urlaubstage') }} *</label>
                         <input v-model.number="form.vacationDays"
                             type="number"
                             min="0"
@@ -107,25 +107,25 @@
 
                 <div class="form-actions">
                     <NcButton type="tertiary" @click="cancelForm">
-                        {{ t('worktime', 'Abbrechen') }}
+                        {{ t('zeitwerk', 'Abbrechen') }}
                     </NcButton>
                     <NcButton type="primary" :disabled="!isFormValid" @click="saveForm">
-                        {{ t('worktime', 'Speichern') }}
+                        {{ t('zeitwerk', 'Speichern') }}
                     </NcButton>
                 </div>
             </div>
         </div>
 
         <NcDialog v-if="showDeleteDialog"
-            :name="t('worktime', 'Profil löschen?')"
+            :name="t('zeitwerk', 'Profil löschen?')"
             @close="showDeleteDialog = false">
-            <p>{{ t('worktime', 'Möchten Sie dieses Arbeitszeitprofil wirklich löschen?') }}</p>
+            <p>{{ t('zeitwerk', 'Möchten Sie dieses Arbeitszeitprofil wirklich löschen?') }}</p>
             <template #actions>
                 <NcButton type="tertiary" @click="showDeleteDialog = false">
-                    {{ t('worktime', 'Abbrechen') }}
+                    {{ t('zeitwerk', 'Abbrechen') }}
                 </NcButton>
                 <NcButton type="error" @click="deleteConfirmed">
-                    {{ t('worktime', 'Löschen') }}
+                    {{ t('zeitwerk', 'Löschen') }}
                 </NcButton>
             </template>
         </NcDialog>
@@ -171,13 +171,13 @@ export default {
             maxDailyHours: 10,
             form: this.getEmptyForm(),
             weekdays: [
-                { key: 'mon', label: this.t('worktime', 'Mo') },
-                { key: 'tue', label: this.t('worktime', 'Di') },
-                { key: 'wed', label: this.t('worktime', 'Mi') },
-                { key: 'thu', label: this.t('worktime', 'Do') },
-                { key: 'fri', label: this.t('worktime', 'Fr') },
-                { key: 'sat', label: this.t('worktime', 'Sa') },
-                { key: 'sun', label: this.t('worktime', 'So') },
+                { key: 'mon', label: this.t('zeitwerk', 'Mo') },
+                { key: 'tue', label: this.t('zeitwerk', 'Di') },
+                { key: 'wed', label: this.t('zeitwerk', 'Mi') },
+                { key: 'thu', label: this.t('zeitwerk', 'Do') },
+                { key: 'fri', label: this.t('zeitwerk', 'Fr') },
+                { key: 'sat', label: this.t('zeitwerk', 'Sa') },
+                { key: 'sun', label: this.t('zeitwerk', 'So') },
             ],
         }
     },
@@ -293,7 +293,7 @@ export default {
             } catch (error) {
                 console.error('Failed to save schedule:', error)
                 const data = error?.response?.data
-                let msg = t('worktime', 'Fehler beim Speichern des Profils')
+                let msg = t('zeitwerk', 'Fehler beim Speichern des Profils')
                 if (data?.errors) {
                     msg = Object.values(data.errors).flat().join(', ')
                 } else if (data?.message) {
@@ -315,7 +315,7 @@ export default {
                 this.$emit('updated')
             } catch (error) {
                 console.error('Failed to delete schedule:', error)
-                showError(t('worktime', 'Fehler beim Löschen des Profils'))
+                showError(t('zeitwerk', 'Fehler beim Löschen des Profils'))
             } finally {
                 this.showDeleteDialog = false
                 this.scheduleToDelete = null

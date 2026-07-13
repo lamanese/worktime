@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\OvertimePayoutService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;

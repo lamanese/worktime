@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -17,7 +17,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create wt_work_schedules table and migrate existing employee data.
+ * Create zw_work_schedules table and migrate existing employee data.
  */
 class Version000009Date20260318000000 extends SimpleMigrationStep {
 
@@ -30,8 +30,8 @@ class Version000009Date20260318000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('wt_work_schedules')) {
-            $table = $schema->createTable('wt_work_schedules');
+        if (!$schema->hasTable('zw_work_schedules')) {
+            $table = $schema->createTable('zw_work_schedules');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -97,8 +97,8 @@ class Version000009Date20260318000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['employee_id', 'valid_from'], 'wt_ws_emp_valid_idx');
-            $table->addIndex(['employee_id'], 'wt_ws_emp_idx');
+            $table->addUniqueIndex(['employee_id', 'valid_from'], 'zw_ws_emp_valid_idx');
+            $table->addIndex(['employee_id'], 'zw_ws_emp_idx');
         }
 
         return $schema;
@@ -112,7 +112,7 @@ class Version000009Date20260318000000 extends SimpleMigrationStep {
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'weekly_hours', 'vacation_days', 'entry_date')
-            ->from('wt_employees');
+            ->from('zw_employees');
 
         $result = $qb->executeQuery();
         $now = (new \DateTime())->format('Y-m-d H:i:s');
@@ -123,7 +123,7 @@ class Version000009Date20260318000000 extends SimpleMigrationStep {
             $validFrom = $row['entry_date'] ?? '2020-01-01';
 
             $insert = $this->db->getQueryBuilder();
-            $insert->insert('wt_work_schedules')
+            $insert->insert('zw_work_schedules')
                 ->values([
                     'employee_id' => $insert->createNamedParameter((int)$row['id'], \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT),
                     'valid_from' => $insert->createNamedParameter($validFrom),

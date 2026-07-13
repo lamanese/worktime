@@ -1,46 +1,46 @@
 <template>
     <div class="audit-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Audit-Log') }}</h2>
+            <h2>{{ t('zeitwerk', 'Audit-Log') }}</h2>
         </div>
 
         <div class="view-toolbar">
             <div class="view-header__controls">
                 <NcSelect v-model="filterEmployee"
                     :options="employeeOptions"
-                    :placeholder="t('worktime', 'Alle Mitarbeiter')"
+                    :placeholder="t('zeitwerk', 'Alle Mitarbeiter')"
                     :clearable="true"
                     label="label" />
                 <NcSelect v-model="filterAction"
                     :options="actionOptions"
-                    :placeholder="t('worktime', 'Alle Aktionen')"
+                    :placeholder="t('zeitwerk', 'Alle Aktionen')"
                     :clearable="true"
                     label="label" />
                 <NcSelect v-model="filterEntityType"
                     :options="entityTypeOptions"
-                    :placeholder="t('worktime', 'Alle Typen')"
+                    :placeholder="t('zeitwerk', 'Alle Typen')"
                     :clearable="true"
                     label="label" />
                 <NcDateTimePicker v-model="filterFrom"
                     type="date"
                     :format="'DD.MM.YYYY'"
-                    :placeholder="t('worktime', 'Von')" />
+                    :placeholder="t('zeitwerk', 'Von')" />
                 <NcDateTimePicker v-model="filterTo"
                     type="date"
                     :format="'DD.MM.YYYY'"
-                    :placeholder="t('worktime', 'Bis')" />
+                    :placeholder="t('zeitwerk', 'Bis')" />
                 <NcButton type="secondary" @click="load">
-                    {{ t('worktime', 'Filtern') }}
+                    {{ t('zeitwerk', 'Filtern') }}
                 </NcButton>
             </div>
         </div>
 
         <div v-if="loading" class="loading-hint">
-            {{ t('worktime', 'Wird geladen…') }}
+            {{ t('zeitwerk', 'Wird geladen…') }}
         </div>
 
         <NcEmptyContent v-else-if="entries.length === 0"
-            :name="t('worktime', 'Keine Einträge')">
+            :name="t('zeitwerk', 'Keine Einträge')">
             <template #icon>
                 <ShieldIcon />
             </template>
@@ -50,12 +50,12 @@
             <table class="audit-table">
                 <thead>
                     <tr>
-                        <th>{{ t('worktime', 'Zeitpunkt') }}</th>
-                        <th>{{ t('worktime', 'Benutzer') }}</th>
-                        <th>{{ t('worktime', 'Aktion') }}</th>
-                        <th>{{ t('worktime', 'Typ') }}</th>
-                        <th>{{ t('worktime', 'ID') }}</th>
-                        <th>{{ t('worktime', 'Änderung') }}</th>
+                        <th>{{ t('zeitwerk', 'Zeitpunkt') }}</th>
+                        <th>{{ t('zeitwerk', 'Benutzer') }}</th>
+                        <th>{{ t('zeitwerk', 'Aktion') }}</th>
+                        <th>{{ t('zeitwerk', 'Typ') }}</th>
+                        <th>{{ t('zeitwerk', 'ID') }}</th>
+                        <th>{{ t('zeitwerk', 'Änderung') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,7 +64,7 @@
                         class="audit-row"
                         role="button"
                         tabindex="0"
-                        :aria-label="t('worktime', 'Details anzeigen')"
+                        :aria-label="t('zeitwerk', 'Details anzeigen')"
                         @click="openDetail(entry)"
                         @keydown.enter="openDetail(entry)"
                         @keydown.space.prevent="openDetail(entry)">
@@ -100,7 +100,7 @@
         </div>
 
         <p v-if="entries.length >= 200" class="limit-hint">
-            {{ t('worktime', 'Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken.') }}
+            {{ t('zeitwerk', 'Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken.') }}
         </p>
 
         <AuditDetailModal v-if="selectedEntry"
@@ -155,21 +155,21 @@ export default {
         },
         actionOptions() {
             return [
-                { id: 'create', label: this.t('worktime', 'Erstellt') },
-                { id: 'update', label: this.t('worktime', 'Bearbeitet') },
-                { id: 'delete', label: this.t('worktime', 'Gelöscht') },
-                { id: 'submit', label: this.t('worktime', 'Eingereicht') },
-                { id: 'approve', label: this.t('worktime', 'Genehmigt') },
-                { id: 'reject', label: this.t('worktime', 'Abgelehnt') },
+                { id: 'create', label: this.t('zeitwerk', 'Erstellt') },
+                { id: 'update', label: this.t('zeitwerk', 'Bearbeitet') },
+                { id: 'delete', label: this.t('zeitwerk', 'Gelöscht') },
+                { id: 'submit', label: this.t('zeitwerk', 'Eingereicht') },
+                { id: 'approve', label: this.t('zeitwerk', 'Genehmigt') },
+                { id: 'reject', label: this.t('zeitwerk', 'Abgelehnt') },
             ]
         },
         entityTypeOptions() {
             return [
-                { id: 'time_entry', label: this.t('worktime', 'Zeiteintrag') },
-                { id: 'absence', label: this.t('worktime', 'Abwesenheit') },
-                { id: 'employee', label: this.t('worktime', 'Mitarbeiter') },
-                { id: 'project', label: this.t('worktime', 'Projekt') },
-                { id: 'setting', label: this.t('worktime', 'Einstellung') },
+                { id: 'time_entry', label: this.t('zeitwerk', 'Zeiteintrag') },
+                { id: 'absence', label: this.t('zeitwerk', 'Abwesenheit') },
+                { id: 'employee', label: this.t('zeitwerk', 'Mitarbeiter') },
+                { id: 'project', label: this.t('zeitwerk', 'Projekt') },
+                { id: 'setting', label: this.t('zeitwerk', 'Einstellung') },
             ]
         },
     },
@@ -195,22 +195,22 @@ export default {
         },
         translateAction(action) {
             const map = {
-                create: this.t('worktime', 'Erstellt'),
-                update: this.t('worktime', 'Bearbeitet'),
-                delete: this.t('worktime', 'Gelöscht'),
-                submit: this.t('worktime', 'Eingereicht'),
-                approve: this.t('worktime', 'Genehmigt'),
-                reject: this.t('worktime', 'Abgelehnt'),
+                create: this.t('zeitwerk', 'Erstellt'),
+                update: this.t('zeitwerk', 'Bearbeitet'),
+                delete: this.t('zeitwerk', 'Gelöscht'),
+                submit: this.t('zeitwerk', 'Eingereicht'),
+                approve: this.t('zeitwerk', 'Genehmigt'),
+                reject: this.t('zeitwerk', 'Abgelehnt'),
             }
             return map[action] || action
         },
         translateEntityType(type) {
             const map = {
-                time_entry: this.t('worktime', 'Zeiteintrag'),
-                absence: this.t('worktime', 'Abwesenheit'),
-                employee: this.t('worktime', 'Mitarbeiter'),
-                project: this.t('worktime', 'Projekt'),
-                setting: this.t('worktime', 'Einstellung'),
+                time_entry: this.t('zeitwerk', 'Zeiteintrag'),
+                absence: this.t('zeitwerk', 'Abwesenheit'),
+                employee: this.t('zeitwerk', 'Mitarbeiter'),
+                project: this.t('zeitwerk', 'Projekt'),
+                setting: this.t('zeitwerk', 'Einstellung'),
             }
             return map[type] || type
         },

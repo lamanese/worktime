@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -30,7 +30,7 @@ class Version000011Date20260412000000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		$table = $schema->getTable('wt_employees');
+		$table = $schema->getTable('zw_employees');
 
 		if (!$table->hasColumn('absence_detail')) {
 			$table->addColumn('absence_detail', Types::STRING, [
@@ -52,7 +52,7 @@ class Version000011Date20260412000000 extends SimpleMigrationStep {
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$qb = $this->db->getQueryBuilder();
-		$qb->update('wt_employees')
+		$qb->update('zw_employees')
 			->set('absence_visibility', $qb->createNamedParameter('none'))
 			->set('absence_detail', $qb->createNamedParameter('hidden'));
 		$qb->executeStatement();

@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 class CompanySettingsService {

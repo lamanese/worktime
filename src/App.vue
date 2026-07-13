@@ -1,9 +1,9 @@
 <template>
-	<NcContent app-name="worktime">
+	<NcContent app-name="zeitwerk">
 		<NcAppNavigation>
 			<NcAppNavigationItem
 				v-if="navVisible('tracking')"
-				:name="t('worktime', 'Zeiterfassung')"
+				:name="t('zeitwerk', 'Zeiterfassung')"
 				to="/tracking">
 				<template #icon>
 					<ClockIcon :size="20" />
@@ -12,7 +12,7 @@
 
 			<NcAppNavigationItem
 				v-if="navVisible('absences')"
-				:name="t('worktime', 'Abwesenheiten')"
+				:name="t('zeitwerk', 'Abwesenheiten')"
 				to="/absences">
 				<template #icon>
 					<CalendarIcon :size="20" />
@@ -21,7 +21,7 @@
 
 			<NcAppNavigationItem
 				v-if="navVisible('team')"
-				:name="t('worktime', 'Team')"
+				:name="t('zeitwerk', 'Team')"
 				to="/team">
 				<template #icon>
 					<AccountGroupIcon :size="20" />
@@ -30,7 +30,7 @@
 
 			<NcAppNavigationItem
 				v-if="navVisible('approvals')"
-				:name="t('worktime', 'Genehmigungen')"
+				:name="t('zeitwerk', 'Genehmigungen')"
 				to="/approvals">
 				<template #icon>
 					<CheckDecagramIcon :size="20" />
@@ -39,7 +39,7 @@
 
 			<NcAppNavigationItem
 				v-if="navVisible('evaluation')"
-				:name="t('worktime', 'Auswertung')"
+				:name="t('zeitwerk', 'Auswertung')"
 				to="/evaluation">
 				<template #icon>
 					<ChartBarIcon :size="20" />
@@ -48,7 +48,7 @@
 
 			<NcAppNavigationItem
 				v-if="navVisible('audit')"
-				:name="t('worktime', 'Audit-Log')"
+				:name="t('zeitwerk', 'Audit-Log')"
 				to="/audit">
 				<template #icon>
 					<ShieldIcon :size="20" />
@@ -58,7 +58,7 @@
 			<template #footer>
 				<NcAppNavigationItem
 					v-if="navVisible('my-settings')"
-					:name="t('worktime', 'Meine Einstellungen')"
+					:name="t('zeitwerk', 'Meine Einstellungen')"
 					to="/my-settings">
 					<template #icon>
 						<AccountCogIcon :size="20" />
@@ -66,7 +66,7 @@
 				</NcAppNavigationItem>
 				<NcAppNavigationItem
 					v-if="navVisible('settings')"
-					:name="t('worktime', 'Einstellungen')"
+					:name="t('zeitwerk', 'Einstellungen')"
 					to="/settings">
 					<template #icon>
 						<CogIcon :size="20" />
@@ -82,25 +82,25 @@
 				<span class="correction-banner__who">
 					<WrenchIcon :size="20" />
 					<span class="correction-banner__text">
-						{{ t('worktime', 'Korrektur-Modus · {name}', { name: correctionEmployeeName }) }}
-						<small>{{ t('worktime', 'Änderungen werden protokolliert und dem Mitarbeiter angezeigt.') }}</small>
+						{{ t('zeitwerk', 'Korrektur-Modus · {name}', { name: correctionEmployeeName }) }}
+						<small>{{ t('zeitwerk', 'Änderungen werden protokolliert und dem Mitarbeiter angezeigt.') }}</small>
 					</span>
 				</span>
 				<NcButton type="tertiary" @click="exitCorrection">
-					{{ t('worktime', 'Korrektur beenden') }}
+					{{ t('zeitwerk', 'Korrektur beenden') }}
 				</NcButton>
 			</div>
 
 			<div v-if="!hasEmployees && canManageSettings && $route.path !== '/settings'" class="no-employee-warning">
-				<NcEmptyContent :name="t('worktime', 'Willkommen bei WorkTime')">
+				<NcEmptyContent :name="t('zeitwerk', 'Willkommen bei Zeitwerk')">
 					<template #icon>
 						<AccountGroupIcon />
 					</template>
 					<template #description>
-						<p>{{ t('worktime', 'Es sind noch keine Mitarbeiter eingerichtet. Legen Sie unter Einstellungen Mitarbeiter an, um zu starten.') }}</p>
+						<p>{{ t('zeitwerk', 'Es sind noch keine Mitarbeiter eingerichtet. Legen Sie unter Einstellungen Mitarbeiter an, um zu starten.') }}</p>
 						<NcButton type="primary"
 							@click="$router.push('/settings')">
-							{{ t('worktime', 'Zu den Einstellungen') }}
+							{{ t('zeitwerk', 'Zu den Einstellungen') }}
 						</NcButton>
 					</template>
 				</NcEmptyContent>
@@ -108,12 +108,12 @@
 
 			<!-- Normaler User ohne Employee: Hinweis an Admin/HR wenden -->
 			<div v-else-if="!isEmployee && !canManageSettings && !canApprove" class="no-employee-warning">
-				<NcEmptyContent :name="t('worktime', 'Kein Mitarbeiterprofil')">
+				<NcEmptyContent :name="t('zeitwerk', 'Kein Mitarbeiterprofil')">
 					<template #icon>
 						<AlertIcon />
 					</template>
 					<template #description>
-						{{ t('worktime', 'Sie haben noch kein Mitarbeiterprofil. Bitte wenden Sie sich an Ihren Administrator oder HR-Manager, um freigeschaltet zu werden.') }}
+						{{ t('zeitwerk', 'Sie haben noch kein Mitarbeiterprofil. Bitte wenden Sie sich an Ihren Administrator oder HR-Manager, um freigeschaltet zu werden.') }}
 					</template>
 				</NcEmptyContent>
 			</div>

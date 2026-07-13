@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\WorkSchedule;
-use OCA\WorkTime\Db\WorkScheduleMapper;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\WorkSchedule;
+use OCA\Zeitwerk\Db\WorkScheduleMapper;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;

@@ -7,13 +7,13 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\WorkSchedule;
-use OCA\WorkTime\Db\WorkScheduleMapper;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\WorkSchedule;
+use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -401,7 +401,7 @@ class EmployeeService {
             $dailyHours = round((float)$employee->getWeeklyHours() / 5, 2);
             $validFrom = $employee->getEntryDate() ?? new DateTime('2020-01-01');
 
-            $schedule = new \OCA\WorkTime\Db\WorkSchedule();
+            $schedule = new \OCA\Zeitwerk\Db\WorkSchedule();
             $schedule->setEmployeeId($employee->getId());
             $schedule->setValidFrom($validFrom);
             $schedule->setMonHours(number_format($dailyHours, 2, '.', ''));

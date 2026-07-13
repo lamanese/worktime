@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\DailyKmMapper;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\DailyKmMapper;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
 
 /**
  * Berechnet die Aussendienst-Spesen und die Extern-Kilometer-Vergütung eines
@@ -84,7 +84,7 @@ class AllowanceService {
      *
      * @param TimeEntry[] $timeEntries
      * @param Absence[] $absences
-     * @param \OCA\WorkTime\Db\DailyKm[] $kmRecords
+     * @param \OCA\Zeitwerk\Db\DailyKm[] $kmRecords
      * @return array<string, int|float>
      */
     public function calculate(array $timeEntries, array $absences, array $kmRecords, DateTime $rangeStart, DateTime $rangeEnd): array {

@@ -9,26 +9,26 @@
                     :display-name="member.employee.fullName"
                     :size="44" />
                 <span class="member-card__name">{{ member.employee.fullName }}</span>
-                <span class="member-card__hours">{{ member.employee.weeklyHours }} {{ t('worktime', 'Std./Woche') }}</span>
+                <span class="member-card__hours">{{ member.employee.weeklyHours }} {{ t('zeitwerk', 'Std./Woche') }}</span>
             </div>
 
             <!-- Data table -->
             <table>
                 <thead>
                     <tr class="month-header">
-                        <th class="col-label">{{ t('worktime', 'Art') }}</th>
+                        <th class="col-label">{{ t('zeitwerk', 'Art') }}</th>
                         <th v-for="m in 12"
                             :key="m"
                             class="col-month">
                             {{ getMonthNameShort(m) }}
                         </th>
-                        <th class="col-total">{{ t('worktime', 'Gesamt') }}</th>
+                        <th class="col-total">{{ t('zeitwerk', 'Gesamt') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Row 1: Vacation -->
                     <tr class="row-data">
-                        <td class="col-label">{{ t('worktime', 'Urlaub') }}</td>
+                        <td class="col-label">{{ t('zeitwerk', 'Urlaub') }}</td>
                         <td v-for="m in member.months"
                             :key="m.month"
                             class="col-month">
@@ -40,7 +40,7 @@
                     </tr>
                     <!-- Row 2: Overtime -->
                     <tr class="row-data">
-                        <td class="col-label">{{ t('worktime', 'Stunden') }}</td>
+                        <td class="col-label">{{ t('zeitwerk', 'Stunden') }}</td>
                         <td v-for="m in member.months"
                             :key="m.month"
                             class="col-month"
@@ -53,22 +53,22 @@
                     </tr>
                     <!-- Row 3: Status -->
                     <tr class="row-data">
-                        <td class="col-label">{{ t('worktime', 'Status') }}</td>
+                        <td class="col-label">{{ t('zeitwerk', 'Status') }}</td>
                         <td v-for="m in member.months"
                             :key="m.month"
                             class="col-month">
                             <CheckCircleIcon v-if="m.status === 'approved'"
                                 :size="20"
                                 class="status-icon status-approved"
-                                :title="t('worktime', 'Genehmigt')" />
+                                :title="t('zeitwerk', 'Genehmigt')" />
                             <ClockOutlineIcon v-else-if="m.status === 'submitted'"
                                 :size="20"
                                 class="status-icon status-submitted"
-                                :title="t('worktime', 'Eingereicht')" />
+                                :title="t('zeitwerk', 'Eingereicht')" />
                             <CloseCircleIcon v-else-if="m.status === 'rejected'"
                                 :size="20"
                                 class="status-icon status-rejected"
-                                :title="t('worktime', 'Abgelehnt')" />
+                                :title="t('zeitwerk', 'Abgelehnt')" />
                         </td>
                         <td class="col-total" />
                     </tr>

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -27,8 +27,8 @@ class Version000008Date20260203150000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_employees')) {
-            $table = $schema->getTable('wt_employees');
+        if ($schema->hasTable('zw_employees')) {
+            $table = $schema->getTable('zw_employees');
 
             if (!$table->hasColumn('default_start_time')) {
                 $table->addColumn('default_start_time', Types::TIME, [

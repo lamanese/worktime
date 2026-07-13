@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use JsonSerializable;
@@ -79,7 +79,7 @@ class CompanySetting extends Entity implements JsonSerializable {
         self::KEY_MIN_BREAK_MINUTES_6H => '30',
         self::KEY_MIN_BREAK_MINUTES_9H => '45',
         self::KEY_APPROVAL_REQUIRED => '1',
-        self::KEY_PDF_ARCHIVE_PATH => '/WorkTime/Archiv',
+        self::KEY_PDF_ARCHIVE_PATH => '/Zeitwerk/Archiv',
         self::KEY_PDF_ARCHIVE_USER => '',
         self::KEY_CHRISTMAS_EVE_HALF_DAY => '1',
         self::KEY_NEW_YEARS_EVE_HALF_DAY => '1',

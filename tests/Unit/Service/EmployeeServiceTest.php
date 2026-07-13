@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\WorkSchedule;
-use OCA\WorkTime\Db\WorkScheduleMapper;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\ValidationException;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\WorkSchedule;
+use OCA\Zeitwerk\Db\WorkScheduleMapper;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\ValidationException;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -88,7 +88,7 @@ class EmployeeServiceTest extends TestCase {
         $this->employeeMapper->expects($this->never())->method('insert');
         $this->workScheduleMapper->expects($this->never())->method('insert');
 
-        $this->expectException(\OCA\WorkTime\Service\ValidationException::class);
+        $this->expectException(\OCA\Zeitwerk\Service\ValidationException::class);
         $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'BY', null, 'admin');
     }
 

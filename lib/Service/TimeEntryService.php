@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\CompanySettingMapper;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Notification\NotificationService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Notification\NotificationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;

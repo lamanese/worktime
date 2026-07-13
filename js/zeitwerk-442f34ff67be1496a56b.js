@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkzeitwerk=self.webpackChunkzeitwerk||[]).push([["node_modules_nextcloud_dialogs_dist_chunks_index-Kg2hZgGF_mjs"],{8066(e,s,d){d.d(s,{FilePickerVue:()=>n});const n=(0,d(5471).$V)(()=>d.e("vendors-node_modules_nextcloud_dialogs_dist_chunks_FilePicker-ajWx2Snh_mjs").then(d.bind(d,4815)))}}]);
+//# sourceMappingURL=zeitwerk-442f34ff67be1496a56b.js.map

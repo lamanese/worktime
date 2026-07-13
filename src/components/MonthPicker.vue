@@ -1,7 +1,7 @@
 <template>
     <div class="month-picker">
         <NcButton type="tertiary"
-            :aria-label="t('worktime', 'Vorheriger Monat')"
+            :aria-label="t('zeitwerk', 'Vorheriger Monat')"
             @click="previousMonth">
             <template #icon>
                 <ChevronLeft :size="20" />
@@ -13,7 +13,7 @@
         </span>
 
         <NcButton type="tertiary"
-            :aria-label="t('worktime', 'Nächster Monat')"
+            :aria-label="t('zeitwerk', 'Nächster Monat')"
             @click="nextMonth">
             <template #icon>
                 <ChevronRight :size="20" />

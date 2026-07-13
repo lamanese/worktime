@@ -7,17 +7,17 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
-use OCA\WorkTime\AppInfo\Application;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
+use OCA\Zeitwerk\AppInfo\Application;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use OCP\IGroupManager;
 
 /**
- * Service to check user permissions for WorkTime
+ * Service to check user permissions for Zeitwerk
  *
  * Permission hierarchy:
  * - Admin: Nextcloud admin, has all permissions

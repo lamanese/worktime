@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\CompanySettingMapper;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\HolidayMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Notification\NotificationService;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\ForbiddenException;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\ValidationException;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\HolidayMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Notification\NotificationService;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\ForbiddenException;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\ValidationException;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -333,8 +333,8 @@ class AbsenceServiceTest extends TestCase {
     // #345: Status-Kalender — Sichtbarkeit offener Anträge (Datenschutz)
     // ---------------------------------------------------------------------
 
-    private function ovEmployee(int $id, ?int $supervisorId, string $visibility): \OCA\WorkTime\Db\Employee {
-        $e = new \OCA\WorkTime\Db\Employee();
+    private function ovEmployee(int $id, ?int $supervisorId, string $visibility): \OCA\Zeitwerk\Db\Employee {
+        $e = new \OCA\Zeitwerk\Db\Employee();
         $e->setId($id);
         $e->setUserId('u' . $id);
         $e->setFirstName('E');
@@ -451,7 +451,7 @@ class AbsenceServiceTest extends TestCase {
     }
 
     public function testGetVacationStatsDeductsOnlyInYearPortionOfSpanningVacation(): void {
-        $employee = new \OCA\WorkTime\Db\Employee();
+        $employee = new \OCA\Zeitwerk\Db\Employee();
         $employee->setFederalState('BW');
         $this->employeeMapper->method('find')->with(1)->willReturn($employee);
 
@@ -482,8 +482,8 @@ class AbsenceServiceTest extends TestCase {
     // #15: Betriebsferien — zentrale Urlaubsbuchung für alle/ausgewählte MA
     // ---------------------------------------------------------------------
 
-    private function cvEmployee(int $id, string $first, int $vacationDays): \OCA\WorkTime\Db\Employee {
-        $e = new \OCA\WorkTime\Db\Employee();
+    private function cvEmployee(int $id, string $first, int $vacationDays): \OCA\Zeitwerk\Db\Employee {
+        $e = new \OCA\Zeitwerk\Db\Employee();
         $e->setId($id);
         $e->setUserId('u' . $id);
         $e->setFirstName($first);

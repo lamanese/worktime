@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
-use OCA\WorkTime\Db\AuditLogMapper;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Db\AuditLogMapper;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

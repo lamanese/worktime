@@ -1,6 +1,6 @@
 # Übersetzungen (l10n)
 
-WorkTime nutzt das Nextcloud-Standardformat: pro Sprache ein `*.js`
+Zeitwerk nutzt das Nextcloud-Standardformat: pro Sprache ein `*.js`
 (`OC.L10N.register`) und ein `*.json` (`translations`-Objekt). **Quellsprache ist
 Deutsch** (`de`) — dort ist der Wert gleich dem Schlüssel.
 
@@ -12,7 +12,7 @@ Deutsch** (`de`) — dort ist der Wert gleich dem Schlüssel.
 
 ## Das Problem, das die Toolchain löst
 
-Der Laufzeit-Lookup `t('worktime', '…')` ist **byte-genau**: Steht im Code ein
+Der Laufzeit-Lookup `t('zeitwerk', '…')` ist **byte-genau**: Steht im Code ein
 typografisches `…` und im Katalog `...`, findet Nextcloud nichts und zeigt den
 deutschen Quelltext. Weil die Kataloge früher von Hand gepflegt wurden, sind sie
 gedriftet — fehlende Keys, tote Keys, `.js` und `.json` liefen auseinander
@@ -22,7 +22,7 @@ gedriftet — fehlende Keys, tote Keys, `.js` und `.json` liefen auseinander
 
 Die **Wahrheit** sind die Übersetzungsaufrufe im Code:
 
-- Frontend: `t('worktime', '…')` in `src/**` (`.js`/`.vue`)
+- Frontend: `t('zeitwerk', '…')` in `src/**` (`.js`/`.vue`)
 - Backend: `$l->t('…')` in `lib/`, `templates/`, `appinfo/` (`.php`)
 
 Daraus wird das kanonische Schlüssel-Set abgeleitet und gegen alle 6 Kataloge
@@ -51,7 +51,7 @@ Quelltext entsprechen = offene Übersetzungs-Schulden.
 
 ## Neue Strings hinzufügen
 
-1. Im Code `t('worktime', 'Neuer Text')` bzw. `$l->t('Neuer Text')` verwenden.
+1. Im Code `t('zeitwerk', 'Neuer Text')` bzw. `$l->t('Neuer Text')` verwenden.
 2. `npm run l10n:fix` ausführen → `de` ist sofort vollständig, `en`/`cs`
    bekommen den Key (vorerst deutscher Fallback).
 3. Übersetzungen in `l10n/{en,cs}.{js,json}` eintragen.

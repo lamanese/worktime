@@ -1,13 +1,13 @@
 <template>
     <div class="settings-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Einstellungen') }}</h2>
+            <h2>{{ t('zeitwerk', 'Einstellungen') }}</h2>
         </div>
 
         <NcLoadingIcon v-if="loading" :size="44" />
 
         <div v-else class="settings-layout">
-            <nav class="settings-nav" :aria-label="t('worktime', 'Einstellungs-Navigation')">
+            <nav class="settings-nav" :aria-label="t('zeitwerk', 'Einstellungs-Navigation')">
                 <template v-for="group in navGroups">
                     <div v-if="group.items.length" :key="group.label" class="settings-nav-group">
                         {{ group.label }}
@@ -27,13 +27,13 @@
 
             <NcSettingsSection v-if="canManageEmployees"
                 v-show="activeSection === 'sec-mitarbeiter'"
-                id="sec-mitarbeiter" :name="t('worktime', 'Mitarbeiter')">
+                id="sec-mitarbeiter" :name="t('zeitwerk', 'Mitarbeiter')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewEmployeeForm">
                         <template #icon>
                             <Plus :size="20" />
                         </template>
-                        {{ t('worktime', 'Neuer Mitarbeiter') }}
+                        {{ t('zeitwerk', 'Neuer Mitarbeiter') }}
                     </NcButton>
                 </div>
 
@@ -44,7 +44,7 @@
                     @delete="handleDeleteEmployee" />
 
                 <NcModal v-if="showEmployeeForm"
-                    :name="editingEmployee ? t('worktime', 'Mitarbeiter bearbeiten') : t('worktime', 'Neuer Mitarbeiter')"
+                    :name="editingEmployee ? t('zeitwerk', 'Mitarbeiter bearbeiten') : t('zeitwerk', 'Neuer Mitarbeiter')"
                     @close="closeEmployeeForm">
                     <EmployeeForm
                         :employee="editingEmployee"
@@ -56,13 +56,13 @@
 
             <NcSettingsSection v-if="canManageProjects"
                 v-show="activeSection === 'sec-projekte'"
-                id="sec-projekte" :name="t('worktime', 'Projekte')">
+                id="sec-projekte" :name="t('zeitwerk', 'Projekte')">
                 <div class="section-header-actions">
                     <NcButton type="primary" @click="openNewProjectForm">
                         <template #icon>
                             <Plus :size="20" />
                         </template>
-                        {{ t('worktime', 'Neues Projekt') }}
+                        {{ t('zeitwerk', 'Neues Projekt') }}
                     </NcButton>
                 </div>
 
@@ -72,7 +72,7 @@
                     @delete="handleDeleteProject" />
 
                 <NcModal v-if="showProjectForm"
-                    :name="editingProject ? t('worktime', 'Projekt bearbeiten') : t('worktime', 'Neues Projekt')"
+                    :name="editingProject ? t('zeitwerk', 'Projekt bearbeiten') : t('zeitwerk', 'Neues Projekt')"
                     @close="closeProjectForm">
                     <ProjectForm
                         :project="editingProject"
@@ -83,15 +83,15 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-berechtigungen'"
-                id="sec-berechtigungen" :name="t('worktime', 'Berechtigungen')">
+                id="sec-berechtigungen" :name="t('zeitwerk', 'Berechtigungen')">
                 <div class="form-group">
-                    <label>{{ t('worktime', 'HR-Manager') }} <InfoIcon>{{ t('worktime', 'Admin: Volle Rechte (automatisch). HR-Manager: Mitarbeiter verwalten und Anträge genehmigen (manuell zuweisen). Vorgesetzter: Genehmigt Zeiten seines Teams (automatisch). Mitarbeiter: Eigene Zeiten erfassen (automatisch).') }}</InfoIcon></label>
+                    <label>{{ t('zeitwerk', 'HR-Manager') }} <InfoIcon>{{ t('zeitwerk', 'Admin: Volle Rechte (automatisch). HR-Manager: Mitarbeiter verwalten und Anträge genehmigen (manuell zuweisen). Vorgesetzter: Genehmigt Zeiten seines Teams (automatisch). Mitarbeiter: Eigene Zeiten erfassen (automatisch).') }}</InfoIcon></label>
                     <NcSelect
                         v-model="selectedHrManagers"
                         :options="principalOptions"
                         :multiple="true"
                         :close-on-select="false"
-                        :placeholder="t('worktime', 'Benutzer oder Gruppen auswählen')"
+                        :placeholder="t('zeitwerk', 'Benutzer oder Gruppen auswählen')"
                         label="label"
                         @input="saveHrManagers">
                         <template #option="{ label, sublabel, type }">
@@ -108,10 +108,10 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-firmendaten'"
-                id="sec-firmendaten" :name="t('worktime', 'Firmendaten')"
-                :description="t('worktime', 'Stammdaten und Standardwerte, die für neue Mitarbeiter vorausgewählt werden.')">
+                id="sec-firmendaten" :name="t('zeitwerk', 'Firmendaten')"
+                :description="t('zeitwerk', 'Stammdaten und Standardwerte, die für neue Mitarbeiter vorausgewählt werden.')">
                 <div class="form-group">
-                    <label for="companyName">{{ t('worktime', 'Firmenname') }}</label>
+                    <label for="companyName">{{ t('zeitwerk', 'Firmenname') }}</label>
                     <input id="companyName"
                         v-model="settings.company_name"
                         type="text"
@@ -119,7 +119,7 @@
                         @change="saveSetting('company_name')">
                 </div>
                 <div class="form-group">
-                    <label for="defaultState">{{ t('worktime', 'Standard-Bundesland') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen dieses Bundesland automatisch zugewiesen. Jeder Mitarbeiter kann ein eigenes Bundesland haben — das bestimmt, welche Feiertage für ihn gelten.') }}</InfoIcon></label>
+                    <label for="defaultState">{{ t('zeitwerk', 'Standard-Bundesland') }} <InfoIcon>{{ t('zeitwerk', 'Neue Mitarbeiter bekommen dieses Bundesland automatisch zugewiesen. Jeder Mitarbeiter kann ein eigenes Bundesland haben — das bestimmt, welche Feiertage für ihn gelten.') }}</InfoIcon></label>
                     <NcSelect id="defaultState"
                         v-model="selectedFederalState"
                         :options="federalStateOptions"
@@ -127,7 +127,7 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="weeklyHours">{{ t('worktime', 'Standard-Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diese Wochenstunden voreingestellt. Sie können im Mitarbeiterprofil individuell angepasst werden.') }}</InfoIcon></label>
+                        <label for="weeklyHours">{{ t('zeitwerk', 'Standard-Wochenstunden') }} <InfoIcon>{{ t('zeitwerk', 'Neue Mitarbeiter bekommen diese Wochenstunden voreingestellt. Sie können im Mitarbeiterprofil individuell angepasst werden.') }}</InfoIcon></label>
                         <input id="weeklyHours"
                             v-model.number="settings.default_weekly_hours"
                             type="number"
@@ -137,7 +137,7 @@
                             @change="saveSetting('default_weekly_hours')">
                     </div>
                     <div class="form-group">
-                        <label for="vacationDays">{{ t('worktime', 'Standard-Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Neue Mitarbeiter bekommen diesen Urlaubsanspruch voreingestellt. Der tatsächliche Anspruch wird im Mitarbeiterprofil festgelegt.') }}</InfoIcon></label>
+                        <label for="vacationDays">{{ t('zeitwerk', 'Standard-Urlaubstage') }} <InfoIcon>{{ t('zeitwerk', 'Neue Mitarbeiter bekommen diesen Urlaubsanspruch voreingestellt. Der tatsächliche Anspruch wird im Mitarbeiterprofil festgelegt.') }}</InfoIcon></label>
                         <input id="vacationDays"
                             v-model.number="settings.default_vacation_days"
                             type="number"
@@ -151,9 +151,9 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-arbeitszeit'"
-                id="sec-arbeitszeit" :name="t('worktime', 'Arbeitszeit-Regeln')">
+                id="sec-arbeitszeit" :name="t('zeitwerk', 'Arbeitszeit-Regeln')">
                 <div class="form-group">
-                    <label for="maxDailyHours">{{ t('worktime', 'Maximale tägliche Arbeitszeit (Stunden)') }} <InfoIcon>{{ t('worktime', 'Wenn ein Zeiteintrag diesen Wert überschreitet, wird eine Warnung angezeigt. Nach §3 ArbZG sind maximal 10 Stunden erlaubt.') }}</InfoIcon></label>
+                    <label for="maxDailyHours">{{ t('zeitwerk', 'Maximale tägliche Arbeitszeit (Stunden)') }} <InfoIcon>{{ t('zeitwerk', 'Wenn ein Zeiteintrag diesen Wert überschreitet, wird eine Warnung angezeigt. Nach §3 ArbZG sind maximal 10 Stunden erlaubt.') }}</InfoIcon></label>
                     <input id="maxDailyHours"
                         v-model.number="settings.max_daily_hours"
                         type="number"
@@ -163,60 +163,60 @@
                         class="input-field input-small"
                         @change="saveSetting('max_daily_hours')">
                     <p class="help-text">
-                        {{ t('worktime', 'Nach §3 ArbZG sind maximal 10 Stunden erlaubt (Ausnahmen möglich).') }}
+                        {{ t('zeitwerk', 'Nach §3 ArbZG sind maximal 10 Stunden erlaubt (Ausnahmen möglich).') }}
                     </p>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.require_project"
                         @update:checked="saveSettingBool('require_project')">
-                        {{ t('worktime', 'Projekt erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, muss bei jedem Zeiteintrag ein Projekt ausgewählt werden — sonst lässt sich der Eintrag nicht speichern.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Projekt erforderlich') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, muss bei jedem Zeiteintrag ein Projekt ausgewählt werden — sonst lässt sich der Eintrag nicht speichern.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.require_description"
                         @update:checked="saveSettingBool('require_description')">
-                        {{ t('worktime', 'Beschreibung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, muss bei jedem Zeiteintrag eine Beschreibung eingetragen werden — sonst lässt sich der Eintrag nicht speichern.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Beschreibung erforderlich') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, muss bei jedem Zeiteintrag eine Beschreibung eingetragen werden — sonst lässt sich der Eintrag nicht speichern.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.allow_future_entries"
                         @update:checked="saveSettingBool('allow_future_entries')">
-                        {{ t('worktime', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('worktime', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Zukünftige Einträge erlauben') }} <InfoIcon>{{ t('zeitwerk', 'Wenn deaktiviert, können Mitarbeiter nur für heute oder vergangene Tage Zeiten eintragen — nicht im Voraus.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_project"
                         @update:checked="saveSettingBool('allow_employee_default_project')">
-                        {{ t('worktime', 'Mitarbeiter dürfen ein Standard-Projekt festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Mitarbeiter dürfen ein Standard-Projekt festlegen') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» ein Projekt wählen, das bei neuen Zeiteinträgen vorausgewählt ist.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.allow_employee_default_description"
                         @update:checked="saveSettingBool('allow_employee_default_description')">
-                        {{ t('worktime', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-genehmigung'"
-                id="sec-genehmigung" :name="t('worktime', 'Genehmigung')"
-                :description="t('worktime', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
+                id="sec-genehmigung" :name="t('zeitwerk', 'Genehmigung')"
+                :description="t('zeitwerk', 'Steuert firmenweit, ob erfasste Zeiten durch Vorgesetzte freigegeben werden müssen. Diese Einstellung betrifft alle Mitarbeitenden.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.approval_required"
                         @update:checked="confirmApprovalToggle">
-                        {{ t('worktime', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Genehmigung erforderlich') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-pausen'"
-                id="sec-pausen" :name="t('worktime', 'Pausenregelung (§4 ArbZG)')"
-                :description="t('worktime', 'Mindestpause gemäß deutschem Arbeitszeitgesetz')">
+                id="sec-pausen" :name="t('zeitwerk', 'Pausenregelung (§4 ArbZG)')"
+                :description="t('zeitwerk', 'Mindestpause gemäß deutschem Arbeitszeitgesetz')">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="break6h">{{ t('worktime', 'Bei >6h Arbeitszeit (min)') }} <InfoIcon>{{ t('worktime', 'Gesetzliche Mindestpause bei mehr als 6 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen.') }}</InfoIcon></label>
+                        <label for="break6h">{{ t('zeitwerk', 'Bei >6h Arbeitszeit (min)') }} <InfoIcon>{{ t('zeitwerk', 'Gesetzliche Mindestpause bei mehr als 6 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen.') }}</InfoIcon></label>
                         <input id="break6h"
                             v-model.number="settings.min_break_minutes_6h"
                             type="number"
@@ -226,7 +226,7 @@
                             @change="saveSetting('min_break_minutes_6h')">
                     </div>
                     <div class="form-group">
-                        <label for="break9h">{{ t('worktime', 'Bei >9h Arbeitszeit (min)') }} <InfoIcon>{{ t('worktime', 'Gesetzliche Mindestpause bei mehr als 9 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen.') }}</InfoIcon></label>
+                        <label for="break9h">{{ t('zeitwerk', 'Bei >9h Arbeitszeit (min)') }} <InfoIcon>{{ t('zeitwerk', 'Gesetzliche Mindestpause bei mehr als 9 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen.') }}</InfoIcon></label>
                         <input id="break9h"
                             v-model.number="settings.min_break_minutes_9h"
                             type="number"
@@ -240,11 +240,11 @@
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-spesen'"
-                id="sec-spesen" :name="t('worktime', 'Spesen & Kilometer')"
-                :description="t('worktime', 'Aussendienst-Spesen und Kilometer-Vergütung für externe Projekte. Die Flags «Aussendienst» und «Extern» werden je Projekt gesetzt.')">
+                id="sec-spesen" :name="t('zeitwerk', 'Spesen & Kilometer')"
+                :description="t('zeitwerk', 'Aussendienst-Spesen und Kilometer-Vergütung für externe Projekte. Die Flags «Aussendienst» und «Extern» werden je Projekt gesetzt.')">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="fieldworkAmount">{{ t('worktime', 'Spesen-Pauschale (€ pro Tag)') }} <InfoIcon>{{ t('worktime', 'Wird pro Tag gutgeschrieben, an dem die Aussendienst-Arbeitszeit die Stundenschwelle erreicht.') }}</InfoIcon></label>
+                        <label for="fieldworkAmount">{{ t('zeitwerk', 'Spesen-Pauschale (€ pro Tag)') }} <InfoIcon>{{ t('zeitwerk', 'Wird pro Tag gutgeschrieben, an dem die Aussendienst-Arbeitszeit die Stundenschwelle erreicht.') }}</InfoIcon></label>
                         <input id="fieldworkAmount"
                             v-model.number="settings.fieldwork_allowance_amount"
                             type="number"
@@ -254,7 +254,7 @@
                             @change="saveSetting('fieldwork_allowance_amount')">
                     </div>
                     <div class="form-group">
-                        <label for="fieldworkThreshold">{{ t('worktime', 'Stundenschwelle pro Tag') }} <InfoIcon>{{ t('worktime', 'Nur die Zeit auf Aussendienst-Projekten zählt gegen diese Schwelle.') }}</InfoIcon></label>
+                        <label for="fieldworkThreshold">{{ t('zeitwerk', 'Stundenschwelle pro Tag') }} <InfoIcon>{{ t('zeitwerk', 'Nur die Zeit auf Aussendienst-Projekten zählt gegen diese Schwelle.') }}</InfoIcon></label>
                         <input id="fieldworkThreshold"
                             v-model.number="settings.fieldwork_allowance_threshold_hours"
                             type="number"
@@ -267,35 +267,35 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-group-label">{{ t('worktime', 'Schwellen-Vergleich') }}</label>
+                    <label class="form-group-label">{{ t('zeitwerk', 'Schwellen-Vergleich') }}</label>
                     <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_operator"
                         value="gte" name="fieldwork-operator" type="radio"
                         @update:checked="saveSetting('fieldwork_allowance_operator')">
-                        {{ t('worktime', 'Grösser oder gleich der Schwelle (≥)') }}
+                        {{ t('zeitwerk', 'Grösser oder gleich der Schwelle (≥)') }}
                     </NcCheckboxRadioSwitch>
                     <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_operator"
                         value="gt" name="fieldwork-operator" type="radio"
                         @update:checked="saveSetting('fieldwork_allowance_operator')">
-                        {{ t('worktime', 'Grösser als die Schwelle (>)') }}
+                        {{ t('zeitwerk', 'Grösser als die Schwelle (>)') }}
                     </NcCheckboxRadioSwitch>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-group-label">{{ t('worktime', 'Berechnungsbasis') }}</label>
+                    <label class="form-group-label">{{ t('zeitwerk', 'Berechnungsbasis') }}</label>
                     <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_basis"
                         value="gross" name="fieldwork-basis" type="radio"
                         @update:checked="saveSetting('fieldwork_allowance_basis')">
-                        {{ t('worktime', 'Bruttozeit (inkl. Pause)') }}
+                        {{ t('zeitwerk', 'Bruttozeit (inkl. Pause)') }}
                     </NcCheckboxRadioSwitch>
                     <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_basis"
                         value="net" name="fieldwork-basis" type="radio"
                         @update:checked="saveSetting('fieldwork_allowance_basis')">
-                        {{ t('worktime', 'Nettozeit (reine Arbeitszeit)') }}
+                        {{ t('zeitwerk', 'Nettozeit (reine Arbeitszeit)') }}
                     </NcCheckboxRadioSwitch>
                 </div>
 
                 <div class="form-group">
-                    <label for="mileageRate">{{ t('worktime', 'Kilometer-Satz (€ pro km)') }} <InfoIcon>{{ t('worktime', 'Vergütung je gefahrenem Kilometer. Die Kilometer werden tageweise erfasst und am Monatsende summiert.') }}</InfoIcon></label>
+                    <label for="mileageRate">{{ t('zeitwerk', 'Kilometer-Satz (€ pro km)') }} <InfoIcon>{{ t('zeitwerk', 'Vergütung je gefahrenem Kilometer. Die Kilometer werden tageweise erfasst und am Monatsende summiert.') }}</InfoIcon></label>
                     <input id="mileageRate"
                         v-model.number="settings.mileage_rate"
                         type="number"
@@ -306,53 +306,53 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-group-label">{{ t('worktime', 'Externe Abwesenheitstypen') }} <InfoIcon>{{ t('worktime', 'Abwesenheitstypen, die als «extern» gelten. An solchen Tagen kann der Mitarbeiter Kilometer erfassen.') }}</InfoIcon></label>
+                    <label class="form-group-label">{{ t('zeitwerk', 'Externe Abwesenheitstypen') }} <InfoIcon>{{ t('zeitwerk', 'Abwesenheitstypen, die als «extern» gelten. An solchen Tagen kann der Mitarbeiter Kilometer erfassen.') }}</InfoIcon></label>
                     <NcSelect v-model="selectedExternAbsenceTypes"
                         :options="externAbsenceTypeOptions"
                         :multiple="true"
                         :close-on-select="false"
-                        :placeholder="t('worktime', 'Typen auswählen (optional)')" />
+                        :placeholder="t('zeitwerk', 'Typen auswählen (optional)')" />
                 </div>
 
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.fieldwork_allowance_on_extern_absence"
                         @update:checked="saveSettingBool('fieldwork_allowance_on_extern_absence')">
-                        {{ t('worktime', 'Spesen-Pauschale auch an externen Abwesenheitstagen') }} <InfoIcon>{{ t('worktime', 'Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Spesen-Pauschale auch an externen Abwesenheitstagen') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, gibt es die Spesen-Pauschale pauschal an jedem Werktag mit einem externen Abwesenheitstyp — ohne Stundenprüfung.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-pdf'"
-                id="sec-pdf" :name="t('worktime', 'PDF-Archiv')"
-                :description="t('worktime', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
+                id="sec-pdf" :name="t('zeitwerk', 'PDF-Archiv')"
+                :description="t('zeitwerk', 'Genehmigte Monatsberichte werden automatisch als PDF archiviert.')">
                 <div class="form-group">
-                    <label>{{ t('worktime', 'Archiv-Ordner') }} <InfoIcon>{{ t('worktime', 'Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.') }}</InfoIcon></label>
+                    <label>{{ t('zeitwerk', 'Archiv-Ordner') }} <InfoIcon>{{ t('zeitwerk', 'Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.') }}</InfoIcon></label>
                     <div class="folder-picker">
                         <NcButton type="secondary" @click="openFolderPicker">
                             <template #icon>
                                 <Folder :size="20" />
                             </template>
-                            {{ t('worktime', 'Ordner auswählen') }}
+                            {{ t('zeitwerk', 'Ordner auswählen') }}
                         </NcButton>
                         <span class="selected-path">
-                            {{ settings.pdf_archive_path || t('worktime', 'Nicht konfiguriert') }}
+                            {{ settings.pdf_archive_path || t('zeitwerk', 'Nicht konfiguriert') }}
                         </span>
                     </div>
                     <p class="help-text">
-                        {{ t('worktime', 'PDFs werden in Ihrem persönlichen Ordner gespeichert. Nur Sie haben Zugriff.') }}
+                        {{ t('zeitwerk', 'PDFs werden in Ihrem persönlichen Ordner gespeichert. Nur Sie haben Zugriff.') }}
                     </p>
                     <p class="help-text">
-                        {{ t('worktime', 'Struktur: {path}/{Jahr}/{Nachname_Vorname}/Arbeitszeitnachweis_YYYY-MM.pdf', { path: settings.pdf_archive_path || '...' }) }}
+                        {{ t('zeitwerk', 'Struktur: {path}/{Jahr}/{Nachname_Vorname}/Arbeitszeitnachweis_YYYY-MM.pdf', { path: settings.pdf_archive_path || '...' }) }}
                     </p>
                 </div>
 
                 <div v-if="settings.pdf_archive_path" class="form-group archive-status">
-                    <label>{{ t('worktime', 'Archivierungs-Status') }} <InfoIcon>{{ t('worktime', 'Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen.') }}</InfoIcon></label>
+                    <label>{{ t('zeitwerk', 'Archivierungs-Status') }} <InfoIcon>{{ t('zeitwerk', 'Die PDF-Archivierung läuft über einen Hintergrund-Job (ca. alle 5 Minuten). Hier sehen Sie ausstehende und fehlgeschlagene Archivierungen.') }}</InfoIcon></label>
                     <NcLoadingIcon v-if="archiveLoading" :size="20" />
                     <template v-else>
                         <p class="help-text">
-                            {{ t('worktime', '{pending} ausstehend · {failed} fehlgeschlagen', { pending: archiveStatus.pending, failed: archiveStatus.failed }) }}
+                            {{ t('zeitwerk', '{pending} ausstehend · {failed} fehlgeschlagen', { pending: archiveStatus.pending, failed: archiveStatus.failed }) }}
                         </p>
                         <div v-if="archiveFailedJobs.length" class="archive-failed-list">
                             <div v-for="job in archiveFailedJobs" :key="job.id" class="archive-failed-row">
@@ -364,12 +364,12 @@
                                 <NcButton type="secondary"
                                     :disabled="archiveRetryingId === job.id"
                                     @click="retryArchiveJob(job)">
-                                    {{ t('worktime', 'Erneut versuchen') }}
+                                    {{ t('zeitwerk', 'Erneut versuchen') }}
                                 </NcButton>
                             </div>
                         </div>
                         <div v-if="archiveDoneJobs.length" class="archive-done-list">
-                            <p class="help-text archive-done-caption">{{ t('worktime', 'Zuletzt archiviert') }}</p>
+                            <p class="help-text archive-done-caption">{{ t('zeitwerk', 'Zuletzt archiviert') }}</p>
                             <div v-for="job in archiveDoneJobs" :key="job.id" class="archive-done-row">
                                 <span class="archive-done-check">✓</span>
                                 <span class="archive-done-name">{{ job.employeeName }} · {{ archiveMonthLabel(job.month) }} {{ job.year }}</span>
@@ -377,7 +377,7 @@
                             </div>
                         </div>
                         <NcButton type="tertiary" @click="loadArchiveStatus">
-                            {{ t('worktime', 'Aktualisieren') }}
+                            {{ t('zeitwerk', 'Aktualisieren') }}
                         </NcButton>
                     </template>
                 </div>
@@ -385,39 +385,39 @@
 
             <NcSettingsSection v-if="canManageEmployees"
                 v-show="activeSection === 'sec-betriebsferien'"
-                id="sec-betriebsferien" :name="t('worktime', 'Betriebsferien')"
-                :description="t('worktime', 'Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein.')">
+                id="sec-betriebsferien" :name="t('zeitwerk', 'Betriebsferien')"
+                :description="t('zeitwerk', 'Tragen Sie Betriebsferien zentral für alle oder ausgewählte Mitarbeiter als Urlaub ein.')">
                 <BetriebsferienSettings :employees="employees" />
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
                 v-show="activeSection === 'sec-sondertage'"
-                id="sec-sondertage" :name="t('worktime', 'Sondertage')"
-                :description="t('worktime', 'Definieren Sie, ob Heiligabend und Silvester als halbe Arbeitstage gelten.')">
+                id="sec-sondertage" :name="t('zeitwerk', 'Sondertage')"
+                :description="t('zeitwerk', 'Definieren Sie, ob Heiligabend und Silvester als halbe Arbeitstage gelten.')">
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.christmas_eve_half_day"
                         @update:checked="saveSettingBool('christmas_eve_half_day')">
-                        {{ t('worktime', 'Heiligabend (24.12.) als halber Arbeitstag') }} <InfoIcon>{{ t('worktime', 'Wenn aktiviert, wird das Tagessoll am 24.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Heiligabend (24.12.) als halber Arbeitstag') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiviert, wird das Tagessoll am 24.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <div class="form-group">
                     <NcCheckboxRadioSwitch :checked.sync="settings.new_years_eve_half_day"
                         @update:checked="saveSettingBool('new_years_eve_half_day')">
-                        {{ t('worktime', 'Silvester (31.12.) als halber Arbeitstag') }} <InfoIcon>{{ t('worktime', 'Wenn aktiviert, wird das Tagessoll am 31.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet.') }}</InfoIcon>
+                        {{ t('zeitwerk', 'Silvester (31.12.) als halber Arbeitstag') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiviert, wird das Tagessoll am 31.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
                 <p class="help-text">
-                    {{ t('worktime', 'Hinweis: Änderungen wirken sich auf neu generierte Feiertage aus. Generieren Sie die Feiertage erneut, um die Änderungen anzuwenden.') }}
+                    {{ t('zeitwerk', 'Hinweis: Änderungen wirken sich auf neu generierte Feiertage aus. Generieren Sie die Feiertage erneut, um die Änderungen anzuwenden.') }}
                 </p>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageHolidays"
                 v-show="activeSection === 'sec-feiertage'"
-                id="sec-feiertage" :name="t('worktime', 'Feiertage verwalten')"
-                :description="t('worktime', 'Feiertage anzeigen, hinzufügen, bearbeiten und löschen.')">
+                id="sec-feiertage" :name="t('zeitwerk', 'Feiertage verwalten')"
+                :description="t('zeitwerk', 'Feiertage anzeigen, hinzufügen, bearbeiten und löschen.')">
                 <div class="form-row holiday-filters">
                     <div class="form-group">
-                        <label for="holidayYear">{{ t('worktime', 'Jahr') }}</label>
+                        <label for="holidayYear">{{ t('zeitwerk', 'Jahr') }}</label>
                         <input id="holidayYear"
                             v-model.number="holidayYear"
                             type="number"
@@ -427,20 +427,20 @@
                             @change="loadHolidays">
                     </div>
                     <div class="form-group">
-                        <label for="holidayStateFilter">{{ t('worktime', 'Bundesland') }}</label>
+                        <label for="holidayStateFilter">{{ t('zeitwerk', 'Bundesland') }}</label>
                         <NcSelect id="holidayStateFilter"
                             v-model="selectedHolidayStateFilter"
                             :options="holidayStateFilterOptions"
                             @input="filterHolidays" />
                     </div>
                     <NcButton type="secondary" @click="generateHolidays">
-                        {{ t('worktime', 'Auto-Generieren') }}
+                        {{ t('zeitwerk', 'Auto-Generieren') }}
                     </NcButton>
                     <NcButton type="primary" @click="openHolidayForm(null)">
                         <template #icon>
                             <Plus :size="20" />
                         </template>
-                        {{ t('worktime', 'Feiertag hinzufügen') }}
+                        {{ t('zeitwerk', 'Feiertag hinzufügen') }}
                     </NcButton>
                 </div>
 
@@ -451,12 +451,12 @@
                     <thead>
                         <tr>
                             <th class="col-expand"></th>
-                            <th>{{ t('worktime', 'Datum') }}</th>
-                            <th>{{ t('worktime', 'Name') }}</th>
-                            <th>{{ t('worktime', 'Bundesländer') }}</th>
-                            <th>{{ t('worktime', 'Umfang') }}</th>
-                            <th>{{ t('worktime', 'Typ') }}</th>
-                            <th>{{ t('worktime', 'Aktionen') }}</th>
+                            <th>{{ t('zeitwerk', 'Datum') }}</th>
+                            <th>{{ t('zeitwerk', 'Name') }}</th>
+                            <th>{{ t('zeitwerk', 'Bundesländer') }}</th>
+                            <th>{{ t('zeitwerk', 'Umfang') }}</th>
+                            <th>{{ t('zeitwerk', 'Typ') }}</th>
+                            <th>{{ t('zeitwerk', 'Aktionen') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -469,24 +469,24 @@
                                 <td>{{ formatDate(group.date) }}</td>
                                 <td>{{ group.name }}</td>
                                 <td>
-                                    <span class="state-count">{{ group.states.length }} {{ t('worktime', 'Bundesländer') }}</span>
+                                    <span class="state-count">{{ group.states.length }} {{ t('zeitwerk', 'Bundesländer') }}</span>
                                 </td>
-                                <td>{{ group.scope < 1.0 ? t('worktime', '½ Tag') : t('worktime', '1 Tag') }}</td>
+                                <td>{{ group.scope < 1.0 ? t('zeitwerk', '½ Tag') : t('zeitwerk', '1 Tag') }}</td>
                                 <td>
                                     <span :class="['holiday-type', group.isManual ? 'manual' : 'auto']">
-                                        {{ group.isManual ? t('worktime', 'Manuell') : t('worktime', 'Auto') }}
+                                        {{ group.isManual ? t('zeitwerk', 'Manuell') : t('zeitwerk', 'Auto') }}
                                     </span>
                                 </td>
                                 <td class="actions" @click.stop>
                                     <NcButton type="tertiary"
-                                        :aria-label="t('worktime', 'Bearbeiten')"
+                                        :aria-label="t('zeitwerk', 'Bearbeiten')"
                                         @click="openHolidayGroupForm(group)">
                                         <template #icon>
                                             <Pencil :size="20" />
                                         </template>
                                     </NcButton>
                                     <NcButton type="tertiary"
-                                        :aria-label="t('worktime', 'Löschen')"
+                                        :aria-label="t('zeitwerk', 'Löschen')"
                                         @click="confirmDeleteHolidayGroup(group)">
                                         <template #icon>
                                             <Close :size="20" />
@@ -509,41 +509,41 @@
                 </div>
 
                 <NcEmptyContent v-else
-                    :name="t('worktime', 'Keine Feiertage')"
-                    :description="t('worktime', 'Keine Feiertage für diese Auswahl gefunden.')">
+                    :name="t('zeitwerk', 'Keine Feiertage')"
+                    :description="t('zeitwerk', 'Keine Feiertage für diese Auswahl gefunden.')">
                     <template #icon>
                         <CalendarBlank :size="64" />
                     </template>
                 </NcEmptyContent>
 
                 <NcModal v-if="showHolidayForm"
-                    :name="editingHoliday ? t('worktime', 'Feiertag bearbeiten') : t('worktime', 'Neuer Feiertag')"
+                    :name="editingHoliday ? t('zeitwerk', 'Feiertag bearbeiten') : t('zeitwerk', 'Neuer Feiertag')"
                     @close="closeHolidayForm">
                     <div class="holiday-form-modal">
-                        <h3>{{ editingHoliday ? t('worktime', 'Feiertag bearbeiten') : t('worktime', 'Neuer Feiertag') }}</h3>
+                        <h3>{{ editingHoliday ? t('zeitwerk', 'Feiertag bearbeiten') : t('zeitwerk', 'Neuer Feiertag') }}</h3>
                         <div class="form-group">
-                            <label for="holidayDate">{{ t('worktime', 'Datum') }}</label>
+                            <label for="holidayDate">{{ t('zeitwerk', 'Datum') }}</label>
                             <NcDateTimePicker id="holidayDate"
                                 v-model="holidayFormData.date"
                                 type="date"
                                 :format="'DD.MM.YYYY'" />
                         </div>
                         <div class="form-group">
-                            <label for="holidayName">{{ t('worktime', 'Name') }}</label>
+                            <label for="holidayName">{{ t('zeitwerk', 'Name') }}</label>
                             <input id="holidayName"
                                 v-model="holidayFormData.name"
                                 type="text"
                                 class="input-field"
-                                :placeholder="t('worktime', 'z.B. Brückentag')">
+                                :placeholder="t('zeitwerk', 'z.B. Brückentag')">
                         </div>
                         <div v-if="!editingHoliday" class="form-group">
-                            <label>{{ t('worktime', 'Bundesländer') }}</label>
+                            <label>{{ t('zeitwerk', 'Bundesländer') }}</label>
                             <div class="state-selection">
                                 <NcButton type="tertiary" @click="selectAllStates">
-                                    {{ t('worktime', 'Alle auswählen') }}
+                                    {{ t('zeitwerk', 'Alle auswählen') }}
                                 </NcButton>
                                 <NcButton type="tertiary" @click="deselectAllStates">
-                                    {{ t('worktime', 'Alle abwählen') }}
+                                    {{ t('zeitwerk', 'Alle abwählen') }}
                                 </NcButton>
                             </div>
                             <div class="state-checkboxes">
@@ -556,7 +556,7 @@
                             </div>
                         </div>
                         <div v-else class="form-group">
-                            <label>{{ t('worktime', 'Bundesländer') }}</label>
+                            <label>{{ t('zeitwerk', 'Bundesländer') }}</label>
                             <div class="state-chips readonly">
                                 <span v-for="state in holidayFormData.federalStates" :key="state" class="state-chip">
                                     {{ federalStates[state] || state }}
@@ -564,7 +564,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Umfang') }}</label>
+                            <label>{{ t('zeitwerk', 'Umfang') }}</label>
                             <NcSelect
                                 v-model="selectedHolidayScope"
                                 :options="scopeOptions"
@@ -572,12 +572,12 @@
                         </div>
                         <div class="form-actions">
                             <NcButton type="tertiary" @click="closeHolidayForm">
-                                {{ t('worktime', 'Abbrechen') }}
+                                {{ t('zeitwerk', 'Abbrechen') }}
                             </NcButton>
                             <NcButton type="primary"
                                 :disabled="!isHolidayFormValid"
                                 @click="saveHoliday">
-                                {{ editingHoliday ? t('worktime', 'Speichern') : t('worktime', 'Erstellen') }}
+                                {{ editingHoliday ? t('zeitwerk', 'Speichern') : t('zeitwerk', 'Erstellen') }}
                             </NcButton>
                         </div>
                     </div>
@@ -587,8 +587,8 @@
 
             <NcSettingsSection v-if="canManageEmployees"
                 v-show="activeSection === 'sec-jahresuebertrag'"
-                id="sec-jahresuebertrag" :name="t('worktime', 'Jahresübertrag')"
-                :description="t('worktime', 'Überstunden und Resturlaub aus dem Vorjahr händisch übertragen. Durchgeführte Überträge sind verbindlich und unveränderbar.')">
+                id="sec-jahresuebertrag" :name="t('zeitwerk', 'Jahresübertrag')"
+                :description="t('zeitwerk', 'Überstunden und Resturlaub aus dem Vorjahr händisch übertragen. Durchgeführte Überträge sind verbindlich und unveränderbar.')">
                 <div class="form-row">
                     <div class="form-group">
                         <select v-model.number="carryoverYear"
@@ -601,10 +601,10 @@
                     </div>
                     <div v-if="carryoverSourceYearStatus" class="form-group carryover-year-status">
                         <span v-if="carryoverSourceYearStatus === 'closed'" class="year-status year-status--closed">
-                            ✓ {{ t('worktime', 'Alle Monate {year} genehmigt', { year: carryoverYear - 1 }) }}
+                            ✓ {{ t('zeitwerk', 'Alle Monate {year} genehmigt', { year: carryoverYear - 1 }) }}
                         </span>
                         <span v-else-if="carryoverSourceYearStatus === 'open'" class="year-status year-status--open">
-                            ⚠ {{ t('worktime', '{year}: Noch offene Monate', { year: carryoverYear - 1 }) }}
+                            ⚠ {{ t('zeitwerk', '{year}: Noch offene Monate', { year: carryoverYear - 1 }) }}
                         </span>
                     </div>
                 </div>
@@ -612,12 +612,12 @@
                 <table class="carryover-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                            <th>{{ t('worktime', 'Überstunden') }}<br>{{ t('worktime', 'Ist') }}</th>
-                            <th>{{ t('worktime', 'Überstunden') }}<br>{{ t('worktime', 'Übertrag') }}</th>
-                            <th>{{ t('worktime', 'Resturlaub') }}<br>{{ t('worktime', 'Ist') }}</th>
-                            <th>{{ t('worktime', 'Resturlaub') }}<br>{{ t('worktime', 'Übertrag') }}</th>
-                            <th>{{ t('worktime', 'Bemerkung') }}</th>
+                            <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
+                            <th>{{ t('zeitwerk', 'Überstunden') }}<br>{{ t('zeitwerk', 'Ist') }}</th>
+                            <th>{{ t('zeitwerk', 'Überstunden') }}<br>{{ t('zeitwerk', 'Übertrag') }}</th>
+                            <th>{{ t('zeitwerk', 'Resturlaub') }}<br>{{ t('zeitwerk', 'Ist') }}</th>
+                            <th>{{ t('zeitwerk', 'Resturlaub') }}<br>{{ t('zeitwerk', 'Übertrag') }}</th>
+                            <th>{{ t('zeitwerk', 'Bemerkung') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -666,16 +666,16 @@
                             <td class="carryover-actions">
                                 <NcButton v-if="emp.hasValues && !emp.isLocked"
                                     type="primary"
-                                    :aria-label="t('worktime', 'Übertrag durchführen')"
+                                    :aria-label="t('zeitwerk', 'Übertrag durchführen')"
                                     @click="lockCarryover(emp)">
-                                    {{ t('worktime', 'Übertrag durchführen') }}
+                                    {{ t('zeitwerk', 'Übertrag durchführen') }}
                                 </NcButton>
                                 <span v-else-if="emp.isLocked" class="carryover-locked-label">
-                                    🔒 {{ t('worktime', 'Durchgeführt') }}
+                                    🔒 {{ t('zeitwerk', 'Durchgeführt') }}
                                     <NcButton type="tertiary"
-                                        :aria-label="t('worktime', 'Korrektur')"
+                                        :aria-label="t('zeitwerk', 'Korrektur')"
                                         @click="openCancelModal(emp)">
-                                        {{ t('worktime', 'Korrektur') }}
+                                        {{ t('zeitwerk', 'Korrektur') }}
                                     </NcButton>
                                 </span>
                             </td>
@@ -686,22 +686,22 @@
 
                 <!-- Cancel/Correction Modal -->
                 <NcModal v-if="showCancelModal"
-                    :name="t('worktime', 'Übertrag korrigieren')"
+                    :name="t('zeitwerk', 'Übertrag korrigieren')"
                     @close="closeCancelModal">
                     <div class="cancel-modal">
-                        <h3>{{ t('worktime', 'Übertrag korrigieren für {name}', { name: cancellingEmployee?.fullName }) }}</h3>
+                        <h3>{{ t('zeitwerk', 'Übertrag korrigieren für {name}', { name: cancellingEmployee?.fullName }) }}</h3>
                         <p class="cancel-modal__hint">
-                            {{ t('worktime', 'Der bestehende Übertrag wird storniert und durch die neuen Werte ersetzt. Beide Einträge bleiben im Audit-Log erhalten.') }}
+                            {{ t('zeitwerk', 'Der bestehende Übertrag wird storniert und durch die neuen Werte ersetzt. Beide Einträge bleiben im Audit-Log erhalten.') }}
                         </p>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Neue Überstunden (Std.)') }}</label>
+                            <label>{{ t('zeitwerk', 'Neue Überstunden (Std.)') }}</label>
                             <input v-model.number="cancelForm.overtimeHours"
                                 type="number"
                                 step="0.5"
                                 class="input-field input-small">
                         </div>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Neuer Resturlaub (Tage)') }}</label>
+                            <label>{{ t('zeitwerk', 'Neuer Resturlaub (Tage)') }}</label>
                             <input v-model.number="cancelForm.vacationDays"
                                 type="number"
                                 step="0.5"
@@ -709,21 +709,21 @@
                                 class="input-field input-small">
                         </div>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Begründung (Pflicht)') }}</label>
+                            <label>{{ t('zeitwerk', 'Begründung (Pflicht)') }}</label>
                             <input v-model="cancelForm.reason"
                                 type="text"
-                                :placeholder="t('worktime', 'Grund für die Korrektur')"
+                                :placeholder="t('zeitwerk', 'Grund für die Korrektur')"
                                 class="input-field"
                                 required>
                         </div>
                         <div class="form-actions">
                             <NcButton type="tertiary" @click="closeCancelModal">
-                                {{ t('worktime', 'Abbrechen') }}
+                                {{ t('zeitwerk', 'Abbrechen') }}
                             </NcButton>
                             <NcButton type="primary"
                                 :disabled="!cancelForm.reason.trim()"
                                 @click="submitCancel">
-                                {{ t('worktime', 'Stornieren & Ersetzen') }}
+                                {{ t('zeitwerk', 'Stornieren & Ersetzen') }}
                             </NcButton>
                         </div>
                     </div>
@@ -732,15 +732,15 @@
 
             <NcSettingsSection v-if="canManageEmployees"
                 v-show="activeSection === 'sec-ueberstunden-auszahlung'"
-                id="sec-ueberstunden-auszahlung" :name="t('worktime', 'Überstunden-Auszahlung')"
-                :description="t('worktime', 'Überstunden in Geld vergüten und vom Saldo abziehen. Auszahlungen werden im Audit-Log protokolliert.')">
+                id="sec-ueberstunden-auszahlung" :name="t('zeitwerk', 'Überstunden-Auszahlung')"
+                :description="t('zeitwerk', 'Überstunden in Geld vergüten und vom Saldo abziehen. Auszahlungen werden im Audit-Log protokolliert.')">
                 <div v-if="payoutEmployees.length > 0" class="settings-table-card">
                 <table class="carryover-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                            <th class="text-right">{{ t('worktime', 'Saldo aktuell') }}</th>
-                            <th class="text-right">{{ t('worktime', 'Ausgezahlt {year}', { year: payoutYear }) }}</th>
+                            <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
+                            <th class="text-right">{{ t('zeitwerk', 'Saldo aktuell') }}</th>
+                            <th class="text-right">{{ t('zeitwerk', 'Ausgezahlt {year}', { year: payoutYear }) }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -761,7 +761,7 @@
                                     <template #icon>
                                         <CashMultiple :size="20" />
                                     </template>
-                                    {{ t('worktime', 'Auszahlen') }}
+                                    {{ t('zeitwerk', 'Auszahlen') }}
                                 </NcButton>
                             </td>
                         </tr>
@@ -769,15 +769,15 @@
                 </table>
                 </div>
 
-                <h3 class="payout-hist-title">{{ t('worktime', 'Auszahlungs-Historie {year}', { year: payoutYear }) }}</h3>
+                <h3 class="payout-hist-title">{{ t('zeitwerk', 'Auszahlungs-Historie {year}', { year: payoutYear }) }}</h3>
                 <div v-if="payoutHistory.length > 0" class="settings-table-card">
                 <table class="carryover-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Datum') }}</th>
-                            <th>{{ t('worktime', 'Mitarbeiter') }}</th>
-                            <th class="text-right">{{ t('worktime', 'Stunden') }}</th>
-                            <th>{{ t('worktime', 'Notiz') }}</th>
+                            <th>{{ t('zeitwerk', 'Datum') }}</th>
+                            <th>{{ t('zeitwerk', 'Mitarbeiter') }}</th>
+                            <th class="text-right">{{ t('zeitwerk', 'Stunden') }}</th>
+                            <th>{{ t('zeitwerk', 'Notiz') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -789,7 +789,7 @@
                             <td class="payout-note">{{ p.note }}</td>
                             <td class="carryover-actions">
                                 <NcButton type="tertiary"
-                                    :aria-label="t('worktime', 'Auszahlung löschen')"
+                                    :aria-label="t('zeitwerk', 'Auszahlung löschen')"
                                     @click="deletePayout(p)">
                                     <template #icon>
                                         <Close :size="20" />
@@ -800,44 +800,44 @@
                     </tbody>
                 </table>
                 </div>
-                <p v-else class="payout-hist-empty">{{ t('worktime', 'Noch keine Auszahlungen erfasst.') }}</p>
+                <p v-else class="payout-hist-empty">{{ t('zeitwerk', 'Noch keine Auszahlungen erfasst.') }}</p>
 
                 <!-- Payout Modal -->
                 <NcModal v-if="showPayoutModal"
-                    :name="t('worktime', 'Überstunden auszahlen')"
+                    :name="t('zeitwerk', 'Überstunden auszahlen')"
                     @close="closePayoutModal">
                     <div class="cancel-modal">
-                        <h3>{{ t('worktime', 'Überstunden auszahlen für {name}', { name: payoutTarget?.fullName }) }}</h3>
+                        <h3>{{ t('zeitwerk', 'Überstunden auszahlen für {name}', { name: payoutTarget?.fullName }) }}</h3>
                         <p class="cancel-modal__hint">
-                            {{ t('worktime', 'Verfügbarer Saldo: {saldo} h', { saldo: formatSignedHours(payoutTarget?.saldoMinutes || 0) }) }}
+                            {{ t('zeitwerk', 'Verfügbarer Saldo: {saldo} h', { saldo: formatSignedHours(payoutTarget?.saldoMinutes || 0) }) }}
                         </p>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Auszuzahlende Stunden') }}</label>
+                            <label>{{ t('zeitwerk', 'Auszuzahlende Stunden') }}</label>
                             <input v-model="payoutForm.hours"
                                 type="text"
-                                :placeholder="t('worktime', 'z. B. 8:00 oder 8,5')"
+                                :placeholder="t('zeitwerk', 'z. B. 8:00 oder 8,5')"
                                 class="input-field input-small">
                         </div>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Datum') }}</label>
+                            <label>{{ t('zeitwerk', 'Datum') }}</label>
                             <input v-model="payoutForm.date"
                                 type="date"
                                 class="input-field input-small">
                         </div>
                         <div class="form-group">
-                            <label>{{ t('worktime', 'Notiz / Grund (Pflicht)') }}</label>
+                            <label>{{ t('zeitwerk', 'Notiz / Grund (Pflicht)') }}</label>
                             <input v-model="payoutForm.note"
                                 type="text"
-                                :placeholder="t('worktime', 'mind. 10 Zeichen, landet im Audit-Log')"
+                                :placeholder="t('zeitwerk', 'mind. 10 Zeichen, landet im Audit-Log')"
                                 class="input-field">
                         </div>
                         <p v-if="payoutError" class="payout-error">{{ payoutError }}</p>
                         <div class="form-actions">
                             <NcButton type="tertiary" @click="closePayoutModal">
-                                {{ t('worktime', 'Abbrechen') }}
+                                {{ t('zeitwerk', 'Abbrechen') }}
                             </NcButton>
                             <NcButton type="primary" @click="submitPayout">
-                                {{ t('worktime', 'Auszahlung erfassen') }}
+                                {{ t('zeitwerk', 'Auszahlung erfassen') }}
                             </NcButton>
                         </div>
                     </div>
@@ -971,8 +971,8 @@ export default {
                 scope: 1.0,
             },
             scopeOptions: [
-                { id: 1.0, label: this.t('worktime', 'Ganzer Tag') },
-                { id: 0.5, label: this.t('worktime', 'Halber Tag') },
+                { id: 1.0, label: this.t('zeitwerk', 'Ganzer Tag') },
+                { id: 0.5, label: this.t('zeitwerk', 'Halber Tag') },
             ],
             // Grouped holiday view
             expandedGroups: [],
@@ -1067,7 +1067,7 @@ export default {
         },
         holidayStateFilterOptions() {
             return [
-                { id: null, label: this.t('worktime', 'Alle Bundesländer') },
+                { id: null, label: this.t('zeitwerk', 'Alle Bundesländer') },
                 ...this.federalStateOptions,
             ]
         },
@@ -1121,29 +1121,29 @@ export default {
         navGroups() {
             const group = (label, items) => ({ label, items: items.filter(i => i.visible) })
             return [
-                group(this.t('worktime', 'Team'), [
-                    { id: 'sec-mitarbeiter', label: this.t('worktime', 'Mitarbeiter'), icon: 'AccountGroup', visible: this.canManageEmployees },
-                    { id: 'sec-projekte', label: this.t('worktime', 'Projekte'), icon: 'Folder', visible: this.canManageProjects },
-                    { id: 'sec-berechtigungen', label: this.t('worktime', 'Berechtigungen'), icon: 'KeyVariant', visible: this.canManageSettings },
+                group(this.t('zeitwerk', 'Team'), [
+                    { id: 'sec-mitarbeiter', label: this.t('zeitwerk', 'Mitarbeiter'), icon: 'AccountGroup', visible: this.canManageEmployees },
+                    { id: 'sec-projekte', label: this.t('zeitwerk', 'Projekte'), icon: 'Folder', visible: this.canManageProjects },
+                    { id: 'sec-berechtigungen', label: this.t('zeitwerk', 'Berechtigungen'), icon: 'KeyVariant', visible: this.canManageSettings },
                 ]),
-                group(this.t('worktime', 'Firma'), [
-                    { id: 'sec-firmendaten', label: this.t('worktime', 'Firmendaten'), icon: 'OfficeBuilding', visible: this.canManageSettings },
-                    { id: 'sec-arbeitszeit', label: this.t('worktime', 'Arbeitszeit-Regeln'), icon: 'ClockCheckOutline', visible: this.canManageSettings },
+                group(this.t('zeitwerk', 'Firma'), [
+                    { id: 'sec-firmendaten', label: this.t('zeitwerk', 'Firmendaten'), icon: 'OfficeBuilding', visible: this.canManageSettings },
+                    { id: 'sec-arbeitszeit', label: this.t('zeitwerk', 'Arbeitszeit-Regeln'), icon: 'ClockCheckOutline', visible: this.canManageSettings },
                 ]),
-                group(this.t('worktime', 'Abläufe'), [
-                    { id: 'sec-genehmigung', label: this.t('worktime', 'Genehmigung'), icon: 'CheckDecagram', visible: this.canManageSettings },
-                    { id: 'sec-pausen', label: this.t('worktime', 'Pausenregelung'), icon: 'CoffeeOutline', visible: this.canManageSettings },
-                    { id: 'sec-spesen', label: this.t('worktime', 'Spesen & Kilometer'), icon: 'Car', visible: this.canManageSettings },
-                    { id: 'sec-pdf', label: this.t('worktime', 'PDF-Archiv'), icon: 'FilePdfBox', visible: this.canManageSettings },
+                group(this.t('zeitwerk', 'Abläufe'), [
+                    { id: 'sec-genehmigung', label: this.t('zeitwerk', 'Genehmigung'), icon: 'CheckDecagram', visible: this.canManageSettings },
+                    { id: 'sec-pausen', label: this.t('zeitwerk', 'Pausenregelung'), icon: 'CoffeeOutline', visible: this.canManageSettings },
+                    { id: 'sec-spesen', label: this.t('zeitwerk', 'Spesen & Kilometer'), icon: 'Car', visible: this.canManageSettings },
+                    { id: 'sec-pdf', label: this.t('zeitwerk', 'PDF-Archiv'), icon: 'FilePdfBox', visible: this.canManageSettings },
                 ]),
-                group(this.t('worktime', 'Kalender'), [
-                    { id: 'sec-betriebsferien', label: this.t('worktime', 'Betriebsferien'), icon: 'Beach', visible: this.canManageEmployees },
-                    { id: 'sec-sondertage', label: this.t('worktime', 'Sondertage'), icon: 'StarOutline', visible: this.canManageSettings },
-                    { id: 'sec-feiertage', label: this.t('worktime', 'Feiertage'), icon: 'CalendarStar', visible: this.canManageHolidays },
+                group(this.t('zeitwerk', 'Kalender'), [
+                    { id: 'sec-betriebsferien', label: this.t('zeitwerk', 'Betriebsferien'), icon: 'Beach', visible: this.canManageEmployees },
+                    { id: 'sec-sondertage', label: this.t('zeitwerk', 'Sondertage'), icon: 'StarOutline', visible: this.canManageSettings },
+                    { id: 'sec-feiertage', label: this.t('zeitwerk', 'Feiertage'), icon: 'CalendarStar', visible: this.canManageHolidays },
                 ]),
-                group(this.t('worktime', 'Konten'), [
-                    { id: 'sec-jahresuebertrag', label: this.t('worktime', 'Jahresübertrag'), icon: 'SwapHorizontalBold', visible: this.canManageEmployees },
-                    { id: 'sec-ueberstunden-auszahlung', label: this.t('worktime', 'Überstunden-Auszahlung'), icon: 'CashMultiple', visible: this.canManageEmployees },
+                group(this.t('zeitwerk', 'Konten'), [
+                    { id: 'sec-jahresuebertrag', label: this.t('zeitwerk', 'Jahresübertrag'), icon: 'SwapHorizontalBold', visible: this.canManageEmployees },
+                    { id: 'sec-ueberstunden-auszahlung', label: this.t('zeitwerk', 'Überstunden-Auszahlung'), icon: 'CashMultiple', visible: this.canManageEmployees },
                 ]),
             ]
         },
@@ -1225,11 +1225,11 @@ export default {
             this.archiveRetryingId = job.id
             try {
                 await TimeEntryService.retryArchive(job.id)
-                showSuccessMessage(this.t('worktime', 'Archivierung wird erneut versucht'))
+                showSuccessMessage(this.t('zeitwerk', 'Archivierung wird erneut versucht'))
                 await this.loadArchiveStatus()
             } catch (e) {
                 console.error('Failed to retry archive job:', e)
-                showErrorMessage(this.t('worktime', 'Erneuter Versuch fehlgeschlagen'))
+                showErrorMessage(this.t('zeitwerk', 'Erneuter Versuch fehlgeschlagen'))
             } finally {
                 this.archiveRetryingId = null
             }
@@ -1280,7 +1280,7 @@ export default {
         async saveSetting(key) {
             try {
                 await SettingsService.update(key, String(this.settings[key]))
-                showSuccessMessage(this.t('worktime', 'Einstellung gespeichert'))
+                showSuccessMessage(this.t('zeitwerk', 'Einstellung gespeichert'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -1288,32 +1288,32 @@ export default {
         async saveSettingBool(key) {
             try {
                 await SettingsService.update(key, this.settings[key] ? '1' : '0')
-                showSuccessMessage(this.t('worktime', 'Einstellung gespeichert'))
+                showSuccessMessage(this.t('zeitwerk', 'Einstellung gespeichert'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
         },
         confirmApprovalToggle(newValue) {
             const title = newValue
-                ? this.t('worktime', 'Genehmigung aktivieren')
-                : this.t('worktime', 'Genehmigung deaktivieren')
+                ? this.t('zeitwerk', 'Genehmigung aktivieren')
+                : this.t('zeitwerk', 'Genehmigung deaktivieren')
             const message = newValue
-                ? this.t('worktime', 'Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.')
-                : this.t('worktime', 'Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.')
+                ? this.t('zeitwerk', 'Ab jetzt müssen Zeiten eingereicht und durch Vorgesetzte freigegeben werden.')
+                : this.t('zeitwerk', 'Der Freigabe-Schritt entfällt für alle Mitarbeitenden. Erfasste Zeiten gelten dann direkt. Bereits genehmigte Einträge bleiben gesperrt und können im Aus-Modus nicht mehr aufgemacht werden.')
 
             const dialog = new DialogBuilder()
                 .setName(title)
                 .setText(message)
                 .setButtons([
                     {
-                        label: this.t('worktime', 'Abbrechen'),
+                        label: this.t('zeitwerk', 'Abbrechen'),
                         type: 'secondary',
                         callback: () => {
                             this.settings.approval_required = !newValue
                         },
                     },
                     {
-                        label: this.t('worktime', 'Fortfahren'),
+                        label: this.t('zeitwerk', 'Fortfahren'),
                         type: 'primary',
                         callback: () => {
                             this.saveSettingBool('approval_required')
@@ -1326,16 +1326,16 @@ export default {
         },
         generateHolidays() {
             const dialog = new DialogBuilder()
-                .setName(this.t('worktime', 'Feiertage neu erstellen'))
-                .setText(this.t('worktime', 'Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
+                .setName(this.t('zeitwerk', 'Feiertage neu erstellen'))
+                .setText(this.t('zeitwerk', 'Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
                 .setButtons([
                     {
-                        label: this.t('worktime', 'Abbrechen'),
+                        label: this.t('zeitwerk', 'Abbrechen'),
                         type: 'secondary',
                         callback: () => {},
                     },
                     {
-                        label: this.t('worktime', 'Fortfahren'),
+                        label: this.t('zeitwerk', 'Fortfahren'),
                         type: 'primary',
                         callback: () => {
                             this.runGenerateHolidays()
@@ -1350,7 +1350,7 @@ export default {
             try {
                 const result = await this.generateAllHolidays(this.holidayYear)
                 showSuccessMessage(
-                    this.t('worktime', '{count} Feiertage für {year} generiert', {
+                    this.t('zeitwerk', '{count} Feiertage für {year} generiert', {
                         count: result.totalHolidays,
                         year: this.holidayYear,
                     })
@@ -1387,14 +1387,14 @@ export default {
             await this.$store.dispatch('permissions/fetchPermissions')
             showSuccessMessage(
                 wasEditing
-                    ? this.t('worktime', 'Mitarbeiter aktualisiert')
-                    : this.t('worktime', 'Mitarbeiter erstellt')
+                    ? this.t('zeitwerk', 'Mitarbeiter aktualisiert')
+                    : this.t('zeitwerk', 'Mitarbeiter erstellt')
             )
         },
         async handleDeleteEmployee(employee) {
             try {
                 await this.deleteEmployee(employee.id)
-                showSuccessMessage(this.t('worktime', 'Mitarbeiter gelöscht'))
+                showSuccessMessage(this.t('zeitwerk', 'Mitarbeiter gelöscht'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -1418,7 +1418,7 @@ export default {
         async handleDeleteProject(project) {
             try {
                 await this.deleteProject(project.id)
-                showSuccessMessage(this.t('worktime', 'Projekt gelöscht'))
+                showSuccessMessage(this.t('zeitwerk', 'Projekt gelöscht'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -1448,22 +1448,22 @@ export default {
                 .join(', ')
 
             const text = removed.length === 1
-                ? this.t('worktime', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
-                : this.t('worktime', '{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+                ? this.t('zeitwerk', '{names} verliert damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
+                : this.t('zeitwerk', '{names} verlieren damit die HR-Manager-Rechte (Mitarbeiter verwalten, Zeiten genehmigen). Fortfahren?', { names })
 
             const dialog = new DialogBuilder()
-                .setName(this.t('worktime', 'HR-Manager entfernen'))
+                .setName(this.t('zeitwerk', 'HR-Manager entfernen'))
                 .setText(text)
                 .setButtons([
                     {
-                        label: this.t('worktime', 'Abbrechen'),
+                        label: this.t('zeitwerk', 'Abbrechen'),
                         type: 'secondary',
                         callback: () => {
                             this.hrManagers = [...this.previousHrManagers]
                         },
                     },
                     {
-                        label: this.t('worktime', 'Entfernen'),
+                        label: this.t('zeitwerk', 'Entfernen'),
                         type: 'error',
                         callback: () => {
                             this.persistHrManagers()
@@ -1478,7 +1478,7 @@ export default {
             try {
                 await SettingsService.setHrManagers(this.hrManagers)
                 this.previousHrManagers = [...this.hrManagers]
-                showSuccessMessage(this.t('worktime', 'HR-Manager gespeichert'))
+                showSuccessMessage(this.t('zeitwerk', 'HR-Manager gespeichert'))
             } catch (error) {
                 showErrorMessage(error.message)
                 this.hrManagers = [...this.previousHrManagers]
@@ -1486,7 +1486,7 @@ export default {
         },
         async openFolderPicker() {
             try {
-                const picker = getFilePickerBuilder(this.t('worktime', 'Archiv-Ordner auswählen'))
+                const picker = getFilePickerBuilder(this.t('zeitwerk', 'Archiv-Ordner auswählen'))
                     .setMultiSelect(false)
                     .setType(FilePickerType.Choose)
                     .allowDirectories(true)
@@ -1580,7 +1580,7 @@ export default {
                         })
                     }
                     showSuccessMessage(
-                        this.t('worktime', '{count} Feiertag(e) aktualisiert', { count: holidayIds.length })
+                        this.t('zeitwerk', '{count} Feiertag(e) aktualisiert', { count: holidayIds.length })
                     )
                 } else {
                     await HolidayService.create({
@@ -1589,7 +1589,7 @@ export default {
                         federalStates: this.holidayFormData.federalStates,
                         scope: this.holidayFormData.scope,
                     })
-                    showSuccessMessage(this.t('worktime', 'Feiertag erstellt'))
+                    showSuccessMessage(this.t('zeitwerk', 'Feiertag erstellt'))
                 }
                 this.closeHolidayForm()
                 await this.loadHolidays()
@@ -1623,22 +1623,22 @@ export default {
             this.showHolidayForm = true
         },
         async confirmDeleteHolidayGroup(group) {
-            const message = this.t('worktime', 'Möchten Sie den Feiertag "{name}" ({count} Bundesländer) wirklich löschen?', {
+            const message = this.t('zeitwerk', 'Möchten Sie den Feiertag "{name}" ({count} Bundesländer) wirklich löschen?', {
                 name: group.name,
                 count: group.states.length,
             })
 
             const dialog = new DialogBuilder()
-                .setName(this.t('worktime', 'Feiertag löschen'))
+                .setName(this.t('zeitwerk', 'Feiertag löschen'))
                 .setText(message)
                 .setButtons([
                     {
-                        label: this.t('worktime', 'Abbrechen'),
+                        label: this.t('zeitwerk', 'Abbrechen'),
                         type: 'secondary',
                         callback: () => {},
                     },
                     {
-                        label: this.t('worktime', 'Löschen'),
+                        label: this.t('zeitwerk', 'Löschen'),
                         type: 'error',
                         callback: async () => {
                             await this.deleteHolidayGroup(group)
@@ -1657,7 +1657,7 @@ export default {
                     await HolidayService.delete(holiday.id)
                 }
                 showSuccessMessage(
-                    this.t('worktime', '{count} Feiertag(e) gelöscht', {
+                    this.t('zeitwerk', '{count} Feiertag(e) gelöscht', {
                         count: group.holidays.length,
                     })
                 )
@@ -1773,7 +1773,7 @@ export default {
             try {
                 await YearlyCarryoverService.lock(emp.carryoverId)
                 emp.isLocked = true
-                showSuccessMessage(this.t('worktime', 'Übertrag durchgeführt'))
+                showSuccessMessage(this.t('zeitwerk', 'Übertrag durchgeführt'))
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -1800,7 +1800,7 @@ export default {
                     this.cancelForm.vacationDays,
                     this.cancelForm.reason,
                 )
-                showSuccessMessage(this.t('worktime', 'Übertrag korrigiert'))
+                showSuccessMessage(this.t('zeitwerk', 'Übertrag korrigiert'))
                 this.closeCancelModal()
                 await this.loadCarryovers()
             } catch (error) {
@@ -1874,15 +1874,15 @@ export default {
             const minutes = this.parsePayoutMinutes(this.payoutForm.hours)
             const saldo = this.payoutTarget?.saldoMinutes || 0
             if (minutes === null || minutes <= 0) {
-                this.payoutError = this.t('worktime', 'Bitte gültige Stunden eingeben.')
+                this.payoutError = this.t('zeitwerk', 'Bitte gültige Stunden eingeben.')
                 return
             }
             if (minutes > saldo) {
-                this.payoutError = this.t('worktime', 'Die Auszahlung darf den verfügbaren Saldo nicht überschreiten.')
+                this.payoutError = this.t('zeitwerk', 'Die Auszahlung darf den verfügbaren Saldo nicht überschreiten.')
                 return
             }
             if (this.payoutForm.note.trim().length < 10) {
-                this.payoutError = this.t('worktime', 'Bitte einen Grund mit mindestens 10 Zeichen angeben.')
+                this.payoutError = this.t('zeitwerk', 'Bitte einen Grund mit mindestens 10 Zeichen angeben.')
                 return
             }
             try {
@@ -1892,7 +1892,7 @@ export default {
                     minutes,
                     this.payoutForm.note.trim(),
                 )
-                showSuccessMessage(this.t('worktime', 'Auszahlung erfasst'))
+                showSuccessMessage(this.t('zeitwerk', 'Auszahlung erfasst'))
                 this.closePayoutModal()
                 await this.loadPayouts()
             } catch (error) {
@@ -1901,15 +1901,15 @@ export default {
         },
         async deletePayout(payout) {
             const confirmed = await confirmAction(
-                this.t('worktime', 'Diese Auszahlung löschen? Der Überstundensaldo wird wieder erhöht.'),
-                this.t('worktime', 'Auszahlung löschen'),
-                this.t('worktime', 'Löschen'),
+                this.t('zeitwerk', 'Diese Auszahlung löschen? Der Überstundensaldo wird wieder erhöht.'),
+                this.t('zeitwerk', 'Auszahlung löschen'),
+                this.t('zeitwerk', 'Löschen'),
                 true,
             )
             if (!confirmed) return
             try {
                 await OvertimePayoutService.delete(payout.id)
-                showSuccessMessage(this.t('worktime', 'Auszahlung gelöscht'))
+                showSuccessMessage(this.t('zeitwerk', 'Auszahlung gelöscht'))
                 await this.loadPayouts()
             } catch (error) {
                 showErrorMessage(error.message)
