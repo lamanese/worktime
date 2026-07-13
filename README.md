@@ -2,6 +2,13 @@
 
 Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 
+> **Hinweis:** Dies ist ein eigenständig gepflegter Fork von
+> [cpcMomentum/worktime](https://github.com/cpcMomentum/worktime)
+> (Original von Axel Deffner, AGPL-3.0-or-later). Der Fork erweitert das
+> Original u. a. um Außendienst-Spesen, Extern-Kilometer und persönliche
+> Standard-Vorgaben; alle Änderungen sind im [CHANGELOG](CHANGELOG.md)
+> dokumentiert.
+
 ## Features
 
 - **Zeiterfassung**: Tägliche Arbeitszeiten mit Start, Ende und Pause erfassen
@@ -14,6 +21,9 @@ Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 - **Feiertage**: Automatische Generierung deutscher Feiertage pro Bundesland
 - **Team-Übersicht**: Vorgesetzte sehen Statistiken ihrer Teammitglieder
 - **Genehmigungsworkflow**: Optionale Freigabe von Zeiteinträgen und Abwesenheiten
+- **Außendienst-Spesen**: Konfigurierbare Tagespauschale ab Stundenschwelle auf Außendienst-Projekten
+- **Extern-Kilometer**: Tageweise Kilometer-Erfassung an externen Tagen mit konfigurierbarem Satz
+- **Persönliche Standard-Vorgaben**: Standard-Arbeitszeiten sowie — nach Admin-Freigabe — Standard-Projekt und -Beschreibung als Vorbelegung
 
 ## Voraussetzungen
 
@@ -26,7 +36,7 @@ Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 ```bash
 # In Nextcloud apps Verzeichnis
 cd /var/www/nextcloud/apps
-git clone https://github.com/cpcMomentum/worktime.git
+git clone https://github.com/lamanese/worktime.git
 cd worktime
 
 # PHP Dependencies
