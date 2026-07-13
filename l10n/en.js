@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "worktime",
+    "zeitwerk",
     {
     "Abläufe" : "Workflows",
     "Aktuell gültiger Wert aus dem Arbeitszeitprofil. Zum Ändern unten das Profil bearbeiten oder ein neues anlegen." : "Currently valid value from the work schedule profile. To change it, edit the profile below or create a new one.",
@@ -146,7 +146,6 @@ OC.L10N.register(
     "Zeiteintrag" : "Time Entry",
     "Einstellung" : "Setting",
     "Es werden maximal 200 Einträge angezeigt. Bitte Filter verwenden um die Ergebnisse einzuschränken." : "Showing a maximum of 200 entries. Use filters to narrow down the results.",
-    "Willkommen bei WorkTime" : "Welcome to WorkTime",
     "Es sind noch keine Mitarbeiter eingerichtet. Legen Sie unter Einstellungen Mitarbeiter an, um zu starten." : "No employees have been set up yet. Go to Settings to add employees and get started.",
     "Zu den Einstellungen" : "Go to Settings",
     "Kein Mitarbeiterprofil" : "No Employee Profile",
@@ -472,10 +471,8 @@ OC.L10N.register(
     "Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich." : "When active, time entries go through an approval workflow: employees submit the month and supervisors approve it. If disabled, this step is skipped and recorded times apply directly. The hours calculation is the same either way.",
     "Gesetzliche Mindestpause bei mehr als 6 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen." : "Legal minimum break for more than 6 hours of work. Automatically suggested when creating a time entry.",
     "Gesetzliche Mindestpause bei mehr als 9 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen." : "Legal minimum break for more than 9 hours of work. Automatically suggested when creating a time entry.",
-    "Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "When a month is approved, WorkTime automatically saves a PDF report in this folder. The folder is in your personal storage — only you as admin have access. Automatic archiving only applies when approval is enabled; if disabled, use the PDF export in the monthly overview.",
     "Wenn aktiviert, wird das Tagessoll am 24.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet." : "When enabled, the daily target on Dec 24 is halved. Example: With 8 hrs/day, only 4 hrs count as target.",
     "Wenn aktiviert, wird das Tagessoll am 31.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet." : "When enabled, the daily target on Dec 31 is halved. Example: With 8 hrs/day, only 4 hrs count as target.",
-    "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet WorkTime das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Contractually agreed working hours per week. WorkTime calculates the daily target from this (weekly hours ÷ working days per week).",
     "Jährlicher Urlaubsanspruch. Jeder genommene Urlaubstag wird davon abgezogen. Der Resturlaub wird in der Zeiterfassung angezeigt." : "Annual vacation entitlement. Each taken vacation day is deducted. The remaining entitlement is shown in the time tracking.",
     "An wie vielen Tagen pro Woche wird gearbeitet? Daraus und aus den Wochenstunden ergibt sich das tägliche Soll. Beispiel: 40 Std. auf 5 Tage = 8 Std./Tag, 30 Std. auf 4 Tage = 7,5 Std./Tag." : "How many days per week does this employee work? Together with weekly hours, this determines the daily target. Example: 40 hrs over 5 days = 8 hrs/day, 30 hrs over 4 days = 7.5 hrs/day.",
     "Legt fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg." : "Determines which public holidays apply to this employee. Bavaria has more public holidays than Hamburg, for example.",
@@ -670,6 +667,9 @@ OC.L10N.register(
     "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Employees may set a default description",
     "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "If enabled, employees can store a text under “My settings” that is prefilled as the description for new time entries.",
     "Kilometergeld" : "Mileage allowance",
-    "Spesen" : "Daily allowance"
+    "Spesen" : "Daily allowance",
+    "Willkommen bei Zeitwerk" : "Welcome to Zeitwerk",
+    "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Contractually agreed working hours per week. Zeitwerk calculates the daily target from this (weekly hours ÷ working days per week).",
+    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "When a month is approved, Zeitwerk automatically saves a PDF report in this folder. The folder is in your personal storage — only you as admin have access. Automatic archiving only applies when approval is enabled; if disabled, use the PDF export in the monthly overview."
 },
 "nplurals=2; plural=(n != 1);");

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -28,7 +28,7 @@ class Version000015Date20260616000000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		$table = $schema->getTable('wt_projects');
+		$table = $schema->getTable('zw_projects');
 
 		if (!$table->hasColumn('customer')) {
 			$table->addColumn('customer', Types::STRING, [

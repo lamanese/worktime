@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,7 +16,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Add working_days_per_week column to wt_employees.
+ * Add working_days_per_week column to zw_employees.
  */
 class Version000010Date20260323000000 extends SimpleMigrationStep {
 
@@ -24,7 +24,7 @@ class Version000010Date20260323000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        $table = $schema->getTable('wt_employees');
+        $table = $schema->getTable('zw_employees');
 
         if (!$table->hasColumn('working_days_per_week')) {
             $table->addColumn('working_days_per_week', Types::INTEGER, [

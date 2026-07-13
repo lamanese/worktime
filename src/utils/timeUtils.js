@@ -21,7 +21,7 @@ export function formatMinutes(minutes) {
  * @returns {string}
  */
 export function formatMinutesWithUnit(minutes) {
-    return `${formatMinutes(minutes)} ${t('worktime', 'Std.')}`
+    return `${formatMinutes(minutes)} ${t('zeitwerk', 'Std.')}`
 }
 
 /**

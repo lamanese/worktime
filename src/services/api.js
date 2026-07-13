@@ -1,7 +1,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
-const baseUrl = generateUrl('/apps/worktime/api')
+const baseUrl = generateUrl('/apps/zeitwerk/api')
 
 export const api = axios.create({
     baseURL: baseUrl,

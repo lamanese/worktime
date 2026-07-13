@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\YearlyCarryover;
-use OCA\WorkTime\Db\YearlyCarryoverMapper;
+use OCA\Zeitwerk\Db\YearlyCarryover;
+use OCA\Zeitwerk\Db\YearlyCarryoverMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 class YearlyCarryoverService {

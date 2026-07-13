@@ -1,28 +1,28 @@
 <template>
     <div class="time-tracking-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Zeiterfassung') }}</h2>
+            <h2>{{ t('zeitwerk', 'Zeiterfassung') }}</h2>
         </div>
 
         <div class="view-toolbar">
-            <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+            <div v-if="!isNarrow" class="layout-seg" role="group" :aria-label="t('zeitwerk', 'Ansicht')">
                 <button class="seg-btn"
                     :class="{ active: layoutMode === 'list' }"
                     @click="setLayout('list')">
                     <FormatListBulletedIcon :size="18" />
-                    {{ t('worktime', 'Liste') }}
+                    {{ t('zeitwerk', 'Liste') }}
                 </button>
                 <button class="seg-btn"
                     :class="{ active: layoutMode === 'calendar' }"
                     @click="setLayout('calendar')">
                     <CalendarIcon :size="18" />
-                    {{ t('worktime', 'Kalender') }}
+                    {{ t('zeitwerk', 'Kalender') }}
                 </button>
                 <button class="seg-btn"
                     :class="{ active: layoutMode === 'year' }"
                     @click="setLayout('year')">
                     <ChartBarIcon :size="18" />
-                    {{ t('worktime', 'Jahr') }}
+                    {{ t('zeitwerk', 'Jahr') }}
                 </button>
             </div>
 
@@ -38,21 +38,21 @@
                     <template #icon>
                         <SendIcon :size="20" />
                     </template>
-                    {{ t('worktime', 'Monat einreichen') }}
+                    {{ t('zeitwerk', 'Monat einreichen') }}
                 </NcButton>
 
-                <NcActions v-if="!isYearMode" :aria-label="t('worktime', 'Weitere Aktionen')">
+                <NcActions v-if="!isYearMode" :aria-label="t('zeitwerk', 'Weitere Aktionen')">
                     <NcActionButton @click="downloadPdf">
                         <template #icon>
                             <FilePdfBox :size="20" />
                         </template>
-                        {{ t('worktime', 'PDF Monatsbericht') }}
+                        {{ t('zeitwerk', 'PDF Monatsbericht') }}
                     </NcActionButton>
                     <NcActionButton @click="openRangeModal">
                         <template #icon>
                             <CalendarIcon :size="20" />
                         </template>
-                        {{ t('worktime', 'PDF über Zeitraum …') }}
+                        {{ t('zeitwerk', 'PDF über Zeitraum …') }}
                     </NcActionButton>
                 </NcActions>
             </div>
@@ -72,12 +72,12 @@
 
         <div v-if="locked && !isYearMode" class="lock-banner">
             <LockIcon :size="20" />
-            {{ t('worktime', 'Monat genehmigt – Einträge gesperrt. Korrektur nur durch HR.') }}
+            {{ t('zeitwerk', 'Monat genehmigt – Einträge gesperrt. Korrektur nur durch HR.') }}
         </div>
 
         <div v-if="!isYearMode && statistics && statistics.workingDays === 0" class="schedule-warning-banner">
             <AlertIcon :size="20" />
-            {{ t('worktime', '0 Arbeitstage in diesem Monat – vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.') }}
+            {{ t('zeitwerk', '0 Arbeitstage in diesem Monat – vermutlich fehlt ein gültiges Arbeitszeitprofil mit Wochenstunden größer als 0. Bitte das Arbeitszeitprofil des Mitarbeiters prüfen.') }}
         </div>
 
         <!-- KPI-Leiste: monatlich (statistics) oder jährlich (yearAggregates) -->
@@ -105,15 +105,15 @@
         <div v-if="!isYearMode && allowance && (allowance.allowanceDays > 0 || allowance.kilometers > 0)"
             class="allowance-card card">
             <div class="allowance-item">
-                <span class="allowance-label">{{ t('worktime', 'Spesen (Aussendienst)') }}</span>
-                <span class="allowance-value">{{ allowance.allowanceDays }} {{ t('worktime', 'Tage') }} · {{ formatEuro(allowance.allowanceAmount) }}</span>
+                <span class="allowance-label">{{ t('zeitwerk', 'Spesen (Aussendienst)') }}</span>
+                <span class="allowance-value">{{ allowance.allowanceDays }} {{ t('zeitwerk', 'Tage') }} · {{ formatEuro(allowance.allowanceAmount) }}</span>
             </div>
             <div class="allowance-item">
-                <span class="allowance-label">{{ t('worktime', 'Kilometer (Extern)') }}</span>
+                <span class="allowance-label">{{ t('zeitwerk', 'Kilometer (Extern)') }}</span>
                 <span class="allowance-value">{{ allowance.kilometers }} km · {{ formatEuro(allowance.mileageAmount) }}</span>
             </div>
             <div class="allowance-item allowance-total">
-                <span class="allowance-label">{{ t('worktime', 'Summe') }}</span>
+                <span class="allowance-label">{{ t('zeitwerk', 'Summe') }}</span>
                 <span class="allowance-value">{{ formatEuro(allowance.total) }}</span>
             </div>
         </div>
@@ -169,34 +169,34 @@
 
         <NcModal v-if="showRangeModal"
             size="small"
-            :name="t('worktime', 'Arbeitszeitnachweis über Zeitraum')"
+            :name="t('zeitwerk', 'Arbeitszeitnachweis über Zeitraum')"
             @close="showRangeModal = false">
             <div class="range-modal">
                 <p class="range-hint">
-                    {{ t('worktime', 'Erzeugt einen Arbeitszeitnachweis als PDF für einen frei wählbaren Zeitraum (z. B. vom 20. bis zum 20.).') }}
+                    {{ t('zeitwerk', 'Erzeugt einen Arbeitszeitnachweis als PDF für einen frei wählbaren Zeitraum (z. B. vom 20. bis zum 20.).') }}
                 </p>
                 <div class="range-fields">
                     <div class="form-group">
-                        <label>{{ t('worktime', 'Von') }}</label>
+                        <label>{{ t('zeitwerk', 'Von') }}</label>
                         <NcDateTimePicker v-model="rangeStart" type="date" :format="'DD.MM.YYYY'" />
                     </div>
                     <div class="form-group">
-                        <label>{{ t('worktime', 'Bis') }}</label>
+                        <label>{{ t('zeitwerk', 'Bis') }}</label>
                         <NcDateTimePicker v-model="rangeEnd" type="date" :format="'DD.MM.YYYY'" />
                     </div>
                 </div>
                 <p v-if="rangeInvalid" class="range-error">
-                    {{ t('worktime', 'Das Enddatum darf nicht vor dem Startdatum liegen.') }}
+                    {{ t('zeitwerk', 'Das Enddatum darf nicht vor dem Startdatum liegen.') }}
                 </p>
                 <div class="range-actions">
                     <NcButton type="tertiary" @click="showRangeModal = false">
-                        {{ t('worktime', 'Abbrechen') }}
+                        {{ t('zeitwerk', 'Abbrechen') }}
                     </NcButton>
                     <NcButton type="primary" :disabled="!rangeStart || !rangeEnd || rangeInvalid" @click="exportRangePdf">
                         <template #icon>
                             <FilePdfBox :size="20" />
                         </template>
-                        {{ t('worktime', 'PDF erstellen') }}
+                        {{ t('zeitwerk', 'PDF erstellen') }}
                     </NcButton>
                 </div>
             </div>
@@ -278,8 +278,8 @@ export default {
             // #358: kumulierter Überstunden-Kontostand (bis heute + Übertrag), wie in der Abwesenheiten-Card.
             totalOvertimeMinutes: null,
             overviewYear: getCurrentYear(),
-            layoutMode: (['list', 'calendar', 'year'].includes(localStorage.getItem('worktime_tracking_layout'))
-                ? localStorage.getItem('worktime_tracking_layout')
+            layoutMode: (['list', 'calendar', 'year'].includes(localStorage.getItem('zeitwerk_tracking_layout'))
+                ? localStorage.getItem('zeitwerk_tracking_layout')
                 : 'list'),
             selectedDate: null,
             isNarrow: false,
@@ -351,9 +351,9 @@ export default {
         },
         monthStatusLabel() {
             return {
-                draft: this.t('worktime', 'Entwurf'),
-                submitted: this.t('worktime', 'Eingereicht – wartet auf Genehmigung'),
-                approved: this.t('worktime', 'Genehmigt'),
+                draft: this.t('zeitwerk', 'Entwurf'),
+                submitted: this.t('zeitwerk', 'Eingereicht – wartet auf Genehmigung'),
+                approved: this.t('zeitwerk', 'Genehmigt'),
             }[this.monthStatus] || ''
         },
         absenceByDate() {
@@ -454,7 +454,7 @@ export default {
         },
         setLayout(mode) {
             this.layoutMode = mode
-            localStorage.setItem('worktime_tracking_layout', mode)
+            localStorage.setItem('zeitwerk_tracking_layout', mode)
             if (mode === 'year') {
                 this.overviewYear = this.selectedMonth.year
                 this.loadOvertime()
@@ -557,7 +557,7 @@ export default {
         },
         selectMonth(month) {
             this.layoutMode = 'list'
-            localStorage.setItem('worktime_tracking_layout', 'list')
+            localStorage.setItem('zeitwerk_tracking_layout', 'list')
             this.setSelectedMonth({ year: this.overviewYear, month })
         },
         downloadPdf() {
@@ -585,9 +585,9 @@ export default {
                 .toLocaleDateString(getLocale(), { month: 'long', year: 'numeric' })
 
             const confirmed = await confirmAction(
-                this.t('worktime', 'Möchten Sie die Zeiteinträge für {month} einreichen? Die eingereichten Einträge werden zur Genehmigung übermittelt.', { month: monthName }),
-                this.t('worktime', 'Monat einreichen'),
-                this.t('worktime', 'Einreichen'),
+                this.t('zeitwerk', 'Möchten Sie die Zeiteinträge für {month} einreichen? Die eingereichten Einträge werden zur Genehmigung übermittelt.', { month: monthName }),
+                this.t('zeitwerk', 'Monat einreichen'),
+                this.t('zeitwerk', 'Einreichen'),
                 false
             )
             if (!confirmed) {
@@ -596,11 +596,11 @@ export default {
 
             try {
                 const result = await TimeEntryService.submitMonth(this.activeEmployeeId, this.selectedMonth.year, this.selectedMonth.month)
-                showSuccess(this.t('worktime', '{count} Einträge wurden eingereicht.', { count: result.submitted }))
+                showSuccess(this.t('zeitwerk', '{count} Einträge wurden eingereicht.', { count: result.submitted }))
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to submit month:', error)
-                showError(this.t('worktime', 'Fehler beim Einreichen des Monats.'))
+                showError(this.t('zeitwerk', 'Fehler beim Einreichen des Monats.'))
             }
         },
     },

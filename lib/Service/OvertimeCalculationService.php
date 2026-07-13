@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Holiday;
-use OCA\WorkTime\Db\OvertimePayoutMapper;
-use OCA\WorkTime\Db\TimeEntry;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Holiday;
+use OCA\Zeitwerk\Db\OvertimePayoutMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
 
 /**
  * Overtime / monthly-statistics engine (#426).

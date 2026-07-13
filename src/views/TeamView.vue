@@ -1,18 +1,18 @@
 <template>
     <div class="team-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Team') }}</h2>
+            <h2>{{ t('zeitwerk', 'Team') }}</h2>
         </div>
 
         <div class="view-toolbar">
-            <div class="seg" role="group" :aria-label="t('worktime', 'Färbung')">
+            <div class="seg" role="group" :aria-label="t('zeitwerk', 'Färbung')">
                 <button class="seg-btn" :class="{ active: colorBy === 'status' }" @click="colorBy = 'status'">
                     <FlagOutline :size="18" />
-                    {{ t('worktime', 'Nach Status') }}
+                    {{ t('zeitwerk', 'Nach Status') }}
                 </button>
                 <button class="seg-btn" :class="{ active: colorBy === 'type' }" @click="colorBy = 'type'">
                     <TagOutline :size="18" />
-                    {{ t('worktime', 'Nach Art') }}
+                    {{ t('zeitwerk', 'Nach Art') }}
                 </button>
             </div>
 
@@ -31,12 +31,12 @@
             :color-by="colorBy"
             :show-full-legend="isPrivileged" />
 
-        <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
+        <NcEmptyContent v-else :name="t('zeitwerk', 'Kein Team')">
             <template #icon>
                 <AccountGroupIcon />
             </template>
             <template #description>
-                {{ t('worktime', 'Aktuell sind keine Team-Abwesenheiten sichtbar.') }}
+                {{ t('zeitwerk', 'Aktuell sind keine Team-Abwesenheiten sichtbar.') }}
             </template>
         </NcEmptyContent>
     </div>

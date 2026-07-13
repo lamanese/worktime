@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\Holiday;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\Holiday;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;

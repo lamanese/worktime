@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "worktime",
+    "zeitwerk",
     {
     "PDF über Zeitraum …" : "PDF za období …",
     "Arbeitszeitnachweis über Zeitraum" : "Výkaz pracovní doby za období",
@@ -70,7 +70,6 @@ OC.L10N.register(
     "Freizeitausgleich wird nicht als Arbeitszeit gutgeschrieben. Das Soll bleibt bestehen, dadurch sinken die Überstunden." : "Náhradní volno se nezapočítává jako pracovní doba. Plán zůstává zachován, čímž se snižují přesčasy.",
     "Das Soll wird anteilig bis gestern berechnet. Der heutige Tag zählt erst mit, sobald du Zeit erfasst." : "Plán se počítá poměrně do včerejška. Dnešní den se započítá až poté, co zaznamenáš čas.",
     "Wenn aktiv, durchlaufen Zeiteinträge einen Freigabe-Workflow: Mitarbeitende reichen den Monat ein, Vorgesetzte genehmigen ihn. Ist die Option deaktiviert, entfällt dieser Schritt und die erfassten Zeiten gelten direkt. Die Stundenberechnung ist in beiden Fällen gleich." : "Pokud je aktivní, procházejí záznamy času schvalovacím procesem: zaměstnanci odešlou měsíc, nadřízení jej schválí. Je-li možnost vypnutá, tento krok odpadá a zaznamenané časy platí přímo. Výpočet hodin je v obou případech stejný.",
-    "Wenn ein Monat genehmigt wird, speichert WorkTime automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "Když je měsíc schválen, WorkTime automaticky uloží PDF report do této složky. Složka se nachází ve vašem osobním úložišti — přístup máte pouze vy jako administrátor. Automatická archivace funguje pouze při zapnutém schvalování; je-li vypnuté, použijte export PDF v měsíčním přehledu.",
     "Jährlicher Urlaubsanspruch. Jeder genommene Urlaubstag wird davon abgezogen. Der Resturlaub wird in der Zeiterfassung angezeigt." : "Roční nárok na dovolenou. Každý vyčerpaný den dovolené se od něj odečte. Zbývající dovolená se zobrazuje v evidenci času.",
     "Legt fest, ob Kollegen in der Abwesenheitsübersicht Ihren Abwesenheitsgrund sehen (z.B. Urlaub) oder nur Abwesend. Vorgesetzte und HR sehen immer den Grund." : "Určuje, zda kolegové v přehledu nepřítomností uvidí důvod vaší nepřítomnosti (např. dovolená), nebo pouze Nepřítomen. Nadřízení a HR vidí důvod vždy.",
     "Ist / Soll · {year}" : "Skutečnost / plán · {year}",
@@ -119,7 +118,6 @@ OC.L10N.register(
     "Übersicht" : "Přehled",
     "Meine Einstellungen" : "Moje nastavení",
     "Genehmigungen" : "Schválení",
-    "Willkommen bei WorkTime" : "Vítejte ve WorkTime",
     "Es sind noch keine Mitarbeiter eingerichtet. Legen Sie unter Einstellungen Mitarbeiter an, um zu starten." : "Zatím nejsou nastaveni žádní zaměstnanci. Přejděte do Nastavení a přidejte zaměstnance, abyste mohli začít.",
     "Zu den Einstellungen" : "Přejít do nastavení",
     "Kein Mitarbeiterprofil" : "Žádný profil zaměstnance",
@@ -430,7 +428,6 @@ OC.L10N.register(
     "Gesetzliche Mindestpause bei mehr als 9 Stunden Arbeitszeit. Wird beim Anlegen eines Zeiteintrags automatisch als Vorschlag eingetragen." : "Minimální zákonná přestávka při více než 9 hodinách práce. Automaticky navržena při vytvoření záznamu.",
     "Wenn aktiviert, wird das Tagessoll am 24.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet." : "Pokud je aktivní, denní plán 24.12. je poloviční. Např. z 8 h jen 4 h.",
     "Wenn aktiviert, wird das Tagessoll am 31.12. halbiert. Beispiel: Bei 8 Std./Tag werden nur 4 Std. als Soll angerechnet." : "Pokud je aktivní, denní plán 31.12. je poloviční. Např. z 8 h jen 4 h.",
-    "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet WorkTime das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Smluvně stanovená týdenní pracovní doba. Z ní se počítá denní plán (týdenní hodiny ÷ pracovní dny).",
     "An wie vielen Tagen pro Woche wird gearbeitet? Daraus und aus den Wochenstunden ergibt sich das tägliche Soll. Beispiel: 40 Std. auf 5 Tage = 8 Std./Tag, 30 Std. auf 4 Tage = 7,5 Std./Tag." : "Kolik dní týdně se pracuje? Spolu s hodinami určuje denní plán. Např. 40 h / 5 dní = 8 h/den.",
     "Legt fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg." : "Určuje, které svátky platí pro zaměstnance. Např. Bavorsko má více svátků než Hamburk.",
     "Diese Person kann die Zeiteinträge und Abwesenheitsanträge dieses Mitarbeiters einsehen und genehmigen." : "Tato osoba může vidět a schvalovat záznamy a žádosti zaměstnance.",
@@ -670,6 +667,9 @@ OC.L10N.register(
     "Mitarbeiter dürfen eine Standard-Beschreibung festlegen" : "Zaměstnanci smí nastavit výchozí popis",
     "Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist." : "Pokud je aktivní, mohou si zaměstnanci v „Moje nastavení“ uložit text, který se u nových časových záznamů předvyplní jako popis.",
     "Kilometergeld" : "Náhrada za kilometry",
-    "Spesen" : "Diety"
+    "Spesen" : "Diety",
+    "Willkommen bei Zeitwerk" : "Vítejte v aplikaci Zeitwerk",
+    "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Smluvně stanovená týdenní pracovní doba. Z ní Zeitwerk počítá denní plán (týdenní hodiny ÷ pracovní dny).",
+    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "Když je měsíc schválen, Zeitwerk automaticky uloží PDF report do této složky. Složka se nachází ve vašem osobním úložišti — přístup máte pouze vy jako administrátor. Automatická archivace funguje pouze při zapnutém schvalování; je-li vypnuté, použijte export PDF v měsíčním přehledu."
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");

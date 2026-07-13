@@ -76,10 +76,10 @@ export function formatDateISO(date) {
  */
 export function getMonthName(month) {
     const months = [
-        t('worktime', 'Januar'), t('worktime', 'Februar'), t('worktime', 'März'),
-        t('worktime', 'April'), t('worktime', 'Mai'), t('worktime', 'Juni'),
-        t('worktime', 'Juli'), t('worktime', 'August'), t('worktime', 'September'),
-        t('worktime', 'Oktober'), t('worktime', 'November'), t('worktime', 'Dezember'),
+        t('zeitwerk', 'Januar'), t('zeitwerk', 'Februar'), t('zeitwerk', 'März'),
+        t('zeitwerk', 'April'), t('zeitwerk', 'Mai'), t('zeitwerk', 'Juni'),
+        t('zeitwerk', 'Juli'), t('zeitwerk', 'August'), t('zeitwerk', 'September'),
+        t('zeitwerk', 'Oktober'), t('zeitwerk', 'November'), t('zeitwerk', 'Dezember'),
     ]
     return months[month - 1] || ''
 }
@@ -91,10 +91,10 @@ export function getMonthName(month) {
  */
 export function getMonthNameShort(month) {
     const months = [
-        t('worktime', 'Jan'), t('worktime', 'Feb'), t('worktime', 'Mrz'),
-        t('worktime', 'Apr'), t('worktime', 'Mai'), t('worktime', 'Jun'),
-        t('worktime', 'Jul'), t('worktime', 'Aug'), t('worktime', 'Sep'),
-        t('worktime', 'Okt'), t('worktime', 'Nov'), t('worktime', 'Dez'),
+        t('zeitwerk', 'Jan'), t('zeitwerk', 'Feb'), t('zeitwerk', 'Mrz'),
+        t('zeitwerk', 'Apr'), t('zeitwerk', 'Mai'), t('zeitwerk', 'Jun'),
+        t('zeitwerk', 'Jul'), t('zeitwerk', 'Aug'), t('zeitwerk', 'Sep'),
+        t('zeitwerk', 'Okt'), t('zeitwerk', 'Nov'), t('zeitwerk', 'Dez'),
     ]
     return months[month - 1] || ''
 }
@@ -106,9 +106,9 @@ export function getMonthNameShort(month) {
  */
 export function getDayName(dayOfWeek) {
     const days = [
-        t('worktime', 'So'), t('worktime', 'Mo'), t('worktime', 'Di'),
-        t('worktime', 'Mi'), t('worktime', 'Do'), t('worktime', 'Fr'),
-        t('worktime', 'Sa'),
+        t('zeitwerk', 'So'), t('zeitwerk', 'Mo'), t('zeitwerk', 'Di'),
+        t('zeitwerk', 'Mi'), t('zeitwerk', 'Do'), t('zeitwerk', 'Fr'),
+        t('zeitwerk', 'Sa'),
     ]
     return days[dayOfWeek] || ''
 }

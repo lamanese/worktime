@@ -1,30 +1,30 @@
 <template>
-	<NcModal :name="t('worktime', 'Korrektur – Begründung')" @close="$emit('close')">
+	<NcModal :name="t('zeitwerk', 'Korrektur – Begründung')" @close="$emit('close')">
 		<div class="correction-reason">
-			<h3>{{ t('worktime', 'Begründung für die Korrektur') }}</h3>
+			<h3>{{ t('zeitwerk', 'Begründung für die Korrektur') }}</h3>
 			<p class="correction-reason__hint">
-				{{ t('worktime', 'Die Änderung wird protokolliert. In abgeschlossenen Monaten ist eine Begründung Pflicht; der Monat wird danach zur erneuten Genehmigung geöffnet.') }}
+				{{ t('zeitwerk', 'Die Änderung wird protokolliert. In abgeschlossenen Monaten ist eine Begründung Pflicht; der Monat wird danach zur erneuten Genehmigung geöffnet.') }}
 			</p>
 			<div class="form-group">
-				<label for="correction-reason-text">{{ t('worktime', 'Begründung (mindestens 10 Zeichen)') }}</label>
+				<label for="correction-reason-text">{{ t('zeitwerk', 'Begründung (mindestens 10 Zeichen)') }}</label>
 				<textarea id="correction-reason-text"
 					ref="textarea"
 					v-model="reason"
 					rows="3"
 					class="input-field"
-					:placeholder="t('worktime', 'z. B. Stempelfehler nach Rücksprache mit der Mitarbeiterin korrigiert')" />
+					:placeholder="t('zeitwerk', 'z. B. Stempelfehler nach Rücksprache mit der Mitarbeiterin korrigiert')" />
 				<div class="charcount" :class="{ bad: reason.trim().length > 0 && reason.trim().length < 10 }">
 					{{ reason.trim().length }} / 10
 				</div>
 			</div>
 			<div class="form-actions">
 				<NcButton type="tertiary" @click="$emit('close')">
-					{{ t('worktime', 'Abbrechen') }}
+					{{ t('zeitwerk', 'Abbrechen') }}
 				</NcButton>
 				<NcButton type="primary"
 					:disabled="reason.trim().length < 10"
 					@click="confirm">
-					{{ t('worktime', 'Korrektur speichern') }}
+					{{ t('zeitwerk', 'Korrektur speichern') }}
 				</NcButton>
 			</div>
 		</div>

@@ -2,28 +2,28 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Controller;
+namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
-use OCA\WorkTime\Controller\ReportController;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\DailyKmMapper;
+use OCA\Zeitwerk\Controller\ReportController;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\DailyKmMapper;
 use DateTime;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\AllowanceService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
-use OCA\WorkTime\Service\YearlyCarryoverService;
-use OCA\WorkTime\Service\OvertimePayoutService;
-use OCA\WorkTime\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;

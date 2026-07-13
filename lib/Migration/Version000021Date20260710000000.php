@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -18,8 +18,8 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Persoenliche Standard-Vorgaben fuer neue Zeiteintraege (durch den Admin
  * freischaltbar, siehe CompanySetting::KEY_ALLOW_EMPLOYEE_DEFAULT_*):
- * - wt_employees.default_project_id: vorgewaehltes Projekt beim Anlegen
- * - wt_employees.default_description: vorausgefuellte Beschreibung
+ * - zw_employees.default_project_id: vorgewaehltes Projekt beim Anlegen
+ * - zw_employees.default_description: vorausgefuellte Beschreibung
  */
 class Version000021Date20260710000000 extends SimpleMigrationStep {
 
@@ -27,8 +27,8 @@ class Version000021Date20260710000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_employees')) {
-            $employees = $schema->getTable('wt_employees');
+        if ($schema->hasTable('zw_employees')) {
+            $employees = $schema->getTable('zw_employees');
             if (!$employees->hasColumn('default_project_id')) {
                 $employees->addColumn('default_project_id', Types::INTEGER, [
                     'notnull' => false,

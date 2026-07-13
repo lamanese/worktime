@@ -1,5 +1,5 @@
 /**
- * Formatting utility functions for WorkTime application.
+ * Formatting utility functions for Zeitwerk application.
  *
  * Consolidates formatting functions used across multiple components.
  */
@@ -18,10 +18,10 @@ export { formatMinutes, formatMinutesWithUnit, formatHoursDecimal }
  * @returns {string} e.g., "8,5 Std." or "8.5 hrs"
  */
 export function formatMinutesToHours(minutes) {
-    if (minutes === null || minutes === undefined) return `0 ${t('worktime', 'Std.')}`
+    if (minutes === null || minutes === undefined) return `0 ${t('zeitwerk', 'Std.')}`
     const hours = minutes / 60
     const formatted = hours.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-    return `${formatted} ${t('worktime', 'Std.')}`
+    return `${formatted} ${t('zeitwerk', 'Std.')}`
 }
 
 /**

@@ -1,13 +1,13 @@
-# WorkTime
+# Zeitwerk
 
 Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 
-> **Hinweis:** Dies ist ein eigenständig gepflegter Fork von
-> [cpcMomentum/worktime](https://github.com/cpcMomentum/worktime)
-> (Original von Axel Deffner, AGPL-3.0-or-later). Der Fork erweitert das
-> Original u. a. um Außendienst-Spesen, Extern-Kilometer und persönliche
-> Standard-Vorgaben; alle Änderungen sind im [CHANGELOG](CHANGELOG.md)
-> dokumentiert.
+> **Hinweis:** Zeitwerk ist ein eigenständig gepflegter Fork der App WorkTime
+> ([cpcMomentum/worktime](https://github.com/cpcMomentum/worktime),
+> Original von Axel Deffner, AGPL-3.0-or-later) mit eigener App-ID und
+> eigenem Datenbankschema. Der Fork erweitert das Original u. a. um
+> Außendienst-Spesen, Extern-Kilometer und persönliche Standard-Vorgaben;
+> alle Änderungen sind im [CHANGELOG](CHANGELOG.md) dokumentiert.
 
 ## Features
 
@@ -36,8 +36,9 @@ Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 ```bash
 # In Nextcloud apps Verzeichnis
 cd /var/www/nextcloud/apps
-git clone https://github.com/lamanese/worktime.git
-cd worktime
+# Ordnername muss der App-ID entsprechen (zeitwerk)
+git clone https://github.com/lamanese/worktime.git zeitwerk
+cd zeitwerk
 
 # PHP Dependencies
 composer install --no-dev
@@ -49,7 +50,7 @@ npm run build
 
 App aktivieren:
 ```bash
-php occ app:enable worktime
+php occ app:enable zeitwerk
 ```
 
 ## Konfiguration
@@ -97,13 +98,13 @@ npm run watch
 
 | Tabelle | Beschreibung |
 |---------|--------------|
-| `wt_employees` | Mitarbeiter mit Wochenstunden, Urlaubstagen, Bundesland |
-| `wt_time_entries` | Zeiteinträge mit Status (draft/submitted/approved/rejected) |
-| `wt_absences` | Abwesenheiten (Urlaub, Krankheit etc.) |
-| `wt_holidays` | Feiertage pro Bundesland |
-| `wt_projects` | Projekte für Zeiterfassung |
-| `wt_audit_logs` | Änderungsprotokoll |
-| `wt_company_settings` | App-Einstellungen |
+| `zw_employees` | Mitarbeiter mit Wochenstunden, Urlaubstagen, Bundesland |
+| `zw_time_entries` | Zeiteinträge mit Status (draft/submitted/approved/rejected) |
+| `zw_absences` | Abwesenheiten (Urlaub, Krankheit etc.) |
+| `zw_holidays` | Feiertage pro Bundesland |
+| `zw_projects` | Projekte für Zeiterfassung |
+| `zw_audit_logs` | Änderungsprotokoll |
+| `zw_company_settings` | App-Einstellungen |
 
 ## API Endpoints
 

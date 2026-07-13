@@ -7,15 +7,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Holiday;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Holiday;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException as FilesNotFoundException;
 use TCPDF;
@@ -149,7 +149,7 @@ class PdfService {
     public function generateProjectEvaluation(string $label, array $entries, array $totals, array $filter = [], array $allowanceRows = []): string {
         $pdf = new TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
         $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
-        $pdf->SetCreator('WorkTime Nextcloud App');
+        $pdf->SetCreator('Zeitwerk Nextcloud App');
         $pdf->SetAuthor($companyName);
         $pdf->SetTitle('Projektauswertung');
         $pdf->setPrintHeader(false);
@@ -240,7 +240,7 @@ class PdfService {
     public function generateProjectAggregate(string $label, array $rows, int $totalMinutes, array $filter = [], array $allowanceRows = []): string {
         $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $companyName = $this->settingsService->getCompanyName() ?: 'Projektauswertung';
-        $pdf->SetCreator('WorkTime Nextcloud App');
+        $pdf->SetCreator('Zeitwerk Nextcloud App');
         $pdf->SetAuthor($companyName);
         $pdf->SetTitle('Projektauswertung');
         $pdf->setPrintHeader(false);
@@ -348,7 +348,7 @@ class PdfService {
 
         // Set document information
         $companyName = $this->settingsService->getCompanyName() ?: 'Arbeitszeitnachweis';
-        $pdf->SetCreator('WorkTime Nextcloud App');
+        $pdf->SetCreator('Zeitwerk Nextcloud App');
         $pdf->SetAuthor($companyName);
         $pdf->SetTitle('Arbeitszeitnachweis');
 

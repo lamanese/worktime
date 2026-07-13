@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\AbsenceMapper;
-use OCA\WorkTime\Db\DailyKm;
-use OCA\WorkTime\Db\DailyKmMapper;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\DailyKmService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\ValidationException;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\DailyKm;
+use OCA\Zeitwerk\Db\DailyKmMapper;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\DailyKmService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\ValidationException;
 use PHPUnit\Framework\TestCase;
 
 /**

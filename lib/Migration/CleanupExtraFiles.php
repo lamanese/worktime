@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use OCP\App\AppPathNotFoundException;
 use OCP\App\IAppManager;
@@ -31,13 +31,13 @@ class CleanupExtraFiles implements IRepairStep {
 
 	public function run(IOutput $output): void {
 		try {
-			$appPath = $this->appManager->getAppPath('worktime');
+			$appPath = $this->appManager->getAppPath('zeitwerk');
 		} catch (AppPathNotFoundException) {
 			return;
 		}
 
 		$filesToRemove = [
-			$appPath . '/appinfo/worktime.crt',
+			$appPath . '/appinfo/zeitwerk.crt',
 			$appPath . '/test-results/.last-run.json',
 		];
 
@@ -63,13 +63,13 @@ class CleanupExtraFiles implements IRepairStep {
 	}
 
 	/**
-	 * Webpack emits hashed bundle filenames (e.g. worktime-<hash>.js).
+	 * Webpack emits hashed bundle filenames (e.g. zeitwerk-<hash>.js).
 	 * NC's update path copies new bundles in but does not delete the
 	 * previous version's hash, so each upgrade leaves stale .js / .js.map
 	 * / .js.LICENSE.txt files behind, which the integrity check flags
 	 * as EXTRA_FILE. Keep only the bundles that match the current
 	 * signature.json, drop everything else under js/ that follows the
-	 * worktime-<hash> pattern.
+	 * zeitwerk-<hash> pattern.
 	 */
 	private function removeStaleJsBundles(string $appPath, IOutput $output): void {
 		$jsDir = $appPath . '/js';
@@ -96,7 +96,7 @@ class CleanupExtraFiles implements IRepairStep {
 			}
 		}
 
-		$pattern = '/^worktime-[a-f0-9]{20}\.js(\.map|\.LICENSE\.txt)?$/';
+		$pattern = '/^zeitwerk-[a-f0-9]{20}\.js(\.map|\.LICENSE\.txt)?$/';
 		foreach (scandir($jsDir) ?: [] as $entry) {
 			if ($entry === '.' || $entry === '..') {
 				continue;

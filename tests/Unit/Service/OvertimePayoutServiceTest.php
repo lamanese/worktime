@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\OvertimePayout;
-use OCA\WorkTime\Db\OvertimePayoutMapper;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\OvertimeCalculationService;
-use OCA\WorkTime\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Db\OvertimePayout;
+use OCA\Zeitwerk\Db\OvertimePayoutMapper;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 

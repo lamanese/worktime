@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\DailyKm;
-use OCA\WorkTime\Db\DailyKmMapper;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Service\AllowanceService;
-use OCA\WorkTime\Service\CompanySettingsService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\DailyKm;
+use OCA\Zeitwerk\Db\DailyKmMapper;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
 use PHPUnit\Framework\TestCase;
 
 /**

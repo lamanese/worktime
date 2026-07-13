@@ -54,7 +54,7 @@
 | Aspekt | Details |
 |--------|---------|
 | Container | **NEIN** — App laeuft IN Nextcloud, nicht daneben |
-| Lokale Entwicklung | Nextcloud im Docker (OrbStack), Mount nach `/var/www/html/custom_apps/worktime` |
+| Lokale Entwicklung | Nextcloud im Docker (OrbStack), Mount nach `/var/www/html/custom_apps/zeitwerk` |
 | Deploy: App Store | Tarball + Signatur + REST API Upload |
 | Deploy: Inhouse | rsync auf eigene Instanz + `occ upgrade` |
 | CI/CD | App Store Release-Pipeline (NICHT GitHub Actions fuer Deploy) |
@@ -102,8 +102,8 @@
 │   ├── store/              # Vuex / Pinia
 │   └── router.js
 ├── js/                     # KOMPILIERTES JS (commit Pflicht!)
-│   ├── worktime-main.js
-│   └── worktime-main.js.map
+│   ├── zeitwerk-main.js
+│   └── zeitwerk-main.js.map
 ├── css/                    # Optional
 ├── templates/              # PHP-Templates (main.php als Vue-Mount-Point)
 ├── l10n/                   # Uebersetzungen (Transifex)
@@ -123,12 +123,12 @@
 | Concept | Command |
 |---------|---------|
 | `lint_frontend` | `npm run lint` |
-| `lint_backend` | `docker exec -t nextcloud-dev php -l /var/www/html/custom_apps/worktime/lib/**/*.php` |
+| `lint_backend` | `docker exec -t nextcloud-dev php -l /var/www/html/custom_apps/zeitwerk/lib/**/*.php` |
 | `format_frontend` | `npx prettier --write src/` |
 | `format_backend` | `N/A` |
 | `typecheck` | `N/A` |
 | `test_frontend` | `npm run test` |
-| `test_backend` | `docker exec -t nextcloud-dev php /var/www/html/custom_apps/worktime/vendor/bin/phpunit -c /var/www/html/custom_apps/worktime/tests/phpunit.xml` |
+| `test_backend` | `docker exec -t nextcloud-dev php /var/www/html/custom_apps/zeitwerk/vendor/bin/phpunit -c /var/www/html/custom_apps/zeitwerk/tests/phpunit.xml` |
 | `build_frontend` | `npm run build` |
 | `build_backend` | `N/A` |
 | `dep_audit_fe` | `npm audit` |
@@ -136,7 +136,7 @@
 | `install_deps_fe` | `npm install` |
 | `install_deps_be` | `composer install` |
 
-> **Hinweis:** `worktime` wird bei `/adopt` durch den tatsaechlichen App-Namen (aus `appinfo/info.xml`) ersetzt. PHP-Lint laeuft im Docker-Container weil PHP auf macOS typisch nicht installiert ist.
+> **Hinweis:** `zeitwerk` wird bei `/adopt` durch den tatsaechlichen App-Namen (aus `appinfo/info.xml`) ersetzt. PHP-Lint laeuft im Docker-Container weil PHP auf macOS typisch nicht installiert ist.
 
 ## Plugins
 
@@ -159,10 +159,10 @@
 | AGPL-3.0-or-later ueberall | Harte App-Store-Pflicht |
 | Kein "Nextcloud" im App-Namen | Marken-Policy |
 | Type Hints in PHP | Projektstandard |
-| Assets-Pfad: `js/worktime-main.js` | NC laedt JS aus `js/`, nicht aus `dist/` |
+| Assets-Pfad: `js/zeitwerk-main.js` | NC laedt JS aus `js/`, nicht aus `dist/` |
 | `npm run build` vor Commit bei Vue-Aenderungen | Ohne kompiliertes JS laeuft die App nicht |
 | Keine `.htaccess`/`.user.ini` im Release | NC FilenameValidator strippt diese → Signatur bricht |
-| Hash-Routing im Vue Router | NC-Apps laufen unter `/apps/worktime/` ohne History-API |
+| Hash-Routing im Vue Router | NC-Apps laufen unter `/apps/zeitwerk/` ohne History-API |
 
 ## Nicht-anwendbare ai-first-dev Skills
 
@@ -192,7 +192,7 @@ Diese Skills sind fuer NC-Apps **nicht relevant** und sollten uebersprungen werd
 | Build vor Tarball | `npm install && npm run build` auf dem Release-Branch |
 | Tarball aus git archive | `git archive HEAD` verwenden, **NICHT** aus Worktree — verhindert Feature-Code-Leaks |
 | Sign-Tree bereinigen | `.htaccess`, `.user.ini` aus Sign-Tree entfernen (NC FilenameValidator) |
-| Signatur | `openssl dgst -sha512 -sign ~/.nextcloud/certificates/worktime.key` |
+| Signatur | `openssl dgst -sha512 -sign ~/.nextcloud/certificates/zeitwerk.key` |
 | Upgrade-Test PFLICHT | Vorversion installieren → neue Version drueberziehen → Integrity pruefen |
 | Whitelist-Check | Tarball darf NUR enthalten: `appinfo`, `lib`, `src`, `js`, `css`, `templates`, `l10n`, `img`, `tests`, `composer.json`, `package.json`, `package-lock.json`, `webpack.config.js`, `CHANGELOG.md`, `README.md`, `LICENSE`, `CLAUDE.md` |
 | App Store Upload | `curl -X POST https://apps.nextcloud.com/api/v1/apps/releases` mit Signatur |
@@ -239,7 +239,7 @@ Diese Skills sind fuer NC-Apps **nicht relevant** und sollten uebersprungen werd
 
 | Regel | Details |
 |-------|---------|
-| Build Output pruefen | `npm run build` muss `js/worktime-main.js` erzeugen |
+| Build Output pruefen | `npm run build` muss `js/zeitwerk-main.js` erzeugen |
 | PHP-Lint im Container | `docker exec -t nextcloud-dev php -l ...` weil PHP auf macOS nicht installiert |
 | info.xml validieren | Pflicht-Felder pruefen: id, name, summary, description, version, licence, author, namespace, category, dependencies |
 | Version-Sync | info.xml Version == package.json Version |
@@ -252,7 +252,7 @@ Diese Skills sind fuer NC-Apps **nicht relevant** und sollten uebersprungen werd
 | Service + Mapper Paar | Immer zusammen generieren — Controller → Service → Mapper Schichtung |
 | Entity | `extends OCP\AppFramework\Db\Entity`, Getter/Setter automatisch, `addType()` im Constructor |
 | Migration | `extends SimpleMigrationStep`, Naming: `VersionXXXYYYDateYYYYMMDDHHMMSS`, nur Schema Builder |
-| Tabellennamen | Prefix mit App-ID: `worktime_<tablename>` |
+| Tabellennamen | Prefix mit App-ID: `zw_<tablename> (App-Kuerzel, bestehende Konvention)` |
 | Route hinzufuegen | Neuen Controller in `appinfo/routes.php` registrieren |
 | Vue Component | @nextcloud/vue Komponenten nutzen (NcAppContent, NcButton, etc.), Hash-Routing |
 

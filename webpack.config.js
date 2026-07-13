@@ -7,6 +7,6 @@ webpackConfig.entry = {
 
 // Short hash-based chunk filenames to avoid long filenames with special
 // characters that some hosting providers cannot serve correctly
-webpackConfig.output.chunkFilename = 'worktime-[contenthash].js'
+webpackConfig.output.chunkFilename = 'zeitwerk-[contenthash].js'
 
 module.exports = webpackConfig

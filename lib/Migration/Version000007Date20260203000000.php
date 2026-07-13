@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -38,9 +38,9 @@ class Version000007Date20260203000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Add scope column to wt_absences
-        if ($schema->hasTable('wt_absences')) {
-            $table = $schema->getTable('wt_absences');
+        // Add scope column to zw_absences
+        if ($schema->hasTable('zw_absences')) {
+            $table = $schema->getTable('zw_absences');
 
             if (!$table->hasColumn('scope')) {
                 $table->addColumn('scope', Types::DECIMAL, [
@@ -52,9 +52,9 @@ class Version000007Date20260203000000 extends SimpleMigrationStep {
             }
         }
 
-        // Add scope column to wt_holidays
-        if ($schema->hasTable('wt_holidays')) {
-            $table = $schema->getTable('wt_holidays');
+        // Add scope column to zw_holidays
+        if ($schema->hasTable('zw_holidays')) {
+            $table = $schema->getTable('zw_holidays');
 
             if (!$table->hasColumn('scope')) {
                 $table->addColumn('scope', Types::DECIMAL, [
@@ -74,18 +74,18 @@ class Version000007Date20260203000000 extends SimpleMigrationStep {
         // is_half_day = 1 means half day → scope = 0.5
         // is_half_day = 0 means full day → scope = 1.0
         $this->connection->executeStatement(
-            'UPDATE `*PREFIX*wt_absences` SET `scope` = 0.50 WHERE `is_half_day` = 1'
+            'UPDATE `*PREFIX*zw_absences` SET `scope` = 0.50 WHERE `is_half_day` = 1'
         );
         $this->connection->executeStatement(
-            'UPDATE `*PREFIX*wt_absences` SET `scope` = 1.00 WHERE `is_half_day` = 0 OR `is_half_day` IS NULL'
+            'UPDATE `*PREFIX*zw_absences` SET `scope` = 1.00 WHERE `is_half_day` = 0 OR `is_half_day` IS NULL'
         );
 
         // Migrate data from is_half_day to scope for holidays
         $this->connection->executeStatement(
-            'UPDATE `*PREFIX*wt_holidays` SET `scope` = 0.50 WHERE `is_half_day` = 1'
+            'UPDATE `*PREFIX*zw_holidays` SET `scope` = 0.50 WHERE `is_half_day` = 1'
         );
         $this->connection->executeStatement(
-            'UPDATE `*PREFIX*wt_holidays` SET `scope` = 1.00 WHERE `is_half_day` = 0 OR `is_half_day` IS NULL'
+            'UPDATE `*PREFIX*zw_holidays` SET `scope` = 1.00 WHERE `is_half_day` = 0 OR `is_half_day` IS NULL'
         );
 
         $output->info('Migrated is_half_day to scope for absences and holidays');

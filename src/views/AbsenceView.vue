@@ -1,7 +1,7 @@
 <template>
     <div class="absence-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Abwesenheit') }}</h2>
+            <h2>{{ t('zeitwerk', 'Abwesenheit') }}</h2>
         </div>
 
         <div class="view-toolbar">
@@ -14,9 +14,9 @@
         <div>
             <div class="konto-stats">
             <section v-if="vacationStats" class="konto-box">
-                <h3>{{ t('worktime', 'Urlaub') }}</h3>
+                <h3>{{ t('zeitwerk', 'Urlaub') }}</h3>
                 <div class="konto-hero" :class="vacationStats.remaining >= 0 ? 'konto-hero--pos' : 'konto-hero--neg'">
-                    {{ vacationStats.remaining }} <small>/ {{ vacationStats.total }} {{ t('worktime', 'Tage übrig') }}</small>
+                    {{ vacationStats.remaining }} <small>/ {{ vacationStats.total }} {{ t('zeitwerk', 'Tage übrig') }}</small>
                 </div>
                 <div class="vac-progress"
                     role="progressbar"
@@ -26,19 +26,19 @@
                     <div class="vac-progress__fill" :style="{ width: vacationUsedPercent + '%' }" />
                 </div>
                 <div class="konto-barlab">
-                    {{ t('worktime', '{used} von {total} Tagen genommen', { used: vacationStats.used, total: vacationStats.total }) }}
+                    {{ t('zeitwerk', '{used} von {total} Tagen genommen', { used: vacationStats.used, total: vacationStats.total }) }}
                 </div>
                 <div class="konto-substats">
                     <div class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Anspruch') }}</span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Anspruch') }}</span>
                         <span class="substat__v">{{ vacationBase }}</span>
                     </div>
                     <div class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Genommen') }}</span>
-                        <span class="substat__v">{{ vacationStats.used }}<small v-if="vacationStats.pending > 0"> {{ t('worktime', '+ {days} beantragt', { days: vacationStats.pending }) }}</small></span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Genommen') }}</span>
+                        <span class="substat__v">{{ vacationStats.used }}<small v-if="vacationStats.pending > 0"> {{ t('zeitwerk', '+ {days} beantragt', { days: vacationStats.pending }) }}</small></span>
                     </div>
                     <div class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Übertrag Vorjahr') }}</span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Übertrag Vorjahr') }}</span>
                         <span class="substat__v">{{ vacationCarryover !== 0 ? vacationCarryover : '–' }}</span>
                     </div>
                 </div>
@@ -46,24 +46,24 @@
 
             <section v-if="overtime" class="konto-box">
                 <h3>
-                    {{ t('worktime', 'Überstunden') }}
-                    <InfoIcon>{{ t('worktime', 'Freizeitausgleich reduziert die Überstunden automatisch.') }}</InfoIcon>
+                    {{ t('zeitwerk', 'Überstunden') }}
+                    <InfoIcon>{{ t('zeitwerk', 'Freizeitausgleich reduziert die Überstunden automatisch.') }}</InfoIcon>
                 </h3>
                 <div class="konto-hero" :class="overtimeSaldoMin >= 0 ? 'konto-hero--pos' : 'konto-hero--neg'">
                     {{ signedHours(overtimeSaldoMin) }}
                 </div>
-                <div class="konto-barlab">{{ t('worktime', 'Stand heute') }}</div>
+                <div class="konto-barlab">{{ t('zeitwerk', 'Stand heute') }}</div>
                 <div class="konto-substats">
                     <div class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Freizeitausgleich') }}</span>
-                        <span class="substat__v">{{ compensatoryDays }} {{ t('worktime', 'Tage') }}<small v-if="compensatoryDays > 0"> (≈{{ compensatoryHoursLabel }})</small></span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Freizeitausgleich') }}</span>
+                        <span class="substat__v">{{ compensatoryDays }} {{ t('zeitwerk', 'Tage') }}<small v-if="compensatoryDays > 0"> (≈{{ compensatoryHoursLabel }})</small></span>
                     </div>
                     <div v-if="overtimePaidOutMin > 0" class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Ausgezahlt {year}', { year: currentYear }) }}</span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Ausgezahlt {year}', { year: currentYear }) }}</span>
                         <span class="substat__v">{{ signedHours(-overtimePaidOutMin) }}</span>
                     </div>
                     <div class="substat">
-                        <span class="substat__l">{{ t('worktime', 'Übertrag Vorjahr') }}</span>
+                        <span class="substat__l">{{ t('zeitwerk', 'Übertrag Vorjahr') }}</span>
                         <span class="substat__v">{{ overtimeCarryMin !== 0 ? signedHours(overtimeCarryMin) : '–' }}</span>
                     </div>
                 </div>
@@ -72,24 +72,24 @@
 
             <div class="absence-card">
             <div class="list-head">
-                <h3 class="list-title">{{ t('worktime', 'Meine Abwesenheiten') }}</h3>
+                <h3 class="list-title">{{ t('zeitwerk', 'Meine Abwesenheiten') }}</h3>
                 <NcButton type="primary" @click="startCreate">
                     <template #icon>
                         <PlusIcon :size="20" />
                     </template>
-                    {{ t('worktime', 'Neue Abwesenheit') }}
+                    {{ t('zeitwerk', 'Neue Abwesenheit') }}
                 </NcButton>
             </div>
             <NcLoadingIcon v-if="loading" :size="44" />
             <table v-else-if="absences.length > 0 || isCreating" class="absence-table">
                 <thead>
                     <tr>
-                        <th>{{ t('worktime', 'Zeitraum') }}</th>
-                        <th>{{ t('worktime', 'Art') }}</th>
-                        <th>{{ t('worktime', 'Tage') }}</th>
-                        <th>{{ t('worktime', 'Bemerkung') }}</th>
-                        <th>{{ t('worktime', 'Status') }}</th>
-                        <th>{{ t('worktime', 'Aktionen') }}</th>
+                        <th>{{ t('zeitwerk', 'Zeitraum') }}</th>
+                        <th>{{ t('zeitwerk', 'Art') }}</th>
+                        <th>{{ t('zeitwerk', 'Tage') }}</th>
+                        <th>{{ t('zeitwerk', 'Bemerkung') }}</th>
+                        <th>{{ t('zeitwerk', 'Status') }}</th>
+                        <th>{{ t('zeitwerk', 'Aktionen') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -114,73 +114,73 @@
                         @remove="confirmRemove" />
                 </tbody>
             </table>
-            <NcEmptyContent v-else :name="t('worktime', 'Keine Abwesenheiten')">
+            <NcEmptyContent v-else :name="t('zeitwerk', 'Keine Abwesenheiten')">
                 <template #icon>
                     <CalendarIcon />
                 </template>
                 <template #description>
-                    {{ t('worktime', 'Sie haben noch keine Abwesenheiten eingetragen.') }}
+                    {{ t('zeitwerk', 'Sie haben noch keine Abwesenheiten eingetragen.') }}
                 </template>
             </NcEmptyContent>
             </div>
 
             <div class="absence-legend">
-                <h3>{{ t('worktime', 'Abwesenheitstypen') }}</h3>
+                <h3>{{ t('zeitwerk', 'Abwesenheitstypen') }}</h3>
                 <div class="legend-grid">
                     <div class="legend-item">
                         <span class="legend-color type-vacation" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Urlaub') }}</strong>
-                            <span>{{ t('worktime', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Urlaub') }}</strong>
+                            <span>{{ t('zeitwerk', 'Bezahlter Erholungsurlaub. Wird vom Urlaubskonto abgezogen.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-sick" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Krankheit') }}</strong>
-                            <span>{{ t('worktime', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Krankheit') }}</strong>
+                            <span>{{ t('zeitwerk', 'Krankmeldung. Arbeitszeit gilt als geleistet, keine Urlaubstage.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-child_sick" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Kind krank') }}</strong>
-                            <span>{{ t('worktime', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Kind krank') }}</strong>
+                            <span>{{ t('zeitwerk', 'Ihr Kind ist krank. Wie Krankheit, keine Urlaubstage.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-special" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Sonderurlaub') }}</strong>
-                            <span>{{ t('worktime', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Sonderurlaub') }}</strong>
+                            <span>{{ t('zeitwerk', 'Bezahlte Freistellung, z.B. Hochzeit, Umzug oder Trauerfall.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-training" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Fortbildung') }}</strong>
-                            <span>{{ t('worktime', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Fortbildung') }}</strong>
+                            <span>{{ t('zeitwerk', 'Schulung, Seminar oder Konferenz. Zählt als Arbeitszeit.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-unpaid" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Unbezahlter Urlaub') }}</strong>
-                            <span>{{ t('worktime', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Unbezahlter Urlaub') }}</strong>
+                            <span>{{ t('zeitwerk', 'Freistellung ohne Gehalt. Reduziert die Soll-Stunden.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-compensatory" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Freizeitausgleich') }}</strong>
-                            <span>{{ t('worktime', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Freizeitausgleich') }}</strong>
+                            <span>{{ t('zeitwerk', 'Überstunden als Freizeit nehmen. Reduziert die Überstunden.') }}</span>
                         </div>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color type-company_closure" />
                         <div class="legend-text">
-                            <strong>{{ t('worktime', 'Betriebsschließung') }}</strong>
-                            <span>{{ t('worktime', 'Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.') }}</span>
+                            <strong>{{ t('zeitwerk', 'Betriebsschließung') }}</strong>
+                            <span>{{ t('zeitwerk', 'Bezahlte Freistellung bei Betriebsferien. Kein Urlaubs- oder Überstundenabzug.') }}</span>
                         </div>
                     </div>
                 </div>
@@ -358,33 +358,33 @@ export default {
         async doDeleteAbsence(id, reason) {
             try {
                 await this.deleteAbsence({ id, reason })
-                showSuccessMessage(this.t('worktime', 'Abwesenheit gelöscht'))
+                showSuccessMessage(this.t('zeitwerk', 'Abwesenheit gelöscht'))
                 this.loadData()
             } catch (error) {
                 console.error('Failed to delete absence:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Entfernen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Entfernen'))
             }
         },
         async doCreate(data) {
             try {
                 await this.createAbsence(data)
                 this.isCreating = false
-                showSuccessMessage(this.t('worktime', 'Abwesenheit erstellt'))
+                showSuccessMessage(this.t('zeitwerk', 'Abwesenheit erstellt'))
                 this.loadData()
             } catch (error) {
                 console.error('Failed to create absence:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Erstellen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Erstellen'))
             }
         },
         async doUpdate(id, data) {
             try {
                 await this.updateAbsence({ id, data })
                 this.editingId = null
-                showSuccessMessage(this.t('worktime', 'Abwesenheit aktualisiert'))
+                showSuccessMessage(this.t('zeitwerk', 'Abwesenheit aktualisiert'))
                 this.loadData()
             } catch (error) {
                 console.error('Failed to update absence:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Speichern'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Speichern'))
             }
         },
         async confirmRemove(absence) {
@@ -398,14 +398,14 @@ export default {
             }
 
             const question = shouldCancel
-                ? this.t('worktime', 'Diese Abwesenheit stornieren? Sie bleibt mit Status "Storniert" sichtbar.')
-                : this.t('worktime', 'Diese Abwesenheit löschen?')
+                ? this.t('zeitwerk', 'Diese Abwesenheit stornieren? Sie bleibt mit Status "Storniert" sichtbar.')
+                : this.t('zeitwerk', 'Diese Abwesenheit löschen?')
             const title = shouldCancel
-                ? this.t('worktime', 'Abwesenheit stornieren')
-                : this.t('worktime', 'Abwesenheit löschen')
+                ? this.t('zeitwerk', 'Abwesenheit stornieren')
+                : this.t('zeitwerk', 'Abwesenheit löschen')
             const button = shouldCancel
-                ? this.t('worktime', 'Stornieren')
-                : this.t('worktime', 'Löschen')
+                ? this.t('zeitwerk', 'Stornieren')
+                : this.t('zeitwerk', 'Löschen')
 
             const confirmed = await confirmAction(question, title, button, true)
             if (!confirmed) return
@@ -413,15 +413,15 @@ export default {
             try {
                 if (shouldCancel) {
                     await this.cancelAbsence(absence.id)
-                    showSuccessMessage(this.t('worktime', 'Abwesenheit storniert'))
+                    showSuccessMessage(this.t('zeitwerk', 'Abwesenheit storniert'))
                 } else {
                     await this.deleteAbsence(absence.id)
-                    showSuccessMessage(this.t('worktime', 'Abwesenheit gelöscht'))
+                    showSuccessMessage(this.t('zeitwerk', 'Abwesenheit gelöscht'))
                 }
                 this.loadData()
             } catch (error) {
                 console.error('Failed to remove absence:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Entfernen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Entfernen'))
             }
         },
     },

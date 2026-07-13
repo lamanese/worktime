@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -16,7 +16,7 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create wt_yearly_carryover table for overtime and vacation carryover between years.
+ * Create zw_yearly_carryover table for overtime and vacation carryover between years.
  */
 class Version000013Date20260504000000 extends SimpleMigrationStep {
 
@@ -24,8 +24,8 @@ class Version000013Date20260504000000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('wt_yearly_carryover')) {
-			$table = $schema->createTable('wt_yearly_carryover');
+		if (!$schema->hasTable('zw_yearly_carryover')) {
+			$table = $schema->createTable('zw_yearly_carryover');
 
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
@@ -65,7 +65,7 @@ class Version000013Date20260504000000 extends SimpleMigrationStep {
 			]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['employee_id', 'year'], 'wt_yc_emp_year_idx');
+			$table->addUniqueIndex(['employee_id', 'year'], 'zw_yc_emp_year_idx');
 		}
 
 		return $schema;

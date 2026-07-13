@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Controller;
+namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
-use OCA\WorkTime\Controller\OvertimePayoutController;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\OvertimePayout;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\NotFoundException;
-use OCA\WorkTime\Service\OvertimePayoutService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Controller\OvertimePayoutController;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\OvertimePayout;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\NotFoundException;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
-use OCA\WorkTime\AppInfo\Application;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\AppInfo\Application;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use OCP\IGroupManager;

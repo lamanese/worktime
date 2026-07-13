@@ -18,7 +18,7 @@
                 <div v-if="canEdit || canRemove" class="actions-buttons">
                     <NcButton v-if="canEdit"
                         type="tertiary"
-                        :aria-label="t('worktime', 'Bearbeiten')"
+                        :aria-label="t('zeitwerk', 'Bearbeiten')"
                         @click="$emit('edit')">
                         <template #icon>
                             <PencilIcon :size="20" />
@@ -77,7 +77,7 @@
                                     :options="scopeOptions"
                                     :clearable="false"
                                     class="scope-select" />
-                                <span class="days-value">{{ calculatedDays }} {{ t('worktime', 'Tage') }}</span>
+                                <span class="days-value">{{ calculatedDays }} {{ t('zeitwerk', 'Tage') }}</span>
                             </div>
                         </div>
                         <div class="field note-field">
@@ -85,21 +85,21 @@
                                 v-model="form.note"
                                 type="text"
                                 class="inline-input note-input"
-                                :placeholder="t('worktime', 'Bemerkung')"
+                                :placeholder="t('zeitwerk', 'Bemerkung')"
                                 @keydown="onKeydown">
                         </div>
                         <div class="field actions">
                             <div class="actions-buttons">
                                 <NcButton type="primary"
                                     :disabled="!isValid"
-                                    :aria-label="t('worktime', 'Speichern')"
+                                    :aria-label="t('zeitwerk', 'Speichern')"
                                     @click="save">
                                     <template #icon>
                                         <ContentSaveIcon :size="20" />
                                     </template>
                                 </NcButton>
                                 <NcButton type="tertiary"
-                                    :aria-label="t('worktime', 'Abbrechen')"
+                                    :aria-label="t('zeitwerk', 'Abbrechen')"
                                     @click="$emit('cancel')">
                                     <template #icon>
                                         <CloseIcon :size="20" />
@@ -109,10 +109,10 @@
                         </div>
                     </div>
                     <p v-if="showQuotaHint" class="quota-hint">
-                        {{ t('worktime', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
+                        {{ t('zeitwerk', 'Hinweis: ca. {requested} Werktage im Zeitraum (Resturlaub: {available}). Abgezogen werden nur Arbeitstage laut Arbeitszeitmodell.', { available: quotaAvailable.toFixed(1), requested: estimatedDays.toFixed(1) }) }}
                     </p>
                     <p v-else-if="absence && absence.status === 'approved' && absence.type !== 'sick' && absence.type !== 'child_sick'" class="edit-hint">
-                        {{ t('worktime', 'Erneute Genehmigung erforderlich') }}
+                        {{ t('zeitwerk', 'Erneute Genehmigung erforderlich') }}
                     </p>
                 </div>
             </td>
@@ -177,8 +177,8 @@ export default {
             // the end date follows the start date (single day is the default outcome).
             endTouched: false,
             scopeOptions: [
-                { id: 1.0, label: this.t('worktime', 'Ganzer Tag') },
-                { id: 0.5, label: this.t('worktime', 'Halber Tag') },
+                { id: 1.0, label: this.t('zeitwerk', 'Ganzer Tag') },
+                { id: 0.5, label: this.t('zeitwerk', 'Halber Tag') },
             ],
         }
     },
@@ -293,12 +293,12 @@ export default {
             return this.absence && this.absence.status !== 'cancelled'
         },
         removeLabel() {
-            if (!this.absence) return this.t('worktime', 'Entfernen')
+            if (!this.absence) return this.t('zeitwerk', 'Entfernen')
             if (this.absence.status === 'approved'
                 && this.absence.type !== 'sick' && this.absence.type !== 'child_sick') {
-                return this.t('worktime', 'Stornieren')
+                return this.t('zeitwerk', 'Stornieren')
             }
-            return this.t('worktime', 'Löschen')
+            return this.t('zeitwerk', 'Löschen')
         },
     },
     watch: {

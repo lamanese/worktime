@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -24,8 +24,8 @@ class Version000005Date20260202000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_archive_queue')) {
-            $table = $schema->getTable('wt_archive_queue');
+        if ($schema->hasTable('zw_archive_queue')) {
+            $table = $schema->getTable('zw_archive_queue');
 
             if (!$table->hasColumn('submitted_at')) {
                 $table->addColumn('submitted_at', Types::DATETIME, [

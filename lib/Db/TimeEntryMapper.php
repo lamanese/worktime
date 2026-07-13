@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -22,7 +22,7 @@ use OCP\IDBConnection;
 class TimeEntryMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_time_entries', TimeEntry::class);
+        parent::__construct($db, 'zw_time_entries', TimeEntry::class);
     }
 
     /**
@@ -294,7 +294,7 @@ class TimeEntryMapper extends QBMapper {
         $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
         $subQb = $this->db->getQueryBuilder();
         $subQb->select('id')
-            ->from('wt_employees')
+            ->from('zw_employees')
             ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
         $qb->select('*')

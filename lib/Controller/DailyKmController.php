@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
 use Exception;
-use OCA\WorkTime\Service\DailyKmService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Service\DailyKmService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

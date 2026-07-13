@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\EmployeeMapper;
-use OCA\WorkTime\Db\WorkSchedule;
-use OCA\WorkTime\Db\WorkScheduleMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\WorkSchedule;
+use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -125,7 +125,7 @@ class WorkScheduleService {
         try {
             $schedule = $this->mapper->insert($schedule);
         } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'wt_ws_emp_valid_idx') || str_contains($e->getMessage(), 'Unique violation')) {
+            if (str_contains($e->getMessage(), 'zw_ws_emp_valid_idx') || str_contains($e->getMessage(), 'Unique violation')) {
                 throw new ValidationException(['validFrom' => [$this->l->t('Ein Profil mit diesem Gültig-ab Datum existiert bereits')]]);
             }
             throw $e;

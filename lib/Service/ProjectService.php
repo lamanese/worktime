@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\ProjectEmployeeMapper;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\ProjectEmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 

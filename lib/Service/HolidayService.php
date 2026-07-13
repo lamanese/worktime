@@ -7,14 +7,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\CompanySettingMapper;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Holiday;
-use OCA\WorkTime\Db\HolidayMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Holiday;
+use OCA\Zeitwerk\Db\HolidayMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 

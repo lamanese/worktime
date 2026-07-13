@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;

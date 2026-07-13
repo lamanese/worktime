@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -21,7 +21,7 @@ use OCP\IDBConnection;
 class WorkScheduleMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_work_schedules', WorkSchedule::class);
+        parent::__construct($db, 'zw_work_schedules', WorkSchedule::class);
     }
 
     /**
