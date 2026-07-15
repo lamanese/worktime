@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\Holiday;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\Holiday;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -215,6 +215,41 @@ class PdfServiceTest extends TestCase {
 
         $this->assertSame('Feiertag: Testfeiertag', $byDay['18.06.2026'][0]['note']);
         $this->assertSame('-', $byDay['18.06.2026'][0]['start']);
+    }
+
+    public function testKmAndSpesenAppearOnlyOnFirstRowOfDay(): void {
+        // Zwei Buchungen am selben Tag: km/Spesen stehen (wie das Datum) nur auf
+        // der ersten Zeile des Tages; Tage ohne km/Spesen bleiben leer.
+        $entries = [
+            $this->entry('2026-06-01', '08:00', '12:00', 0, 240, 1, 'Vormittag'),
+            $this->entry('2026-06-01', '13:00', '17:00', 0, 240, 1, 'Nachmittag'),
+        ];
+
+        $rows = $this->buildDayRowsBetween->invoke(
+            $this->service, $entries, [], [], new DateTime('2026-06-01'), new DateTime('2026-06-02'), [],
+            ['2026-06-01' => 120], ['2026-06-01' => true], 14.0
+        );
+
+        $this->assertSame('120', $rows[0]['km']);
+        $this->assertSame('14,00 €', $rows[0]['spesen']);
+        $this->assertSame('', $rows[1]['km']);
+        $this->assertSame('', $rows[1]['spesen']);
+        $this->assertSame('', $rows[2]['km']);
+        $this->assertSame('', $rows[2]['spesen']);
+    }
+
+    public function testKmShownOnExternAbsenceMarkerRow(): void {
+        // km an einem reinen Abwesenheitstag (externer Typ) erscheinen in der
+        // Marker-Zeile des Tages.
+        $absences = [$this->absence(Absence::TYPE_TRAINING, '2026-06-02', '2026-06-02', Absence::STATUS_APPROVED)];
+
+        $rows = $this->buildDayRowsBetween->invoke(
+            $this->service, [], $absences, [], new DateTime('2026-06-02'), new DateTime('2026-06-02'), [],
+            ['2026-06-02' => 50], [], 14.0
+        );
+
+        $this->assertSame('50', $rows[0]['km']);
+        $this->assertSame('-', $rows[0]['start']);
     }
 
     public function testWeekendRowHasDashesAndNoLabel(): void {

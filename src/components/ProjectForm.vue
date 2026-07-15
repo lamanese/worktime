@@ -1,16 +1,16 @@
 <template>
     <div class="project-form">
         <div class="project-form-header">
-            <h3>{{ isEdit ? t('worktime', 'Projekt bearbeiten') : t('worktime', 'Neues Projekt') }}</h3>
+            <h3>{{ isEdit ? t('zeitwerk', 'Projekt bearbeiten') : t('zeitwerk', 'Neues Projekt') }}</h3>
             <NcCheckboxRadioSwitch :checked.sync="form.isActive" type="switch">
-                {{ t('worktime', 'Aktiv') }}
+                {{ t('zeitwerk', 'Aktiv') }}
             </NcCheckboxRadioSwitch>
         </div>
-        <p class="header-hint">{{ t('worktime', 'Inaktive Projekte stehen nicht mehr zur Auswahl.') }}</p>
+        <p class="header-hint">{{ t('zeitwerk', 'Inaktive Projekte stehen nicht mehr zur Auswahl.') }}</p>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="projectName">{{ t('worktime', 'Name') }} *</label>
+                <label for="projectName">{{ t('zeitwerk', 'Name') }} *</label>
                 <input id="projectName"
                     v-model="form.name"
                     type="text"
@@ -18,26 +18,26 @@
                     required>
             </div>
             <div class="form-group">
-                <label for="projectCode">{{ t('worktime', 'Projektcode') }}</label>
+                <label for="projectCode">{{ t('zeitwerk', 'Projektcode') }}</label>
                 <input id="projectCode"
                     v-model="form.code"
                     type="text"
                     class="input-field"
-                    :placeholder="t('worktime', 'z.B. PRJ-001')">
+                    :placeholder="t('zeitwerk', 'z.B. PRJ-001')">
             </div>
         </div>
 
         <div class="form-group">
-            <label for="projectCustomer">{{ t('worktime', 'Kunde') }}</label>
+            <label for="projectCustomer">{{ t('zeitwerk', 'Kunde') }}</label>
             <input id="projectCustomer"
                 v-model="form.customer"
                 type="text"
                 class="input-field"
-                :placeholder="t('worktime', 'Optional, z.B. für die Auswertung')">
+                :placeholder="t('zeitwerk', 'Optional, z.B. für die Auswertung')">
         </div>
 
         <div class="form-group">
-            <label for="projectDescription">{{ t('worktime', 'Beschreibung') }}</label>
+            <label for="projectDescription">{{ t('zeitwerk', 'Beschreibung') }}</label>
             <textarea id="projectDescription"
                 v-model="form.description"
                 class="input-field textarea-field"
@@ -45,7 +45,7 @@
         </div>
 
         <div class="form-group">
-            <label for="projectColor">{{ t('worktime', 'Farbe') }}</label>
+            <label for="projectColor">{{ t('zeitwerk', 'Farbe') }}</label>
             <div class="color-picker-row">
                 <input id="projectColor"
                     v-model="form.color"
@@ -54,24 +54,36 @@
                 <NcButton v-if="form.color"
                     type="tertiary"
                     @click="form.color = null">
-                    {{ t('worktime', 'Zurücksetzen') }}
+                    {{ t('zeitwerk', 'Zurücksetzen') }}
                 </NcButton>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-group-label">{{ t('worktime', 'Buchungsberechtigung') }}</label>
+            <label class="form-group-label">{{ t('zeitwerk', 'Aussendienst & Extern') }}</label>
+            <NcCheckboxRadioSwitch :checked.sync="form.isFieldWork" type="switch">
+                {{ t('zeitwerk', 'Aussendienst (Spesen)') }}
+            </NcCheckboxRadioSwitch>
+            <p class="header-hint">{{ t('zeitwerk', 'Tage mit Buchung auf diesem Projekt lösen ab der eingestellten Stundenschwelle die Spesen-Pauschale aus.') }}</p>
+            <NcCheckboxRadioSwitch :checked.sync="form.isExtern" type="switch">
+                {{ t('zeitwerk', 'Extern (Kilometer)') }}
+            </NcCheckboxRadioSwitch>
+            <p class="header-hint">{{ t('zeitwerk', 'An Tagen mit Buchung auf diesem Projekt können gefahrene Kilometer erfasst werden.') }}</p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-group-label">{{ t('zeitwerk', 'Buchungsberechtigung') }}</label>
             <NcCheckboxRadioSwitch :checked.sync="bookingMode"
                 value="all"
                 name="project-booking"
                 type="radio">
-                {{ t('worktime', 'Alle Mitarbeitenden') }}
+                {{ t('zeitwerk', 'Alle Mitarbeitenden') }}
             </NcCheckboxRadioSwitch>
             <NcCheckboxRadioSwitch :checked.sync="bookingMode"
                 value="selected"
                 name="project-booking"
                 type="radio">
-                {{ t('worktime', 'Nur ausgewählte Mitarbeitende') }}
+                {{ t('zeitwerk', 'Nur ausgewählte Mitarbeitende') }}
             </NcCheckboxRadioSwitch>
 
             <div v-if="bookingMode === 'selected'" class="member-select">
@@ -80,16 +92,16 @@
                     :options="employeeOptions"
                     :multiple="true"
                     :close-on-select="false"
-                    :placeholder="t('worktime', 'Mitarbeitende auswählen')" />
+                    :placeholder="t('zeitwerk', 'Mitarbeitende auswählen')" />
             </div>
         </div>
 
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
-                {{ t('worktime', 'Abbrechen') }}
+                {{ t('zeitwerk', 'Abbrechen') }}
             </NcButton>
             <NcButton type="primary" :disabled="!isValid" @click="save">
-                {{ t('worktime', 'Speichern') }}
+                {{ t('zeitwerk', 'Speichern') }}
             </NcButton>
         </div>
     </div>
@@ -126,6 +138,8 @@ export default {
                 isActive: true,
                 isBillable: true,
                 allEmployees: true,
+                isFieldWork: false,
+                isExtern: false,
                 memberIds: [],
             },
         }
@@ -175,6 +189,8 @@ export default {
                         isActive: project.isActive ?? true,
                         isBillable: project.isBillable ?? true,
                         allEmployees: project.allEmployees ?? true,
+                        isFieldWork: project.isFieldWork ?? false,
+                        isExtern: project.isExtern ?? false,
                         memberIds: Array.isArray(project.memberIds) ? [...project.memberIds] : [],
                     }
                 } else {
@@ -201,6 +217,8 @@ export default {
                 isActive: true,
                 isBillable: true,
                 allEmployees: true,
+                isFieldWork: false,
+                isExtern: false,
                 memberIds: [],
             }
         },
@@ -218,20 +236,22 @@ export default {
                     isActive: this.form.isActive,
                     isBillable: this.form.isBillable,
                     allEmployees: this.form.allEmployees,
+                    isFieldWork: this.form.isFieldWork,
+                    isExtern: this.form.isExtern,
                     memberIds: this.form.allEmployees ? [] : this.form.memberIds,
                 }
 
                 if (this.isEdit) {
                     await this.updateProject({ id: this.project.id, data })
-                    showSuccessMessage(this.t('worktime', 'Projekt aktualisiert'))
+                    showSuccessMessage(this.t('zeitwerk', 'Projekt aktualisiert'))
                 } else {
                     await this.createProject(data)
-                    showSuccessMessage(this.t('worktime', 'Projekt erstellt'))
+                    showSuccessMessage(this.t('zeitwerk', 'Projekt erstellt'))
                 }
 
                 this.$emit('saved')
             } catch (error) {
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Speichern'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Speichern'))
             }
         },
     },

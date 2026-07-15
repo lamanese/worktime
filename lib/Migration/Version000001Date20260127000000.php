@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -28,8 +28,8 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
         $schema = $schemaClosure();
 
         // Employees table
-        if (!$schema->hasTable('wt_employees')) {
-            $table = $schema->createTable('wt_employees');
+        if (!$schema->hasTable('zw_employees')) {
+            $table = $schema->createTable('zw_employees');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -91,14 +91,14 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['user_id'], 'wt_emp_user_idx');
-            $table->addIndex(['supervisor_id'], 'wt_emp_super_idx');
-            $table->addIndex(['is_active'], 'wt_emp_active_idx');
+            $table->addUniqueIndex(['user_id'], 'zw_emp_user_idx');
+            $table->addIndex(['supervisor_id'], 'zw_emp_super_idx');
+            $table->addIndex(['is_active'], 'zw_emp_active_idx');
         }
 
         // Time entries table
-        if (!$schema->hasTable('wt_time_entries')) {
-            $table = $schema->createTable('wt_time_entries');
+        if (!$schema->hasTable('zw_time_entries')) {
+            $table = $schema->createTable('zw_time_entries');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -142,16 +142,16 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['employee_id'], 'wt_te_emp_idx');
-            $table->addIndex(['date'], 'wt_te_date_idx');
-            $table->addIndex(['employee_id', 'date'], 'wt_te_emp_date_idx');
-            $table->addIndex(['project_id'], 'wt_te_proj_idx');
-            $table->addIndex(['status'], 'wt_te_status_idx');
+            $table->addIndex(['employee_id'], 'zw_te_emp_idx');
+            $table->addIndex(['date'], 'zw_te_date_idx');
+            $table->addIndex(['employee_id', 'date'], 'zw_te_emp_date_idx');
+            $table->addIndex(['project_id'], 'zw_te_proj_idx');
+            $table->addIndex(['status'], 'zw_te_status_idx');
         }
 
         // Absences table
-        if (!$schema->hasTable('wt_absences')) {
-            $table = $schema->createTable('wt_absences');
+        if (!$schema->hasTable('zw_absences')) {
+            $table = $schema->createTable('zw_absences');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -197,15 +197,15 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['employee_id'], 'wt_abs_emp_idx');
-            $table->addIndex(['type'], 'wt_abs_type_idx');
-            $table->addIndex(['start_date', 'end_date'], 'wt_abs_dates_idx');
-            $table->addIndex(['status'], 'wt_abs_status_idx');
+            $table->addIndex(['employee_id'], 'zw_abs_emp_idx');
+            $table->addIndex(['type'], 'zw_abs_type_idx');
+            $table->addIndex(['start_date', 'end_date'], 'zw_abs_dates_idx');
+            $table->addIndex(['status'], 'zw_abs_status_idx');
         }
 
         // Holidays table
-        if (!$schema->hasTable('wt_holidays')) {
-            $table = $schema->createTable('wt_holidays');
+        if (!$schema->hasTable('zw_holidays')) {
+            $table = $schema->createTable('zw_holidays');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -234,13 +234,13 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['date', 'federal_state'], 'wt_hol_date_state_idx');
-            $table->addIndex(['year', 'federal_state'], 'wt_hol_year_state_idx');
+            $table->addUniqueIndex(['date', 'federal_state'], 'zw_hol_date_state_idx');
+            $table->addIndex(['year', 'federal_state'], 'zw_hol_year_state_idx');
         }
 
         // Projects table
-        if (!$schema->hasTable('wt_projects')) {
-            $table = $schema->createTable('wt_projects');
+        if (!$schema->hasTable('zw_projects')) {
+            $table = $schema->createTable('zw_projects');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -277,13 +277,13 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['is_active'], 'wt_proj_active_idx');
-            $table->addIndex(['code'], 'wt_proj_code_idx');
+            $table->addIndex(['is_active'], 'zw_proj_active_idx');
+            $table->addIndex(['code'], 'zw_proj_code_idx');
         }
 
         // Audit logs table
-        if (!$schema->hasTable('wt_audit_logs')) {
-            $table = $schema->createTable('wt_audit_logs');
+        if (!$schema->hasTable('zw_audit_logs')) {
+            $table = $schema->createTable('zw_audit_logs');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -319,14 +319,14 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['user_id'], 'wt_audit_user_idx');
-            $table->addIndex(['entity_type', 'entity_id'], 'wt_audit_entity_idx');
-            $table->addIndex(['created_at'], 'wt_audit_date_idx');
+            $table->addIndex(['user_id'], 'zw_audit_user_idx');
+            $table->addIndex(['entity_type', 'entity_id'], 'zw_audit_entity_idx');
+            $table->addIndex(['created_at'], 'zw_audit_date_idx');
         }
 
         // Company settings table
-        if (!$schema->hasTable('wt_company_settings')) {
-            $table = $schema->createTable('wt_company_settings');
+        if (!$schema->hasTable('zw_company_settings')) {
+            $table = $schema->createTable('zw_company_settings');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -344,7 +344,7 @@ class Version000001Date20260127000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['setting_key'], 'wt_settings_key_idx');
+            $table->addUniqueIndex(['setting_key'], 'zw_settings_key_idx');
         }
 
         return $schema;

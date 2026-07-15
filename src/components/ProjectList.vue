@@ -4,10 +4,10 @@
             <thead>
                 <tr>
                     <th class="color-col"></th>
-                    <th>{{ t('worktime', 'Name') }}</th>
-                    <th>{{ t('worktime', 'Projektcode') }}</th>
-                    <th>{{ t('worktime', 'Status') }}</th>
-                    <th class="actions-col">{{ t('worktime', 'Aktionen') }}</th>
+                    <th>{{ t('zeitwerk', 'Name') }}</th>
+                    <th>{{ t('zeitwerk', 'Projektcode') }}</th>
+                    <th>{{ t('zeitwerk', 'Status') }}</th>
+                    <th class="actions-col">{{ t('zeitwerk', 'Aktionen') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,19 +24,19 @@
                     <td>{{ project.code || '-' }}</td>
                     <td>
                         <span :class="['status-badge', project.isActive ? 'active' : 'inactive']">
-                            {{ project.isActive ? t('worktime', 'Aktiv') : t('worktime', 'Inaktiv') }}
+                            {{ project.isActive ? t('zeitwerk', 'Aktiv') : t('zeitwerk', 'Inaktiv') }}
                         </span>
                     </td>
                     <td class="actions-col">
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Bearbeiten')"
+                            :aria-label="t('zeitwerk', 'Bearbeiten')"
                             @click="$emit('edit', project)">
                             <template #icon>
                                 <Pencil :size="20" />
                             </template>
                         </NcButton>
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Löschen')"
+                            :aria-label="t('zeitwerk', 'Löschen')"
                             @click="confirmDelete(project)">
                             <template #icon>
                                 <Close :size="20" />
@@ -48,24 +48,24 @@
         </table>
 
         <NcEmptyContent v-else
-            :name="t('worktime', 'Keine Projekte')"
-            :description="t('worktime', 'Legen Sie Projekte an, um projektbezogene Zeiterfassung zu nutzen.')">
+            :name="t('zeitwerk', 'Keine Projekte')"
+            :description="t('zeitwerk', 'Legen Sie Projekte an, um projektbezogene Zeiterfassung zu nutzen.')">
             <template #icon>
                 <FolderOutline :size="64" />
             </template>
         </NcEmptyContent>
 
         <NcDialog v-if="showDeleteDialog"
-            :name="t('worktime', 'Projekt löschen?')"
+            :name="t('zeitwerk', 'Projekt löschen?')"
             @close="showDeleteDialog = false">
-            <p>{{ t('worktime', 'Möchten Sie das Projekt "{name}" wirklich löschen?', { name: projectToDelete?.name }) }}</p>
-            <p class="delete-warning">{{ t('worktime', 'Diese Aktion kann nicht rückgängig gemacht werden.') }}</p>
+            <p>{{ t('zeitwerk', 'Möchten Sie das Projekt "{name}" wirklich löschen?', { name: projectToDelete?.name }) }}</p>
+            <p class="delete-warning">{{ t('zeitwerk', 'Diese Aktion kann nicht rückgängig gemacht werden.') }}</p>
             <template #actions>
                 <NcButton type="tertiary" @click="showDeleteDialog = false">
-                    {{ t('worktime', 'Abbrechen') }}
+                    {{ t('zeitwerk', 'Abbrechen') }}
                 </NcButton>
                 <NcButton type="error" @click="deleteConfirmed">
-                    {{ t('worktime', 'Löschen') }}
+                    {{ t('zeitwerk', 'Löschen') }}
                 </NcButton>
             </template>
         </NcDialog>

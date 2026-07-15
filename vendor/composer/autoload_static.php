@@ -9,12 +9,12 @@ class ComposerStaticInit7c4f01240d3af22a5850d714edafad3f
     public static $prefixLengthsPsr4 = array (
         'O' =>
         array (
-            'OCA\\WorkTime\\' => 13,
+            'OCA\\Zeitwerk\\' => 13,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'OCA\\WorkTime\\' =>
+        'OCA\\Zeitwerk\\' =>
         array (
             0 => __DIR__ . '/../..' . '/lib',
         ),

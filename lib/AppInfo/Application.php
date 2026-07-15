@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\AppInfo;
+namespace OCA\Zeitwerk\AppInfo;
 
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
-use OCA\WorkTime\Notification\Notifier;
+use OCA\Zeitwerk\Notification\Notifier;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 class Application extends App implements IBootstrap {
-    public const APP_ID = 'worktime';
+    public const APP_ID = 'zeitwerk';
 
     public function __construct() {
         parent::__construct(self::APP_ID);

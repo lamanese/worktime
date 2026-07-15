@@ -7,18 +7,18 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
-use OCA\WorkTime\Db\ArchiveQueue;
-use OCA\WorkTime\Db\ArchiveQueueMapper;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Service\ArchiveService;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\TimeEntryService;
+use OCA\Zeitwerk\Db\ArchiveQueue;
+use OCA\Zeitwerk\Db\ArchiveQueueMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Service\ArchiveService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\TimeEntryService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

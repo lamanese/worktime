@@ -1,22 +1,22 @@
 <template>
     <div class="evaluation-view">
         <div class="view-header">
-            <h2>{{ t('worktime', 'Auswertung') }}</h2>
+            <h2>{{ t('zeitwerk', 'Auswertung') }}</h2>
         </div>
 
         <div class="view-toolbar">
-            <div class="layout-seg" role="group" :aria-label="t('worktime', 'Ansicht')">
+            <div class="layout-seg" role="group" :aria-label="t('zeitwerk', 'Ansicht')">
                 <button class="seg-btn" :class="{ active: mode === 'mitarbeiter' }" @click="mode = 'mitarbeiter'">
                     <AccountMultipleIcon :size="18" />
-                    {{ t('worktime', 'Mitarbeiter') }}
+                    {{ t('zeitwerk', 'Mitarbeiter') }}
                 </button>
                 <button class="seg-btn" :class="{ active: mode === 'projekte' }" @click="mode = 'projekte'">
                     <FolderOutlineIcon :size="18" />
-                    {{ t('worktime', 'Projekte') }}
+                    {{ t('zeitwerk', 'Projekte') }}
                 </button>
             </div>
 
-            <div v-show="mode === 'projekte'" class="layout-seg" role="group" :aria-label="t('worktime', 'Zeitraum')">
+            <div v-show="mode === 'projekte'" class="layout-seg" role="group" :aria-label="t('zeitwerk', 'Zeitraum')">
                 <button v-for="p in periods"
                     :key="p.value"
                     class="seg-btn"
@@ -30,11 +30,11 @@
             <div class="view-header__nav">
                 <YearPicker v-show="mode === 'mitarbeiter'" :year="teamYear" @update="onTeamYearChange" />
                 <div v-show="mode === 'projekte'" class="period-nav">
-                    <NcButton type="tertiary" :aria-label="t('worktime', 'Zurück')" @click="shiftPeriod(-1)">
+                    <NcButton type="tertiary" :aria-label="t('zeitwerk', 'Zurück')" @click="shiftPeriod(-1)">
                         <template #icon><ChevronLeftIcon :size="20" /></template>
                     </NcButton>
                     <span class="period-nav__label">{{ periodLabel }}</span>
-                    <NcButton type="tertiary" :aria-label="t('worktime', 'Weiter')" @click="shiftPeriod(1)">
+                    <NcButton type="tertiary" :aria-label="t('zeitwerk', 'Weiter')" @click="shiftPeriod(1)">
                         <template #icon><ChevronRightIcon :size="20" /></template>
                     </NcButton>
                 </div>
@@ -45,16 +45,20 @@
         <div v-show="mode === 'mitarbeiter'" class="ev-mitarbeiter">
             <div v-if="teamReport.length > 0" class="ev-kpis">
                 <div class="kpi-card">
-                    <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
+                    <div class="kpi-lab">{{ t('zeitwerk', 'Mitarbeitende') }}</div>
                     <div class="kpi-num">{{ teamKpis.count }}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-lab">{{ t('worktime', 'Überstunden gesamt') }}</div>
+                    <div class="kpi-lab">{{ t('zeitwerk', 'Überstunden gesamt') }}</div>
                     <div class="kpi-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-lab">{{ t('worktime', 'Urlaub genommen') }}</div>
-                    <div class="kpi-num">{{ teamKpis.vacationUsed }} <span class="kpi-sub">/ {{ teamKpis.vacationTotal }} {{ t('worktime', 'Tage') }}</span></div>
+                    <div class="kpi-lab">{{ t('zeitwerk', 'Urlaub genommen') }}</div>
+                    <div class="kpi-num">{{ teamKpis.vacationUsed }} <span class="kpi-sub">/ {{ teamKpis.vacationTotal }} {{ t('zeitwerk', 'Tage') }}</span></div>
+                </div>
+                <div v-if="teamKpis.allowanceTotal > 0" class="kpi-card">
+                    <div class="kpi-lab">{{ t('zeitwerk', 'Spesen & Kilometer') }}</div>
+                    <div class="kpi-num">{{ formatEuro(teamKpis.allowanceTotal) }}</div>
                 </div>
             </div>
             <NcLoadingIcon v-if="teamLoading" :size="44" />
@@ -63,11 +67,11 @@
                     <div class="layout-seg" role="group">
                         <button class="seg-btn" :class="{ active: teamSubtab === 'overview' }" @click="teamSubtab = 'overview'">
                             <ViewListOutlineIcon :size="18" />
-                            {{ t('worktime', 'Übersicht') }}
+                            {{ t('zeitwerk', 'Übersicht') }}
                         </button>
                         <button class="seg-btn" :class="{ active: teamSubtab === 'months' }" @click="teamSubtab = 'months'">
                             <CalendarTextOutlineIcon :size="18" />
-                            {{ t('worktime', 'Monatsdetail') }}
+                            {{ t('zeitwerk', 'Monatsdetail') }}
                         </button>
                     </div>
                 </div>
@@ -77,10 +81,11 @@
                     <table class="ev-table">
                         <thead>
                             <tr>
-                                <th class="sortable" @click="teamSortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ teamSortArrow('name') }}</th>
-                                <th class="ev-num sortable" @click="teamSortBy('overtime')">{{ t('worktime', 'Überstunden') }}{{ teamSortArrow('overtime') }}</th>
-                                <th class="sortable" @click="teamSortBy('vacation')">{{ t('worktime', 'Resturlaub') }}{{ teamSortArrow('vacation') }}</th>
-                                <th>{{ t('worktime', 'Status') }}</th>
+                                <th class="sortable" @click="teamSortBy('name')">{{ t('zeitwerk', 'Mitarbeiter') }}{{ teamSortArrow('name') }}</th>
+                                <th class="ev-num sortable" @click="teamSortBy('overtime')">{{ t('zeitwerk', 'Überstunden') }}{{ teamSortArrow('overtime') }}</th>
+                                <th class="sortable" @click="teamSortBy('vacation')">{{ t('zeitwerk', 'Resturlaub') }}{{ teamSortArrow('vacation') }}</th>
+                                <th class="ev-num sortable" @click="teamSortBy('allowance')">{{ t('zeitwerk', 'Spesen & km') }}{{ teamSortArrow('allowance') }}</th>
+                                <th>{{ t('zeitwerk', 'Status') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -90,7 +95,7 @@
                                         <NcAvatar :user="row.userId" :display-name="row.name" :size="30" />
                                         <div>
                                             <div class="ev-emp-name">{{ row.name }}</div>
-                                            <div class="ev-emp-sub">{{ weeklyLabel(row.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
+                                            <div class="ev-emp-sub">{{ weeklyLabel(row.weeklyHours) }} {{ t('zeitwerk', 'Std./Woche') }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -101,17 +106,25 @@
                                         <span class="ev-vac-track"><span class="ev-vac-fill" :style="{ width: row.vacationPercent + '%' }" /></span>
                                     </div>
                                 </td>
+                                <td class="ev-num">
+                                    <template v-if="row.allowanceTotal > 0">
+                                        <div>{{ formatEuro(row.allowanceTotal) }}</div>
+                                        <div class="ev-emp-sub">{{ allowanceSub(row.allowance) }}</div>
+                                    </template>
+                                    <span v-else class="ev-muted">–</span>
+                                </td>
                                 <td>
-                                    <span v-if="row.openMonths > 0" class="ev-stchip ev-stchip--open">{{ t('worktime', 'Offen: {n}', { n: row.openMonths }) }}</span>
-                                    <span v-else class="ev-stchip ev-stchip--ok">{{ t('worktime', '✓ aktuell') }}</span>
+                                    <span v-if="row.openMonths > 0" class="ev-stchip ev-stchip--open">{{ t('zeitwerk', 'Offen: {n}', { n: row.openMonths }) }}</span>
+                                    <span v-else class="ev-stchip ev-stchip--ok">{{ t('zeitwerk', '✓ aktuell') }}</span>
                                 </td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td>{{ t('worktime', 'Team gesamt') }}</td>
+                                <td>{{ t('zeitwerk', 'Team gesamt') }}</td>
                                 <td class="ev-num" :class="teamKpis.overtimeMinutes >= 0 ? 'kpi-pos' : 'kpi-neg'">{{ signedHours(teamKpis.overtimeMinutes) }}</td>
                                 <td>{{ teamKpis.vacationTotal - teamKpis.vacationUsed }} / {{ teamKpis.vacationTotal }}</td>
+                                <td class="ev-num">{{ teamKpis.allowanceTotal > 0 ? formatEuro(teamKpis.allowanceTotal) : '–' }}</td>
                                 <td />
                             </tr>
                         </tfoot>
@@ -123,18 +136,18 @@
                     <TeamYearTable :report="teamReport" :year="teamYear" />
                 </div>
             </template>
-            <NcEmptyContent v-else :name="t('worktime', 'Kein Team')">
+            <NcEmptyContent v-else :name="t('zeitwerk', 'Kein Team')">
                 <template #icon><AccountGroupIcon /></template>
-                <template #description>{{ t('worktime', 'Sie haben keine Teammitglieder.') }}</template>
+                <template #description>{{ t('zeitwerk', 'Sie haben keine Teammitglieder.') }}</template>
             </NcEmptyContent>
         </div>
 
         <div v-show="mode === 'projekte'">
         <div class="ev-filter">
-            <div class="ev-filter__label">{{ t('worktime', 'Projekte') }}</div>
+            <div class="ev-filter__label">{{ t('zeitwerk', 'Projekte') }}</div>
             <div class="ev-chips">
                 <button class="ev-chip ev-chip--all" :class="{ on: !selectedProjects.size }" @click="clearProjects">
-                    {{ t('worktime', 'Alle') }}
+                    {{ t('zeitwerk', 'Alle') }}
                 </button>
                 <button v-for="p in visibleProjects.list"
                     :key="'p' + p.id"
@@ -148,20 +161,20 @@
                     <span v-if="selectedProjects.has(p.id)" class="ev-x">×</span>
                 </button>
                 <button v-if="visibleProjects.hidden" class="ev-chip ev-chip--more" @click="projectsExpanded = true">
-                    {{ t('worktime', '+ {count} weitere', { count: visibleProjects.hidden }) }}
+                    {{ t('zeitwerk', '+ {count} weitere', { count: visibleProjects.hidden }) }}
                 </button>
                 <label class="ev-search">
                     <MagnifyIcon :size="16" />
-                    <input v-model="projectSearch" type="text" :placeholder="t('worktime', 'Projekt suchen …')">
+                    <input v-model="projectSearch" type="text" :placeholder="t('zeitwerk', 'Projekt suchen …')">
                 </label>
             </div>
         </div>
 
         <div class="ev-filter">
-            <div class="ev-filter__label">{{ t('worktime', 'Mitarbeitende') }}</div>
+            <div class="ev-filter__label">{{ t('zeitwerk', 'Mitarbeitende') }}</div>
             <div class="ev-chips">
                 <button class="ev-chip ev-chip--all" :class="{ on: !selectedEmployees.size }" @click="clearEmployees">
-                    {{ t('worktime', 'Alle') }}
+                    {{ t('zeitwerk', 'Alle') }}
                 </button>
                 <button v-for="e in visibleEmployees.list"
                     :key="'e' + e.id"
@@ -173,27 +186,31 @@
                     <span v-if="selectedEmployees.has(e.id)" class="ev-x">×</span>
                 </button>
                 <button v-if="visibleEmployees.hidden" class="ev-chip ev-chip--more" @click="employeesExpanded = true">
-                    {{ t('worktime', '+ {count} weitere', { count: visibleEmployees.hidden }) }}
+                    {{ t('zeitwerk', '+ {count} weitere', { count: visibleEmployees.hidden }) }}
                 </button>
                 <label class="ev-search">
                     <MagnifyIcon :size="16" />
-                    <input v-model="employeeSearch" type="text" :placeholder="t('worktime', 'Mitarbeiter suchen …')">
+                    <input v-model="employeeSearch" type="text" :placeholder="t('zeitwerk', 'Mitarbeiter suchen …')">
                 </label>
             </div>
         </div>
 
         <div class="ev-kpis">
             <div class="kpi-card">
-                <div class="kpi-lab">{{ t('worktime', 'Gebuchte Stunden') }}</div>
+                <div class="kpi-lab">{{ t('zeitwerk', 'Gebuchte Stunden') }}</div>
                 <div class="kpi-num">{{ hours(totals.totalMinutes) }}</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-lab">{{ t('worktime', 'Projekte') }}</div>
+                <div class="kpi-lab">{{ t('zeitwerk', 'Projekte') }}</div>
                 <div class="kpi-num">{{ totals.projectCount }}</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-lab">{{ t('worktime', 'Mitarbeitende') }}</div>
+                <div class="kpi-lab">{{ t('zeitwerk', 'Mitarbeitende') }}</div>
                 <div class="kpi-num">{{ totals.employeeCount }}</div>
+            </div>
+            <div v-if="allowanceKpiTotal > 0" class="kpi-card">
+                <div class="kpi-lab">{{ t('zeitwerk', 'Spesen & Kilometer') }}</div>
+                <div class="kpi-num">{{ formatEuro(allowanceKpiTotal) }}</div>
             </div>
         </div>
 
@@ -201,21 +218,21 @@
             <div class="layout-seg" role="group">
                 <button class="seg-btn" :class="{ active: tab === 'agg' }" @click="tab = 'agg'">
                     <ChartBarIcon :size="18" />
-                    {{ t('worktime', 'Aggregiert') }}
+                    {{ t('zeitwerk', 'Aggregiert') }}
                 </button>
                 <button class="seg-btn" :class="{ active: tab === 'detail' }" @click="tab = 'detail'">
                     <FormatListBulletedIcon :size="18" />
-                    {{ t('worktime', 'Einzelbuchungen') }}
+                    {{ t('zeitwerk', 'Einzelbuchungen') }}
                 </button>
             </div>
             <div class="ev-export">
                 <NcButton type="secondary" @click="exportData('csv')">
                     <template #icon><DownloadIcon :size="18" /></template>
-                    {{ t('worktime', 'CSV') }}
+                    {{ t('zeitwerk', 'CSV') }}
                 </NcButton>
                 <NcButton type="secondary" @click="exportData('pdf')">
                     <template #icon><DownloadIcon :size="18" /></template>
-                    {{ t('worktime', 'PDF') }}
+                    {{ t('zeitwerk', 'PDF') }}
                 </NcButton>
             </div>
         </div>
@@ -227,16 +244,17 @@
         <table class="ev-table">
             <thead>
                 <tr>
-                    <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
-                    <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
-                    <th>{{ t('worktime', 'Anteil') }}</th>
+                    <th class="sortable" @click="sortBy('name')">{{ t('zeitwerk', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
+                    <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('zeitwerk', 'Stunden') }}{{ sortArrow('minutes') }}</th>
+                    <th>{{ t('zeitwerk', 'Anteil') }}</th>
+                    <th v-if="allowanceKpiTotal > 0" class="ev-num">{{ t('zeitwerk', 'Spesen & km') }}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="r in aggRows" :key="r.id">
                     <td>
                         <div class="ev-emp-name">{{ r.name }}</div>
-                        <div v-if="weeklyLabel(r.weeklyHours)" class="ev-emp-sub">{{ weeklyLabel(r.weeklyHours) }} {{ t('worktime', 'Std./Woche') }}</div>
+                        <div v-if="weeklyLabel(r.weeklyHours)" class="ev-emp-sub">{{ weeklyLabel(r.weeklyHours) }} {{ t('zeitwerk', 'Std./Woche') }}</div>
                     </td>
                     <td class="ev-num">{{ hours(r.minutes) }}</td>
                     <td>
@@ -245,16 +263,27 @@
                             <span class="ev-muted">{{ pct(r.minutes) }} %</span>
                         </div>
                     </td>
+                    <td v-if="allowanceKpiTotal > 0" class="ev-num">
+                        <template v-if="r.allowance && r.allowance.total > 0">
+                            <div>{{ formatEuro(r.allowance.total) }}</div>
+                            <div class="ev-emp-sub">{{ allowanceSub(r.allowance) }}</div>
+                        </template>
+                        <span v-else class="ev-muted">–</span>
+                    </td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
-                    <td>{{ t('worktime', 'Gesamt') }}</td>
+                    <td>{{ t('zeitwerk', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
                     <td class="ev-muted">100 %</td>
+                    <td v-if="allowanceKpiTotal > 0" class="ev-num">{{ formatEuro(allowanceKpiTotal) }}</td>
                 </tr>
             </tfoot>
         </table>
+        <p v-if="allowanceKpiTotal > 0" class="ev-note">
+            {{ t('zeitwerk', 'Spesen & Kilometer gelten je Mitarbeiter für den gesamten Zeitraum, unabhängig von der Projektauswahl.') }}
+        </p>
         </div>
 
         <!-- Einzelbuchungen -->
@@ -262,12 +291,13 @@
         <table class="ev-table ev-entries">
             <thead>
                 <tr>
-                    <th class="sortable" @click="sortBy('date')">{{ t('worktime', 'Datum') }}{{ sortArrow('date') }}</th>
-                    <th>{{ t('worktime', 'Projekt') }}</th>
-                    <th>{{ t('worktime', 'Kunde') }}</th>
-                    <th class="sortable" @click="sortBy('name')">{{ t('worktime', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
-                    <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('worktime', 'Stunden') }}{{ sortArrow('minutes') }}</th>
-                    <th>{{ t('worktime', 'Beschreibung') }}</th>
+                    <th class="sortable" @click="sortBy('date')">{{ t('zeitwerk', 'Datum') }}{{ sortArrow('date') }}</th>
+                    <th>{{ t('zeitwerk', 'Projekt') }}</th>
+                    <th class="sortable" @click="sortBy('name')">{{ t('zeitwerk', 'Mitarbeiter') }}{{ sortArrow('name') }}</th>
+                    <th class="ev-num sortable" @click="sortBy('minutes')">{{ t('zeitwerk', 'Stunden') }}{{ sortArrow('minutes') }}</th>
+                    <th class="ev-num">{{ t('zeitwerk', 'Kilometergeld') }}</th>
+                    <th class="ev-num">{{ t('zeitwerk', 'Spesen') }}</th>
+                    <th>{{ t('zeitwerk', 'Beschreibung') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -275,18 +305,21 @@
                     <td>{{ formatDate(entry.date) }}</td>
                     <td class="ev-name">
                         <span class="ev-cdot" :style="{ background: entry.color || 'var(--color-border-dark)' }" />
-                        <span>{{ entry.projectName || t('worktime', 'Kein Projekt') }}</span>
+                        <span>{{ entry.projectName || t('zeitwerk', 'Kein Projekt') }}</span>
                     </td>
-                    <td class="ev-muted">{{ entry.customer || '–' }}</td>
-                    <td>{{ entry.employeeName || t('worktime', 'Unbekannt') }}</td>
+                    <td>{{ entry.employeeName || t('zeitwerk', 'Unbekannt') }}</td>
                     <td class="ev-num">{{ hours(entry.minutes) }}</td>
+                    <td class="ev-num">{{ entry.mileageAmount > 0 ? formatEuro(entry.mileageAmount) : '–' }}</td>
+                    <td class="ev-num">{{ entry.allowanceAmount > 0 ? formatEuro(entry.allowanceAmount) : '–' }}</td>
                     <td class="ev-muted">{{ entry.description || '' }}</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="4">{{ t('worktime', 'Gesamt') }}</td>
+                    <td colspan="3">{{ t('zeitwerk', 'Gesamt') }}</td>
                     <td class="ev-num">{{ hours(totals.totalMinutes) }}</td>
+                    <td class="ev-num">{{ formatEuro(detailTotals.mileageAmount) }}</td>
+                    <td class="ev-num">{{ formatEuro(detailTotals.allowanceAmount) }}</td>
                     <td />
                 </tr>
             </tfoot>
@@ -294,7 +327,7 @@
         </div>
 
         <div v-else class="ev-empty">
-            {{ t('worktime', 'Für diese Auswahl liegen keine Buchungen vor.') }}
+            {{ t('zeitwerk', 'Für diese Auswahl liegen keine Buchungen vor.') }}
         </div>
         </div>
     </div>
@@ -323,7 +356,7 @@ import YearPicker from '../components/YearPicker.vue'
 import TeamYearTable from '../components/TeamYearTable.vue'
 import ReportService from '../services/ReportService.js'
 import { formatMinutes } from '../utils/timeUtils.js'
-import { formatDate as formatDateUtil, getMonthName } from '../utils/dateUtils.js'
+import { formatDate as formatDateUtil, getMonthName, getLocale } from '../utils/dateUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 
 export default {
@@ -366,6 +399,7 @@ export default {
             loading: false,
             entriesLoading: false,
             rows: [],
+            allowances: [],
             entries: [],
             entriesLoadedKey: null,
             selectedProjects: new Set(),
@@ -385,12 +419,14 @@ export default {
             let overtimeMinutes = 0
             let vacationUsed = 0
             let vacationTotal = 0
+            let allowanceTotal = 0
             for (const m of this.teamReport) {
                 overtimeMinutes += m.totalOvertimeMinutes || 0
                 vacationUsed += m.vacationStats?.used || 0
                 vacationTotal += m.vacationStats?.total || 0
+                allowanceTotal += m.allowance?.total || 0
             }
-            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal }
+            return { count: this.teamReport.length, overtimeMinutes, vacationUsed, vacationTotal, allowanceTotal }
         },
         teamOverviewRows() {
             const rows = this.teamReport.map(m => {
@@ -403,6 +439,8 @@ export default {
                     userId: m.employee.userId,
                     name: m.employee.fullName,
                     weeklyHours: m.employee.weeklyHours,
+                    allowance: m.allowance || null,
+                    allowanceTotal: m.allowance?.total || 0,
                     overtimeMinutes: m.totalOvertimeMinutes || 0,
                     vacationTotal: total,
                     vacationRemaining: remaining,
@@ -415,6 +453,7 @@ export default {
                 let cmp = 0
                 if (key === 'overtime') cmp = a.overtimeMinutes - b.overtimeMinutes
                 else if (key === 'vacation') cmp = a.vacationRemaining - b.vacationRemaining
+                else if (key === 'allowance') cmp = a.allowanceTotal - b.allowanceTotal
                 else cmp = a.name.localeCompare(b.name)
                 return cmp * dir
             })
@@ -422,9 +461,9 @@ export default {
         },
         periods() {
             return [
-                { value: 'month', label: this.t('worktime', 'Monat'), icon: CalendarMonthOutlineIcon },
-                { value: 'quarter', label: this.t('worktime', 'Quartal'), icon: CalendarRangeIcon },
-                { value: 'year', label: this.t('worktime', 'Jahr'), icon: CalendarOutlineIcon },
+                { value: 'month', label: this.t('zeitwerk', 'Monat'), icon: CalendarMonthOutlineIcon },
+                { value: 'quarter', label: this.t('zeitwerk', 'Quartal'), icon: CalendarRangeIcon },
+                { value: 'year', label: this.t('zeitwerk', 'Jahr'), icon: CalendarOutlineIcon },
             ]
         },
         periodLabel() {
@@ -438,7 +477,7 @@ export default {
                 if (!seen[r.projectId]) {
                     seen[r.projectId] = {
                         id: r.projectId,
-                        name: r.projectName || this.t('worktime', 'Kein Projekt'),
+                        name: r.projectName || this.t('zeitwerk', 'Kein Projekt'),
                         customer: r.customer,
                         color: r.color,
                     }
@@ -450,7 +489,7 @@ export default {
             const seen = {}
             for (const r of this.rows) {
                 if (!seen[r.employeeId]) {
-                    seen[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt') }
+                    seen[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('zeitwerk', 'Unbekannt') }
                 }
             }
             return Object.values(seen).sort((a, b) => a.name.localeCompare(b.name))
@@ -501,9 +540,17 @@ export default {
             const byEmp = {}
             for (const r of this.filteredRows) {
                 if (!byEmp[r.employeeId]) {
-                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('worktime', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[r.employeeId] ?? null }
+                    byEmp[r.employeeId] = { id: r.employeeId, name: r.employeeName || this.t('zeitwerk', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[r.employeeId] ?? null }
                 }
                 byEmp[r.employeeId].minutes += r.minutes
+            }
+            // Mitarbeiter mit Spesen/km, aber ohne Buchungen in der Auswahl,
+            // erscheinen mit 0 Stunden (Spesen/km sind projektunabhängig).
+            for (const a of this.filteredAllowances) {
+                if (!byEmp[a.employeeId]) {
+                    byEmp[a.employeeId] = { id: a.employeeId, name: a.employeeName || this.t('zeitwerk', 'Unbekannt'), minutes: 0, weeklyHours: weeklyByEmp[a.employeeId] ?? null }
+                }
+                byEmp[a.employeeId].allowance = a
             }
             const arr = Object.values(byEmp)
             arr.sort((a, b) => this.sort.key === 'name'
@@ -511,17 +558,66 @@ export default {
                 : this.sort.dir * (a.minutes - b.minutes))
             return arr
         },
+        filteredAllowances() {
+            return this.allowances.filter(a => !this.selectedEmployees.size || this.selectedEmployees.has(a.employeeId))
+        },
+        allowanceKpiTotal() {
+            let total = 0
+            for (const a of this.filteredAllowances) total += a.total || 0
+            return Math.round(total * 100) / 100
+        },
         detailRows() {
             const filtered = this.entries.filter(e =>
                 (!this.selectedProjects.size || this.selectedProjects.has(e.projectId))
                 && (!this.selectedEmployees.size || this.selectedEmployees.has(e.employeeId)),
             )
+            // Die tagesbezogenen km-/Spesen-Beträge liegen backend-seitig auf der
+            // ersten Buchung des Tages — die kann hier weggefiltert sein (Filter
+            // laufen client-seitig). Deshalb die Tagesbeträge auf die erste
+            // SICHTBARE Buchung des Tages umhängen (stabil nach Datum/ID),
+            // damit Projektfilter keine km/Spesen verschlucken.
+            const dayAmounts = {}
+            for (const e of this.entries) {
+                if ((e.mileageAmount || 0) > 0 || (e.allowanceAmount || 0) > 0) {
+                    dayAmounts[`${e.employeeId}|${e.date}`] = {
+                        mileageAmount: e.mileageAmount || 0,
+                        allowanceAmount: e.allowanceAmount || 0,
+                    }
+                }
+            }
+            const assigned = new Set()
+            const rows = filtered.slice()
+                .sort((a, b) => a.date.localeCompare(b.date) || (a.id - b.id))
+                .map(e => {
+                    const key = `${e.employeeId}|${e.date}`
+                    let mileageAmount = 0
+                    let allowanceAmount = 0
+                    if (dayAmounts[key] && !assigned.has(key)) {
+                        assigned.add(key)
+                        mileageAmount = dayAmounts[key].mileageAmount
+                        allowanceAmount = dayAmounts[key].allowanceAmount
+                    }
+                    return { ...e, mileageAmount, allowanceAmount }
+                })
             const s = this.sort
-            return filtered.slice().sort((a, b) => {
+            return rows.sort((a, b) => {
                 if (s.key === 'name') return s.dir * (a.employeeName || '').localeCompare(b.employeeName || '')
                 if (s.key === 'minutes') return s.dir * (a.minutes - b.minutes)
                 return s.dir * a.date.localeCompare(b.date)
             })
+        },
+        // Summen der tagesbezogenen km-/Spesen-Beträge in der Einzelbuchungsliste.
+        detailTotals() {
+            let mileageAmount = 0
+            let allowanceAmount = 0
+            for (const e of this.detailRows) {
+                mileageAmount += e.mileageAmount || 0
+                allowanceAmount += e.allowanceAmount || 0
+            }
+            return {
+                mileageAmount: Math.round(mileageAmount * 100) / 100,
+                allowanceAmount: Math.round(allowanceAmount * 100) / 100,
+            }
         },
     },
     watch: {
@@ -549,6 +645,16 @@ export default {
             this.loadTeamReport()
         },
         hours(minutes) { return `${formatMinutes(minutes || 0)} h` },
+        formatEuro(value) {
+            return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'EUR' }).format(value || 0)
+        },
+        // Kurzform "3 Tage · 120 km" unter dem Spesen/km-Betrag
+        allowanceSub(allowance) {
+            const parts = []
+            if (allowance?.allowanceDays > 0) parts.push(`${allowance.allowanceDays} ${this.t('zeitwerk', 'Tage')}`)
+            if (allowance?.kilometers > 0) parts.push(`${allowance.kilometers} km`)
+            return parts.join(' · ')
+        },
         // Wochenstunden ohne überflüssige Nullen: "40.00" → "40", "37.50" → "37.5"
         weeklyLabel(h) {
             if (h == null || h === '') return ''
@@ -649,8 +755,9 @@ export default {
                     year: this.year, month: this.month, period: this.period,
                 })
                 this.rows = data?.rows || []
+                this.allowances = data?.allowanceByEmployee || []
             } catch (error) {
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Laden der Auswertung'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Laden der Auswertung'))
             } finally {
                 this.loading = false
             }
@@ -665,7 +772,7 @@ export default {
                 this.entries = data?.entries || []
                 this.entriesLoadedKey = this.periodKey()
             } catch (error) {
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Laden der Auswertung'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Laden der Auswertung'))
             } finally {
                 this.entriesLoading = false
             }
@@ -1043,11 +1150,12 @@ export default {
 }
 
 .ev-entries th:nth-child(1) { width: 9%; }   /* Datum */
-.ev-entries th:nth-child(2) { width: 21%; }  /* Projekt */
-.ev-entries th:nth-child(3) { width: 14%; }  /* Kunde */
-.ev-entries th:nth-child(4) { width: 15%; }  /* Mitarbeiter */
-.ev-entries th:nth-child(5) { width: 9%; }   /* Stunden */
-.ev-entries th:nth-child(6) { width: 32%; }  /* Beschreibung */
+.ev-entries th:nth-child(2) { width: 20%; }  /* Projekt */
+.ev-entries th:nth-child(3) { width: 15%; }  /* Mitarbeiter */
+.ev-entries th:nth-child(4) { width: 8%; }   /* Stunden */
+.ev-entries th:nth-child(5) { width: 10%; }  /* Kilometergeld */
+.ev-entries th:nth-child(6) { width: 8%; }   /* Spesen */
+.ev-entries th:nth-child(7) { width: 30%; }  /* Beschreibung */
 
 .ev-table td {
     padding: 8px 12px;
@@ -1118,6 +1226,12 @@ export default {
 .ev-empty {
     margin-top: 40px;
     text-align: center;
+    color: var(--color-text-maxcontrast);
+}
+
+.ev-note {
+    margin: 8px 4px 6px;
+    font-size: 12.5px;
     color: var(--color-text-maxcontrast);
 }
 </style>

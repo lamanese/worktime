@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -24,8 +24,8 @@ class Version000004Date20260130000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if (!$schema->hasTable('wt_archive_queue')) {
-            $table = $schema->createTable('wt_archive_queue');
+        if (!$schema->hasTable('zw_archive_queue')) {
+            $table = $schema->createTable('zw_archive_queue');
 
             $table->addColumn('id', Types::INTEGER, [
                 'autoincrement' => true,
@@ -76,8 +76,8 @@ class Version000004Date20260130000000 extends SimpleMigrationStep {
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['status'], 'wt_archive_queue_status_idx');
-            $table->addIndex(['employee_id'], 'wt_archive_queue_employee_idx');
+            $table->addIndex(['status'], 'zw_archive_queue_status_idx');
+            $table->addIndex(['employee_id'], 'zw_archive_queue_employee_idx');
         }
 
         return $schema;

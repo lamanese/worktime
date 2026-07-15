@@ -1,10 +1,10 @@
 <template>
     <div class="day-list">
         <div class="dl-head">
-            <div>{{ t('worktime', 'Tag') }}</div>
-            <div>{{ t('worktime', 'Zeiten') }}</div>
-            <div class="dl-r">{{ t('worktime', 'Pause') }}</div>
-            <div class="dl-r">{{ t('worktime', 'Stunden') }}</div>
+            <div>{{ t('zeitwerk', 'Tag') }}</div>
+            <div>{{ t('zeitwerk', 'Zeiten') }}</div>
+            <div class="dl-r">{{ t('zeitwerk', 'Pause') }}</div>
+            <div class="dl-r">{{ t('zeitwerk', 'Stunden') }}</div>
         </div>
         <!-- Wrapper-Div bleibt, damit .dl-day:first-child den obersten Trennstrich entfernt -->
         <div>
@@ -19,7 +19,7 @@
                 @keydown.space.prevent="$emit('select', day.date)">
                 <div class="dl-d">
                     <span>{{ weekday(day) }} {{ pad(day.day) }}.</span>
-                    <span v-if="day.isToday" class="today-badge">{{ t('worktime', 'Heute') }}</span>
+                    <span v-if="day.isToday" class="today-badge">{{ t('zeitwerk', 'Heute') }}</span>
                     <small>{{ monthShort }}</small>
                 </div>
 
@@ -31,7 +31,7 @@
                                 :class="day.holiday ? 'holiday' : absenceColorClass(day.absence.type)" />
                             <span class="dl-times">{{ day.firstStart }} – {{ day.lastEnd }}</span>
                             <span v-if="day.entries.length > 1" class="dl-count">
-                                {{ t('worktime', '{n} Einträge', { n: day.entries.length }) }}
+                                {{ t('zeitwerk', '{n} Einträge', { n: day.entries.length }) }}
                             </span>
                         </template>
                         <template v-else-if="day.holiday">
@@ -121,7 +121,7 @@ export default {
         pauseLabel(day) {
             if (!day.entries.length) return ''
             const total = day.entries.reduce((sum, e) => sum + (e.breakMinutes || 0), 0)
-            return this.t('worktime', '{min} Min', { min: total })
+            return this.t('zeitwerk', '{min} Min', { min: total })
         },
         hoursLabel(day) {
             if (!day.entries.length) return '–'

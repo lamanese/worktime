@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -24,8 +24,8 @@ class Version000006Date20260202000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_holidays')) {
-            $table = $schema->getTable('wt_holidays');
+        if ($schema->hasTable('zw_holidays')) {
+            $table = $schema->getTable('zw_holidays');
 
             if (!$table->hasColumn('is_manual')) {
                 $table->addColumn('is_manual', Types::SMALLINT, [

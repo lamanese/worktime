@@ -88,7 +88,7 @@ const routes = [
 
 const router = new VueRouter({
 	mode: 'hash',
-	base: '/apps/worktime/',
+	base: '/apps/zeitwerk/',
 	routes,
 })
 
@@ -104,7 +104,7 @@ router.beforeEach((to, from, next) => {
 
 // View-Persistierung bei Navigation
 router.afterEach((to) => {
-	localStorage.setItem('worktime_last_view', to.path)
+	localStorage.setItem('zeitwerk_last_view', to.path)
 })
 
 export default router

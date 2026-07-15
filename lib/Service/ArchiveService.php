@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\Employee;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\Employee;
 
 /**
  * Generates and stores the monthly report PDF in the configured archive folder.
@@ -33,6 +33,7 @@ class ArchiveService {
         private HolidayService $holidayService,
         private WorkScheduleService $workScheduleService,
         private PdfService $pdfService,
+        private AllowanceService $allowanceService,
     ) {
     }
 
@@ -89,6 +90,8 @@ class ArchiveService {
 
         $existed = $this->pdfService->archivedReportExists($archiveUserId, $employee, $year, $month);
 
+        $allowance = $this->allowanceService->getMonthlySummary($employeeId, $year, $month, $timeEntries, $absences);
+
         $pdfContent = $this->pdfService->generateMonthlyReport(
             $employee,
             $year,
@@ -97,7 +100,8 @@ class ArchiveService {
             $absences,
             $holidays,
             $stats,
-            $approvalInfo
+            $approvalInfo,
+            $allowance
         );
 
         $this->pdfService->archiveMonthlyReport($archiveUserId, $employee, $year, $month, $pdfContent);

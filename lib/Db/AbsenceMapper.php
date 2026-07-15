@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -22,7 +22,7 @@ use OCP\IDBConnection;
 class AbsenceMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_absences', Absence::class);
+        parent::__construct($db, 'zw_absences', Absence::class);
     }
 
     /**
@@ -103,6 +103,27 @@ class AbsenceMapper extends QBMapper {
                         $qb->expr()->lte('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)),
                         $qb->expr()->gte('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE))
                     )
+                )
+            )
+            ->orderBy('start_date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * Alle Abwesenheiten aller Mitarbeiter, die den Zeitraum überlappen
+     * (für die Spesen-/km-Berechnung der Projektauswertung, eine Query statt N).
+     *
+     * @return Absence[]
+     */
+    public function findByDateRange(DateTime $startDate, DateTime $endDate): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->lte('start_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE)),
+                    $qb->expr()->gte('end_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE))
                 )
             )
             ->orderBy('start_date', 'ASC');
@@ -245,7 +266,7 @@ class AbsenceMapper extends QBMapper {
             $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
-                ->from('wt_employees')
+                ->from('zw_employees')
                 ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
@@ -280,7 +301,7 @@ class AbsenceMapper extends QBMapper {
             $supervisorParam = $qb->createNamedParameter($supervisorEmployeeId, IQueryBuilder::PARAM_INT);
             $subQb = $this->db->getQueryBuilder();
             $subQb->select('id')
-                ->from('wt_employees')
+                ->from('zw_employees')
                 ->where($subQb->expr()->eq('supervisor_id', $supervisorParam));
 
             $qb->andWhere($qb->expr()->in('employee_id', $qb->createFunction('(' . $subQb->getSQL() . ')')));
@@ -374,6 +395,56 @@ class AbsenceMapper extends QBMapper {
                 )
             )
             ->orderBy('start_date', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * All centrally created (admin-set) absences — Betriebsferien (#15).
+     * Cancelled ones are excluded so the settings list only shows active entries.
+     *
+     * @return Absence[]
+     */
+    public function findCentral(): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_central', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->neq('status', $qb->createNamedParameter(Absence::STATUS_CANCELLED)))
+            ->orderBy('start_date', 'DESC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * Centrally created absences for one exact date range — identifies a single
+     * Betriebsferien operation for bulk removal (#15).
+     *
+     * @return Absence[]
+     */
+    public function findCentralByRange(DateTime $startDate, DateTime $endDate): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_central', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('start_date', $qb->createNamedParameter($startDate, IQueryBuilder::PARAM_DATE)))
+            ->andWhere($qb->expr()->eq('end_date', $qb->createNamedParameter($endDate, IQueryBuilder::PARAM_DATE)));
+
+        return $this->findEntities($qb);
+    }
+
+    /**
+     * All entries of one central Betriebsferien operation (#15 Stufe 2) — split
+     * entries share the group id even when their date ranges differ.
+     *
+     * @return Absence[]
+     */
+    public function findCentralByGroup(string $group): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_central', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('central_group', $qb->createNamedParameter($group)));
 
         return $this->findEntities($qb);
     }

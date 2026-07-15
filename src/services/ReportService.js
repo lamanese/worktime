@@ -84,7 +84,7 @@ export default {
         const params = new URLSearchParams({ year, month, period, mode })
         if (projectIds.length) params.set('projectIds', projectIds.join(','))
         if (employeeIds.length) params.set('employeeIds', employeeIds.join(','))
-        return generateUrl(`/apps/worktime/api/reports/${path}`) + '?' + params.toString()
+        return generateUrl(`/apps/zeitwerk/api/reports/${path}`) + '?' + params.toString()
     },
 
     downloadProjectExport(format, params) {
@@ -93,7 +93,7 @@ export default {
 
     getPdfUrl(employeeId, year, month) {
         const params = new URLSearchParams({ employeeId, year, month })
-        return generateUrl('/apps/worktime/api/reports/pdf') + '?' + params.toString()
+        return generateUrl('/apps/zeitwerk/api/reports/pdf') + '?' + params.toString()
     },
 
     downloadPdf(employeeId, year, month) {
@@ -103,7 +103,7 @@ export default {
 
     getRangePdfUrl(employeeId, startDate, endDate) {
         const params = new URLSearchParams({ employeeId, startDate, endDate })
-        return generateUrl('/apps/worktime/api/reports/pdf-range') + '?' + params.toString()
+        return generateUrl('/apps/zeitwerk/api/reports/pdf-range') + '?' + params.toString()
     },
 
     downloadRangePdf(employeeId, startDate, endDate) {

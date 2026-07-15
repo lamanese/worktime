@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\AppInfo\Application;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\AppInfo\Application;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
@@ -35,7 +35,7 @@ class PageController extends Controller {
      * @NoCSRFRequired
      */
     public function index(): TemplateResponse {
-        Util::addScript(Application::APP_ID, 'worktime-main');
+        Util::addScript(Application::APP_ID, 'zeitwerk-main');
 
         // Provide permission info via Initial State API
         if ($this->userId !== null) {
@@ -49,6 +49,10 @@ class PageController extends Controller {
         // Company rules for required fields on time entries (#329)
         $this->initialState->provideInitialState('requireProject', $this->settingsService->isProjectRequired());
         $this->initialState->provideInitialState('requireDescription', $this->settingsService->isDescriptionRequired());
+
+        // Freigaben für persönliche Standard-Vorgaben (Projekt/Beschreibung)
+        $this->initialState->provideInitialState('allowDefaultProject', $this->settingsService->isEmployeeDefaultProjectAllowed());
+        $this->initialState->provideInitialState('allowDefaultDescription', $this->settingsService->isEmployeeDefaultDescriptionAllowed());
 
         return new TemplateResponse(
             Application::APP_ID,

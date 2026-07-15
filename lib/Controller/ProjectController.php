@@ -7,10 +7,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\ProjectService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\ProjectService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -95,7 +95,9 @@ class ProjectController extends BaseController {
         bool $isBillable = true,
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -116,7 +118,9 @@ class ProjectController extends BaseController {
                 $this->userId,
                 $customer,
                 $allEmployees,
-                $memberIds
+                $memberIds,
+                $isFieldWork,
+                $isExtern
             );
 
             $data = $project->jsonSerialize();
@@ -138,7 +142,9 @@ class ProjectController extends BaseController {
         bool $isBillable = true,
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -160,7 +166,9 @@ class ProjectController extends BaseController {
                 $this->userId,
                 $customer,
                 $allEmployees,
-                $memberIds
+                $memberIds,
+                $isFieldWork,
+                $isExtern
             );
 
             $data = $project->jsonSerialize();

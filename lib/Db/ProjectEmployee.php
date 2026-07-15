@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;

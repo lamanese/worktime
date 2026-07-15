@@ -2,26 +2,28 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Controller;
+namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
-use OCA\WorkTime\Controller\ReportController;
-use OCA\WorkTime\Db\AbsenceMapper;
+use OCA\Zeitwerk\Controller\ReportController;
+use OCA\Zeitwerk\Db\AbsenceMapper;
+use OCA\Zeitwerk\Db\DailyKmMapper;
 use DateTime;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\TimeEntry;
-use OCA\WorkTime\Db\TimeEntryMapper;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\PermissionService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
-use OCA\WorkTime\Service\YearlyCarryoverService;
-use OCA\WorkTime\Service\OvertimePayoutService;
-use OCA\WorkTime\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\PermissionService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -61,6 +63,8 @@ class ReportControllerTest extends TestCase {
             $this->createMock(OvertimePayoutService::class),
             $this->createMock(OvertimeCalculationService::class),
             $this->projectService,
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
         );
     }
@@ -150,6 +154,8 @@ class ReportControllerTest extends TestCase {
             $this->createMock(PdfService::class), $this->createMock(WorkScheduleService::class),
             $this->createMock(YearlyCarryoverService::class), $this->createMock(OvertimePayoutService::class),
             $this->createMock(OvertimeCalculationService::class), $this->projectService,
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
         );
 
@@ -171,6 +177,50 @@ class ReportControllerTest extends TestCase {
         $this->assertSame('Acme', $entry['projectName']);
         $this->assertSame('Test User', $entry['employeeName']);
         $this->assertTrue($entry['isBillable']);
+    }
+
+    public function testProjectEntriesCarryDayMileageAndAllowanceOnFirstRowOnly(): void {
+        // km/Spesen sind tagesbezogen: sie erscheinen auf der ersten Buchung
+        // des Tages eines Mitarbeiters, Folgebuchungen bleiben leer.
+        $allowance = $this->createMock(AllowanceService::class);
+        $allowance->method('calculate')->willReturn([
+            'allowanceDays' => 1,
+            'allowancePerDay' => 14.0,
+            'allowanceAmount' => 14.0,
+            'kilometers' => 120,
+            'mileageRate' => 0.30,
+            'mileageAmount' => 36.0,
+            'total' => 50.0,
+            'allowanceDates' => ['2026-06-15'],
+            'kilometersByDate' => ['2026-06-15' => 120],
+        ]);
+        $controller = new ReportController(
+            $this->createMock(IRequest::class), 'admin',
+            $this->createMock(TimeEntryService::class), $this->timeEntryMapper,
+            $this->createMock(AbsenceMapper::class), $this->createMock(AbsenceService::class),
+            $this->employeeService, $this->createMock(HolidayService::class), $this->permissionService,
+            $this->createMock(PdfService::class), $this->createMock(WorkScheduleService::class),
+            $this->createMock(YearlyCarryoverService::class), $this->createMock(OvertimePayoutService::class),
+            $this->createMock(OvertimeCalculationService::class), $this->projectService,
+            $allowance,
+            $this->createMock(DailyKmMapper::class),
+            $this->createMock(IL10N::class),
+        );
+
+        $this->projectService->method('findAll')->willReturn([$this->project(2, 'Acme', true)]);
+        $this->employeeService->method('findAll')->willReturn([$this->employee(5, 'Test', 'User')]);
+        $this->timeEntryMapper->method('findByDateRange')->willReturn([
+            $this->timeEntry(10, '2026-06-15', 2, 5, 120, 'Vormittag'),
+            $this->timeEntry(11, '2026-06-15', 2, 5, 60, 'Nachmittag'),
+        ]);
+
+        $data = $controller->projectEntries(2026, 6, 'month')->getData();
+
+        $this->assertCount(2, $data['entries']);
+        $this->assertSame(36.0, $data['entries'][0]['mileageAmount']);
+        $this->assertSame(14.0, $data['entries'][0]['allowanceAmount']);
+        $this->assertSame(0.0, $data['entries'][1]['mileageAmount']);
+        $this->assertSame(0.0, $data['entries'][1]['allowanceAmount']);
     }
 
     public function testProjectsCsvDetailContainsBookingRow(): void {

@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Migration;
+namespace OCA\Zeitwerk\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -25,8 +25,8 @@ class Version000004Date20260129000000 extends SimpleMigrationStep {
         /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('wt_absences')) {
-            $table = $schema->getTable('wt_absences');
+        if ($schema->hasTable('zw_absences')) {
+            $table = $schema->getTable('zw_absences');
 
             if (!$table->hasColumn('is_half_day')) {
                 $table->addColumn('is_half_day', Types::SMALLINT, [

@@ -7,7 +7,7 @@
                     <span class="kpi-lab">{{ headLabel }}</span>
                     <NcButton v-if="statistics && period === 'month'"
                         type="tertiary"
-                        :aria-label="t('worktime', 'Berechnung anzeigen')"
+                        :aria-label="t('zeitwerk', 'Berechnung anzeigen')"
                         @click="showDetails = !showDetails">
                         <template #icon>
                             <ChevronUp v-if="showDetails" :size="20" />
@@ -28,61 +28,61 @@
 
             <!-- Urlaub: Rest / Anspruch -->
             <div v-if="vacationTotal !== null" class="kpi-card">
-                <div class="kpi-lab">{{ t('worktime', 'Urlaub {year}', { year }) }}</div>
-                <div class="kpi-num pos">{{ vacationRemaining ?? 0 }} <small>/ {{ vacationTotal }} {{ t('worktime', 'Tage übrig') }}</small></div>
+                <div class="kpi-lab">{{ t('zeitwerk', 'Urlaub {year}', { year }) }}</div>
+                <div class="kpi-num pos">{{ vacationRemaining ?? 0 }} <small>/ {{ vacationTotal }} {{ t('zeitwerk', 'Tage übrig') }}</small></div>
                 <div v-if="vacationSub" class="kpi-sub">{{ vacationSub }}</div>
             </div>
 
             <!-- Überstunden (#358: kumulierter Kontostand inkl. Übertrag, identisch zur Abwesenheiten-Card) -->
             <div class="kpi-card">
                 <div class="kpi-lab">
-                    {{ displayOvertime >= 0 ? t('worktime', 'Überstunden') : t('worktime', 'Minusstunden') }}
-                    <InfoIcon>{{ t('worktime', 'Das Soll wird anteilig bis gestern berechnet. Der heutige Tag zählt erst mit, sobald du Zeit erfasst.') }}</InfoIcon>
+                    {{ displayOvertime >= 0 ? t('zeitwerk', 'Überstunden') : t('zeitwerk', 'Minusstunden') }}
+                    <InfoIcon>{{ t('zeitwerk', 'Das Soll wird anteilig bis gestern berechnet. Der heutige Tag zählt erst mit, sobald du Zeit erfasst.') }}</InfoIcon>
                 </div>
                 <div class="kpi-num" :class="{ pos: displayOvertime > 0, neg: displayOvertime < 0 }">
                     {{ displayOvertime > 0 ? '+' : '' }}{{ absHoursLabel(displayOvertime) }} <small>h</small>
                 </div>
-                <div class="kpi-sub">{{ t('worktime', 'Stand heute') }}</div>
+                <div class="kpi-sub">{{ t('zeitwerk', 'Stand heute') }}</div>
             </div>
         </div>
 
         <div v-if="showDetails && statistics" class="overtime-details">
             <div class="overtime-details__section">
-                <h4>{{ t('worktime', 'Soll-Berechnung') }}</h4>
+                <h4>{{ t('zeitwerk', 'Soll-Berechnung') }}</h4>
                 <div class="detail-row">
-                    <span>{{ t('worktime', 'Arbeitstage ({count})', { count: statistics.workingDays }) }}</span>
+                    <span>{{ t('zeitwerk', 'Arbeitstage ({count})', { count: statistics.workingDays }) }}</span>
                     <span class="detail-value">{{ formatMinutes(statistics.monthlyTargetMinutes) }}</span>
                 </div>
                 <div v-if="statistics.holidayCount > 0" class="detail-row info">
-                    <span>{{ t('worktime', 'davon Feiertage ({count})', { count: statistics.holidayCount }) }}</span>
+                    <span>{{ t('zeitwerk', 'davon Feiertage ({count})', { count: statistics.holidayCount }) }}</span>
                     <span class="detail-value"></span>
                 </div>
                 <div v-if="statistics.targetReductionDays > 0" class="detail-row subtract">
-                    <span>{{ t('worktime', 'Soll-Reduktion ({count} Tage)', { count: statistics.targetReductionDays }) }}</span>
+                    <span>{{ t('zeitwerk', 'Soll-Reduktion ({count} Tage)', { count: statistics.targetReductionDays }) }}</span>
                     <span class="detail-value">-{{ formatMinutes(statistics.monthlyTargetMinutes - statistics.targetMinutes) }}</span>
                 </div>
                 <div class="detail-row detail-row--total">
-                    <span>{{ t('worktime', 'Soll (anteilig bis heute)') }}</span>
+                    <span>{{ t('zeitwerk', 'Soll (anteilig bis heute)') }}</span>
                     <span class="detail-value">{{ formatMinutes(targetMinutes) }}</span>
                 </div>
             </div>
 
             <div class="overtime-details__section">
-                <h4>{{ t('worktime', 'Ist-Berechnung') }}</h4>
+                <h4>{{ t('zeitwerk', 'Ist-Berechnung') }}</h4>
                 <div class="detail-row">
-                    <span>{{ t('worktime', 'Geleistete Arbeitszeit') }}</span>
+                    <span>{{ t('zeitwerk', 'Geleistete Arbeitszeit') }}</span>
                     <span class="detail-value">{{ formatMinutes(statistics.workedMinutes) }}</span>
                 </div>
                 <div v-if="statistics.paidAbsenceMinutes > 0" class="detail-row add">
-                    <span>{{ t('worktime', 'Bezahlte Abwesenheiten ({count} Tage)', { count: statistics.paidAbsenceDays }) }}</span>
+                    <span>{{ t('zeitwerk', 'Bezahlte Abwesenheiten ({count} Tage)', { count: statistics.paidAbsenceDays }) }}</span>
                     <span class="detail-value">+{{ formatMinutes(statistics.paidAbsenceMinutes) }}</span>
                 </div>
                 <div v-if="statistics.compensatoryDays > 0" class="detail-row info">
-                    <span>{{ t('worktime', 'Freizeitausgleich ({count} Tage, nicht gutgeschrieben)', { count: statistics.compensatoryDays }) }} <InfoIcon>{{ t('worktime', 'Freizeitausgleich wird nicht als Arbeitszeit gutgeschrieben. Das Soll bleibt bestehen, dadurch sinken die Überstunden.') }}</InfoIcon></span>
+                    <span>{{ t('zeitwerk', 'Freizeitausgleich ({count} Tage, nicht gutgeschrieben)', { count: statistics.compensatoryDays }) }} <InfoIcon>{{ t('zeitwerk', 'Freizeitausgleich wird nicht als Arbeitszeit gutgeschrieben. Das Soll bleibt bestehen, dadurch sinken die Überstunden.') }}</InfoIcon></span>
                     <span class="detail-value"></span>
                 </div>
                 <div class="detail-row detail-row--total">
-                    <span>{{ t('worktime', 'Ist') }}</span>
+                    <span>{{ t('zeitwerk', 'Ist') }}</span>
                     <span class="detail-value">{{ formatMinutes(actualMinutes) }}</span>
                 </div>
             </div>
@@ -174,9 +174,9 @@ export default {
         },
         headLabel() {
             if (this.period === 'year') {
-                return this.t('worktime', 'Ist / Soll · {year}', { year: this.year })
+                return this.t('zeitwerk', 'Ist / Soll · {year}', { year: this.year })
             }
-            return this.t('worktime', 'Ist / Soll · {month}', { month: this.monthLabel })
+            return this.t('zeitwerk', 'Ist / Soll · {month}', { month: this.monthLabel })
         },
         // Volles Periodensoll (Monat: aus statistics, Jahr: aus prop)
         periodSoll() {
@@ -195,22 +195,22 @@ export default {
         },
         remainingLabel() {
             if (this.period === 'year') {
-                return this.t('worktime', 'noch {hours} h bis Jahressoll', { hours: this.hoursLabel(this.remaining) })
+                return this.t('zeitwerk', 'noch {hours} h bis Jahressoll', { hours: this.hoursLabel(this.remaining) })
             }
-            return this.t('worktime', 'noch {hours} h bis Monatssoll', { hours: this.hoursLabel(this.remaining) })
+            return this.t('zeitwerk', 'noch {hours} h bis Monatssoll', { hours: this.hoursLabel(this.remaining) })
         },
         pacingPositive() {
             return this.overtimeMinutes >= 0
         },
         pacingLabel() {
             if (this.pacingPositive) {
-                return this.t('worktime', 'anteilig: im Plan')
+                return this.t('zeitwerk', 'anteilig: im Plan')
             }
-            return this.t('worktime', '{hours} h unter Plan', { hours: this.absHoursLabel(this.overtimeMinutes) })
+            return this.t('zeitwerk', '{hours} h unter Plan', { hours: this.absHoursLabel(this.overtimeMinutes) })
         },
         vacationSub() {
             if (this.vacationCarryover > 0) {
-                return this.t('worktime', 'inkl. {days} Tage Übertrag', { days: this.vacationCarryover })
+                return this.t('zeitwerk', 'inkl. {days} Tage Übertrag', { days: this.vacationCarryover })
             }
             return ''
         },

@@ -3,13 +3,13 @@
         <table v-if="employees.length > 0" class="employees-table">
             <thead>
                 <tr>
-                    <th>{{ t('worktime', 'Name') }}</th>
-                    <th>{{ t('worktime', 'Personalnr.') }}</th>
-                    <th class="text-right">{{ t('worktime', 'Wochenstd.') }}</th>
-                    <th class="text-right">{{ t('worktime', 'Urlaubstage') }}</th>
-                    <th>{{ t('worktime', 'Bundesland') }}</th>
-                    <th>{{ t('worktime', 'Status') }}</th>
-                    <th class="actions-col">{{ t('worktime', 'Aktionen') }}</th>
+                    <th>{{ t('zeitwerk', 'Name') }}</th>
+                    <th>{{ t('zeitwerk', 'Personalnr.') }}</th>
+                    <th class="text-right">{{ t('zeitwerk', 'Wochenstd.') }}</th>
+                    <th class="text-right">{{ t('zeitwerk', 'Urlaubstage') }}</th>
+                    <th>{{ t('zeitwerk', 'Bundesland') }}</th>
+                    <th>{{ t('zeitwerk', 'Status') }}</th>
+                    <th class="actions-col">{{ t('zeitwerk', 'Aktionen') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -24,27 +24,27 @@
                     <td>{{ employee.federalStateName }}</td>
                     <td>
                         <span :class="['status-badge', employee.isActive ? 'active' : 'inactive']">
-                            {{ employee.isActive ? t('worktime', 'Aktiv') : t('worktime', 'Inaktiv') }}
+                            {{ employee.isActive ? t('zeitwerk', 'Aktiv') : t('zeitwerk', 'Inaktiv') }}
                         </span>
                     </td>
                     <td class="actions-col">
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Korrigieren')"
-                            :title="t('worktime', 'Zeiten/Abwesenheiten dieses Mitarbeiters korrigieren')"
+                            :aria-label="t('zeitwerk', 'Korrigieren')"
+                            :title="t('zeitwerk', 'Zeiten/Abwesenheiten dieses Mitarbeiters korrigieren')"
                             @click="$emit('correct', employee)">
                             <template #icon>
                                 <Wrench :size="20" />
                             </template>
                         </NcButton>
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Bearbeiten')"
+                            :aria-label="t('zeitwerk', 'Bearbeiten')"
                             @click="$emit('edit', employee)">
                             <template #icon>
                                 <Pencil :size="20" />
                             </template>
                         </NcButton>
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Löschen')"
+                            :aria-label="t('zeitwerk', 'Löschen')"
                             @click="confirmDelete(employee)">
                             <template #icon>
                                 <Close :size="20" />
@@ -56,24 +56,24 @@
         </table>
 
         <NcEmptyContent v-else
-            :name="t('worktime', 'Keine Mitarbeiter')"
-            :description="t('worktime', 'Legen Sie Mitarbeiter an, um die Zeiterfassung zu nutzen.')">
+            :name="t('zeitwerk', 'Keine Mitarbeiter')"
+            :description="t('zeitwerk', 'Legen Sie Mitarbeiter an, um die Zeiterfassung zu nutzen.')">
             <template #icon>
                 <AccountGroup :size="64" />
             </template>
         </NcEmptyContent>
 
         <NcDialog v-if="showDeleteDialog"
-            :name="t('worktime', 'Mitarbeiter löschen?')"
+            :name="t('zeitwerk', 'Mitarbeiter löschen?')"
             @close="showDeleteDialog = false">
-            <p>{{ t('worktime', 'Möchten Sie den Mitarbeiter "{name}" wirklich löschen?', { name: employeeToDelete?.fullName }) }}</p>
-            <p class="delete-warning">{{ t('worktime', 'Diese Aktion kann nicht rückgängig gemacht werden.') }}</p>
+            <p>{{ t('zeitwerk', 'Möchten Sie den Mitarbeiter "{name}" wirklich löschen?', { name: employeeToDelete?.fullName }) }}</p>
+            <p class="delete-warning">{{ t('zeitwerk', 'Diese Aktion kann nicht rückgängig gemacht werden.') }}</p>
             <template #actions>
                 <NcButton type="tertiary" @click="showDeleteDialog = false">
-                    {{ t('worktime', 'Abbrechen') }}
+                    {{ t('zeitwerk', 'Abbrechen') }}
                 </NcButton>
                 <NcButton type="error" @click="deleteConfirmed">
-                    {{ t('worktime', 'Löschen') }}
+                    {{ t('zeitwerk', 'Löschen') }}
                 </NcButton>
             </template>
         </NcDialog>

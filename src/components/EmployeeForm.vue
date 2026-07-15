@@ -1,13 +1,13 @@
 <template>
     <div class="employee-form">
-        <h3>{{ isEdit ? t('worktime', 'Mitarbeiter bearbeiten') : t('worktime', 'Neuer Mitarbeiter') }}</h3>
+        <h3>{{ isEdit ? t('zeitwerk', 'Mitarbeiter bearbeiten') : t('zeitwerk', 'Neuer Mitarbeiter') }}</h3>
 
         <div class="form-group">
-            <label for="ncUser">{{ t('worktime', 'Nextcloud-Benutzer') }}</label>
+            <label for="ncUser">{{ t('zeitwerk', 'Nextcloud-Benutzer') }}</label>
             <NcSelect id="ncUser"
                 v-model="selectedUser"
                 :options="userOptions"
-                :placeholder="t('worktime', 'Benutzer auswählen')"
+                :placeholder="t('zeitwerk', 'Benutzer auswählen')"
                 :clearable="false"
                 :disabled="isEdit"
                 label="label" />
@@ -15,7 +15,7 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="firstName">{{ t('worktime', 'Vorname') }} *</label>
+                <label for="firstName">{{ t('zeitwerk', 'Vorname') }} *</label>
                 <input id="firstName"
                     v-model="form.firstName"
                     type="text"
@@ -23,7 +23,7 @@
                     required>
             </div>
             <div class="form-group">
-                <label for="lastName">{{ t('worktime', 'Nachname') }} *</label>
+                <label for="lastName">{{ t('zeitwerk', 'Nachname') }} *</label>
                 <input id="lastName"
                     v-model="form.lastName"
                     type="text"
@@ -34,14 +34,14 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="email">{{ t('worktime', 'E-Mail') }}</label>
+                <label for="email">{{ t('zeitwerk', 'E-Mail') }}</label>
                 <input id="email"
                     v-model="form.email"
                     type="email"
                     class="input-field">
             </div>
             <div class="form-group">
-                <label for="personnelNumber">{{ t('worktime', 'Personalnummer') }}</label>
+                <label for="personnelNumber">{{ t('zeitwerk', 'Personalnummer') }}</label>
                 <input id="personnelNumber"
                     v-model="form.personnelNumber"
                     type="text"
@@ -51,7 +51,7 @@
 
         <div v-if="!isEdit" class="form-row">
             <div class="form-group">
-                <label for="weeklyHours">{{ t('worktime', 'Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet WorkTime das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche).') }}</InfoIcon> *</label>
+                <label for="weeklyHours">{{ t('zeitwerk', 'Wochenstunden') }} <InfoIcon>{{ t('zeitwerk', 'Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche).') }}</InfoIcon> *</label>
                 <input id="weeklyHours"
                     v-model.number="form.weeklyHours"
                     type="number"
@@ -61,11 +61,11 @@
                     :class="['input-field', 'input-small', { 'input-error': !(form.weeklyHours > 0) }]"
                     required>
                 <p v-if="!(form.weeklyHours > 0)" class="field-hint field-hint--error">
-                    {{ t('worktime', 'Wochenstunden müssen größer als 0 sein. Für eine vorübergehende Auszeit (z. B. Elternzeit) eine Abwesenheit erfassen statt 0 Stunden.') }}
+                    {{ t('zeitwerk', 'Wochenstunden müssen größer als 0 sein. Für eine vorübergehende Auszeit (z. B. Elternzeit) eine Abwesenheit erfassen statt 0 Stunden.') }}
                 </p>
             </div>
             <div class="form-group">
-                <label for="vacationDays">{{ t('worktime', 'Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Jährlicher Urlaubsanspruch. Jeder genommene Urlaubstag wird davon abgezogen. Der Resturlaub wird in der Zeiterfassung angezeigt.') }}</InfoIcon> *</label>
+                <label for="vacationDays">{{ t('zeitwerk', 'Urlaubstage') }} <InfoIcon>{{ t('zeitwerk', 'Jährlicher Urlaubsanspruch. Jeder genommene Urlaubstag wird davon abgezogen. Der Resturlaub wird in der Zeiterfassung angezeigt.') }}</InfoIcon> *</label>
                 <input id="vacationDays"
                     v-model.number="form.vacationDays"
                     type="number"
@@ -78,14 +78,14 @@
 
         <div v-if="isEdit" class="form-row">
             <div class="form-group">
-                <label>{{ t('worktime', 'Wochenstunden') }} <InfoIcon>{{ t('worktime', 'Aktuell gültiger Wert aus dem Arbeitszeitprofil. Zum Ändern unten das Profil bearbeiten oder ein neues anlegen.') }}</InfoIcon></label>
+                <label>{{ t('zeitwerk', 'Wochenstunden') }} <InfoIcon>{{ t('zeitwerk', 'Aktuell gültiger Wert aus dem Arbeitszeitprofil. Zum Ändern unten das Profil bearbeiten oder ein neues anlegen.') }}</InfoIcon></label>
                 <input :value="form.weeklyHours"
                     type="text"
                     class="input-field input-small"
                     disabled>
             </div>
             <div class="form-group">
-                <label>{{ t('worktime', 'Urlaubstage') }} <InfoIcon>{{ t('worktime', 'Aktuell gültiger Wert aus dem Arbeitszeitprofil. Zum Ändern unten das Profil bearbeiten oder ein neues anlegen.') }}</InfoIcon></label>
+                <label>{{ t('zeitwerk', 'Urlaubstage') }} <InfoIcon>{{ t('zeitwerk', 'Aktuell gültiger Wert aus dem Arbeitszeitprofil. Zum Ändern unten das Profil bearbeiten oder ein neues anlegen.') }}</InfoIcon></label>
                 <input :value="form.vacationDays"
                     type="text"
                     class="input-field input-small"
@@ -93,12 +93,12 @@
             </div>
         </div>
         <p v-if="isEdit" class="field-hint">
-            {{ t('worktime', 'Wochenstunden und Urlaubstage ergeben sich aus dem Arbeitszeitprofil unten und werden dort gepflegt.') }}
+            {{ t('zeitwerk', 'Wochenstunden und Urlaubstage ergeben sich aus dem Arbeitszeitprofil unten und werden dort gepflegt.') }}
         </p>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="workingDaysPerWeek">{{ t('worktime', 'Arbeitstage pro Woche') }} <InfoIcon>{{ t('worktime', 'An wie vielen Tagen pro Woche wird gearbeitet? Daraus und aus den Wochenstunden ergibt sich das tägliche Soll. Beispiel: 40 Std. auf 5 Tage = 8 Std./Tag, 30 Std. auf 4 Tage = 7,5 Std./Tag.') }}</InfoIcon></label>
+                <label for="workingDaysPerWeek">{{ t('zeitwerk', 'Arbeitstage pro Woche') }} <InfoIcon>{{ t('zeitwerk', 'An wie vielen Tagen pro Woche wird gearbeitet? Daraus und aus den Wochenstunden ergibt sich das tägliche Soll. Beispiel: 40 Std. auf 5 Tage = 8 Std./Tag, 30 Std. auf 4 Tage = 7,5 Std./Tag.') }}</InfoIcon></label>
                 <input id="workingDaysPerWeek"
                     v-model.number="form.workingDaysPerWeek"
                     type="number"
@@ -110,7 +110,7 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="federalState">{{ t('worktime', 'Bundesland') }} <InfoIcon>{{ t('worktime', 'Legt fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg.') }}</InfoIcon> *</label>
+                <label for="federalState">{{ t('zeitwerk', 'Bundesland') }} <InfoIcon>{{ t('zeitwerk', 'Legt fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg.') }}</InfoIcon> *</label>
                 <NcSelect id="federalState"
                     v-model="selectedFederalState"
                     :options="federalStateOptions"
@@ -118,25 +118,25 @@
                     label="label" />
             </div>
             <div class="form-group">
-                <label for="supervisor">{{ t('worktime', 'Vorgesetzter') }} <InfoIcon>{{ t('worktime', 'Diese Person kann die Zeiteinträge und Abwesenheitsanträge dieses Mitarbeiters einsehen und genehmigen.') }}</InfoIcon></label>
+                <label for="supervisor">{{ t('zeitwerk', 'Vorgesetzter') }} <InfoIcon>{{ t('zeitwerk', 'Diese Person kann die Zeiteinträge und Abwesenheitsanträge dieses Mitarbeiters einsehen und genehmigen.') }}</InfoIcon></label>
                 <NcSelect id="supervisor"
                     v-model="selectedSupervisor"
                     :options="supervisorOptions"
-                    :placeholder="t('worktime', 'Kein Vorgesetzter')"
+                    :placeholder="t('zeitwerk', 'Kein Vorgesetzter')"
                     label="label" />
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="entryDate">{{ t('worktime', 'Eintrittsdatum') }} <InfoIcon>{{ t('worktime', 'Ab diesem Datum erscheint der Mitarbeiter in der Zeiterfassung. Für Monate davor werden keine Sollstunden berechnet.') }}</InfoIcon></label>
+                <label for="entryDate">{{ t('zeitwerk', 'Eintrittsdatum') }} <InfoIcon>{{ t('zeitwerk', 'Ab diesem Datum erscheint der Mitarbeiter in der Zeiterfassung. Für Monate davor werden keine Sollstunden berechnet.') }}</InfoIcon></label>
                 <NcDateTimePicker id="entryDate"
                     v-model="form.entryDate"
                     type="date"
                     :format="'DD.MM.YYYY'" />
             </div>
             <div v-if="isEdit" class="form-group">
-                <label for="exitDate">{{ t('worktime', 'Austrittsdatum') }} <InfoIcon>{{ t('worktime', 'Ab diesem Datum kann der Mitarbeiter keine neuen Einträge mehr erfassen. Alle bisherigen Daten bleiben erhalten.') }}</InfoIcon></label>
+                <label for="exitDate">{{ t('zeitwerk', 'Austrittsdatum') }} <InfoIcon>{{ t('zeitwerk', 'Ab diesem Datum kann der Mitarbeiter keine neuen Einträge mehr erfassen. Alle bisherigen Daten bleiben erhalten.') }}</InfoIcon></label>
                 <NcDateTimePicker id="exitDate"
                     v-model="form.exitDate"
                     type="date"
@@ -146,7 +146,7 @@
 
         <div v-if="isEdit" class="form-group">
             <NcCheckboxRadioSwitch :checked.sync="form.isActive">
-                {{ t('worktime', 'Aktiv') }} <InfoIcon>{{ t('worktime', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
+                {{ t('zeitwerk', 'Aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
             </NcCheckboxRadioSwitch>
         </div>
 
@@ -156,10 +156,10 @@
 
         <div class="form-actions">
             <NcButton type="tertiary" @click="cancel">
-                {{ t('worktime', 'Abbrechen') }}
+                {{ t('zeitwerk', 'Abbrechen') }}
             </NcButton>
             <NcButton type="primary" :disabled="!isValid" @click="save">
-                {{ t('worktime', 'Speichern') }}
+                {{ t('zeitwerk', 'Speichern') }}
             </NcButton>
         </div>
     </div>

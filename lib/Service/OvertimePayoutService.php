@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\AuditLog;
-use OCA\WorkTime\Db\OvertimePayout;
-use OCA\WorkTime\Db\OvertimePayoutMapper;
+use OCA\Zeitwerk\Db\AuditLog;
+use OCA\Zeitwerk\Db\OvertimePayout;
+use OCA\Zeitwerk\Db\OvertimePayoutMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -137,7 +137,7 @@ class OvertimePayoutService {
     protected function lockEmployeeRow(int $employeeId): void {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
-            ->from('wt_employees')
+            ->from('zw_employees')
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
             ->forUpdate();
         $qb->executeQuery()->closeCursor();

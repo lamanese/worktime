@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -21,7 +21,7 @@ use OCP\IDBConnection;
 class ArchiveQueueMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_archive_queue', ArchiveQueue::class);
+        parent::__construct($db, 'zw_archive_queue', ArchiveQueue::class);
     }
 
     /**

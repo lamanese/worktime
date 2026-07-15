@@ -1,5 +1,5 @@
 {
-    "name": "cpcmomentum/worktime",
+    "name": "lamanese/zeitwerk",
     "description": "Nextcloud App zur Arbeitszeiterfassung",
     "type": "project",
     "license": "AGPL-3.0-or-later",
@@ -21,7 +21,7 @@
     },
     "autoload": {
         "psr-4": {
-            "OCA\\WorkTime\\": "lib/"
+            "OCA\\Zeitwerk\\": "lib/"
         }
     },
     "scripts": {

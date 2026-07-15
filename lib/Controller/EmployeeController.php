@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\PermissionService;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -202,7 +202,7 @@ class EmployeeController extends BaseController {
     }
 
     #[NoAdminRequired]
-    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null, ?string $absenceVisibility = null, ?string $absenceDetail = null): JSONResponse {
+    public function updateMyDefaults(?string $defaultStartTime = null, ?string $defaultEndTime = null, ?string $absenceVisibility = null, ?string $absenceDetail = null, ?int $defaultProjectId = null, ?string $defaultDescription = null): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
@@ -213,7 +213,9 @@ class EmployeeController extends BaseController {
                 $defaultStartTime,
                 $defaultEndTime,
                 $absenceVisibility,
-                $absenceDetail
+                $absenceDetail,
+                $defaultProjectId,
+                $defaultDescription
             );
 
             return $this->successResponse($employee);

@@ -2,19 +2,20 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\BackgroundJob;
+namespace OCA\Zeitwerk\Tests\Unit\BackgroundJob;
 
 use DateTime;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\Employee;
-use OCA\WorkTime\Service\AbsenceService;
-use OCA\WorkTime\Service\ArchiveService;
-use OCA\WorkTime\Service\CompanySettingsService;
-use OCA\WorkTime\Service\EmployeeService;
-use OCA\WorkTime\Service\HolidayService;
-use OCA\WorkTime\Service\PdfService;
-use OCA\WorkTime\Service\TimeEntryService;
-use OCA\WorkTime\Service\WorkScheduleService;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Service\AbsenceService;
+use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\ArchiveService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\EmployeeService;
+use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\PdfService;
+use OCA\Zeitwerk\Service\TimeEntryService;
+use OCA\Zeitwerk\Service\WorkScheduleService;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -35,6 +36,7 @@ class CompensatoryOvertimeArchiveTest extends TestCase {
 			$this->createMock(HolidayService::class),
 			$schedule,
 			$this->createMock(PdfService::class),
+			$this->createMock(AllowanceService::class),
 		);
 	}
 

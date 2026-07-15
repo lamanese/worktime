@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\CompanySetting;
-use OCA\WorkTime\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\CompanySetting;
+use OCA\Zeitwerk\Db\CompanySettingMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 class CompanySettingsService {
@@ -193,5 +193,81 @@ class CompanySettingsService {
      */
     public function getMaxDailyHours(): float {
         return $this->getFloat(CompanySetting::KEY_MAX_DAILY_HOURS);
+    }
+
+    /**
+     * Aussendienst-Spesen: Pauschale (EUR) pro qualifiziertem Tag.
+     */
+    public function getFieldworkAllowanceAmount(): float {
+        return $this->getFloat(CompanySetting::KEY_FIELDWORK_ALLOWANCE_AMOUNT);
+    }
+
+    /**
+     * Aussendienst-Spesen: Stundenschwelle pro Tag.
+     */
+    public function getFieldworkAllowanceThresholdHours(): float {
+        return $this->getFloat(CompanySetting::KEY_FIELDWORK_ALLOWANCE_THRESHOLD_HOURS);
+    }
+
+    /**
+     * Aussendienst-Spesen: Vergleichsoperator ('gte' = >=, 'gt' = >).
+     */
+    public function getFieldworkAllowanceOperator(): string {
+        $value = $this->get(CompanySetting::KEY_FIELDWORK_ALLOWANCE_OPERATOR);
+        return $value === CompanySetting::OPERATOR_GT
+            ? CompanySetting::OPERATOR_GT
+            : CompanySetting::OPERATOR_GTE;
+    }
+
+    /**
+     * Aussendienst-Spesen: Berechnungsbasis ('gross' = inkl. Pause, 'net' = Arbeitszeit).
+     */
+    public function getFieldworkAllowanceBasis(): string {
+        $value = $this->get(CompanySetting::KEY_FIELDWORK_ALLOWANCE_BASIS);
+        return $value === CompanySetting::BASIS_NET
+            ? CompanySetting::BASIS_NET
+            : CompanySetting::BASIS_GROSS;
+    }
+
+    /**
+     * Aussendienst-Spesen: greift die Pauschale auch an Tagen mit externem
+     * Abwesenheitstyp (ohne Arbeitszeit)?
+     */
+    public function isFieldworkAllowanceOnExternAbsence(): bool {
+        return $this->getBool(CompanySetting::KEY_FIELDWORK_ALLOWANCE_ON_EXTERN_ABSENCE);
+    }
+
+    /**
+     * Extern-Kilometer: Vergütungssatz (EUR) pro km.
+     */
+    public function getMileageRate(): float {
+        return $this->getFloat(CompanySetting::KEY_MILEAGE_RATE);
+    }
+
+    /**
+     * Abwesenheitstyp-Keys, die als "extern" gelten (km-fähig, optional Spesen).
+     *
+     * @return string[]
+     */
+    public function getExternAbsenceTypes(): array {
+        $raw = $this->get(CompanySetting::KEY_EXTERN_ABSENCE_TYPES) ?? '';
+        if ($raw === '') {
+            return [];
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn (string $t) => $t !== ''));
+    }
+
+    /**
+     * Dürfen Mitarbeiter ein persönliches Standard-Projekt festlegen?
+     */
+    public function isEmployeeDefaultProjectAllowed(): bool {
+        return $this->getBool(CompanySetting::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT);
+    }
+
+    /**
+     * Dürfen Mitarbeiter eine persönliche Standard-Beschreibung festlegen?
+     */
+    public function isEmployeeDefaultDescriptionAllowed(): bool {
+        return $this->getBool(CompanySetting::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION);
     }
 }

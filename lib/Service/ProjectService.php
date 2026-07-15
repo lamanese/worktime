@@ -7,12 +7,12 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Service;
+namespace OCA\Zeitwerk\Service;
 
 use DateTime;
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Db\ProjectEmployeeMapper;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Db\ProjectEmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -64,7 +64,9 @@ class ProjectService {
         string $currentUserId = '',
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): Project {
         // Validate
         $errors = $this->validate($name, $code);
@@ -81,6 +83,8 @@ class ProjectService {
         $project->setIsActive($isActive);
         $project->setIsBillable($isBillable);
         $project->setAllEmployees($allEmployees);
+        $project->setIsFieldWork($isFieldWork);
+        $project->setIsExtern($isExtern);
         $project->setCreatedAt(new DateTime());
         $project->setUpdatedAt(new DateTime());
 
@@ -113,7 +117,9 @@ class ProjectService {
         string $currentUserId = '',
         ?string $customer = null,
         bool $allEmployees = true,
-        ?array $memberIds = null
+        ?array $memberIds = null,
+        bool $isFieldWork = false,
+        bool $isExtern = false
     ): Project {
         $project = $this->find($id);
         $oldValues = $project->jsonSerialize();
@@ -132,6 +138,8 @@ class ProjectService {
         $project->setIsActive($isActive);
         $project->setIsBillable($isBillable);
         $project->setAllEmployees($allEmployees);
+        $project->setIsFieldWork($isFieldWork);
+        $project->setIsExtern($isExtern);
         $project->setUpdatedAt(new DateTime());
 
         $project = $this->projectMapper->update($project);
@@ -200,11 +208,16 @@ class ProjectService {
 
     /**
      * Whether the given employee may book on the given project (#58).
+     * Deaktivierte Projekte sind nicht (mehr) buchbar — bestehende Einträge
+     * bleiben unberührt, weil das Update unveränderte Projekte grandfathert.
      */
     public function isProjectAllowedForEmployee(int $projectId, int $employeeId): bool {
         try {
             $project = $this->find($projectId);
         } catch (NotFoundException $e) {
+            return false;
+        }
+        if (!(bool)$project->getIsActive()) {
             return false;
         }
         if ((bool)$project->getAllEmployees()) {

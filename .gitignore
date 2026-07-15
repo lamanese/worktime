@@ -44,7 +44,11 @@ appinfo/*.crt
 *.tar.gz
 *.zip
 
-# Internal documentation
+# Internal documentation / lokale KI-Infra (nicht im Fork versionieren)
 CLAUDE.md
+KIOnboarding.md
+DEPLOY-TESTSERVER.md
+.claude/deploy.md
+.claude/agents/
 docs/
 sessions/

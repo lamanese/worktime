@@ -1,36 +1,36 @@
 <template>
-    <NcModal size="large" :name="t('worktime', 'Monat prüfen')" @close="$emit('close')">
+    <NcModal size="large" :name="t('zeitwerk', 'Monat prüfen')" @close="$emit('close')">
         <div class="month-detail">
             <h3>{{ item.employeeName }} · {{ monthLabel }}</h3>
 
             <div class="month-detail__summary">
-                <span>{{ entries.length }} {{ t('worktime', 'Einträge') }}</span>
+                <span>{{ entries.length }} {{ t('zeitwerk', 'Einträge') }}</span>
                 <span class="month-detail__total">{{ totalLabel }}</span>
             </div>
 
             <NcLoadingIcon v-if="loading" :size="44" class="month-detail__loading" />
 
             <p v-else-if="!entries.length" class="month-detail__empty">
-                {{ t('worktime', 'Keine Einträge in diesem Monat.') }}
+                {{ t('zeitwerk', 'Keine Einträge in diesem Monat.') }}
             </p>
 
             <div v-else class="month-detail__card">
                 <table class="month-table">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Datum') }}</th>
-                            <th>{{ t('worktime', 'Zeiten') }}</th>
-                            <th class="num">{{ t('worktime', 'Pause') }}</th>
-                            <th class="num">{{ t('worktime', 'Stunden') }}</th>
-                            <th>{{ t('worktime', 'Projekt') }}</th>
-                            <th>{{ t('worktime', 'Beschreibung') }}</th>
+                            <th>{{ t('zeitwerk', 'Datum') }}</th>
+                            <th>{{ t('zeitwerk', 'Zeiten') }}</th>
+                            <th class="num">{{ t('zeitwerk', 'Pause') }}</th>
+                            <th class="num">{{ t('zeitwerk', 'Stunden') }}</th>
+                            <th>{{ t('zeitwerk', 'Projekt') }}</th>
+                            <th>{{ t('zeitwerk', 'Beschreibung') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="e in sortedEntries" :key="e.id">
                             <td class="nowrap">{{ formatDate(e.date) }}</td>
                             <td class="nowrap">{{ e.startTime }} – {{ e.endTime }}</td>
-                            <td class="num">{{ e.breakMinutes }} {{ t('worktime', 'Min') }}</td>
+                            <td class="num">{{ e.breakMinutes }} {{ t('zeitwerk', 'Min') }}</td>
                             <td class="num">{{ hoursLabel(e.workMinutes) }}</td>
                             <td>{{ projectName(e.projectId) || '–' }}</td>
                             <td class="desc">{{ e.description || '' }}</td>
@@ -43,19 +43,19 @@
                 <NcCheckboxRadioSwitch v-if="archiveConfigured"
                     :checked.sync="archiveAfterApprove"
                     class="month-detail__archive-toggle">
-                    {{ t('worktime', 'PDF nach dem Genehmigen sofort archivieren') }}
+                    {{ t('zeitwerk', 'PDF nach dem Genehmigen sofort archivieren') }}
                 </NcCheckboxRadioSwitch>
                 <NcButton type="tertiary" @click="downloadPdf">
                     <template #icon><FilePdfBoxIcon :size="18" /></template>
-                    {{ t('worktime', 'Monatsbericht als PDF') }}
+                    {{ t('zeitwerk', 'Monatsbericht als PDF') }}
                 </NcButton>
                 <NcButton type="tertiary" @click="$emit('reject')">
                     <template #icon><RestoreIcon :size="18" /></template>
-                    {{ t('worktime', 'Zurückweisen') }}
+                    {{ t('zeitwerk', 'Zurückweisen') }}
                 </NcButton>
                 <NcButton type="primary" @click="$emit('approve', archiveAfterApprove)">
                     <template #icon><CheckIcon :size="18" /></template>
-                    {{ t('worktime', 'Genehmigen') }}
+                    {{ t('zeitwerk', 'Genehmigen') }}
                 </NcButton>
             </div>
         </div>
@@ -132,7 +132,7 @@ export default {
             this.projects = Array.isArray(projects) ? projects : (projects?.data || [])
         } catch (error) {
             console.error('Failed to load month entries:', error)
-            showError(t('worktime', 'Fehler beim Laden der Monatseinträge'))
+            showError(t('zeitwerk', 'Fehler beim Laden der Monatseinträge'))
         } finally {
             this.loading = false
         }

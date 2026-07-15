@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * PHPUnit Bootstrap für WorkTime Tests
+ * PHPUnit Bootstrap für Zeitwerk Tests
  *
  * Lädt die Nextcloud Autoloader und Test-Umgebung.
  */
@@ -15,10 +15,10 @@ $ncRoot = getenv('NC_ROOT') ?: '/var/www/html';
 // QBMapper, Http\Response …) bereit, die die Unit-Tests instanziieren.
 require_once $ncRoot . '/lib/base.php';
 
-// App-Namespace OCA\WorkTime autoloadbar machen (PSR-4 → lib/). Bewusst ohne
+// App-Namespace OCA\Zeitwerk autoloadbar machen (PSR-4 → lib/). Bewusst ohne
 // internes App-Loader-API, damit ausschliesslich OCP/PSR-4 verwendet wird.
 spl_autoload_register(static function (string $class): void {
-    $prefix = 'OCA\\WorkTime\\';
+    $prefix = 'OCA\\Zeitwerk\\';
     if (!str_starts_with($class, $prefix)) {
         return;
     }

@@ -1,46 +1,46 @@
 <template>
-    <NcModal :name="t('worktime', 'Audit-Eintrag')" @close="$emit('close')">
+    <NcModal :name="t('zeitwerk', 'Audit-Eintrag')" @close="$emit('close')">
         <div class="audit-detail">
-            <h3>{{ t('worktime', 'Audit-Eintrag') }}</h3>
+            <h3>{{ t('zeitwerk', 'Audit-Eintrag') }}</h3>
 
             <!-- Metadaten -->
             <div class="audit-detail__card">
                 <dl class="audit-detail__meta">
                     <div class="meta-row">
-                        <dt>{{ t('worktime', 'Zeitpunkt') }}</dt>
+                        <dt>{{ t('zeitwerk', 'Zeitpunkt') }}</dt>
                         <dd>{{ dateLabel }}</dd>
                     </div>
                     <div class="meta-row">
-                        <dt>{{ t('worktime', 'Benutzer') }}</dt>
+                        <dt>{{ t('zeitwerk', 'Benutzer') }}</dt>
                         <dd>{{ entry.userId || '-' }}</dd>
                     </div>
                     <div class="meta-row">
-                        <dt>{{ t('worktime', 'Aktion') }}</dt>
+                        <dt>{{ t('zeitwerk', 'Aktion') }}</dt>
                         <dd>
                             <span class="action-badge" :class="'action-' + entry.action">{{ actionLabel }}</span>
                         </dd>
                     </div>
                     <div class="meta-row">
-                        <dt>{{ t('worktime', 'Typ') }}</dt>
+                        <dt>{{ t('zeitwerk', 'Typ') }}</dt>
                         <dd>{{ entityLabel }}</dd>
                     </div>
                     <div class="meta-row">
-                        <dt>{{ t('worktime', 'ID') }}</dt>
+                        <dt>{{ t('zeitwerk', 'ID') }}</dt>
                         <dd>{{ entry.entityId || '-' }}</dd>
                     </div>
                 </dl>
             </div>
 
             <!-- Vollständige Änderung -->
-            <h4 class="audit-detail__subhead">{{ t('worktime', 'Änderung') }}</h4>
+            <h4 class="audit-detail__subhead">{{ t('zeitwerk', 'Änderung') }}</h4>
 
             <div class="audit-detail__card">
                 <table v-if="entry.action === 'update' && diffRows.length" class="audit-detail__changes">
                     <thead>
                         <tr>
-                            <th>{{ t('worktime', 'Feld') }}</th>
-                            <th>{{ t('worktime', 'Vorher') }}</th>
-                            <th>{{ t('worktime', 'Nachher') }}</th>
+                            <th>{{ t('zeitwerk', 'Feld') }}</th>
+                            <th>{{ t('zeitwerk', 'Vorher') }}</th>
+                            <th>{{ t('zeitwerk', 'Nachher') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,12 +59,12 @@
                     </div>
                 </dl>
 
-                <p v-else class="audit-detail__empty">{{ t('worktime', 'Keine Detaildaten vorhanden.') }}</p>
+                <p v-else class="audit-detail__empty">{{ t('zeitwerk', 'Keine Detaildaten vorhanden.') }}</p>
             </div>
 
             <div class="audit-detail__actions">
                 <NcButton type="primary" @click="$emit('close')">
-                    {{ t('worktime', 'Schließen') }}
+                    {{ t('zeitwerk', 'Schließen') }}
                 </NcButton>
             </div>
         </div>

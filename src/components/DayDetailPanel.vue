@@ -6,14 +6,14 @@
         <!-- Kontext-Hinweis: Feiertag / Abwesenheit (Erfassen bleibt möglich) -->
         <div v-if="day.holiday" class="dp-note holiday">
             <CalendarStarIcon :size="18" />
-            {{ t('worktime', 'Feiertag') }}: {{ day.holiday.name }}
+            {{ t('zeitwerk', 'Feiertag') }}: {{ day.holiday.name }}
         </div>
         <template v-else-if="day.absence">
             <div class="dp-note" :class="absenceColorClass(day.absence.type)">
                 {{ day.absence.typeName }}<span v-if="day.absence.scope < 1"> ({{ scopeLabel }})</span>
             </div>
             <NcButton type="tertiary" class="dp-open-abs" @click="goToAbsence">
-                {{ t('worktime', 'In „Abwesenheit" öffnen') }}
+                {{ t('zeitwerk', 'In „Abwesenheit" öffnen') }}
             </NcButton>
         </template>
 
@@ -41,7 +41,7 @@
                         <div class="dp-entry-meta">
                             <span>{{ hoursLabel(entry.workMinutes) }}</span>
                             <span class="dp-dot-sep">·</span>
-                            <span>{{ t('worktime', '{min} Min Pause', { min: entry.breakMinutes }) }}</span>
+                            <span>{{ t('zeitwerk', '{min} Min Pause', { min: entry.breakMinutes }) }}</span>
                             <template v-if="projectName(entry.projectId)">
                                 <span class="dp-dot-sep">·</span>
                                 <span>{{ projectName(entry.projectId) }}</span>
@@ -51,12 +51,12 @@
                     </div>
                     <div v-if="!readonly" class="dp-entry-actions">
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Bearbeiten')"
+                            :aria-label="t('zeitwerk', 'Bearbeiten')"
                             @click="startEdit(entry)">
                             <template #icon><PencilIcon :size="18" /></template>
                         </NcButton>
                         <NcButton type="tertiary"
-                            :aria-label="t('worktime', 'Löschen')"
+                            :aria-label="t('zeitwerk', 'Löschen')"
                             @click="confirmDelete(entry)">
                             <template #icon><DeleteIcon :size="18" /></template>
                         </NcButton>
@@ -64,7 +64,7 @@
                 </li>
             </ul>
             <p v-else-if="!day.holiday && !day.absence && !readonly" class="dp-empty">
-                {{ t('worktime', 'Noch nichts erfasst.') }}
+                {{ t('zeitwerk', 'Noch nichts erfasst.') }}
             </p>
 
             <div v-if="readonly" class="dp-locked">
@@ -73,9 +73,55 @@
             </div>
             <NcButton v-else type="primary" wide class="dp-add" @click="startAdd">
                 <template #icon><PlusIcon :size="20" /></template>
-                {{ t('worktime', 'Eintrag hinzufügen') }}
+                {{ t('zeitwerk', 'Eintrag hinzufügen') }}
             </NcButton>
         </template>
+
+        <!-- Extern-Kilometer: nur an Tagen mit Extern-Projekt oder externem Abwesenheitstyp -->
+        <div v-if="externEligible" class="dp-km">
+            <label :for="'dp-km-' + day.date" class="dp-km-label">
+                {{ t('zeitwerk', 'Gefahrene Kilometer (Extern)') }}
+            </label>
+
+            <!-- Gespeicherte km als Eintrags-Zeile (wie die Zeiteinträge), mit Bearbeiten/Löschen -->
+            <div v-if="day.kilometers > 0 && !kmEditing" class="dp-entry dp-km-entry">
+                <div class="dp-entry-main">
+                    <div class="dp-entry-time">{{ day.kilometers }} km</div>
+                </div>
+                <div v-if="!readonly" class="dp-entry-actions">
+                    <NcButton type="tertiary"
+                        :aria-label="t('zeitwerk', 'Bearbeiten')"
+                        @click="startKmEdit">
+                        <template #icon><PencilIcon :size="18" /></template>
+                    </NcButton>
+                    <NcButton type="tertiary"
+                        :aria-label="t('zeitwerk', 'Löschen')"
+                        @click="confirmKmDelete">
+                        <template #icon><DeleteIcon :size="18" /></template>
+                    </NcButton>
+                </div>
+            </div>
+
+            <!-- Erfassen/Bearbeiten: erst der Button macht den Wert wirksam -->
+            <div v-else-if="!readonly" class="dp-km-row">
+                <input :id="'dp-km-' + day.date"
+                    v-model.number="kmValue"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="dp-km-input"
+                    @keyup.enter="saveKilometers">
+                <span class="dp-km-unit">km</span>
+                <NcButton type="primary"
+                    :disabled="!kmValue || kmValue <= 0"
+                    @click="saveKilometers">
+                    {{ kmEditing ? t('zeitwerk', 'Speichern') : t('zeitwerk', 'Hinzufügen') }}
+                </NcButton>
+                <NcButton v-if="kmEditing" type="tertiary" @click="cancelKmEdit">
+                    {{ t('zeitwerk', 'Abbrechen') }}
+                </NcButton>
+            </div>
+        </div>
 
         <CorrectionReasonModal v-if="pendingDeleteEntry"
             @confirm="onDeleteReasonConfirm"
@@ -94,6 +140,7 @@ import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import { mapActions, mapGetters } from 'vuex'
 import TimeEntryForm from './TimeEntryForm.vue'
 import CorrectionReasonModal from './CorrectionReasonModal.vue'
+import DailyKmService from '../services/DailyKmService.js'
 import { formatDateWithWeekday, getToday } from '../utils/dateUtils.js'
 import { formatMinutes, getCurrentTime } from '../utils/timeUtils.js'
 import { getAbsenceColorClass } from '../utils/formatters.js'
@@ -125,6 +172,14 @@ export default {
             type: String,
             default: null,
         },
+        employeeId: {
+            type: Number,
+            default: null,
+        },
+        externAbsenceTypes: {
+            type: Array,
+            default: () => [],
+        },
     },
     emits: ['refresh'],
     data() {
@@ -132,6 +187,8 @@ export default {
             formMode: null, // 'add' | 'edit' | null
             editingEntry: null,
             pendingDeleteEntry: null,
+            kmValue: 0,
+            kmEditing: false,
         }
     },
     computed: {
@@ -141,15 +198,15 @@ export default {
         },
         subtitle() {
             if (this.day.entries.length) {
-                return this.t('worktime', 'Erfasst: {hours}', { hours: this.hoursLabel(this.day.totalMinutes) })
+                return this.t('zeitwerk', 'Erfasst: {hours}', { hours: this.hoursLabel(this.day.totalMinutes) })
             }
-            return this.t('worktime', 'Tag ausgewählt')
+            return this.t('zeitwerk', 'Tag ausgewählt')
         },
         scopeLabel() {
             const scope = this.day.absence?.scope ?? 1
             return scope === 0.5
-                ? this.t('worktime', 'Halber Tag')
-                : this.t('worktime', '{scope} Tage', { scope })
+                ? this.t('zeitwerk', 'Halber Tag')
+                : this.t('zeitwerk', '{scope} Tage', { scope })
         },
         readonly() {
             // In HR correction mode the lock is bypassed (a reason is required on save).
@@ -160,9 +217,9 @@ export default {
         },
         lockedMessage() {
             if (this.monthStatus === 'approved') {
-                return this.t('worktime', 'Monat genehmigt – gesperrt. Korrektur nur durch HR.')
+                return this.t('zeitwerk', 'Monat genehmigt – gesperrt. Korrektur nur durch HR.')
             }
-            return this.t('worktime', 'Eingereicht – Bearbeitung erst nach Genehmigung oder Ablehnung möglich.')
+            return this.t('zeitwerk', 'Eingereicht – Bearbeitung erst nach Genehmigung oder Ablehnung möglich.')
         },
         // Smart-Prefill (#340): Vorschlag fuer einen Folge-Eintrag.
         // Start = Ende des spaetesten Eintrags des Tages (null beim ersten Eintrag).
@@ -177,11 +234,35 @@ export default {
             if (!this.day.entries.length) return null
             return this.day.date === getToday() ? getCurrentTime() : ''
         },
+        // Tag ist "extern" (km-fähig). Autorität ist das Backend (day.externEligible,
+        // kennt auch inaktive Extern-Projekte); die lokale Prüfung deckt frisch
+        // erfasste Buchungen/Abwesenheiten vor dem nächsten Reload ab — sie sieht
+        // aber nur die aktiven Projekte des Mitarbeiters.
+        externEligible() {
+            if (this.day.externEligible) return true
+            const hasExternProject = this.day.entries.some(e => {
+                const project = this.projects.find(p => p.id === e.projectId)
+                return project && project.isExtern
+            })
+            if (hasExternProject) return true
+            return !!this.day.absence && this.externAbsenceTypes.includes(this.day.absence.type)
+        },
     },
     watch: {
         // Beim Wechsel des ausgewählten Tages offene Formulare schließen
         'day.date'() {
             this.closeForm()
+            this.kmEditing = false
+        },
+        // Kilometerwert aus dem (neu geladenen) Tag übernehmen — aber nicht,
+        // während der Wert gerade bearbeitet wird.
+        day: {
+            immediate: true,
+            handler() {
+                if (!this.kmEditing) {
+                    this.kmValue = this.day.kilometers || 0
+                }
+            },
         },
     },
     methods: {
@@ -195,6 +276,45 @@ export default {
             return project?.name || project?.displayName || ''
         },
         absenceColorClass: getAbsenceColorClass,
+        startKmEdit() {
+            this.kmValue = this.day.kilometers
+            this.kmEditing = true
+        },
+        cancelKmEdit() {
+            this.kmEditing = false
+            this.kmValue = this.day.kilometers || 0
+        },
+        async saveKilometers() {
+            if (this.readonly || !this.employeeId) return
+            const km = Math.max(0, Math.round(this.kmValue || 0))
+            if (km <= 0) return
+            try {
+                await DailyKmService.upsert(this.employeeId, this.day.date, km)
+                this.kmEditing = false
+                showSuccessMessage(this.t('zeitwerk', 'Kilometer gespeichert'))
+                this.$emit('refresh')
+            } catch (error) {
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Speichern der Kilometer'))
+            }
+        },
+        async confirmKmDelete() {
+            if (this.readonly || !this.employeeId) return
+            const confirmed = await confirmAction(
+                this.t('zeitwerk', 'Möchten Sie die erfassten Kilometer wirklich löschen?'),
+                this.t('zeitwerk', 'Kilometer löschen'),
+                this.t('zeitwerk', 'Löschen'),
+                true,
+            )
+            if (!confirmed) return
+            try {
+                await DailyKmService.upsert(this.employeeId, this.day.date, 0)
+                this.kmValue = 0
+                showSuccessMessage(this.t('zeitwerk', 'Kilometer gelöscht'))
+                this.$emit('refresh')
+            } catch (error) {
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Speichern der Kilometer'))
+            }
+        },
         startAdd() {
             this.editingEntry = null
             this.formMode = 'add'
@@ -218,9 +338,9 @@ export default {
                 return
             }
             const confirmed = await confirmAction(
-                this.t('worktime', 'Möchten Sie diesen Eintrag wirklich löschen?'),
-                this.t('worktime', 'Eintrag löschen'),
-                this.t('worktime', 'Löschen'),
+                this.t('zeitwerk', 'Möchten Sie diesen Eintrag wirklich löschen?'),
+                this.t('zeitwerk', 'Eintrag löschen'),
+                this.t('zeitwerk', 'Löschen'),
                 true,
             )
             if (!confirmed) return
@@ -236,11 +356,11 @@ export default {
         async doDelete(entry, reason) {
             try {
                 await this.deleteTimeEntry({ id: entry.id, reason })
-                showSuccessMessage(this.t('worktime', 'Eintrag gelöscht'))
+                showSuccessMessage(this.t('zeitwerk', 'Eintrag gelöscht'))
                 this.$emit('refresh')
             } catch (error) {
                 console.error('Failed to delete entry:', error)
-                showErrorMessage(error.message || this.t('worktime', 'Fehler beim Löschen'))
+                showErrorMessage(error.message || this.t('zeitwerk', 'Fehler beim Löschen'))
             }
         },
         goToAbsence() {
@@ -381,5 +501,43 @@ export default {
     padding: 10px 12px;
     font-size: 13px;
     color: var(--color-text-maxcontrast);
+}
+
+.dp-km {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.dp-km-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.dp-km-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dp-km-input {
+    width: 100px;
+    padding: 6px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-main-background);
+    color: var(--color-main-text);
+}
+
+.dp-km-unit {
+    color: var(--color-text-maxcontrast);
+}
+
+/* Gespeicherte km als Zeile im Stil der Zeiteinträge */
+.dp-km-entry {
+    border-top: 1px solid var(--color-border-light, var(--color-border));
+    align-items: center;
 }
 </style>

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Tests\Unit\Service;
+namespace OCA\Zeitwerk\Tests\Unit\Service;
 
-use OCA\WorkTime\Db\Project;
-use OCA\WorkTime\Db\ProjectEmployeeMapper;
-use OCA\WorkTime\Db\ProjectMapper;
-use OCA\WorkTime\Service\AuditLogService;
-use OCA\WorkTime\Service\ProjectService;
-use OCA\WorkTime\Service\ValidationException;
+use OCA\Zeitwerk\Db\Project;
+use OCA\Zeitwerk\Db\ProjectEmployeeMapper;
+use OCA\Zeitwerk\Db\ProjectMapper;
+use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\ProjectService;
+use OCA\Zeitwerk\Service\ValidationException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -61,6 +61,17 @@ class ProjectServiceTest extends TestCase {
         $this->projectEmployeeMapper->method('findEmployeeIdsForProject')->willReturn([5, 6]);
 
         $this->assertFalse($this->service->isProjectAllowedForEmployee(2, 99));
+    }
+
+    public function testInactiveProjectDeniedEvenForAssignedEmployee(): void {
+        // Deaktivierte Projekte sind nicht mehr buchbar — auch nicht über eine
+        // veraltete Vorauswahl (z.B. persönliches Standard-Projekt) oder für
+        // zugewiesene Mitarbeiter.
+        $inactive = $this->makeProject(1, true);
+        $inactive->setIsActive(false);
+        $this->projectMapper->method('find')->willReturn($inactive);
+
+        $this->assertFalse($this->service->isProjectAllowedForEmployee(1, 5));
     }
 
     public function testGetProjectsForEmployeeReturnsGlobalsPlusAssigned(): void {

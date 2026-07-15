@@ -1,5 +1,5 @@
 /**
- * WorkTime Composables
+ * Zeitwerk Composables
  *
  * Vue 3 composables for reusable logic across components.
  */

@@ -3,13 +3,13 @@
  * l10n-check.mjs — Konsistenz-Waechter fuer die Uebersetzungskataloge.
  *
  * Hintergrund (worktime#259, Lehre aus 0.12.0-Review #394):
- * Der `t('worktime', '…')`-Lookup ist byte-genau. Die Kataloge in l10n/ werden
+ * Der `t('zeitwerk', '…')`-Lookup ist byte-genau. Die Kataloge in l10n/ werden
  * von Hand gepflegt → sie driften: fehlende Keys, tote Keys, typografische
  * Mismatches (`…` vs `...`), .js und .json laufen auseinander. Folge: Nutzer
  * sehen statt der Uebersetzung den deutschen Quelltext.
  *
  * Dieser Waechter macht Drift unmoeglich, indem er die Wahrheit aus dem CODE
- * ableitet (alle `t('worktime', '<literal>')`) und die 6 Kataloge dagegen prueft.
+ * ableitet (alle `t('zeitwerk', '<literal>')`) und die 6 Kataloge dagegen prueft.
  *
  *   node scripts/l10n-check.mjs          → pruefen (Exit 1 bei struktureller Drift)
  *   node scripts/l10n-check.mjs --fix    → Kataloge aus dem Code regenerieren
@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
 import { runInNewContext } from 'node:vm'
 
-const APP_ID = 'worktime'
+const APP_ID = 'zeitwerk'
 const SOURCE_LANG = 'de'
 const LANGS = ['de', 'en', 'cs']
 
@@ -58,8 +58,8 @@ function filesUnder(dir, re) {
 	return out
 }
 
-// Frontend: t('worktime', '<literal>') — single-quoted, erstes Argument.
-const T_FRONTEND = /\bt\(\s*'worktime'\s*,\s*'((?:[^'\\]|\\.)*)'/g
+// Frontend: t('zeitwerk', '<literal>') — single-quoted, erstes Argument.
+const T_FRONTEND = /\bt\(\s*'zeitwerk'\s*,\s*'((?:[^'\\]|\\.)*)'/g
 // Backend (PHP): $l->t('…') oder ->t("…"); Whitespace/Newlines toleriert (mehrzeilige Aufrufe).
 const T_BACKEND_SQ = /->t\(\s*'((?:[^'\\]|\\.)*)'/g
 const T_BACKEND_DQ = /->t\(\s*"((?:[^"\\]|\\.)*)"/g

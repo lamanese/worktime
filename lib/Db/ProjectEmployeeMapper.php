@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -19,7 +19,7 @@ use OCP\IDBConnection;
 class ProjectEmployeeMapper extends QBMapper {
 
     public function __construct(IDBConnection $db) {
-        parent::__construct($db, 'wt_project_employees', ProjectEmployee::class);
+        parent::__construct($db, 'zw_project_employees', ProjectEmployee::class);
     }
 
     /**

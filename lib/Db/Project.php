@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Db;
+namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use JsonSerializable;
@@ -29,6 +29,8 @@ use OCP\AppFramework\Db\Entity;
  * @method int getIsActive()
  * @method int getIsBillable()
  * @method int getAllEmployees()
+ * @method int getIsFieldWork()
+ * @method int getIsExtern()
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  * @method DateTime getUpdatedAt()
@@ -44,6 +46,8 @@ class Project extends Entity implements JsonSerializable {
     protected int $isActive = 1;
     protected int $isBillable = 1;
     protected int $allEmployees = 1;
+    protected int $isFieldWork = 0;
+    protected int $isExtern = 0;
     protected ?DateTime $createdAt = null;
     protected ?DateTime $updatedAt = null;
 
@@ -52,6 +56,8 @@ class Project extends Entity implements JsonSerializable {
         $this->addType('isActive', 'integer');
         $this->addType('isBillable', 'integer');
         $this->addType('allEmployees', 'integer');
+        $this->addType('isFieldWork', 'integer');
+        $this->addType('isExtern', 'integer');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
     }
@@ -74,6 +80,18 @@ class Project extends Entity implements JsonSerializable {
         $this->markFieldUpdated('allEmployees');
     }
 
+    public function setIsFieldWork(bool|int $isFieldWork): void {
+        $value = is_bool($isFieldWork) ? ($isFieldWork ? 1 : 0) : $isFieldWork;
+        $this->isFieldWork = $value;
+        $this->markFieldUpdated('isFieldWork');
+    }
+
+    public function setIsExtern(bool|int $isExtern): void {
+        $value = is_bool($isExtern) ? ($isExtern ? 1 : 0) : $isExtern;
+        $this->isExtern = $value;
+        $this->markFieldUpdated('isExtern');
+    }
+
     public function getDisplayName(): string {
         if ($this->code) {
             return "[{$this->code}] {$this->name}";
@@ -93,6 +111,8 @@ class Project extends Entity implements JsonSerializable {
             'isActive' => (bool)$this->isActive,
             'isBillable' => (bool)$this->isBillable,
             'allEmployees' => (bool)$this->allEmployees,
+            'isFieldWork' => (bool)$this->isFieldWork,
+            'isExtern' => (bool)$this->isExtern,
             'createdAt' => $this->createdAt?->format('c'),
             'updatedAt' => $this->updatedAt?->format('c'),
         ];

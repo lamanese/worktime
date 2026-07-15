@@ -6,5 +6,5 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'OCA\\WorkTime\\' => array($baseDir . '/lib'),
+    'OCA\\Zeitwerk\\' => array($baseDir . '/lib'),
 );

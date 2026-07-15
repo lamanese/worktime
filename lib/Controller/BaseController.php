@@ -7,19 +7,19 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Controller;
+namespace OCA\Zeitwerk\Controller;
 
-use OCA\WorkTime\AppInfo\Application;
-use OCA\WorkTime\Service\ForbiddenException;
-use OCA\WorkTime\Service\NotFoundException;
-use OCA\WorkTime\Service\ValidationException;
+use OCA\Zeitwerk\AppInfo\Application;
+use OCA\Zeitwerk\Service\ForbiddenException;
+use OCA\Zeitwerk\Service\NotFoundException;
+use OCA\Zeitwerk\Service\ValidationException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
- * Base controller with common functionality for all WorkTime controllers.
+ * Base controller with common functionality for all Zeitwerk controllers.
  *
  * Provides:
  * - Unified authentication checks

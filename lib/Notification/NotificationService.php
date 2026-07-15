@@ -7,11 +7,11 @@
 
 declare(strict_types=1);
 
-namespace OCA\WorkTime\Notification;
+namespace OCA\Zeitwerk\Notification;
 
-use OCA\WorkTime\AppInfo\Application;
-use OCA\WorkTime\Db\Absence;
-use OCA\WorkTime\Db\EmployeeMapper;
+use OCA\Zeitwerk\AppInfo\Application;
+use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
