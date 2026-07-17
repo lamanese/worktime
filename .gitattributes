@@ -1,1 +1,30 @@
 js/** merge=ours -diff linguist-generated
+
+# Release-Tarball (git archive): nur ausliefern, was die App zur Laufzeit braucht.
+# .htaccess bricht die NC-Signaturpruefung (FilenameValidator).
+vendor/tecnickcom/tcpdf/tools export-ignore
+
+# Source-Maps nicht ausliefern (analog Deploy-Excludes)
+js/*.map export-ignore
+
+# Entwicklungs- und Repo-Interna gehoeren nicht ins Release
+.gitattributes export-ignore
+.gitignore export-ignore
+.github export-ignore
+.githooks export-ignore
+.claude export-ignore
+.eslintrc.js export-ignore
+.eslintignore export-ignore
+jest.config.js export-ignore
+phpunit.xml export-ignore
+CODEOWNERS export-ignore
+scripts export-ignore
+src export-ignore
+tests export-ignore
+docs export-ignore
+sessions export-ignore
+screenshots export-ignore
+CLAUDE.md export-ignore
+KIOnboarding.md export-ignore
+DEPLOY-TESTSERVER.md export-ignore
+PLAN-EIGENE-APP.md export-ignore

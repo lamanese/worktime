@@ -8,6 +8,13 @@ sondern als **eigene, im Nextcloud App Store installierbare App** zu veröffentl
 > `OCA\Zeitwerk`, Tabellen-Prefix `zw_`, frisches Schema ohne Datenimport. Abschnitt 3
 > ist damit erledigt; Abschnitt 4-6 (Store-Zertifikat, Release, Automatisierung) sind
 > weiterhin offen und werden erst bei einem Store-Release relevant.
+>
+> **Update (2026-07-15): Abschnitt 4 IN ARBEIT.** v0.14.0 auf `main` released (Tag +
+> GitHub-Release). Key/CSR erzeugt (`~/.nextcloud/certificates/zeitwerk.key|.csr`),
+> Zertifikats-Request eingereicht (nextcloud/app-certificate-requests#1096, wartet auf
+> Merge), Store-Account angelegt. `git archive` liefert dank `.gitattributes` einen
+> store-tauglichen Tarball. Naechste Schritte und Details:
+> `sessions/20260715_release-0.14.0-store-vorbereitung.md`.
 
 ## 1. Ziel
 

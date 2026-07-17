@@ -7,6 +7,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-07-17
+
+### Changed
+- **Erstes Release im Nextcloud App Store**: Zeitwerk ist ab dieser Version über den offiziellen App Store installierbar. Das Release-Paket wird aus `git archive` erzeugt und enthält nur noch Laufzeit-Dateien — Entwicklungs- und Repo-Interna (Quell-Rohdateien, Tests, CI-Konfiguration, Source-Maps) sowie eine `.htaccess` aus der PDF-Bibliothek, die die Signaturprüfung von Nextcloud gebrochen hätte, sind ausgeschlossen.
+
+### Removed
+- **Veraltetes Upstream-Zertifikat entfernt**: `appinfo/worktime.crt` (das Store-Zertifikat der Original-App WorkTime) war noch im Paket enthalten und ist für Zeitwerk ohne Funktion.
+
 ## [0.14.0] - 2026-07-13
 
 ### Changed
