@@ -15,6 +15,14 @@ sondern als **eigene, im Nextcloud App Store installierbare App** zu veröffentl
 > Merge), Store-Account angelegt. `git archive` liefert dank `.gitattributes` einen
 > store-tauglichen Tarball. Naechste Schritte und Details:
 > `sessions/20260715_release-0.14.0-store-vorbereitung.md`.
+>
+> **Update (2026-07-17): ZIEL ERREICHT — Abschnitt 4 und 5 ERLEDIGT.** Zertifikat
+> erhalten (gueltig bis 2036), App registriert, v0.14.1/v0.14.2 im App Store live:
+> <https://apps.nextcloud.com/apps/zeitwerk>. Abweichung von Abschnitt 5: statt
+> `occ integrity:sign-app` entsteht `appinfo/signature.json` lokal per
+> `scripts/release/sign-app.php` (Replikation von `OC\IntegrityCheck\Checker`);
+> ein manueller Store-Review fand nicht statt. Offen bleibt nur Abschnitt 6
+> (Release-Automatisierung per GitHub Action).
 
 ## 1. Ziel
 
