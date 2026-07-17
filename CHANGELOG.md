@@ -7,6 +7,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.14.2] - 2026-07-17
+
+### Changed
+- **App-Paket file-signiert**: Das Release-Paket enthält jetzt `appinfo/signature.json` mit SHA512-Hashes aller Dateien, signiert mit dem Zeitwerk-Zertifikat der Nextcloud Code Signing Authority. Administratoren können die Integrität der installierten App damit jederzeit prüfen (`occ integrity:check-app zeitwerk`), und nachträgliche Änderungen an Dateien der Instanz werden erkannt.
+
 ## [0.14.1] - 2026-07-17
 
 ### Changed

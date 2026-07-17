@@ -54,7 +54,7 @@ Eigenständig gepflegter Fork der App WorkTime ([cpcMomentum/worktime](https://g
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
 
-    <version>0.14.1</version>
+    <version>0.14.2</version>
     <licence>AGPL-3.0-or-later</licence>
 
     <author mail="gilbeau.hammoud@gmail.com" homepage="https://github.com/lamanese">Ahmad Gilbeau-Hammoud</author>
