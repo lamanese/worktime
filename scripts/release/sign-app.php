@@ -9,11 +9,29 @@
  * gleiche Hash-, Sortier- und Signatur-Parameter.
  *
  * Aufruf: php sign-app.php <appPath> <privateKeyPath> <certificatePath>
+ *
+ * Braucht phpseclib 2 (nicht Teil des App-vendor/). Einmalig bereitstellen:
+ *   mkdir -p ~/.nextcloud/signer && cd ~/.nextcloud/signer \
+ *     && composer require phpseclib/phpseclib:^2.0
+ * Anderer Ort: Umgebungsvariable SIGNER_AUTOLOAD auf die autoload.php zeigen lassen.
  */
 
 declare(strict_types=1);
 
-require __DIR__ . '/vendor/autoload.php';
+$autoload = getenv('SIGNER_AUTOLOAD') ?: null;
+if ($autoload === null) {
+    foreach ([__DIR__ . '/vendor/autoload.php', getenv('HOME') . '/.nextcloud/signer/vendor/autoload.php'] as $candidate) {
+        if (file_exists($candidate)) {
+            $autoload = $candidate;
+            break;
+        }
+    }
+}
+if ($autoload === null || !file_exists($autoload)) {
+    fwrite(STDERR, "phpseclib-Autoload nicht gefunden. Setup siehe Script-Kopf (composer require phpseclib/phpseclib:^2.0) oder SIGNER_AUTOLOAD setzen.\n");
+    exit(1);
+}
+require $autoload;
 
 use phpseclib\Crypt\RSA;
 use phpseclib\File\X509;

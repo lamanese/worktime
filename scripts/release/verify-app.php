@@ -9,11 +9,27 @@
  * Nextcloud-Root-CA, CN-Pruefung, RSA-PSS-Signaturpruefung, Hash-Abgleich.
  *
  * Aufruf: php verify-app.php <appPath> <appId> <rootCrtPath>
+ *   (rootCrtPath: resources/codesigning/root.crt aus nextcloud/server)
+ *
+ * Braucht phpseclib 2 wie sign-app.php — Setup siehe dort.
  */
 
 declare(strict_types=1);
 
-require __DIR__ . '/vendor/autoload.php';
+$autoload = getenv('SIGNER_AUTOLOAD') ?: null;
+if ($autoload === null) {
+    foreach ([__DIR__ . '/vendor/autoload.php', getenv('HOME') . '/.nextcloud/signer/vendor/autoload.php'] as $candidate) {
+        if (file_exists($candidate)) {
+            $autoload = $candidate;
+            break;
+        }
+    }
+}
+if ($autoload === null || !file_exists($autoload)) {
+    fwrite(STDERR, "phpseclib-Autoload nicht gefunden. Setup siehe sign-app.php (composer require phpseclib/phpseclib:^2.0) oder SIGNER_AUTOLOAD setzen.\n");
+    exit(1);
+}
+require $autoload;
 
 use phpseclib\Crypt\RSA;
 use phpseclib\File\X509;
