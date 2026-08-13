@@ -7,7 +7,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
-## [0.14.3] - 2026-07-26
+## [0.14.3] - 2026-08-13
 
 ### Removed
 - **Autoren-Eintrag des Original-Autors entfernt**: Axel Deffner ist auf eigenen Wunsch nicht mehr als Autor in `info.xml` und im App-Store-Eintrag gelistet, da er Zeitwerk nicht mitbetreut und nicht als Kontaktperson erscheinen möchte. Der Herkunfts-Hinweis in der App-Beschreibung („Fork der App WorkTime, Original von Axel Deffner") sowie die Copyright-Vermerke in den Quelldateien bleiben unverändert erhalten.
