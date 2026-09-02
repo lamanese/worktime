@@ -8,6 +8,7 @@ use DateTime;
 use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\AbsenceMapper;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCA\Zeitwerk\Db\HolidayMapper;
 use OCA\Zeitwerk\Db\TimeEntry;
@@ -112,6 +113,7 @@ class AbsenceServiceTest extends TestCase {
     }
 
     public function testDeleteBlocksEmployeeInLockedMonth(): void {
+        $this->expectActiveEmployee();
         // A pending vacation in a past (locked) year must not be deletable by an
         // employee (no HR override, no reason).
         $absence = $this->makeAbsence(
@@ -163,6 +165,7 @@ class AbsenceServiceTest extends TestCase {
     }
 
     public function testDeleteApprovedSickAllowedInOpenMonth(): void {
+        $this->expectActiveEmployee();
         // Absence-specific bypass: APPROVED sick leave is informational and may be
         // deleted even though it is approved — the sick/child_sick exclusion lets
         // it through in an open month for everyone.
@@ -181,6 +184,7 @@ class AbsenceServiceTest extends TestCase {
     }
 
     public function testDeleteApprovedChildSickAllowedInOpenMonth(): void {
+        $this->expectActiveEmployee();
         // Same bypass for child-sick leave.
         $absence = $this->makeAbsence(
             Absence::TYPE_CHILD_SICK,
@@ -266,6 +270,7 @@ class AbsenceServiceTest extends TestCase {
      * blocked — the absence is never inserted.
      */
     public function testFullDayAbsenceBlockedWhenTimeEntriesExist(): void {
+        $this->expectActiveEmployee();
         $this->absenceMapper->method('findOverlapping')->willReturn([]);
 
         $entry = new TimeEntry();
@@ -296,6 +301,7 @@ class AbsenceServiceTest extends TestCase {
      * absence is inserted normally.
      */
     public function testHalfDayAbsenceAllowedDespiteTimeEntries(): void {
+        $this->expectActiveEmployee();
         $this->absenceMapper->method('findOverlapping')->willReturn([]);
 
         $entry = new TimeEntry();
@@ -754,10 +760,63 @@ class AbsenceServiceTest extends TestCase {
     }
 
     public function testCreateRejectsCompanyClosureType(): void {
+        $this->expectActiveEmployee();
         // Betriebsschließung ist nicht beantragbar — nur der zentrale Weg darf sie setzen.
         $this->absenceMapper->expects($this->never())->method('insert');
 
         $this->expectException(ValidationException::class);
         $this->service->create(1, Absence::TYPE_COMPANY_CLOSURE, '2026-08-03', '2026-08-07');
+    }
+
+    // ---- Inactive employees must not record (uebernommen aus WorkTime #486) ----
+
+    private function expectActiveEmployee(int $id = 1): Employee {
+        $employee = new Employee();
+        $employee->setId($id);
+        $employee->setIsActive(true);
+        $this->employeeMapper->method('find')->willReturn($employee);
+        return $employee;
+    }
+
+    private function expectInactiveEmployee(int $id = 1): Employee {
+        $employee = new Employee();
+        $employee->setId($id);
+        $employee->setIsActive(false);
+        $this->employeeMapper->method('find')->willReturn($employee);
+        return $employee;
+    }
+
+    /** Deactivated employees must not gain new absences. */
+    public function testCreateBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->absenceMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->create(1, Absence::TYPE_VACATION, '2020-06-10', '2020-06-12');
+    }
+
+    public function testUpdateBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('2020-06-10'), new DateTime('2020-06-12'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->expects($this->never())->method('update');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->update(99, Absence::TYPE_VACATION, '2020-06-10', '2020-06-12');
+    }
+
+    /**
+     * Cancelling stays open on purpose: an already-approved absence must remain
+     * settleable after the employee was deactivated.
+     */
+    public function testCancelStillAllowedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_APPROVED, new DateTime('2020-06-10'), new DateTime('2020-06-12'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->method('update')->willReturnArgument(0);
+
+        $result = $this->service->cancel(99, 'admin');
+
+        $this->assertSame(Absence::STATUS_CANCELLED, $result->getStatus());
     }
 }
