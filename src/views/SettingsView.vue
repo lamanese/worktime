@@ -618,7 +618,7 @@
                             <th>{{ t('zeitwerk', 'Resturlaub') }}<br>{{ t('zeitwerk', 'Ist') }}</th>
                             <th>{{ t('zeitwerk', 'Resturlaub') }}<br>{{ t('zeitwerk', 'Übertrag') }}</th>
                             <th>{{ t('zeitwerk', 'Bemerkung') }}</th>
-                            <th></th>
+                            <th>{{ t('zeitwerk', 'Übertrag') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -627,7 +627,7 @@
                             <td>{{ emp.fullName }}</td>
                             <td class="text-right carryover-actual">
                                 <span v-if="emp.wasActive" :class="emp.actualOvertimeHours >= 0 ? 'value-positive' : 'value-negative'">
-                                    {{ formatHours(emp.actualOvertimeHours) }}
+                                    {{ formatCarryoverHours(emp.actualOvertimeHours) }}
                                 </span>
                                 <span v-else class="value-na">–</span>
                             </td>
@@ -635,10 +635,10 @@
                                 <input v-if="!emp.isLocked"
                                     v-model.number="emp.overtimeHours"
                                     type="number"
-                                    step="0.5"
+                                    step="0.01"
                                     class="input-field input-small carryover-input"
                                     @change="autoSaveCarryover(emp)">
-                                <span v-else class="carryover-locked-value">{{ formatHours(emp.overtimeHours) }}</span>
+                                <span v-else class="carryover-locked-value">{{ formatCarryoverHours(emp.overtimeHours) }}</span>
                             </td>
                             <td class="text-right carryover-actual">
                                 <span v-if="emp.wasActive">{{ emp.actualVacationRemaining }}</span>
@@ -664,13 +664,23 @@
                                 <span v-else class="carryover-locked-note">{{ emp.note || '–' }}</span>
                             </td>
                             <td class="carryover-actions">
-                                <NcButton v-if="emp.hasValues && !emp.isLocked"
-                                    type="primary"
-                                    :aria-label="t('zeitwerk', 'Übertrag durchführen')"
-                                    @click="lockCarryover(emp)">
-                                    {{ t('zeitwerk', 'Übertrag durchführen') }}
-                                </NcButton>
-                                <span v-else-if="emp.isLocked" class="carryover-locked-label">
+                                <div v-if="!emp.isLocked" class="carryover-actions__buttons">
+                                    <NcButton v-if="canTakeOverActuals(emp)"
+                                        type="secondary"
+                                        :disabled="!!carryoverLocking[carryoverKey(emp)]"
+                                        :aria-label="t('zeitwerk', 'Ist-Werte des Vorjahres eintragen')"
+                                        @click="takeOverCarryover(emp)">
+                                        {{ t('zeitwerk', 'Eintragen') }}
+                                    </NcButton>
+                                    <NcButton v-if="emp.hasValues"
+                                        type="primary"
+                                        :disabled="!!carryoverLocking[carryoverKey(emp)]"
+                                        :aria-label="t('zeitwerk', 'Übertrag durchführen')"
+                                        @click="lockCarryover(emp)">
+                                        {{ t('zeitwerk', 'Durchführen') }}
+                                    </NcButton>
+                                </div>
+                                <span v-else class="carryover-locked-label">
                                     🔒 {{ t('zeitwerk', 'Durchgeführt') }}
                                     <NcButton type="tertiary"
                                         :aria-label="t('zeitwerk', 'Korrektur')"
@@ -870,6 +880,7 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
+import { canTakeOverActuals, takeOverAndSave } from '../utils/carryoverTakeOver.js'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
@@ -979,6 +990,10 @@ export default {
             // Yearly carryover
             carryoverYear: getCurrentYear(),
             carryoverEmployees: [],
+            carryoverSaving: {},
+            carryoverQueued: {},
+            carryoverLocking: {},
+            carryoverLoadSeq: 0,
             carryoverSourceYearStatus: null,
             showCancelModal: false,
             cancellingEmployee: null,
@@ -1669,12 +1684,23 @@ export default {
 
         // Yearly Carryover
         async loadCarryovers() {
+            // The target year is bound to the rows that are built from it: a year
+            // change while requests are in flight must neither show stale rows
+            // nor let a queued save write to the newly selected year.
+            const targetYear = this.carryoverYear
+            // Only the most recent load may apply: a fast A -> B -> A switch starts
+            // two loads for A, and the older response must not overwrite rows
+            // (and edits made since) when it arrives late.
+            const loadSeq = ++this.carryoverLoadSeq
             try {
-                const sourceYear = this.carryoverYear - 1
+                const sourceYear = targetYear - 1
                 const [carryovers, teamYearData] = await Promise.all([
-                    YearlyCarryoverService.getByYear(this.carryoverYear),
+                    YearlyCarryoverService.getByYear(targetYear),
                     ReportService.getTeamYear(sourceYear),
                 ])
+                if (loadSeq !== this.carryoverLoadSeq || targetYear !== this.carryoverYear) {
+                    return // superseded by a newer load
+                }
 
                 const carryoverMap = {}
                 ;(carryovers || []).forEach(c => { carryoverMap[c.employeeId] = c })
@@ -1737,6 +1763,7 @@ export default {
                     const note = existing ? (existing.note || '') : ''
                     return {
                         employeeId: emp.id,
+                        year: targetYear,
                         carryoverId: existing ? existing.id : null,
                         fullName: `${emp.firstName} ${emp.lastName}`,
                         overtimeHours,
@@ -1748,34 +1775,113 @@ export default {
                         actualVacationRemaining: wasActive ? (actuals.vacationRemaining ?? null) : null,
                         hasValues: !!(existing && (existing.overtimeMinutes !== 0 || existing.vacationDays !== 0 || existing.note)),
                     }
+                }).map(row => {
+                    // A save for this row may still be running or queued: the server
+                    // state is behind the fields, so keep the unsaved edits instead of
+                    // reverting them to what the (stale) response reports.
+                    const key = this.carryoverKey(row)
+                    if (this.carryoverSaving[key] || this.carryoverQueued[key]) {
+                        const shown = this.carryoverEmployees.find(r => this.carryoverKey(r) === key)
+                        if (shown) {
+                            row.overtimeHours = shown.overtimeHours
+                            row.vacationDays = shown.vacationDays
+                            row.note = shown.note
+                            row.carryoverId = row.carryoverId || shown.carryoverId
+                            row.hasValues = row.overtimeHours !== 0 || row.vacationDays !== 0 || !!row.note
+                        }
+                    }
+                    return row
                 })
             } catch (error) {
                 console.error('Failed to load carryovers:', error)
             }
         },
-        async autoSaveCarryover(emp) {
-            try {
-                const result = await YearlyCarryoverService.upsert(
-                    emp.employeeId,
-                    this.carryoverYear,
-                    Math.round((emp.overtimeHours || 0) * 60),
-                    emp.vacationDays || 0,
-                    emp.note || null,
-                )
-                emp.carryoverId = result.id
-                emp.hasValues = !!(result.overtimeMinutes !== 0 || result.vacationDays !== 0 || result.note)
-            } catch (error) {
-                showErrorMessage(error.message)
-            }
+        /** Requests are tracked per (year, employee): rows of different years never share state. */
+        carryoverKey(emp) {
+            return `${emp.year}:${emp.employeeId}`
         },
+        /** The row object currently shown for a key (rows are rebuilt on every load). */
+        currentCarryoverRow(emp) {
+            return this.carryoverEmployees.find(r => r.year === emp.year && r.employeeId === emp.employeeId) || emp
+        },
+        /**
+         * Speichert die Zeile. Laeuft fuer diese Zeile bereits ein Speichern,
+         * wird kein paralleler zweiter Request gestartet (eine Zeile ohne ID,
+         * etwa direkt nach «Eintragen», koennte sonst doppelt angelegt werden).
+         * Stattdessen wird nach dem laufenden Request genau ein Folge-Speichern
+         * mit den dann aktuellen Feldwerten angehaengt, damit spaetere
+         * Aenderungen nicht verloren gehen und «Durchfuehren» nie einen
+         * veralteten Stand sperrt.
+         * @return {Promise<boolean>} true, wenn der aktuelle Stand gespeichert ist
+         */
+        autoSaveCarryover(emp) {
+            const id = this.carryoverKey(emp)
+            const inFlight = this.carryoverSaving[id]
+            if (inFlight) {
+                if (!this.carryoverQueued[id]) {
+                    const queued = inFlight.then(() => {
+                        this.$delete(this.carryoverQueued, id)
+                        // Save the row as it is NOW (latest edits, current object).
+                        return this.autoSaveCarryover(this.currentCarryoverRow(emp))
+                    })
+                    this.$set(this.carryoverQueued, id, queued)
+                }
+                return this.carryoverQueued[id]
+            }
+            const run = (async () => {
+                try {
+                    const result = await YearlyCarryoverService.upsert(
+                        emp.employeeId,
+                        emp.year,
+                        Math.round((emp.overtimeHours || 0) * 60),
+                        emp.vacationDays || 0,
+                        emp.note || null,
+                    )
+                    emp.carryoverId = result.id
+                    emp.hasValues = !!(result.overtimeMinutes !== 0 || result.vacationDays !== 0 || result.note)
+                    return true
+                } catch (error) {
+                    showErrorMessage(error.message)
+                    return false
+                } finally {
+                    this.$delete(this.carryoverSaving, id)
+                }
+            })()
+            this.$set(this.carryoverSaving, id, run)
+            return run
+        },
+        /**
+         * «Eintragen»: Ist-Werte des Vorjahres in die Uebertrags-Felder uebernehmen
+         * und wie eine Feldaenderung speichern (danach erscheint «Durchfuehren»).
+         * Schlaegt das Speichern fehl, setzt takeOverAndSave die Felder zurueck,
+         * damit die Zeile nicht ohne Button mit ungespeicherten Werten haengt.
+         */
+        takeOverCarryover(emp) {
+            if (this.carryoverLocking[this.carryoverKey(emp)]) return Promise.resolve(false)
+            return takeOverAndSave(emp, row => this.autoSaveCarryover(row), row => this.currentCarryoverRow(row))
+        },
+        canTakeOverActuals,
         async lockCarryover(emp) {
-            if (!emp.carryoverId) return
+            const key = this.carryoverKey(emp)
+            if (this.carryoverLocking[key]) return
+            this.$set(this.carryoverLocking, key, true)
             try {
+                // A save may still be in flight or queued (@change or «Eintragen»
+                // right before the click): persist the current field values first,
+                // then lock.
+                if (this.carryoverSaving[key] || this.carryoverQueued[key] || !emp.carryoverId) {
+                    if (!(await this.autoSaveCarryover(emp))) {
+                        return
+                    }
+                }
+                if (!emp.carryoverId) return
                 await YearlyCarryoverService.lock(emp.carryoverId)
                 emp.isLocked = true
                 showSuccessMessage(this.t('zeitwerk', 'Übertrag durchgeführt'))
             } catch (error) {
                 showErrorMessage(error.message)
+            } finally {
+                this.$delete(this.carryoverLocking, key)
             }
         },
         openCancelModal(emp) {
@@ -1811,6 +1917,11 @@ export default {
             const el = event.target
             el.style.height = 'auto'
             el.style.height = el.scrollHeight + 'px'
+        },
+        /** Uebertrags-Stunden mit zwei Nachkommastellen (Minuten-genau), wie im Eingabefeld. */
+        formatCarryoverHours(value) {
+            if (value === null || value === undefined) return '–'
+            return Number(value).toFixed(2)
         },
         formatHours(value) {
             if (value === null || value === undefined) return '–'
@@ -2372,12 +2483,14 @@ export default {
 }
 
 .carryover-input {
-    width: 80px !important;
+    /* 92px: Chrome reserviert im number-Input Platz für den Spinner, bei 80px
+       wurde «-315.67» mit Ellipse abgeschnitten. */
+    width: 92px !important;
     text-align: right;
 }
 
 .carryover-note-cell {
-    min-width: 200px;
+    min-width: 160px;
 }
 
 .carryover-note {
@@ -2418,6 +2531,19 @@ export default {
     white-space: nowrap;
 }
 
+.carryover-actions__buttons {
+    /* «Eintragen» und «Durchführen» übereinander, gleich breit: nebeneinander
+       würde die Tabelle im 900px-Rahmen der Sektion horizontal scrollen. */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.carryover-actions__buttons .button-vue {
+    width: 100%;
+}
+
 .carryover-year-status {
     align-self: center;
 }
@@ -2427,19 +2553,19 @@ export default {
 }
 
 .year-status--closed {
-    color: var(--color-success);
+    color: var(--color-success-text);
 }
 
 .year-status--open {
-    color: var(--color-warning);
+    color: var(--color-warning-text);
 }
 
 .value-positive {
-    color: var(--color-success);
+    color: var(--color-success-text);
 }
 
 .value-negative {
-    color: var(--color-error);
+    color: var(--color-error-text);
 }
 
 .value-na {

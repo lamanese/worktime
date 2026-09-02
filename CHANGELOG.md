@@ -7,6 +7,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-02
+
+### Added
+- **Jahresübertrag: Ist-Werte per Klick eintragen**: Neben „Durchführen" gibt es pro Mitarbeiter den Button „Eintragen", der Überstunden-Ist und Resturlaub-Ist des Vorjahres exakt in die Übertrags-Felder übernimmt (minutengenau, halbe Tage, auch Minusstunden) und sofort speichert. HR passt bei Bedarf an und klickt „Durchführen". Der Button erscheint nur, solange die Felder von den Ist-Werten abweichen und der Übertrag noch nicht durchgeführt ist.
+
+### Changed
+- **Jahresübertrag: konsistente Anzeige und kompakteres Layout**: Überstunden-Ist und gesperrte Werte zeigen zwei Nachkommastellen wie das Eingabefeld (vorher „-315.7" neben „-315.67"), das Feld erlaubt Hundertstel, der Button heisst „Durchführen" mit eigener Spaltenüberschrift „Übertrag", und die Bemerkungsspalte ist schmaler, damit die Tabelle in den Rahmen passt.
+- **Lesbare Farben im Jahresübertrag**: Minus- und Plusstunden sowie der Hinweis zu offenen bzw. genehmigten Monaten nutzen die Text-Farbvarianten des Nextcloud-Themes statt der hellen Flächenfarben, die auf weissem Grund kaum lesbar waren.
+
 ## [0.15.2] - 2026-09-02
 
 Zehn Fehlerbehebungen rund um Urlaub, Feiertage und Überstunden aus der Original-App WorkTime (cpcMomentum/worktime) übernommen, dazu ein Nachbefund zu 0.15.1.

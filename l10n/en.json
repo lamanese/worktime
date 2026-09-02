@@ -672,7 +672,10 @@
 		"Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.": "Retroactive changes alter the overtime of the affected months. Months that are already approved must be reopened first.",
 		"Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen.": "Affected months are already approved (%s). Please reopen them first.",
 		"Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden.": "Absences cannot be recorded or changed for deactivated employees.",
-		"Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.": "Time entries cannot be recorded or changed for deactivated employees."
+		"Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.": "Time entries cannot be recorded or changed for deactivated employees.",
+		"Durchführen": "Carry out",
+		"Ist-Werte des Vorjahres eintragen": "Fill in last year's actual values",
+		"Eintragen": "Fill in"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
