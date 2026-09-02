@@ -973,7 +973,9 @@ class ReportController extends BaseController {
             $vacationStats = $this->absenceService->getVacationStats(
                 $empId,
                 $year,
-                $vacationDaysForYear + (int)round($vacationCarryover)
+                // WorkTime #525: charge the carryover exactly (half days), like
+                // AbsenceController::vacationStats and the quota check.
+                $vacationDaysForYear + $vacationCarryover
             );
             $vacationStats['carryover'] = $vacationCarryover;
 

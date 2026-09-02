@@ -391,10 +391,12 @@ class AbsenceController extends BaseController {
             $baseEntitlement = $this->workScheduleService->getVacationDaysForYear($employeeId, $year);
             $carryover = $this->carryoverService->getVacationCarryoverDays($employeeId, $year);
 
+            // WorkTime #525: charge the carryover exactly (half days), matching
+            // the quota check in AbsenceService::remainingVacationDays().
             $stats = $this->absenceService->getVacationStats(
                 $employeeId,
                 $year,
-                $baseEntitlement + (int)round($carryover)
+                $baseEntitlement + $carryover
             );
             $stats['entitlement'] = $baseEntitlement;
             $stats['carryover'] = $carryover;

@@ -937,10 +937,11 @@ class AbsenceServiceTest extends TestCase {
         $this->assertSame(19.0, $this->remaining(2026));
     }
 
-    public function testRemainingVacationRoundsCarryoverLikeOverview(): void {
-        // The overview rounds the carryover to a whole day before showing it
-        // (AbsenceController::vacationStats). The quota must round identically,
-        // otherwise the block and the displayed number disagree again.
+    public function testRemainingVacationCountsHalfDayCarryoverExactly(): void {
+        // WorkTime #525: the carryover is entered and stored with half-day
+        // precision (step 0.5, DECIMAL(4,1)). It must be counted exactly in the
+        // quota, not rounded to a whole day — otherwise the charged and the
+        // displayed carryover disagree and a half day appears or vanishes.
         $emp = new Employee();
         $emp->setId(1);
         $emp->setVacationDays(30);
@@ -948,8 +949,8 @@ class AbsenceServiceTest extends TestCase {
         $this->carryoverService->method('getVacationCarryoverDays')->willReturn(15.5);
         $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
 
-        // 30 + round(15.5) = 30 + 16 = 46, nothing used.
-        $this->assertSame(46.0, $this->remaining(2026));
+        // 30 + 15.5 = 45.5, nothing used — no rounding to 46.
+        $this->assertSame(45.5, $this->remaining(2026));
     }
 
     public function testRemainingVacationUsesTheYearsOwnEntitlement(): void {

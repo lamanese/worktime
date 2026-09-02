@@ -398,4 +398,60 @@ class ReportControllerTest extends TestCase {
 
         $this->assertSame(480, $data['dailyMinutes']);
     }
+
+    // ---------------------------------------------------------------------
+    // WorkTime #525: team-year overview charges the vacation carryover exactly
+    // ---------------------------------------------------------------------
+
+    public function testTeamYearChargesHalfDayVacationCarryoverExactly(): void {
+        $employee = new Employee();
+        $employee->setId(1);
+        $employee->setFirstName('Chef');
+        $employee->setLastName('1');
+        $employee->setWeeklyHours('40');
+        $employee->setFederalState('BY');
+
+        $permissionService = $this->createMock(PermissionService::class);
+        $permissionService->method('getVisibleTeamMembers')->willReturn([$employee]);
+
+        $carryover = $this->createMock(YearlyCarryoverService::class);
+        $carryover->method('getOvertimeCarryoverMinutes')->willReturn(0);
+        $carryover->method('getVacationCarryoverDays')->willReturn(12.5);
+        $ws = $this->createMock(WorkScheduleService::class);
+        $ws->method('getVacationDaysForYear')->willReturn(30);
+
+        // 30 + 12.5 = 42.5 must reach the stats, not round(12.5) = 13 -> 43.
+        $absenceService = $this->createMock(AbsenceService::class);
+        $absenceService->expects($this->once())
+            ->method('getVacationStats')
+            ->with(1, 2099, 42.5)
+            ->willReturn(['total' => 42.5, 'used' => 0.0, 'remaining' => 42.5]);
+
+        $controller = new ReportController(
+            $this->createMock(IRequest::class),
+            'admin',
+            $this->createMock(TimeEntryService::class),
+            $this->createMock(TimeEntryMapper::class),
+            $this->createMock(AbsenceMapper::class),
+            $absenceService,
+            $this->createMock(EmployeeService::class),
+            $this->createMock(HolidayService::class),
+            $permissionService,
+            $this->createMock(PdfService::class),
+            $ws,
+            $carryover,
+            $this->createMock(OvertimePayoutService::class),
+            $this->createMock(OvertimeCalculationService::class),
+            $this->createMock(ProjectService::class),
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
+            $this->createMock(IL10N::class),
+        );
+
+        // Future year: every month is skipped, only the year-level stats are built.
+        $response = $controller->teamYear(2099);
+
+        $this->assertSame(200, $response->getStatus(), json_encode($response->getData()));
+        $this->assertSame(12.5, $response->getData()[0]['vacationStats']['carryover']);
+    }
 }

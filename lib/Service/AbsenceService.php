@@ -771,7 +771,7 @@ class AbsenceService {
     /**
      * Get vacation statistics for an employee in a given year
      */
-    public function getVacationStats(int $employeeId, int $year, int $totalVacationDays): array {
+    public function getVacationStats(int $employeeId, int $year, float $totalVacationDays): array {
         $federalState = $this->employeeMapper->find($employeeId)->getFederalState();
 
         // Overlap query + per-year day split (#439): a vacation spanning the year
@@ -960,7 +960,9 @@ class AbsenceService {
      * The quota must match the figure the employee sees, built in
      * AbsenceController::vacationStats() as schedule-aware base entitlement plus
      * previous-year carryover:
-     *  - #500: add the carryover, rounded the same way the overview rounds it.
+     *  - #500: add the previous-year carryover; #525: counted exactly, including
+     *    half days (it is entered and stored with 0.5 precision), so the charged
+     *    and the displayed carryover agree.
      *  - #501: take the base from the year's own work-schedule profile
      *    (getVacationDaysForYear) instead of the employee cache field. The cache
      *    only ever holds today's profile, so checking a past year with a
@@ -972,7 +974,7 @@ class AbsenceService {
     private function remainingVacationDays(int $employeeId, int $year, string $federalState, ?int $excludeId = null): float {
         $baseEntitlement = (float)$this->workScheduleService->getVacationDaysForYear($employeeId, $year);
         $carryover = $this->carryoverService->getVacationCarryoverDays($employeeId, $year);
-        $totalVacationDays = $baseEntitlement + (float)(int)round($carryover);
+        $totalVacationDays = $baseEntitlement + $carryover;
 
         $usedDays = 0.0;
         foreach ($this->absenceMapper->findByEmployeeAndYear($employeeId, $year) as $absence) {
