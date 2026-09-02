@@ -631,6 +631,24 @@ class TimeEntryServiceTest extends TestCase {
         $this->assertSame([], $this->service->dayWarnings([]));
     }
 
+    /**
+     * #443: a day split by a GAP whose working time exceeds 9h must warn. The
+     * break is taken as the 30-min gap, but §4 requires 45 min above 9h working
+     * time. Before the fix the gross-calibrated cutoff (9h + break6h) treated the
+     * gap-excluded span sum as if it still contained a break, so this genuinely
+     * >9h-net day escaped the 45-min classification.
+     */
+    public function testDayWarningsSplitByGapAboveNineNetWarns(): void {
+        // 08:00–13:00 (5h) + 13:30–18:00 (4.5h) = 9h30 working time, gap = 30 min.
+        $warnings = $this->service->dayWarnings([
+            $this->makeEntry('08:00', '13:00', 0),
+            $this->makeEntry('13:30', '18:00', 0),
+        ]);
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('Mindestpause', $warnings[0]);
+    }
+
     // ---------------------------------------------------------------------
     // #344: cross-month approval inbox (submitted months)
     // ---------------------------------------------------------------------
@@ -867,5 +885,44 @@ class TimeEntryServiceTest extends TestCase {
 
         $this->expectException(ForbiddenException::class);
         $this->service->submitMonth(1, 2020, 1, 'employee');
+    }
+
+    /**
+     * The HR override for inactive employees is a correction, and corrections
+     * carry a mandatory reason (same rule as closed months, #148) — even in an
+     * open month, where the closed-month rule alone would not ask for one.
+     */
+    public function testCreateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create(1, (new DateTime('today'))->format('Y-m-d'), '08:00', '16:00', 30, null, null, 'hr', null, true);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('reason', $e->getErrors());
+        }
+    }
+
+    public function testUpdateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $entry = $this->draftEntry();
+        $entry->setDate(new DateTime('today'));
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        $this->expectException(ValidationException::class);
+        $this->service->update(7, (new DateTime('today'))->format('Y-m-d'), '08:00', '16:00', 30, null, null, 'hr', '', true);
+    }
+
+    public function testDeleteForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $entry = $this->draftEntry();
+        $entry->setDate(new DateTime('today'));
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->timeEntryMapper->expects($this->never())->method('delete');
+
+        $this->expectException(ValidationException::class);
+        $this->service->delete(7, 'hr', 'zu kurz', true);
     }
 }

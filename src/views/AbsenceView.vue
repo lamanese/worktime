@@ -247,11 +247,13 @@ export default {
             return [...this.absences].sort((a, b) => b.startDate.localeCompare(a.startDate))
         },
         vacationCarryover() {
-            return Math.round(this.vacationStats?.carryover ?? 0)
+            // WorkTime #525: Übertrag exakt anzeigen (halbe Tage), damit Anzeige
+            // und Verrechnung deckungsgleich sind.
+            return this.vacationStats?.carryover ?? 0
         },
         vacationBase() {
             if (!this.vacationStats) return 0
-            return Math.round((this.vacationStats.total ?? 0) - (this.vacationStats.carryover ?? 0))
+            return (this.vacationStats.total ?? 0) - (this.vacationStats.carryover ?? 0)
         },
         overtimeSaldoMin() {
             return this.overtime?.totalOvertimeMinutes ?? 0

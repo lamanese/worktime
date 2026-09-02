@@ -17,10 +17,12 @@ use OCA\Zeitwerk\Notification\NotificationService;
 use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\ForbiddenException;
+use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\ProjectService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\ValidationException;
 use OCA\Zeitwerk\Service\WorkScheduleService;
+use OCA\Zeitwerk\Service\YearlyCarryoverService;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -44,6 +46,10 @@ class AbsenceServiceTest extends TestCase {
     private AuditLogService $auditLogService;
     private NotificationService $notificationService;
     private WorkScheduleService $workScheduleService;
+    private HolidayService $holidayService;
+    private YearlyCarryoverService $carryoverService;
+    /** @var array<int,int> Per-year override for getVacationDaysForYear (#501). */
+    private array $scheduleEntitlementByYear = [];
     private LoggerInterface $logger;
     private IL10N $l;
 
@@ -55,6 +61,8 @@ class AbsenceServiceTest extends TestCase {
         $this->auditLogService = $this->createMock(AuditLogService::class);
         $this->notificationService = $this->createMock(NotificationService::class);
         $this->workScheduleService = $this->createMock(WorkScheduleService::class);
+        $this->holidayService = $this->createMock(HolidayService::class);
+        $this->carryoverService = $this->createMock(YearlyCarryoverService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->l = $this->createMock(IL10N::class);
         $this->l->method('t')->willReturnCallback(
@@ -86,8 +94,22 @@ class AbsenceServiceTest extends TestCase {
             $this->auditLogService,
             $this->notificationService,
             $this->workScheduleService,
+            $this->holidayService,
+            $this->carryoverService,
             $this->logger,
             $this->l
+        );
+
+        // #501: remainingVacationDays() now takes the base entitlement from the
+        // year's work-schedule profile (getVacationDaysForYear), not the employee
+        // cache field. Every existing test was written under the invariant that
+        // the two are equal, so mirror the employee's cached vacation_days here.
+        // A test that needs a genuine year-over-year divergence fills
+        // $scheduleEntitlementByYear[$year] to override a single year.
+        $this->scheduleEntitlementByYear = [];
+        $this->workScheduleService->method('getVacationDaysForYear')->willReturnCallback(
+            fn(int $employeeId, int $year): int => $this->scheduleEntitlementByYear[$year]
+                ?? $this->employeeMapper->find($employeeId)->getVacationDays()
         );
     }
 
@@ -818,5 +840,186 @@ class AbsenceServiceTest extends TestCase {
         $result = $this->service->cancel(99, 'admin');
 
         $this->assertSame(Absence::STATUS_CANCELLED, $result->getStatus());
+    }
+
+    /** HR override for an inactive employee is a correction: reason mandatory, even in an open month. */
+    public function testCreateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $this->absenceMapper->expects($this->never())->method('insert');
+        $today = (new DateTime('today'))->format('Y-m-d');
+
+        try {
+            $this->service->create(1, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('reason', $e->getErrors());
+        }
+    }
+
+    public function testUpdateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('today'), new DateTime('today'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->expects($this->never())->method('update');
+        $today = (new DateTime('today'))->format('Y-m-d');
+
+        $this->expectException(ValidationException::class);
+        $this->service->update(99, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+    }
+
+    public function testDeleteForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('today'), new DateTime('today'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->expects($this->never())->method('delete');
+
+        $this->expectException(ValidationException::class);
+        $this->service->delete(99, 'hr', null, true);
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 A: a REJECTED vacation request must not consume the yearly quota
+    // ---------------------------------------------------------------------
+
+    private function vacation(string $status, string $start, string $end, string $days): Absence {
+        $a = $this->makeAbsence(Absence::TYPE_VACATION, $status, new DateTime($start), new DateTime($end));
+        $a->setDays($days);
+        return $a;
+    }
+
+    private function remaining(int $year): float {
+        $m = new \ReflectionMethod($this->service, 'remainingVacationDays');
+        $m->setAccessible(true);
+        return $m->invoke($this->service, 1, $year, 'BY', null);
+    }
+
+    public function testRejectedVacationDoesNotConsumeQuota(): void {
+        $emp = new Employee();
+        $emp->setId(1);
+        $emp->setVacationDays(30);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        // The only vacation of the year was REJECTED — the days must be released.
+        $this->absenceMapper->method('findByEmployeeAndYear')
+            ->willReturn([$this->vacation(Absence::STATUS_REJECTED, '2026-03-02', '2026-03-06', '5.00')]);
+
+        $this->assertSame(30.0, $this->remaining(2026));
+    }
+
+    public function testApprovedVacationConsumesQuota(): void {
+        // Control: an APPROVED vacation of the same length DOES reduce the quota.
+        $emp = new Employee();
+        $emp->setId(1);
+        $emp->setVacationDays(30);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->absenceMapper->method('findByEmployeeAndYear')
+            ->willReturn([$this->vacation(Absence::STATUS_APPROVED, '2026-03-02', '2026-03-06', '5.00')]);
+
+        $this->assertSame(25.0, $this->remaining(2026));
+    }
+
+    // ---------------------------------------------------------------------
+    // #500: the request-time quota must include the previous-year carryover,
+    // exactly like the overview the employee sees. Without it a request the
+    // overview shows as covered was wrongly rejected.
+    // ---------------------------------------------------------------------
+
+    public function testRemainingVacationIncludesCarryover(): void {
+        // Reporter's case: 30 base + 16 carryover − 27 approved = 19 remaining.
+        // The buggy code returned 30 − 27 = 3 and blocked the request.
+        $emp = new Employee();
+        $emp->setId(1);
+        $emp->setVacationDays(30);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->carryoverService->method('getVacationCarryoverDays')->willReturn(16.0);
+        $this->absenceMapper->method('findByEmployeeAndYear')
+            ->willReturn([$this->vacation(Absence::STATUS_APPROVED, '2026-01-05', '2026-02-10', '27.00')]);
+
+        $this->assertSame(19.0, $this->remaining(2026));
+    }
+
+    public function testRemainingVacationCountsHalfDayCarryoverExactly(): void {
+        // WorkTime #525: the carryover is entered and stored with half-day
+        // precision (step 0.5, DECIMAL(4,1)). It must be counted exactly in the
+        // quota, not rounded to a whole day — otherwise the charged and the
+        // displayed carryover disagree and a half day appears or vanishes.
+        $emp = new Employee();
+        $emp->setId(1);
+        $emp->setVacationDays(30);
+        $this->employeeMapper->method('find')->willReturn($emp);
+        $this->carryoverService->method('getVacationCarryoverDays')->willReturn(15.5);
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+
+        // 30 + 15.5 = 45.5, nothing used — no rounding to 46.
+        $this->assertSame(45.5, $this->remaining(2026));
+    }
+
+    public function testRemainingVacationUsesTheYearsOwnEntitlement(): void {
+        // #501: the employee's cache field holds today's profile (30), but in
+        // 2024 the profile granted only 20 days. The quota for a 2024 request
+        // must use 20 — the same figure the overview shows for 2024 — not the
+        // cached 30. The buggy code returned 30 and would wave through requests
+        // the overview shows as over budget.
+        $emp = new Employee();
+        $emp->setId(1);
+        $emp->setVacationDays(30); // cache = today's profile
+        $this->employeeMapper->method('find')->willReturn($emp);
+        // In 2024 the profile granted only 20 days, unlike today's cached 30.
+        $this->scheduleEntitlementByYear = [2024 => 20];
+        $this->absenceMapper->method('findByEmployeeAndYear')->willReturn([]);
+
+        $this->assertSame(20.0, $this->remaining(2024));
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 B: a REJECTED absence must not block a new/overlapping request
+    // ---------------------------------------------------------------------
+
+    private function validateOverlap(string $existingStatus): array {
+        $existing = $this->makeAbsence(Absence::TYPE_VACATION, $existingStatus, new DateTime('2026-03-02'), new DateTime('2026-03-06'));
+        $this->absenceMapper->method('findOverlapping')->willReturn([$existing]);
+
+        $m = new \ReflectionMethod($this->service, 'validate');
+        $m->setAccessible(true);
+        return $m->invoke($this->service, 1, Absence::TYPE_VACATION, new DateTime('2026-03-02'), new DateTime('2026-03-06'), null, 1.0);
+    }
+
+    public function testRejectedAbsenceDoesNotBlockOverlappingRequest(): void {
+        $errors = $this->validateOverlap(Absence::STATUS_REJECTED);
+        $this->assertArrayNotHasKey('startDate', $errors);
+    }
+
+    public function testPendingAbsenceBlocksOverlappingRequest(): void {
+        // Control: a still-standing (pending) absence DOES block.
+        $errors = $this->validateOverlap(Absence::STATUS_PENDING);
+        $this->assertArrayHasKey('startDate', $errors);
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 D: approving a full-day absence must re-check time-entry conflicts
+    // ---------------------------------------------------------------------
+
+    public function testApproveBlocksWhenTimeEntriesExistOnFullDayAbsence(): void {
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('2026-03-02'), new DateTime('2026-03-02'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        // A time entry was booked on the day while the absence was still pending.
+        $entry = new TimeEntry();
+        $entry->setDate(new DateTime('2026-03-02'));
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
+        // The approval must be refused — no status flip.
+        $this->absenceMapper->expects($this->never())->method('update');
+
+        $this->expectException(ValidationException::class);
+        $this->service->approve(99, 1, 'admin');
+    }
+
+    public function testApproveSucceedsWithoutTimeEntryConflict(): void {
+        // Control: no entries on the day → approval goes through.
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('2026-03-02'), new DateTime('2026-03-02'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([]);
+        $this->absenceMapper->method('update')->willReturnArgument(0);
+
+        $result = $this->service->approve(99, 1, 'admin');
+        $this->assertSame(Absence::STATUS_APPROVED, $result->getStatus());
     }
 }

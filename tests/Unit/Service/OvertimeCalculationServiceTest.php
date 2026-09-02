@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use DateTime;
+use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Holiday;
 use OCA\Zeitwerk\Db\OvertimePayoutMapper;
 use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\EmployeeService;
@@ -122,5 +124,110 @@ class OvertimeCalculationServiceTest extends TestCase {
 
         // 100 + 60 − 400 = -240
         $this->assertSame(-240, $service->getNetOvertimeMinutes(1, 2026));
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 C: paid-absence credit must honour half-day holidays
+    // ---------------------------------------------------------------------
+
+    private function serviceWithDailyMinutes(int $dailyMinutes): OvertimeCalculationService {
+        $ws = $this->createMock(WorkScheduleService::class);
+        $ws->method('getDailyMinutesForDate')->willReturn($dailyMinutes);
+        return new OvertimeCalculationService(
+            $ws,
+            $this->createMock(YearlyCarryoverService::class),
+            $this->createMock(OvertimePayoutMapper::class),
+            $this->createMock(EmployeeService::class),
+            $this->createMock(TimeEntryService::class),
+            $this->createMock(AbsenceService::class),
+            $this->createMock(HolidayService::class),
+        );
+    }
+
+    private function holiday(string $date, float $scope): Holiday {
+        $h = new Holiday();
+        $h->setDate(new DateTime($date));
+        $h->setScopeValue($scope);
+        return $h;
+    }
+
+    private function absenceMinutes(OvertimeCalculationService $s, float $absenceScope, array $holidays): int {
+        $m = new \ReflectionMethod($s, 'calculateAbsenceMinutes');
+        $m->setAccessible(true);
+        // single day 2026-12-24, full-day paid absence over it
+        return $m->invoke($s, 1, new DateTime('2026-12-24'), new DateTime('2026-12-24'), $absenceScope, $holidays);
+    }
+
+    public function testHalfDayHolidayCreditsRemainingHalfToPaidAbsence(): void {
+        // 8h/day, full-day vacation over a half-holiday (scope 0.5): the reduced
+        // 240-min target must be balanced by 240 credited absence minutes, not 0.
+        $service = $this->serviceWithDailyMinutes(480);
+        $this->assertSame(240, $this->absenceMinutes($service, 1.0, [$this->holiday('2026-12-24', 0.5)]));
+    }
+
+    public function testFullDayHolidayCreditsZero(): void {
+        // Control: a full holiday (scope 1.0) still credits 0 (target is also 0).
+        $service = $this->serviceWithDailyMinutes(480);
+        $this->assertSame(0, $this->absenceMinutes($service, 1.0, [$this->holiday('2026-12-24', 1.0)]));
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 G: future-month display must weight absence days by scope
+    // ---------------------------------------------------------------------
+
+    private function futureMonthService(string $pinnedToday): OvertimeCalculationService {
+        $ws = $this->createMock(WorkScheduleService::class);
+        // Single-day ranges → 1 working day; whole-month call is irrelevant here.
+        $ws->method('countWorkingDays')->willReturn(1.0);
+        $ws->method('calculateTargetMinutes')->willReturn(480);
+
+        return new class(
+            $ws,
+            $this->createMock(YearlyCarryoverService::class),
+            $this->createMock(OvertimePayoutMapper::class),
+            $this->createMock(EmployeeService::class),
+            $this->createMock(TimeEntryService::class),
+            $this->createMock(AbsenceService::class),
+            $this->createMock(HolidayService::class),
+            $pinnedToday,
+        ) extends OvertimeCalculationService {
+            public function __construct(
+                WorkScheduleService $ws,
+                YearlyCarryoverService $co,
+                OvertimePayoutMapper $pm,
+                EmployeeService $es,
+                TimeEntryService $ts,
+                AbsenceService $as,
+                HolidayService $hs,
+                private string $pinnedToday,
+            ) {
+                parent::__construct($ws, $co, $pm, $es, $ts, $as, $hs);
+            }
+
+            protected function currentDate(): DateTime {
+                return new DateTime($this->pinnedToday);
+            }
+        };
+    }
+
+    public function testFutureMonthHalfDayAbsenceCountsAsHalf(): void {
+        // "today" pinned before June 2026 → June is a future month. An approved
+        // half-day (scope 0.5) absence must show as 0.5 days, not 1.0 (#443 G).
+        $service = $this->futureMonthService('2026-01-01');
+
+        $employee = new Employee();
+        $employee->setId(1);
+
+        $absence = new Absence();
+        $absence->setStatus(Absence::STATUS_APPROVED);
+        $absence->setScopeValue(0.5);
+        $absence->setStartDate(new DateTime('2026-06-15'));
+        $absence->setEndDate(new DateTime('2026-06-15'));
+
+        $stats = $service->getMonthlyStats($employee, 2026, 6, [], [$absence], []);
+
+        $this->assertTrue($stats['isFutureMonth']);
+        $this->assertSame(0.5, $stats['paidAbsenceDays']);
+        $this->assertSame(0.5, $stats['absenceDays']);
     }
 }

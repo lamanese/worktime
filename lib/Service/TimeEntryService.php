@@ -94,30 +94,40 @@ class TimeEntryService {
      * employee from lists while the UI already claimed recording was stopped.
      *
      * Enforced here rather than in the controller because the controllers do
-     * not share a guard. Approving and rejecting are deliberately NOT guarded:
+     * not share a guard. HR/Admin may still correct (with a mandatory reason).
+     * Approving and rejecting are deliberately NOT guarded:
      * an employee deactivated mid-month must still be closeable by their
      * supervisor.
      *
      * @throws ForbiddenException
      */
-    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false): void {
-        // HR/Admin correction (#148 override) stays possible: deactivation
-        // means the EMPLOYEE stops recording, not that a demonstrably wrong
-        // record must remain wrong forever. Such a correction still requires a
-        // reason and is written to the audit log.
-        if ($allowCorrection) {
-            return;
-        }
-
+    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false, ?string $reason = null): void {
         try {
             $employee = $this->employeeMapper->find($employeeId);
         } catch (DoesNotExistException) {
             return; // absent employee is handled by the regular validation paths
         }
 
-        if (!$employee->getIsActive()) {
+        if ($employee->getIsActive()) {
+            return;
+        }
+
+        if (!$allowCorrection) {
             throw new ForbiddenException(
                 $this->l->t('Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.')
+            );
+        }
+
+        // HR/Admin correction (#148 override) stays possible: deactivation
+        // means the EMPLOYEE stops recording, not that a demonstrably wrong
+        // record must remain wrong forever. It is a correction, though, so the
+        // same mandatory reason applies as for closed months — even in an open
+        // month, where the closed-month rule alone would not ask for one. The
+        // caller records it in the audit log via auditReason().
+        if (mb_strlen(trim((string)$reason)) < 10) {
+            throw ValidationException::fromSingleError(
+                'reason',
+                $this->l->t('Begründung erforderlich (mindestens 10 Zeichen).')
             );
         }
     }
@@ -137,7 +147,7 @@ class TimeEntryService {
         ?string $reason = null,
         bool $allowLockedOverride = false
     ): TimeEntry {
-        $this->assertEmployeeActive($employeeId, $allowLockedOverride);
+        $this->assertEmployeeActive($employeeId, $allowLockedOverride, $reason);
 
         $dateObj = new DateTime($date);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
@@ -223,7 +233,7 @@ class TimeEntryService {
         bool $allowLockedOverride = false
     ): TimeEntry {
         $entry = $this->find($id);
-        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride, $reason);
         $oldValues = $entry->jsonSerialize();
         $oldDate = clone $entry->getDate();
 
@@ -327,7 +337,7 @@ class TimeEntryService {
      */
     public function delete(int $id, string $currentUserId = '', ?string $reason = null, bool $allowLockedOverride = false): void {
         $entry = $this->find($id);
-        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride, $reason);
 
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->lockedMonthsInRange($entry->getEmployeeId(), $entry->getDate(), $entry->getDate());
@@ -771,6 +781,7 @@ class TimeEntryService {
 
         $totalGrossMinutes = 0;
         $totalBreakMinutes = 0;
+        $explicitBreakMinutes = 0;
         $previousEnd = null;
 
         foreach ($entries as $entry) {
@@ -785,6 +796,7 @@ class TimeEntryService {
                 $gross += 24 * 60; // overnight shift
             }
             $totalGrossMinutes += (int)$gross;
+            $explicitBreakMinutes += max(0, $entry->getBreakMinutes());
             $totalBreakMinutes += max(0, $entry->getBreakMinutes());
 
             // A gap between the previous entry's end and this entry's start counts
@@ -801,21 +813,29 @@ class TimeEntryService {
 
         $warnings = [];
 
-        // §4 ArbZG minimum break, evaluated on the whole day. Upper step is
-        // 9h + break6h gross (not a flat 9h), consistent with suggestBreak()/
-        // validateBreak(): the threshold targets the WORKING time (#403).
+        // §4 ArbZG minimum break, evaluated on the whole day against the WORKING
+        // time. Working time = the entry spans minus the breaks recorded INSIDE
+        // them; gaps between entries are pure break and never part of a span, so
+        // they must not be subtracted here (they only count as break TAKEN below).
+        // #443: the previous check compared the span sum against a gross-calibrated
+        // cutoff (9h + break6h). That cutoff only equals "working time > 9h" when
+        // the break sits inside a span — a break taken as a GAP is excluded from
+        // the spans, so a genuinely >9h-net day split by a gap escaped the 45-min
+        // classification. Comparing the working time directly against flat 6h/9h
+        // steps is correct for both the seamless (#403) and the split-by-gap case.
         $break6h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_6H);
         $break9h = $this->settingsMapper->getValueAsInt(CompanySetting::KEY_MIN_BREAK_MINUTES_9H);
+        $workingMinutes = max(0, $totalGrossMinutes - $explicitBreakMinutes);
         $requiredBreak = 0;
-        if ($totalGrossMinutes > 9 * 60 + $break6h) {
+        if ($workingMinutes > 9 * 60) {
             $requiredBreak = $break9h;
-        } elseif ($totalGrossMinutes > 6 * 60) {
+        } elseif ($workingMinutes > 6 * 60) {
             $requiredBreak = $break6h;
         }
         if ($requiredBreak > 0 && $totalBreakMinutes < $requiredBreak) {
             $warnings[] = $this->l->t(
                 'Mindestpause nicht eingehalten: Bei %1$d Min Arbeitszeit sind %2$d Min Pause erforderlich (§4 ArbZG), erfasst sind %3$d Min (Lücken zwischen Einträgen zählen als Pause).',
-                [$totalGrossMinutes, $requiredBreak, $totalBreakMinutes]
+                [$workingMinutes, $requiredBreak, $totalBreakMinutes]
             );
         }
 
