@@ -672,7 +672,10 @@
 		"Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.": "Zpětné změny mění přesčasy dotčených měsíců. Již schválené měsíce je nutné nejprve znovu otevřít.",
 		"Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen.": "Dotčené měsíce jsou již schváleny (%s). Nejprve je prosím znovu otevřete.",
 		"Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden.": "Pro deaktivované zaměstnance nelze zaznamenávat ani měnit nepřítomnosti.",
-		"Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.": "Pro deaktivované zaměstnance nelze zaznamenávat ani měnit pracovní dobu."
+		"Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.": "Pro deaktivované zaměstnance nelze zaznamenávat ani měnit pracovní dobu.",
+		"Durchführen": "Provést",
+		"Ist-Werte des Vorjahres eintragen": "Vyplnit skutečné hodnoty z předchozího roku",
+		"Eintragen": "Vyplnit"
 	},
 	"pluralForm": "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;"
 }
