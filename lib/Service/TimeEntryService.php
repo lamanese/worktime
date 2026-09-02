@@ -94,30 +94,40 @@ class TimeEntryService {
      * employee from lists while the UI already claimed recording was stopped.
      *
      * Enforced here rather than in the controller because the controllers do
-     * not share a guard. Approving and rejecting are deliberately NOT guarded:
+     * not share a guard. HR/Admin may still correct (with a mandatory reason).
+     * Approving and rejecting are deliberately NOT guarded:
      * an employee deactivated mid-month must still be closeable by their
      * supervisor.
      *
      * @throws ForbiddenException
      */
-    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false): void {
-        // HR/Admin correction (#148 override) stays possible: deactivation
-        // means the EMPLOYEE stops recording, not that a demonstrably wrong
-        // record must remain wrong forever. Such a correction still requires a
-        // reason and is written to the audit log.
-        if ($allowCorrection) {
-            return;
-        }
-
+    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false, ?string $reason = null): void {
         try {
             $employee = $this->employeeMapper->find($employeeId);
         } catch (DoesNotExistException) {
             return; // absent employee is handled by the regular validation paths
         }
 
-        if (!$employee->getIsActive()) {
+        if ($employee->getIsActive()) {
+            return;
+        }
+
+        if (!$allowCorrection) {
             throw new ForbiddenException(
                 $this->l->t('Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.')
+            );
+        }
+
+        // HR/Admin correction (#148 override) stays possible: deactivation
+        // means the EMPLOYEE stops recording, not that a demonstrably wrong
+        // record must remain wrong forever. It is a correction, though, so the
+        // same mandatory reason applies as for closed months — even in an open
+        // month, where the closed-month rule alone would not ask for one. The
+        // caller records it in the audit log via auditReason().
+        if (mb_strlen(trim((string)$reason)) < 10) {
+            throw ValidationException::fromSingleError(
+                'reason',
+                $this->l->t('Begründung erforderlich (mindestens 10 Zeichen).')
             );
         }
     }
@@ -137,7 +147,7 @@ class TimeEntryService {
         ?string $reason = null,
         bool $allowLockedOverride = false
     ): TimeEntry {
-        $this->assertEmployeeActive($employeeId, $allowLockedOverride);
+        $this->assertEmployeeActive($employeeId, $allowLockedOverride, $reason);
 
         $dateObj = new DateTime($date);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
@@ -223,7 +233,7 @@ class TimeEntryService {
         bool $allowLockedOverride = false
     ): TimeEntry {
         $entry = $this->find($id);
-        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride, $reason);
         $oldValues = $entry->jsonSerialize();
         $oldDate = clone $entry->getDate();
 
@@ -327,7 +337,7 @@ class TimeEntryService {
      */
     public function delete(int $id, string $currentUserId = '', ?string $reason = null, bool $allowLockedOverride = false): void {
         $entry = $this->find($id);
-        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride, $reason);
 
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->lockedMonthsInRange($entry->getEmployeeId(), $entry->getDate(), $entry->getDate());
