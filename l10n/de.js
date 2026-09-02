@@ -536,7 +536,6 @@ OC.L10N.register(
     "Scope muss zwischen 0 und 1 liegen" : "Scope muss zwischen 0 und 1 liegen",
     "Halber Tag ist nur für einen einzelnen Tag möglich" : "Halber Tag ist nur für einen einzelnen Tag möglich",
     "Halbtägige Abwesenheit (%s) und Zeiteintrag am selben Tag." : "Halbtägige Abwesenheit (%s) und Zeiteintrag am selben Tag.",
-    "Gültig-ab darf frühestens der 1. des aktuellen Monats sein" : "Gültig-ab darf frühestens der 1. des aktuellen Monats sein",
     "Ein Profil mit diesem Gültig-ab Datum existiert bereits" : "Ein Profil mit diesem Gültig-ab Datum existiert bereits",
     "Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)" : "Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)",
     "Begründung erforderlich" : "Begründung erforderlich",
@@ -670,6 +669,8 @@ OC.L10N.register(
     "Spesen" : "Spesen",
     "Willkommen bei Zeitwerk" : "Willkommen bei Zeitwerk",
     "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche).",
-    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht."
+    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.",
+    "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden." : "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.",
+    "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen." : "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen."
 },
 "nplurals=2; plural=(n != 1);");
