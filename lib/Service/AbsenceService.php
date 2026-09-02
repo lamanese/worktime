@@ -106,22 +106,33 @@ class AbsenceService {
      *
      * @throws ForbiddenException
      */
-    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false): void {
-        // HR/Admin correction (#148 override) stays possible — see the same
-        // reasoning in TimeEntryService::assertEmployeeActive().
-        if ($allowCorrection) {
-            return;
-        }
-
+    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false, ?string $reason = null): void {
         try {
             $employee = $this->employeeMapper->find($employeeId);
         } catch (DoesNotExistException) {
             return; // absent employee is handled by the regular validation paths
         }
 
-        if (!$employee->getIsActive()) {
+        if ($employee->getIsActive()) {
+            return;
+        }
+
+        if (!$allowCorrection) {
             throw new ForbiddenException(
                 $this->l->t('Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden.')
+            );
+        }
+
+        // HR/Admin correction (#148 override) stays possible: deactivation
+        // means the EMPLOYEE stops recording, not that a demonstrably wrong
+        // record must remain wrong forever. It is a correction, though, so the
+        // same mandatory reason applies as for closed months — even in an open
+        // month, where the closed-month rule alone would not ask for one. The
+        // caller records it in the audit log via auditReason().
+        if (mb_strlen(trim((string)$reason)) < 10) {
+            throw ValidationException::fromSingleError(
+                'reason',
+                $this->l->t('Begründung erforderlich (mindestens 10 Zeichen).')
             );
         }
     }
@@ -141,7 +152,7 @@ class AbsenceService {
         ?string $reason = null,
         bool $allowLockedOverride = false
     ): Absence {
-        $this->assertEmployeeActive($employeeId, $allowLockedOverride);
+        $this->assertEmployeeActive($employeeId, $allowLockedOverride, $reason);
 
         $startDateObj = new DateTime($startDate);
         $endDateObj = new DateTime($endDate);
@@ -516,7 +527,7 @@ class AbsenceService {
         bool $allowLockedOverride = false
     ): Absence {
         $absence = $this->find($id);
-        $this->assertEmployeeActive($absence->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($absence->getEmployeeId(), $allowLockedOverride, $reason);
         $oldValues = $absence->jsonSerialize();
         $oldStart = clone $absence->getStartDate();
         $oldEnd = clone $absence->getEndDate();
@@ -611,7 +622,7 @@ class AbsenceService {
      */
     public function delete(int $id, string $currentUserId = '', ?string $reason = null, bool $allowLockedOverride = false): void {
         $absence = $this->find($id);
-        $this->assertEmployeeActive($absence->getEmployeeId(), $allowLockedOverride);
+        $this->assertEmployeeActive($absence->getEmployeeId(), $allowLockedOverride, $reason);
 
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->timeEntryService->lockedMonthsInRange($absence->getEmployeeId(), $absence->getStartDate(), $absence->getEndDate());

@@ -7,6 +7,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Security
+- **HR-Korrektur bei deaktivierten Mitarbeitern verlangt eine Begründung**: Der in 0.15.1 eingeführte Schutz liess sich von HR/Admin im Korrekturmodus ohne Begründung umgehen, solange der Monat noch offen war (die Begründungspflicht griff nur über die Monatssperre). Jetzt gilt bei deaktivierten Mitarbeitern für Anlegen, Bearbeiten und Löschen von Zeiteinträgen und Abwesenheiten immer die Begründungspflicht (mindestens 10 Zeichen), und die Begründung wird im Audit-Log festgehalten. Die Weboberfläche fragte die Begründung im Korrekturmodus bereits ab; betroffen war nur der direkte API-Zugriff.
+
 ## [0.15.1] - 2026-09-02
 
 Drei Fehlerbehebungen aus der Original-App WorkTime übernommen (cpcMomentum/worktime).

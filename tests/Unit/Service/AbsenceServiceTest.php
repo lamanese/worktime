@@ -819,4 +819,39 @@ class AbsenceServiceTest extends TestCase {
 
         $this->assertSame(Absence::STATUS_CANCELLED, $result->getStatus());
     }
+
+    /** HR override for an inactive employee is a correction: reason mandatory, even in an open month. */
+    public function testCreateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $this->absenceMapper->expects($this->never())->method('insert');
+        $today = (new DateTime('today'))->format('Y-m-d');
+
+        try {
+            $this->service->create(1, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('reason', $e->getErrors());
+        }
+    }
+
+    public function testUpdateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('today'), new DateTime('today'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->expects($this->never())->method('update');
+        $today = (new DateTime('today'))->format('Y-m-d');
+
+        $this->expectException(ValidationException::class);
+        $this->service->update(99, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+    }
+
+    public function testDeleteForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $absence = $this->makeAbsence(Absence::TYPE_VACATION, Absence::STATUS_PENDING, new DateTime('today'), new DateTime('today'));
+        $this->absenceMapper->method('find')->willReturn($absence);
+        $this->absenceMapper->expects($this->never())->method('delete');
+
+        $this->expectException(ValidationException::class);
+        $this->service->delete(99, 'hr', null, true);
+    }
 }

@@ -868,4 +868,43 @@ class TimeEntryServiceTest extends TestCase {
         $this->expectException(ForbiddenException::class);
         $this->service->submitMonth(1, 2020, 1, 'employee');
     }
+
+    /**
+     * The HR override for inactive employees is a correction, and corrections
+     * carry a mandatory reason (same rule as closed months, #148) — even in an
+     * open month, where the closed-month rule alone would not ask for one.
+     */
+    public function testCreateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create(1, (new DateTime('today'))->format('Y-m-d'), '08:00', '16:00', 30, null, null, 'hr', null, true);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('reason', $e->getErrors());
+        }
+    }
+
+    public function testUpdateForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $entry = $this->draftEntry();
+        $entry->setDate(new DateTime('today'));
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        $this->expectException(ValidationException::class);
+        $this->service->update(7, (new DateTime('today'))->format('Y-m-d'), '08:00', '16:00', 30, null, null, 'hr', '', true);
+    }
+
+    public function testDeleteForInactiveEmployeeWithHrOverrideRequiresReason(): void {
+        $this->expectInactiveEmployee();
+        $entry = $this->draftEntry();
+        $entry->setDate(new DateTime('today'));
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->timeEntryMapper->expects($this->never())->method('delete');
+
+        $this->expectException(ValidationException::class);
+        $this->service->delete(7, 'hr', 'zu kurz', true);
+    }
 }
