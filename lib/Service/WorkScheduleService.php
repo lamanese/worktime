@@ -13,6 +13,8 @@ use DateTime;
 use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\TimeEntry;
+use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -28,6 +30,7 @@ class WorkScheduleService {
         private AuditLogService $auditLogService,
         private LoggerInterface $logger,
         private IL10N $l,
+        private TimeEntryMapper $timeEntryMapper,
     ) {
     }
 
@@ -85,28 +88,30 @@ class WorkScheduleService {
     ): WorkSchedule {
         $errors = $this->validate($dayHours, $vacationDays);
 
-        // valid_from darf nicht vor dem 1. des aktuellen Monats liegen
+        // valid_from may lie in the past (backdating): HR corrects profiles that
+        // should have applied earlier, e.g. from the entry date. The only
+        // protection is the approved-month guard below.
         $validFromDate = new DateTime($validFrom);
-        $firstOfCurrentMonth = new DateTime('first day of this month');
-        $firstOfCurrentMonth->setTime(0, 0, 0);
-        if ($validFromDate < $firstOfCurrentMonth) {
-            $errors['validFrom'] = [$this->l->t('Gültig-ab darf frühestens der 1. des aktuellen Monats sein')];
-        }
+        $validFromDate->setTime(0, 0, 0);
 
         // Check for duplicate valid_from date
-        if (empty($errors['validFrom'])) {
-            $existingSchedules = $this->mapper->findByEmployeeId($employeeId);
-            foreach ($existingSchedules as $existing) {
-                if ($existing->getValidFrom()->format('Y-m-d') === $validFrom) {
-                    $errors['validFrom'] = [$this->l->t('Ein Profil mit diesem Gültig-ab Datum existiert bereits')];
-                    break;
-                }
+        $existingSchedules = $this->mapper->findByEmployeeId($employeeId);
+        foreach ($existingSchedules as $existing) {
+            if ($existing->getValidFrom()->format('Y-m-d') === $validFrom) {
+                $errors['validFrom'] = [$this->l->t('Ein Profil mit diesem Gültig-ab Datum existiert bereits')];
+                break;
             }
         }
 
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
+
+        $this->assertNoApprovedMonthAffected(
+            $employeeId,
+            $validFromDate,
+            $this->affectedRangeEnd($existingSchedules, $validFromDate, null)
+        );
 
         $schedule = new WorkSchedule();
         $schedule->setEmployeeId($employeeId);
@@ -150,7 +155,8 @@ class WorkScheduleService {
         int $employeeId,
         array $dayHours,
         int $vacationDays,
-        string $currentUserId
+        string $currentUserId,
+        ?string $validFrom = null
     ): WorkSchedule {
         $schedule = $this->find($id);
 
@@ -160,10 +166,37 @@ class WorkScheduleService {
         $oldValues = $schedule->jsonSerialize();
 
         $errors = $this->validate($dayHours, $vacationDays);
+
+        // Optional move of the valid-from date (null = keep). Two profiles of
+        // one employee must never share a date.
+        $oldFrom = clone $schedule->getValidFrom();
+        $newFrom = clone $oldFrom;
+        $allSchedules = $this->mapper->findByEmployeeId($employeeId);
+        $validFrom = $validFrom !== null ? trim($validFrom) : null;
+        if ($validFrom !== null && $validFrom !== '' && $validFrom !== $oldFrom->format('Y-m-d')) {
+            $newFrom = new DateTime($validFrom);
+            $newFrom->setTime(0, 0, 0);
+            foreach ($allSchedules as $existing) {
+                if ($existing->getId() !== $id && $existing->getValidFrom()->format('Y-m-d') === $validFrom) {
+                    $errors['validFrom'] = [$this->l->t('Ein Profil mit diesem Gültig-ab Datum existiert bereits')];
+                    break;
+                }
+            }
+        }
+
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
 
+        // Everything from the earlier of both dates up to the next later profile
+        // may change its target hours (hours edit, date move, or both).
+        $this->assertNoApprovedMonthAffected(
+            $employeeId,
+            min($oldFrom, $newFrom),
+            $this->affectedRangeEnd($allSchedules, max($oldFrom, $newFrom), $id)
+        );
+
+        $schedule->setValidFrom($newFrom);
         $schedule->setMonHours(number_format((float)($dayHours['mon'] ?? 8), 2, '.', ''));
         $schedule->setTueHours(number_format((float)($dayHours['tue'] ?? 8), 2, '.', ''));
         $schedule->setWedHours(number_format((float)($dayHours['wed'] ?? 8), 2, '.', ''));
@@ -174,7 +207,14 @@ class WorkScheduleService {
         $schedule->setVacationDays($vacationDays);
         $schedule->setUpdatedAt(new DateTime());
 
-        $schedule = $this->mapper->update($schedule);
+        try {
+            $schedule = $this->mapper->update($schedule);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), 'zw_ws_emp_valid_idx') || str_contains($e->getMessage(), 'Unique violation')) {
+                throw new ValidationException(['validFrom' => [$this->l->t('Ein Profil mit diesem Gültig-ab Datum existiert bereits')]]);
+            }
+            throw $e;
+        }
 
         $this->syncEmployeeFromActiveSchedule($schedule->getEmployeeId());
 
@@ -201,6 +241,13 @@ class WorkScheduleService {
         if (count($allSchedules) <= 1) {
             throw new ForbiddenException('Cannot delete the last work schedule');
         }
+
+        // The deleted profile's range falls back to the previous profile.
+        $this->assertNoApprovedMonthAffected(
+            $employeeId,
+            $schedule->getValidFrom(),
+            $this->affectedRangeEnd($allSchedules, $schedule->getValidFrom(), $id)
+        );
 
         if ($currentUserId) {
             $this->auditLogService->logDelete($currentUserId, 'work_schedule', $schedule->getId(), $schedule->jsonSerialize());
@@ -367,6 +414,77 @@ class WorkScheduleService {
     }
 
     // ---- Private helpers ----
+
+    /**
+     * Last day whose target hours a change to a profile valid from $from can
+     * affect: the day before the next later profile (which takes over from
+     * there), otherwise today. Future days have no approved months anyway.
+     *
+     * @param WorkSchedule[] $schedules all profiles of the employee
+     * @param int|null $excludeId the profile being edited/deleted, if any
+     */
+    private function affectedRangeEnd(array $schedules, DateTime $from, ?int $excludeId): DateTime {
+        $next = null;
+        foreach ($schedules as $schedule) {
+            if ($excludeId !== null && $schedule->getId() === $excludeId) {
+                continue;
+            }
+            if ($schedule->getValidFrom() > $from && ($next === null || $schedule->getValidFrom() < $next)) {
+                $next = clone $schedule->getValidFrom();
+            }
+        }
+
+        $today = new DateTime('today');
+        if ($next === null) {
+            return $today;
+        }
+        $next->modify('-1 day');
+        return $next < $today ? $next : $today;
+    }
+
+    /**
+     * Refuse a profile change whose affected range contains a fully approved
+     * month. Target hours are computed live from the profiles, so the change
+     * would silently alter figures a supervisor has already approved. HR
+     * reopens the month first (existing correction flow), then corrects.
+     *
+     * @throws ValidationException
+     */
+    private function assertNoApprovedMonthAffected(int $employeeId, DateTime $start, DateTime $end): void {
+        $today = new DateTime('today');
+        if ($end > $today) {
+            $end = $today;
+        }
+        if ($start > $end) {
+            return;
+        }
+
+        $approvedMonths = [];
+        $cursor = new DateTime($start->format('Y-m-01'));
+        $last = new DateTime($end->format('Y-m-01'));
+        while ($cursor <= $last) {
+            $year = (int)$cursor->format('Y');
+            $month = (int)$cursor->format('n');
+            $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
+            $total = ($summary[TimeEntry::STATUS_DRAFT] ?? 0)
+                + ($summary[TimeEntry::STATUS_SUBMITTED] ?? 0)
+                + ($summary[TimeEntry::STATUS_APPROVED] ?? 0)
+                + ($summary[TimeEntry::STATUS_REJECTED] ?? 0);
+            if ($total > 0 && ($summary[TimeEntry::STATUS_APPROVED] ?? 0) === $total) {
+                $approvedMonths[] = sprintf('%02d/%d', $month, $year);
+            }
+            $cursor->modify('+1 month');
+        }
+
+        if ($approvedMonths !== []) {
+            throw new ValidationException(['period' => [
+                $this->l->t(
+                    'Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen.',
+                    [implode(', ', $approvedMonths)]
+                ),
+            ]]);
+        }
+    }
 
     /**
      * Build date segments for a range, each with the applicable schedule.

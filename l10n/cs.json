@@ -474,7 +474,6 @@
 		"Scope muss zwischen 0 und 1 liegen": "Rozsah musí být mezi 0 a 1",
 		"Halber Tag ist nur für einen einzelnen Tag möglich": "Půlden je možný pouze pro jeden den",
 		"Halbtägige Abwesenheit (%s) und Zeiteintrag am selben Tag.": "Půldenní absence (%s) a záznam času ve stejný den.",
-		"Gültig-ab darf frühestens der 1. des aktuellen Monats sein": "Platnost-od může být nejdříve 1. den aktuálního měsíce",
 		"Ein Profil mit diesem Gültig-ab Datum existiert bereits": "Profil s tímto datem platnosti-od již existuje",
 		"Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)": "Maximální denní pracovní doba je %s hodin (viz nastavení)",
 		"Begründung erforderlich": "Odůvodnění je povinné",
@@ -669,7 +668,9 @@
 		"Spesen": "Diety",
 		"Willkommen bei Zeitwerk": "Vítejte v aplikaci Zeitwerk",
 		"Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche).": "Smluvně stanovená týdenní pracovní doba. Z ní Zeitwerk počítá denní plán (týdenní hodiny ÷ pracovní dny).",
-		"Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.": "Když je měsíc schválen, Zeitwerk automaticky uloží PDF report do této složky. Složka se nachází ve vašem osobním úložišti — přístup máte pouze vy jako administrátor. Automatická archivace funguje pouze při zapnutém schvalování; je-li vypnuté, použijte export PDF v měsíčním přehledu."
+		"Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht.": "Když je měsíc schválen, Zeitwerk automaticky uloží PDF report do této složky. Složka se nachází ve vašem osobním úložišti — přístup máte pouze vy jako administrátor. Automatická archivace funguje pouze při zapnutém schvalování; je-li vypnuté, použijte export PDF v měsíčním přehledu.",
+		"Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.": "Zpětné změny mění přesčasy dotčených měsíců. Již schválené měsíce je nutné nejprve znovu otevřít.",
+		"Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen.": "Dotčené měsíce jsou již schváleny (%s). Nejprve je prosím znovu otevřete."
 	},
 	"pluralForm": "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;"
 }

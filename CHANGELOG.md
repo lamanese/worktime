@@ -7,6 +7,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-02
+
+### Changed
+- **Arbeitszeitprofile rückwirkend anlegen und verschieben**: „Gültig ab" darf jetzt in der Vergangenheit liegen, und das Datum lässt sich auch bei bestehenden Profilen ändern. HR kann ein Profil damit nachträglich auf das Eintrittsdatum setzen, statt dass für die Tage davor stillschweigend das automatisch angelegte Erstprofil bzw. das Standardprofil (40 Stunden) gilt. Die bisherige Regel „frühestens der 1. des aktuellen Monats" entfällt.
+- **Schutz genehmigter Monate bei Profil-Änderungen**: Anlegen, Bearbeiten und Löschen eines Profils werden abgelehnt, wenn der betroffene Zeitraum (vom früheren Gültig-ab-Datum bis zum nächsten späteren Profil bzw. bis heute) einen vollständig genehmigten Monat enthält; die Meldung nennt die Monate. HR öffnet den Monat wie gewohnt zuerst wieder, korrigiert das Profil, danach wird der Monat erneut eingereicht und genehmigt (das Archiv-PDF wird dabei neu erzeugt).
+
 ## [0.14.3] - 2026-08-13
 
 ### Removed
