@@ -298,6 +298,7 @@ class TimeEntryServiceTest extends TestCase {
     }
 
     public function testDeleteBlocksEmployeeInLockedMonth(): void {
+        $this->expectActiveEmployee();
         // A DRAFT entry in a past (locked) year must not be deletable without HR override.
         $this->timeEntryMapper->method('find')->willReturn($this->makePastYearEntry());
         $this->expectException(ValidationException::class);
@@ -335,6 +336,7 @@ class TimeEntryServiceTest extends TestCase {
      * all other checks (no future date, no overlap, no absence conflict).
      */
     public function testCreateRejectsBookingOnUnassignedProject(): void {
+        $this->expectActiveEmployee();
         $projectService = $this->createMock(ProjectService::class);
         $projectService->method('isProjectAllowedForEmployee')->willReturn(false);
         $service = new TimeEntryService(
@@ -367,6 +369,7 @@ class TimeEntryServiceTest extends TestCase {
      * without a project must be rejected and never persisted.
      */
     public function testCreateRejectsMissingProjectWhenRequired(): void {
+        $this->expectActiveEmployee();
         $service = $this->serviceWithRequiredFields(true, false);
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
@@ -389,6 +392,7 @@ class TimeEntryServiceTest extends TestCase {
      * description must be rejected (whitespace does not satisfy the rule).
      */
     public function testCreateRejectsBlankDescriptionWhenRequired(): void {
+        $this->expectActiveEmployee();
         $service = $this->serviceWithRequiredFields(false, true);
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
@@ -407,6 +411,7 @@ class TimeEntryServiceTest extends TestCase {
      * the rule is active, and must never persist the change.
      */
     public function testUpdateRejectsMissingProjectWhenRequired(): void {
+        $this->expectActiveEmployee();
         $service = $this->serviceWithRequiredFields(true, false);
         $entry = new TimeEntry();
         $entry->setId(42);
@@ -432,6 +437,7 @@ class TimeEntryServiceTest extends TestCase {
      * the rule is active, and must never persist the change.
      */
     public function testUpdateRejectsBlankDescriptionWhenRequired(): void {
+        $this->expectActiveEmployee();
         $service = $this->serviceWithRequiredFields(false, true);
         $entry = new TimeEntry();
         $entry->setId(42);
@@ -491,6 +497,7 @@ class TimeEntryServiceTest extends TestCase {
      * projectId error) — otherwise they could not book at all.
      */
     public function testCreateAllowsMissingProjectWhenEmployeeHasNoProjects(): void {
+        $this->expectActiveEmployee();
         $service = $this->serviceWithRequiredFields(true, false, false);
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
@@ -736,5 +743,129 @@ class TimeEntryServiceTest extends TestCase {
             $maxWarnings[0],
             'The warning must report NET hours (12.25), not gross (13)'
         );
+    }
+
+    // ---- Inactive employees must not record (uebernommen aus WorkTime #486) ----
+
+    /**
+     * An active employee for EmployeeMapper::find(). Needed because the guard
+     * reads getIsActive(), and an unconfigured mock would report 0 and block
+     * every write path.
+     */
+    private function expectActiveEmployee(int $id = 1): Employee {
+        $employee = new Employee();
+        $employee->setId($id);
+        $employee->setIsActive(true);
+        $this->employeeMapper->method('find')->willReturn($employee);
+        return $employee;
+    }
+
+    private function expectInactiveEmployee(int $id = 1): Employee {
+        $employee = new Employee();
+        $employee->setId($id);
+        $employee->setIsActive(false);
+        $this->employeeMapper->method('find')->willReturn($employee);
+        return $employee;
+    }
+
+    private function draftEntry(int $id = 7): TimeEntry {
+        $entry = new TimeEntry();
+        $entry->setId($id);
+        $entry->setEmployeeId(1);
+        $entry->setDate(new DateTime('2020-01-06'));
+        $entry->setStatus(TimeEntry::STATUS_DRAFT);
+        return $entry;
+    }
+
+    /**
+     * Deactivated employees must not gain new time entries. Before this guard
+     * existed, deactivating an employee only hid them from lists while the UI
+     * already claimed time tracking was stopped.
+     */
+    public function testCreateBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->create(1, '2020-01-06', '08:00', '16:00', 30);
+    }
+
+    public function testUpdateBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->method('find')->willReturn($this->draftEntry());
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->update(7, '2020-01-06', '08:00', '16:00', 30);
+    }
+
+    public function testDeleteBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->method('find')->willReturn($this->draftEntry());
+        $this->timeEntryMapper->expects($this->never())->method('delete');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->delete(7);
+    }
+
+    /**
+     * Approving stays open on purpose: an employee deactivated mid-month must
+     * still be closeable by their supervisor.
+     */
+    public function testApproveStillAllowedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $entry = $this->draftEntry();
+        $entry->setStatus(TimeEntry::STATUS_SUBMITTED);
+        $this->timeEntryMapper->method('find')->willReturn($entry);
+        $this->timeEntryMapper->method('update')->willReturnArgument(0);
+
+        $result = $this->service->approve(7, 'supervisor');
+
+        $this->assertSame(TimeEntry::STATUS_APPROVED, $result->getStatus());
+    }
+
+    /**
+     * HR/Admin correction stays possible for inactive employees: deactivation
+     * stops the EMPLOYEE from recording, it does not freeze a demonstrably
+     * wrong record forever. allowLockedOverride is set by the controller from
+     * canManageEmployees(), so admin and HR manager only.
+     */
+    public function testUpdateAllowedForInactiveEmployeeWithHrOverride(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->method('find')->willReturn($this->draftEntry());
+        $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
+        $this->timeEntryMapper->method('update')->willReturnArgument(0);
+
+        $result = $this->service->update(
+            7, '2020-01-06', '08:00', '16:00', 30, null, null, 'hr', 'Korrektur eines Zahlendrehers', true
+        );
+
+        $this->assertSame(450, $result->getWorkMinutes());
+    }
+
+    public function testDeleteAllowedForInactiveEmployeeWithHrOverride(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->method('find')->willReturn($this->draftEntry());
+        $this->timeEntryMapper->expects($this->once())->method('delete');
+
+        $this->service->delete(7, 'hr', 'Eintrag war doppelt erfasst', true);
+    }
+
+    public function testSubmitBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->method('find')->willReturn($this->draftEntry());
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->submit(7, 'employee');
+    }
+
+    public function testSubmitMonthBlockedForInactiveEmployee(): void {
+        $this->expectInactiveEmployee();
+        $this->timeEntryMapper->expects($this->never())->method('update');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->submitMonth(1, 2020, 1, 'employee');
     }
 }
