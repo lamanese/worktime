@@ -43,6 +43,7 @@ class AbsenceService {
         private AuditLogService $auditLogService,
         private NotificationService $notificationService,
         private WorkScheduleService $workScheduleService,
+        private HolidayService $holidayService,
         private LoggerInterface $logger,
         private IL10N $l,
     ) {
@@ -378,6 +379,9 @@ class AbsenceService {
         string $federalState,
         string $overageType
     ): array {
+        // #438: ensure the period's holidays exist so the day-walk classifies them
+        // as non-working (not vacation/overage).
+        $this->holidayService->ensureHolidaysForRange($startDate, $endDate, $federalState);
         $holidays = $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
 
         $remaining = [];
@@ -785,6 +789,11 @@ class AbsenceService {
      * Falls back to Mon-Fri if no employeeId is available.
      */
     public function calculateWorkingDays(DateTime $startDate, DateTime $endDate, string $federalState, ?int $employeeId = null): float {
+        // #438: make sure the range's holidays exist before subtracting them —
+        // otherwise a holiday in a never-generated year/state counts as a working
+        // (and thus deducted) day.
+        $this->holidayService->ensureHolidaysForRange($startDate, $endDate, $federalState);
+
         if ($employeeId !== null) {
             // Use schedule-aware calculation
             $holidays = $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
