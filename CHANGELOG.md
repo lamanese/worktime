@@ -7,6 +7,22 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-09-02
+
+Zehn Fehlerbehebungen rund um Urlaub, Feiertage und Überstunden aus der Original-App WorkTime (cpcMomentum/worktime) übernommen, dazu ein Nachbefund zu 0.15.1.
+
+### Fixed
+- **Fehlende Feiertage werden bei der Berechnung erzeugt** (WorkTime #438): In Jahren oder Bundesländern, für die noch keine Feiertage generiert waren, wurde ein Feiertag als Arbeits- bzw. Urlaubstag gewertet. Fehlende Feiertage werden jetzt bei Bedarf automatisch angelegt (idempotent, manuell gepflegte Feiertage bleiben unangetastet).
+- **Abgelehnter Urlaub verbrauchte weiterhin Urlaubstage und blockierte neue Anträge** (WorkTime #443): Nur genehmigte und offene Abwesenheiten zählen aufs Kontingent und stehen einem neuen Antrag für dieselben Tage im Weg.
+- **Halber Feiertag bei bezahlter Abwesenheit falsch verrechnet** (WorkTime #443): Ein genehmigter Urlaub auf einem halben Feiertag erzeugte rund vier Minusstunden.
+- **Doppelzählung bei Genehmigung mit vorhandenen Zeiteinträgen** (WorkTime #443): Die Genehmigung einer ganztägigen Abwesenheit prüft erneut, ob am Tag bereits Zeiteinträge liegen.
+- **Team-Jahresübersicht zählte Feiertage und halbe Tage als volle Urlaubstage** (WorkTime #443): Die Monatsspalten berücksichtigen jetzt die echten Feiertage des Zeitraums und den Umfang (halber Tag = 0,5).
+- **Pausenwarnung bei geteiltem Arbeitstag mit Lücke** (WorkTime #443): Die §4-Prüfung rechnet mit der reinen Arbeitszeit statt mit einem auf Bruttozeit geeichten Schwellwert.
+- **Halbtags-Abwesenheiten in Zukunftsmonaten und Freizeitausgleich-Hinweis** (WorkTime #443 G/H): Ein halber Tag in einem noch nicht begonnenen Monat zählt als 0,5, und der Hinweis „Freizeitausgleich ≈ Stunden" rechnet mit den Arbeitstagen pro Woche des Mitarbeiters statt fest mit fünf.
+- **Urlaubsantrag trotz ausreichendem Guthaben abgelehnt** (WorkTime #500): Der Jahresübertrag aus dem Vorjahr fliesst jetzt auch in die Prüfung beim Beantragen ein, nicht nur in die Anzeige.
+- **Falscher Urlaubsanspruch bei geändertem Arbeitszeitprofil** (WorkTime #501): Die Antrags- und Betriebsferien-Prüfung nutzt den jahresgenauen Anspruch aus dem Profil des betreffenden Jahres statt des heute gültigen Werts.
+- **Halbe Urlaubstage aus dem Jahresübertrag wurden als ganze verrechnet** (WorkTime #525): Ein Übertrag von 12,5 Tagen wurde in Guthaben, Antragsprüfung, Team-Jahresübersicht und Anzeige auf 13 gerundet. Der Übertrag zählt jetzt überall exakt.
+
 ### Security
 - **HR-Korrektur bei deaktivierten Mitarbeitern verlangt eine Begründung**: Der in 0.15.1 eingeführte Schutz liess sich von HR/Admin im Korrekturmodus ohne Begründung umgehen, solange der Monat noch offen war (die Begründungspflicht griff nur über die Monatssperre). Jetzt gilt bei deaktivierten Mitarbeitern für Anlegen, Bearbeiten und Löschen von Zeiteinträgen und Abwesenheiten immer die Begründungspflicht (mindestens 10 Zeichen), und die Begründung wird im Audit-Log festgehalten. Die Weboberfläche fragte die Begründung im Korrekturmodus bereits ab; betroffen war nur der direkte API-Zugriff.
 
