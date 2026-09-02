@@ -673,6 +673,9 @@ OC.L10N.register(
     "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden." : "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.",
     "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen." : "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen.",
     "Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden." : "Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden.",
-    "Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden." : "Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden."
+    "Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden." : "Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.",
+    "Durchführen" : "Durchführen",
+    "Ist-Werte des Vorjahres eintragen" : "Ist-Werte des Vorjahres eintragen",
+    "Eintragen" : "Eintragen"
 },
 "nplurals=2; plural=(n != 1);");
