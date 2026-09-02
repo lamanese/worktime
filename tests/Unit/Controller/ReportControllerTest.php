@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
+use DateTime;
 use OCA\Zeitwerk\Controller\ReportController;
+use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\AbsenceMapper;
 use OCA\Zeitwerk\Db\DailyKmMapper;
-use DateTime;
 use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Db\Holiday;
 use OCA\Zeitwerk\Db\Project;
 use OCA\Zeitwerk\Db\TimeEntry;
 use OCA\Zeitwerk\Db\TimeEntryMapper;
@@ -16,14 +18,14 @@ use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AllowanceService;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\OvertimeCalculationService;
+use OCA\Zeitwerk\Service\OvertimePayoutService;
 use OCA\Zeitwerk\Service\PdfService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCA\Zeitwerk\Service\ProjectService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCA\Zeitwerk\Service\YearlyCarryoverService;
-use OCA\Zeitwerk\Service\OvertimePayoutService;
-use OCA\Zeitwerk\Service\OvertimeCalculationService;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -272,5 +274,78 @@ class ReportControllerTest extends TestCase {
         $response = $this->controller->projectsPdf(2026, 6, 'month', false, '2', '5', 'detail');
 
         $this->assertSame(200, $response->getStatus());
+    }
+
+    // ---------------------------------------------------------------------
+    // #443 E: per-month vacation days must exclude holidays and apply scope
+    // ---------------------------------------------------------------------
+
+    private function buildController(WorkScheduleService $ws, HolidayService $hs): ReportController {
+        return new ReportController(
+            $this->createMock(IRequest::class),
+            'admin',
+            $this->createMock(TimeEntryService::class),
+            $this->createMock(TimeEntryMapper::class),
+            $this->createMock(AbsenceMapper::class),
+            $this->createMock(AbsenceService::class),
+            $this->createMock(EmployeeService::class),
+            $hs,
+            $this->createMock(PermissionService::class),
+            $this->createMock(PdfService::class),
+            $ws,
+            $this->createMock(YearlyCarryoverService::class),
+            $this->createMock(OvertimePayoutService::class),
+            $this->createMock(OvertimeCalculationService::class),
+            $this->createMock(ProjectService::class),
+            $this->createMock(AllowanceService::class),
+            $this->createMock(DailyKmMapper::class),
+            $this->createMock(IL10N::class),
+        );
+    }
+
+    private function vacationAbsence(string $start, string $end, float $scope): Absence {
+        $a = new Absence();
+        $a->setEmployeeId(1);
+        $a->setStartDate(new DateTime($start));
+        $a->setEndDate(new DateTime($end));
+        $a->setScopeValue($scope);
+        return $a;
+    }
+
+    private function countInMonth(ReportController $c, Absence $a, int $year, int $month): float {
+        $m = new \ReflectionMethod($c, 'countWorkingDaysInMonth');
+        $m->setAccessible(true);
+        return $m->invoke($c, $a, $year, $month, 'BY');
+    }
+
+    public function testPerMonthVacationAppliesHalfDayScope(): void {
+        $ws = $this->createMock(WorkScheduleService::class);
+        $ws->method('countWorkingDays')->willReturn(1.0); // one working day in range
+        $hs = $this->createMock(HolidayService::class);
+        $hs->method('findHolidaysInRange')->willReturn([]);
+        $controller = $this->buildController($ws, $hs);
+
+        // Half-day vacation on a single working day → 0.5, not 1.0.
+        $a = $this->vacationAbsence('2026-03-02', '2026-03-02', 0.5);
+        $this->assertSame(0.5, $this->countInMonth($controller, $a, 2026, 3));
+    }
+
+    public function testPerMonthVacationExcludesHolidays(): void {
+        // The real holidays of the range must reach countWorkingDays (previously
+        // an empty array was passed, so holidays counted as vacation days).
+        $ws = $this->createMock(WorkScheduleService::class);
+        $ws->method('countWorkingDays')->willReturnCallback(
+            static fn (int $e, DateTime $s, DateTime $en, array $holidays): float => (float)(5 - count($holidays))
+        );
+        $hs = $this->createMock(HolidayService::class);
+        $hs->method('findHolidaysInRange')->willReturn([
+            $this->createMock(Holiday::class),
+            $this->createMock(Holiday::class),
+        ]);
+        $controller = $this->buildController($ws, $hs);
+
+        // 5 scheduled working days − 2 holidays = 3 (before fix: empty array → 5).
+        $a = $this->vacationAbsence('2026-12-21', '2026-12-25', 1.0);
+        $this->assertSame(3.0, $this->countInMonth($controller, $a, 2026, 12));
     }
 }
