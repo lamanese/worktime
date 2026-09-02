@@ -75,7 +75,8 @@ class WorkScheduleController extends BaseController {
         int $employeeId,
         int $id,
         array $dayHours = [],
-        int $vacationDays = 30
+        int $vacationDays = 30,
+        ?string $validFrom = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -91,7 +92,8 @@ class WorkScheduleController extends BaseController {
                 $employeeId,
                 $dayHours,
                 $vacationDays,
-                $this->userId
+                $this->userId,
+                $validFrom
             );
 
             return $this->successResponse($schedule);

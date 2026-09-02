@@ -66,12 +66,14 @@
             <div v-if="showForm" class="schedule-form">
                 <h5>{{ editingSchedule ? t('zeitwerk', 'Profil bearbeiten') : t('zeitwerk', 'Neues Profil anlegen') }}</h5>
 
-                <div v-if="!editingSchedule" class="form-group">
+                <div class="form-group">
                     <label>{{ t('zeitwerk', 'Gültig ab') }} *</label>
                     <NcDateTimePicker v-model="form.validFrom"
                         type="date"
-                        :format="'DD.MM.YYYY'"
-                        :disabled-date="disablePastDates" />
+                        :format="'DD.MM.YYYY'" />
+                    <p class="hint">
+                        {{ t('zeitwerk', 'Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden.') }}
+                    </p>
                 </div>
 
                 <div class="day-hours-row">
@@ -141,7 +143,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import { mapGetters, mapActions } from 'vuex'
-import { showError } from '@nextcloud/dialogs'
+import { handleError } from '../utils/errorHandler.js'
 import { formatDateISO, getLocale } from '../utils/dateUtils.js'
 import SettingsService from '../services/SettingsService.js'
 
@@ -187,12 +189,6 @@ export default {
             const h = this.form.dayHours
             return (h.mon + h.tue + h.wed + h.thu + h.fri + (h.sat || 0) + (h.sun || 0)).toFixed(1)
         },
-        minValidFrom() {
-            const d = new Date()
-            d.setDate(1)
-            d.setHours(0, 0, 0, 0)
-            return d
-        },
         isFormValid() {
             const h = this.form.dayHours
             const total = h.mon + h.tue + h.wed + h.thu + h.fri + h.sat + h.sun
@@ -200,7 +196,7 @@ export default {
             return total >= 0
                 && allWithinLimit
                 && this.form.vacationDays >= 0
-                && (this.editingSchedule || this.form.validFrom)
+                && !!this.form.validFrom
         },
     },
     watch: {
@@ -230,9 +226,6 @@ export default {
                 vacationDays: 30,
             }
         },
-        disablePastDates(date) {
-            return date < this.minValidFrom
-        },
         formatDate(dateStr) {
             if (!dateStr) return '-'
             const d = new Date(dateStr + 'T00:00:00')
@@ -246,7 +239,7 @@ export default {
         startEdit(schedule) {
             this.editingSchedule = schedule
             this.form = {
-                validFrom: null,
+                validFrom: new Date(schedule.validFrom + 'T00:00:00'),
                 dayHours: {
                     mon: schedule.monHours,
                     tue: schedule.tueHours,
@@ -267,6 +260,7 @@ export default {
         async saveForm() {
             try {
                 const data = {
+                    validFrom: formatDateISO(this.form.validFrom),
                     dayHours: this.form.dayHours,
                     vacationDays: this.form.vacationDays,
                 }
@@ -278,9 +272,6 @@ export default {
                         data,
                     })
                 } else {
-                    data.validFrom = this.form.validFrom
-                        ? formatDateISO(this.form.validFrom)
-                        : formatDateISO(new Date())
                     await this.createSchedule({
                         employeeId: this.employeeId,
                         data,
@@ -291,15 +282,10 @@ export default {
                 this.editingSchedule = null
                 this.$emit('updated')
             } catch (error) {
-                console.error('Failed to save schedule:', error)
-                const data = error?.response?.data
-                let msg = t('zeitwerk', 'Fehler beim Speichern des Profils')
-                if (data?.errors) {
-                    msg = Object.values(data.errors).flat().join(', ')
-                } else if (data?.message) {
-                    msg = data.message
-                }
-                showError(msg)
+                // The API layer already turns validation errors (e.g. approved
+                // month, duplicate date) into an Error whose message is the
+                // server text, so show that instead of a generic notice.
+                handleError(error, t('zeitwerk', 'Fehler beim Speichern des Profils'))
             }
         },
         confirmDelete(schedule) {
@@ -314,8 +300,7 @@ export default {
                 })
                 this.$emit('updated')
             } catch (error) {
-                console.error('Failed to delete schedule:', error)
-                showError(t('zeitwerk', 'Fehler beim Löschen des Profils'))
+                handleError(error, t('zeitwerk', 'Fehler beim Löschen des Profils'))
             } finally {
                 this.showDeleteDialog = false
                 this.scheduleToDelete = null

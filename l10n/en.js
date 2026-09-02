@@ -522,7 +522,6 @@ OC.L10N.register(
     "Scope muss zwischen 0 und 1 liegen" : "Scope must be between 0 and 1",
     "Halber Tag ist nur für einen einzelnen Tag möglich" : "Half day is only possible for a single day",
     "Halbtägige Abwesenheit (%s) und Zeiteintrag am selben Tag." : "Half-day absence (%s) and time entry on the same day.",
-    "Gültig-ab darf frühestens der 1. des aktuellen Monats sein" : "Valid-from must be no earlier than the 1st of the current month",
     "Ein Profil mit diesem Gültig-ab Datum existiert bereits" : "A profile with this valid-from date already exists",
     "Maximale tägliche Arbeitszeit ist %s Stunden (siehe Einstellungen)" : "Maximum daily working time is %s hours (see settings)",
     "Begründung erforderlich" : "Reason required",
@@ -670,6 +669,8 @@ OC.L10N.register(
     "Spesen" : "Daily allowance",
     "Willkommen bei Zeitwerk" : "Welcome to Zeitwerk",
     "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Contractually agreed working hours per week. Zeitwerk calculates the daily target from this (weekly hours ÷ working days per week).",
-    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "When a month is approved, Zeitwerk automatically saves a PDF report in this folder. The folder is in your personal storage — only you as admin have access. Automatic archiving only applies when approval is enabled; if disabled, use the PDF export in the monthly overview."
+    "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "When a month is approved, Zeitwerk automatically saves a PDF report in this folder. The folder is in your personal storage — only you as admin have access. Automatic archiving only applies when approval is enabled; if disabled, use the PDF export in the monthly overview.",
+    "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden." : "Retroactive changes alter the overtime of the affected months. Months that are already approved must be reopened first.",
+    "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen." : "Affected months are already approved (%s). Please reopen them first."
 },
 "nplurals=2; plural=(n != 1);");

@@ -31,6 +31,8 @@ const mutations = {
 		const index = state.schedules.findIndex((s) => s.id === schedule.id)
 		if (index !== -1) {
 			state.schedules.splice(index, 1, schedule)
+			// The valid-from date is editable, so the list may need re-ordering
+			state.schedules.sort((a, b) => b.validFrom.localeCompare(a.validFrom))
 		}
 	},
 	REMOVE_SCHEDULE(state, id) {
