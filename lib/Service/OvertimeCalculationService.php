@@ -256,13 +256,15 @@ class OvertimeCalculationService {
             $workingDaysMonth = $this->workScheduleService->countWorkingDays($employeeId, $startDate, $monthEndDate, $holidays);
             $monthlyTargetMinutes = $this->workScheduleService->calculateTargetMinutes($employeeId, $startDate, $monthEndDate, $holidays);
 
-            // Count planned absences for display only
+            // Count planned absences for display only. Weight by the absence
+            // scope (0.5 for half days) so a half-day absence in a future month
+            // shows as 0.5, consistent with the non-future branch (see #443 G).
             $absenceDaysMonth = 0;
             foreach ($absences as $absence) {
                 if ($absence->isApproved()) {
                     $absenceStart = $absence->getStartDate() < $startDate ? $startDate : $absence->getStartDate();
                     $absenceEnd = $absence->getEndDate() > $monthEndDate ? $monthEndDate : $absence->getEndDate();
-                    $absenceDaysMonth += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays);
+                    $absenceDaysMonth += $this->workScheduleService->countWorkingDays($employeeId, $absenceStart, $absenceEnd, $holidays) * $absence->getScopeValue();
                 }
             }
 
@@ -503,8 +505,20 @@ class OvertimeCalculationService {
             $dateStr = $current->format('Y-m-d');
             $dayMinutes = $this->workScheduleService->getDailyMinutesForDate($employeeId, $current);
 
-            if ($dayMinutes > 0 && !isset($holidayMap[$dateStr])) {
-                $totalMinutes += (int)round($dayMinutes * $scope);
+            if ($dayMinutes > 0) {
+                if (isset($holidayMap[$dateStr])) {
+                    // #443: honour fractional (half-day) holidays, mirroring
+                    // calculateTargetMinutes(). A full holiday (scope 1.0)
+                    // credits 0; a half holiday (scope 0.5) credits the
+                    // remaining half. Previously ANY holiday was skipped, so a
+                    // paid absence over a half-holiday credited 0 while the
+                    // target kept the reduced (half) obligation → a spurious
+                    // ~4h deficit and a days-vs-minutes mismatch.
+                    $holidayScope = $holidayMap[$dateStr]->getScopeValue();
+                    $totalMinutes += (int)round($dayMinutes * (1.0 - $holidayScope) * $scope);
+                } else {
+                    $totalMinutes += (int)round($dayMinutes * $scope);
+                }
             }
             $current->modify('+1 day');
         }

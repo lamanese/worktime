@@ -43,6 +43,8 @@ class AbsenceService {
         private AuditLogService $auditLogService,
         private NotificationService $notificationService,
         private WorkScheduleService $workScheduleService,
+        private HolidayService $holidayService,
+        private YearlyCarryoverService $carryoverService,
         private LoggerInterface $logger,
         private IL10N $l,
     ) {
@@ -378,6 +380,9 @@ class AbsenceService {
         string $federalState,
         string $overageType
     ): array {
+        // #438: ensure the period's holidays exist so the day-walk classifies them
+        // as non-working (not vacation/overage).
+        $this->holidayService->ensureHolidaysForRange($startDate, $endDate, $federalState);
         $holidays = $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
 
         $remaining = [];
@@ -668,6 +673,20 @@ class AbsenceService {
             throw new ForbiddenException('Can only approve pending absences');
         }
 
+        // #443: re-check the time-entry conflict at approval time. The create-time
+        // #360 guard cannot see entries booked AFTER the (still pending) absence,
+        // and TimeEntryService only blocks entries against ALREADY-approved
+        // absences — so the order "pending full-day absence → book entries →
+        // approve" would otherwise create an approved full-day absence coexisting
+        // with time entries on the same day, double-counted in the overtime
+        // calculation. Block the approval until the entries are removed.
+        $this->checkTimeEntryConflict(
+            $absence->getEmployeeId(),
+            $absence->getStartDate(),
+            $absence->getEndDate(),
+            $absence->getScopeValue()
+        );
+
         $absence->setStatus(Absence::STATUS_APPROVED);
         $absence->setApprovedBy($approverEmployeeId);
         $absence->setApprovedAt(new DateTime());
@@ -752,7 +771,7 @@ class AbsenceService {
     /**
      * Get vacation statistics for an employee in a given year
      */
-    public function getVacationStats(int $employeeId, int $year, int $totalVacationDays): array {
+    public function getVacationStats(int $employeeId, int $year, float $totalVacationDays): array {
         $federalState = $this->employeeMapper->find($employeeId)->getFederalState();
 
         // Overlap query + per-year day split (#439): a vacation spanning the year
@@ -785,6 +804,11 @@ class AbsenceService {
      * Falls back to Mon-Fri if no employeeId is available.
      */
     public function calculateWorkingDays(DateTime $startDate, DateTime $endDate, string $federalState, ?int $employeeId = null): float {
+        // #438: make sure the range's holidays exist before subtracting them —
+        // otherwise a holiday in a never-generated year/state counts as a working
+        // (and thus deducted) day.
+        $this->holidayService->ensureHolidaysForRange($startDate, $endDate, $federalState);
+
         if ($employeeId !== null) {
             // Use schedule-aware calculation
             $holidays = $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
@@ -932,16 +956,37 @@ class AbsenceService {
      * Remaining vacation days of one calendar year: quota minus the in-year
      * portion of all approved + pending vacation entries (#439). May be
      * negative after an OVERAGE_NEGATIVE booking (#15 Stufe 2).
+     *
+     * The quota must match the figure the employee sees, built in
+     * AbsenceController::vacationStats() as schedule-aware base entitlement plus
+     * previous-year carryover:
+     *  - #500: add the previous-year carryover; #525: counted exactly, including
+     *    half days (it is entered and stored with 0.5 precision), so the charged
+     *    and the displayed carryover agree.
+     *  - #501: take the base from the year's own work-schedule profile
+     *    (getVacationDaysForYear) instead of the employee cache field. The cache
+     *    only ever holds today's profile, so checking a past year with a
+     *    different profile — or a year whose future-dated profile has not yet
+     *    synced the cache — used the wrong base while the overview showed the
+     *    right one. This is the single point both remainingVacationDays callers
+     *    (checkVacationQuota and the Betriebsferien splitPeriod) share.
      */
     private function remainingVacationDays(int $employeeId, int $year, string $federalState, ?int $excludeId = null): float {
-        $totalVacationDays = (float)$this->employeeMapper->find($employeeId)->getVacationDays();
+        $baseEntitlement = (float)$this->workScheduleService->getVacationDaysForYear($employeeId, $year);
+        $carryover = $this->carryoverService->getVacationCarryoverDays($employeeId, $year);
+        $totalVacationDays = $baseEntitlement + $carryover;
 
         $usedDays = 0.0;
         foreach ($this->absenceMapper->findByEmployeeAndYear($employeeId, $year) as $absence) {
             if ($absence->getType() !== Absence::TYPE_VACATION) {
                 continue;
             }
-            if ($absence->getStatus() === Absence::STATUS_CANCELLED) {
+            // #443: only APPROVED + PENDING consume quota (matches this method's
+            // docstring and getVacationStats). Previously only CANCELLED was
+            // skipped, so a REJECTED request permanently ate quota and wrongly
+            // blocked later bookings / mis-classified Betriebsferien days.
+            if ($absence->getStatus() !== Absence::STATUS_APPROVED
+                && $absence->getStatus() !== Absence::STATUS_PENDING) {
                 continue;
             }
             if ($excludeId !== null && $absence->getId() === $excludeId) {
@@ -974,9 +1019,17 @@ class AbsenceService {
             $errors['scope'] = [$this->l->t('Halber Tag ist nur für einen einzelnen Tag möglich')];
         }
 
-        // Check for overlapping absences
+        // Check for overlapping absences. #443: only a STANDING absence
+        // (pending or approved) blocks — a REJECTED request means the employee is
+        // not actually absent (same reasoning blockedDatesInPeriod already
+        // applies). findOverlapping already excludes CANCELLED at the query level.
         $overlapping = $this->absenceMapper->findOverlapping($employeeId, $startDate, $endDate, $excludeId);
-        if (!empty($overlapping)) {
+        $blocking = array_filter(
+            $overlapping,
+            static fn (Absence $a): bool => $a->getStatus() === Absence::STATUS_APPROVED
+                || $a->getStatus() === Absence::STATUS_PENDING
+        );
+        if (!empty($blocking)) {
             $errors['startDate'] = ['Overlapping absence exists'];
         }
 
