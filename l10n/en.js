@@ -671,6 +671,8 @@ OC.L10N.register(
     "Vertraglich vereinbarte Arbeitszeit pro Woche. Daraus berechnet Zeitwerk das tägliche Soll (Wochenstunden ÷ Arbeitstage pro Woche)." : "Contractually agreed working hours per week. Zeitwerk calculates the daily target from this (weekly hours ÷ working days per week).",
     "Wenn ein Monat genehmigt wird, speichert Zeitwerk automatisch einen PDF-Bericht in diesem Ordner. Der Ordner liegt in Ihrem persönlichen Speicher — nur Sie als Admin haben Zugriff. Die automatische Archivierung greift nur bei aktivierter Genehmigung; ist sie deaktiviert, nutzen Sie den PDF-Export in der Monatsübersicht." : "When a month is approved, Zeitwerk automatically saves a PDF report in this folder. The folder is in your personal storage — only you as admin have access. Automatic archiving only applies when approval is enabled; if disabled, use the PDF export in the monthly overview.",
     "Rückwirkende Änderungen verändern die Überstunden der betroffenen Monate. Bereits genehmigte Monate müssen zuerst wiedereröffnet werden." : "Retroactive changes alter the overtime of the affected months. Months that are already approved must be reopened first.",
-    "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen." : "Affected months are already approved (%s). Please reopen them first."
+    "Betroffene Monate sind bereits genehmigt (%s). Bitte zuerst wiedereröffnen." : "Affected months are already approved (%s). Please reopen them first.",
+    "Für deaktivierte Mitarbeiter können keine Abwesenheiten erfasst oder geändert werden." : "Absences cannot be recorded or changed for deactivated employees.",
+    "Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden." : "Time entries cannot be recorded or changed for deactivated employees."
 },
 "nplurals=2; plural=(n != 1);");

@@ -37,6 +37,26 @@ class Notifier implements INotifier {
 			throw new UnknownNotificationException();
 		}
 
+		try {
+			return $this->prepareZeitwerkNotification($notification, $languageCode);
+		} catch (UnknownNotificationException $e) {
+			// Genuinely unknown subject — let NC handle it.
+			throw $e;
+		} catch (\InvalidArgumentException $e) {
+			// Safety net (WorkTime #551): an NC INotification setter rejected a
+			// value while building a known notification. NC 34+ deprecates letting
+			// \InvalidArgumentException escape prepare() and logs it on every
+			// cron run, so convert it and discard the undisplayable notification
+			// cleanly.
+			throw new UnknownNotificationException();
+		}
+	}
+
+	/**
+	 * Build a known Zeitwerk notification. Any \InvalidArgumentException raised
+	 * by an NC setter while building it is caught and handled by prepare().
+	 */
+	private function prepareZeitwerkNotification(INotification $notification, string $languageCode): INotification {
 		$l = $this->l10nFactory->get(Application::APP_ID, $languageCode);
 		$params = $notification->getSubjectParameters();
 
@@ -175,8 +195,14 @@ class Notifier implements INotifier {
 				throw new UnknownNotificationException();
 		}
 
+		// WorkTime #551: NC 34's setIcon() rejects anything that is not an
+		// absolute http(s) URL, and imagePath() returns a relative path. Passing
+		// the raw imagePath() throws before setLink() runs — the notification
+		// then loses both its icon and its link. getAbsoluteURL() fixes that.
 		$notification->setIcon(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
+			$this->urlGenerator->getAbsoluteURL(
+				$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
+			)
 		);
 		$notification->setLink(
 			$this->urlGenerator->linkToRouteAbsolute('zeitwerk.page.index')

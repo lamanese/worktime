@@ -600,7 +600,9 @@ export default {
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to submit month:', error)
-                showError(this.t('zeitwerk', 'Fehler beim Einreichen des Monats.'))
+                // The API layer turns server errors (e.g. the inactive-employee
+                // guard, WorkTime #486) into an Error carrying the server text.
+                showError(error.message || this.t('zeitwerk', 'Fehler beim Einreichen des Monats.'))
             }
         },
     },

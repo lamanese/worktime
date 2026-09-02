@@ -311,7 +311,12 @@ class TimeEntryController extends BaseController {
             return $this->forbiddenResponse();
         }
 
-        $result = $this->timeEntryService->submitMonth($employeeId, $year, $month, $this->userId);
+        try {
+            $result = $this->timeEntryService->submitMonth($employeeId, $year, $month, $this->userId);
+        } catch (\Exception $e) {
+            // e.g. ForbiddenException from the inactive-employee guard -> 403
+            return $this->handleException($e);
+        }
 
         return $this->successResponse([
             'status' => 'success',

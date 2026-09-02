@@ -7,6 +7,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-09-02
+
+Drei Fehlerbehebungen aus der Original-App WorkTime übernommen (cpcMomentum/worktime).
+
+### Security
+- **Deaktivierte Mitarbeiter konnten weiter erfassen** (WorkTime #486): Die Mitarbeiterverwaltung stellte in Aussicht, dass inaktive Mitarbeiter keine Zeiten mehr erfassen können; tatsächlich wurden sie nur aus Auswahllisten ausgeblendet. Zeiteinträge und Abwesenheiten deaktivierter Mitarbeiter werden jetzt serverseitig abgelehnt (Anlegen, Bearbeiten, Löschen, Einreichen). Genehmigen, Ablehnen und Stornieren bleiben möglich, damit ein laufender Monat abgeschlossen werden kann; HR-Korrekturen mit Begründung bleiben ebenfalls möglich. Der Ruhend-Status des Originals wurde nicht übernommen.
+
+### Fixed
+- **Benachrichtigungen auf Nextcloud 34 ohne Symbol und Link, Log-Spam** (WorkTime #551): Nextcloud 34 akzeptiert als Benachrichtigungs-Symbol nur absolute URLs; der relative Pfad liess `setIcon()` fehlschlagen, wodurch Symbol und Link fehlten und der Fehler bei jedem Cron-Lauf im Log landete. Das Symbol wird jetzt als absolute URL gesetzt; sollte ein Setter künftig einen Wert ablehnen, wird die Benachrichtigung sauber verworfen statt das Log zu füllen.
+- **„PDF über Zeitraum" schlug mit „CSRF check failed" fehl** (WorkTime #620): Dem Zeitraum-Export fehlte die CSRF-Ausnahme, die die anderen Download-Endpunkte haben (Downloads öffnen sich per `window.open()` ohne Nextcloud-Requesttoken). Ein Test stellt jetzt sicher, dass alle Download-Endpunkte die Ausnahme tragen.
+
 ## [0.15.0] - 2026-09-02
 
 ### Changed

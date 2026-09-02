@@ -89,6 +89,40 @@ class TimeEntryService {
     }
 
     /**
+     * Deactivated employees must not gain new or changed time entries
+     * (uebernommen aus WorkTime #486). Deactivating used to only hide the
+     * employee from lists while the UI already claimed recording was stopped.
+     *
+     * Enforced here rather than in the controller because the controllers do
+     * not share a guard. Approving and rejecting are deliberately NOT guarded:
+     * an employee deactivated mid-month must still be closeable by their
+     * supervisor.
+     *
+     * @throws ForbiddenException
+     */
+    private function assertEmployeeActive(int $employeeId, bool $allowCorrection = false): void {
+        // HR/Admin correction (#148 override) stays possible: deactivation
+        // means the EMPLOYEE stops recording, not that a demonstrably wrong
+        // record must remain wrong forever. Such a correction still requires a
+        // reason and is written to the audit log.
+        if ($allowCorrection) {
+            return;
+        }
+
+        try {
+            $employee = $this->employeeMapper->find($employeeId);
+        } catch (DoesNotExistException) {
+            return; // absent employee is handled by the regular validation paths
+        }
+
+        if (!$employee->getIsActive()) {
+            throw new ForbiddenException(
+                $this->l->t('Für deaktivierte Mitarbeiter können keine Zeiten erfasst oder geändert werden.')
+            );
+        }
+    }
+
+    /**
      * @throws ValidationException
      */
     public function create(
@@ -103,6 +137,8 @@ class TimeEntryService {
         ?string $reason = null,
         bool $allowLockedOverride = false
     ): TimeEntry {
+        $this->assertEmployeeActive($employeeId, $allowLockedOverride);
+
         $dateObj = new DateTime($date);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
@@ -187,6 +223,7 @@ class TimeEntryService {
         bool $allowLockedOverride = false
     ): TimeEntry {
         $entry = $this->find($id);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
         $oldValues = $entry->jsonSerialize();
         $oldDate = clone $entry->getDate();
 
@@ -290,6 +327,7 @@ class TimeEntryService {
      */
     public function delete(int $id, string $currentUserId = '', ?string $reason = null, bool $allowLockedOverride = false): void {
         $entry = $this->find($id);
+        $this->assertEmployeeActive($entry->getEmployeeId(), $allowLockedOverride);
 
         // Closed-month rules (#148): block employees, require a reason for HR corrections.
         $lockedMonths = $this->lockedMonthsInRange($entry->getEmployeeId(), $entry->getDate(), $entry->getDate());
@@ -330,6 +368,7 @@ class TimeEntryService {
      */
     public function submit(int $id, string $currentUserId = ''): TimeEntry {
         $entry = $this->find($id);
+        $this->assertEmployeeActive($entry->getEmployeeId());
         $oldValues = $entry->jsonSerialize();
 
         if ($entry->getStatus() !== TimeEntry::STATUS_DRAFT && $entry->getStatus() !== TimeEntry::STATUS_REJECTED) {
@@ -362,6 +401,7 @@ class TimeEntryService {
      * @return array{submitted: int, skipped: int}
      */
     public function submitMonth(int $employeeId, int $year, int $month, string $currentUserId = ''): array {
+        $this->assertEmployeeActive($employeeId);
         $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
 
         $submitted = 0;
