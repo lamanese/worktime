@@ -13,8 +13,6 @@ use DateTime;
 use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
-use OCA\Zeitwerk\Db\TimeEntry;
-use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -30,7 +28,7 @@ class WorkScheduleService {
         private AuditLogService $auditLogService,
         private LoggerInterface $logger,
         private IL10N $l,
-        private TimeEntryMapper $timeEntryMapper,
+        private MonthStatusService $monthStatusService,
     ) {
     }
 
@@ -465,12 +463,7 @@ class WorkScheduleService {
         while ($cursor <= $last) {
             $year = (int)$cursor->format('Y');
             $month = (int)$cursor->format('n');
-            $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
-            $total = ($summary[TimeEntry::STATUS_DRAFT] ?? 0)
-                + ($summary[TimeEntry::STATUS_SUBMITTED] ?? 0)
-                + ($summary[TimeEntry::STATUS_APPROVED] ?? 0)
-                + ($summary[TimeEntry::STATUS_REJECTED] ?? 0);
-            if ($total > 0 && ($summary[TimeEntry::STATUS_APPROVED] ?? 0) === $total) {
+            if ($this->monthStatusService->isApproved($employeeId, $year, $month)) {
                 $approvedMonths[] = sprintf('%02d/%d', $month, $year);
             }
             $cursor->modify('+1 month');

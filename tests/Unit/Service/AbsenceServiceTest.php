@@ -18,6 +18,7 @@ use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\ProjectService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\ValidationException;
@@ -71,9 +72,13 @@ class AbsenceServiceTest extends TestCase {
 
         // Real TimeEntryService so the lock helpers (lockedMonthsInRange,
         // requireReasonForLockedMonths, auditReason, reopenMonth) run for real.
+        // MonthStatusService stays mocked (unconfigured isApproved() defaults to
+        // false): these tests exercise the per-entry reopen loop, not the month
+        // status row, and notifyTimeEntriesReopened already fires off $reopened>0.
         $settingsMapper = $this->createMock(CompanySettingMapper::class);
         $projectService = $this->createMock(ProjectService::class);
         $projectService->method('isProjectAllowedForEmployee')->willReturn(true);
+        $monthStatusService = $this->createMock(MonthStatusService::class);
         $timeEntryService = new TimeEntryService(
             $this->timeEntryMapper,
             $settingsMapper,
@@ -83,7 +88,8 @@ class AbsenceServiceTest extends TestCase {
             $this->notificationService,
             $projectService,
             $this->logger,
-            $this->l
+            $this->l,
+            $monthStatusService
         );
 
         $this->service = new AbsenceService(
@@ -177,9 +183,7 @@ class AbsenceServiceTest extends TestCase {
             $this->currentMonthDate('12')
         );
         $this->absenceMapper->method('find')->willReturn($absence);
-        // Month is NOT fully approved → not locked.
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 1, 'rejected' => 0]);
+        // Not approved: the MonthStatusService mock's isApproved() defaults to false.
         $this->absenceMapper->expects($this->never())->method('delete');
 
         $this->expectException(ForbiddenException::class);
@@ -198,8 +202,7 @@ class AbsenceServiceTest extends TestCase {
             $this->currentMonthDate('11')
         );
         $this->absenceMapper->method('find')->willReturn($absence);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 1, 'rejected' => 0]);
+        // Not approved: the MonthStatusService mock's isApproved() defaults to false.
         $this->absenceMapper->expects($this->once())->method('delete')->with($absence);
 
         $this->service->delete(99, 'user1', null, false);
@@ -215,8 +218,7 @@ class AbsenceServiceTest extends TestCase {
             $this->currentMonthDate('10')
         );
         $this->absenceMapper->method('find')->willReturn($absence);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 1, 'rejected' => 0]);
+        // Not approved: the MonthStatusService mock's isApproved() defaults to false.
         $this->absenceMapper->expects($this->once())->method('delete')->with($absence);
 
         $this->service->delete(99, 'user1', null, false);
@@ -333,9 +335,7 @@ class AbsenceServiceTest extends TestCase {
         $entry->setStatus(TimeEntry::STATUS_DRAFT);
         $this->timeEntryMapper->method('findByEmployeeAndDateRange')->willReturn([$entry]);
 
-        // Current month is open (a draft entry) → not locked.
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        // Not approved: the MonthStatusService mock's isApproved() defaults to false.
         // Schedule-aware working-day count for setDays().
         $this->holidayMapper->method('findHolidaysInRange')->willReturn([]);
         $this->workScheduleService->method('countWorkingDays')->willReturn(1.0);

@@ -7,6 +7,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-03
+
+### Fixed
+- **Monat nur aus Abwesenheiten liess sich nicht einreichen**: Ein Monat, der komplett aus Urlaub, unbezahltem Urlaub oder anderen Abwesenheiten besteht, hatte keinen Zeiteintrag, an dem der Status „eingereicht"/„genehmigt" hängen konnte – der Button „Monat einreichen" fehlte, der Monat blieb in der Team-Übersicht und beim Jahresübertrag („Alle Monate genehmigt") für immer offen. Der Monatsstatus ist jetzt ein eigener Datensatz je Mitarbeiter und Monat (`zw_month_status`, Migration mit Übernahme der bisherigen Stände). Einreichen ist möglich, sobald offene Zeiteinträge oder mindestens eine genehmigte Abwesenheit im Monat liegen; Genehmigung, Zurückweisung, Wiedereröffnung, PDF-Archiv, km-Sperre und Profil-Schutz folgen dem Monatsstatus.
+
+### Changed
+- **Status „Zurückgewiesen" am Monat**: Die Zeiterfassung zeigt einen zurückgewiesenen Monat als solchen an (bisher „Entwurf") und die Erfolgsmeldungen sprechen bei Monaten ohne Zeiteinträge vom Monat statt von „0 Einträgen".
+- **Audit-Log**: Einreichen, Genehmigen, Zurückweisen und Wiedereröffnen eines Monats werden zusätzlich als Eintrag vom Typ „Monatsabschluss" protokolliert.
+- **Hinweis zur Migration**: Bestehende Monate übernehmen beim Update ihren bisherigen Status (eingereicht, zurückgewiesen, genehmigt). Ein Monat, in dem neben eingereichten noch offene oder zurückgewiesene Zeiteinträge liegen, gilt danach als Entwurf und erscheint erst wieder in der Genehmigungs-Inbox, wenn der Mitarbeiter ihn erneut einreicht.
+
 ## [0.16.0] - 2026-09-02
 
 ### Added

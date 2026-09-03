@@ -16,6 +16,7 @@ use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\DailyKmService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\ValidationException;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,7 @@ class DailyKmServiceTest extends TestCase {
     private ProjectMapper $projectMapper;
     private AbsenceMapper $absenceMapper;
     private CompanySettingsService $settings;
+    private MonthStatusService $monthStatusService;
 
     /**
      * @param TimeEntry[] $dayEntries
@@ -44,16 +46,17 @@ class DailyKmServiceTest extends TestCase {
         array $dayAbsences = [],
         array $externAbsenceTypes = [],
         bool $monthLocked = false,
-        array $statusSummary = ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0],
+        bool $monthFrozen = false,
     ): DailyKmService {
         $this->dailyKmMapper = $this->createMock(DailyKmMapper::class);
         $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
         $this->projectMapper = $this->createMock(ProjectMapper::class);
         $this->absenceMapper = $this->createMock(AbsenceMapper::class);
         $this->settings = $this->createMock(CompanySettingsService::class);
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        $this->monthStatusService->method('isFrozen')->willReturn($monthFrozen);
 
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn($dayEntries);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')->willReturn($statusSummary);
         $this->projectMapper->method('findAll')->willReturn($projects);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn($dayAbsences);
         $this->settings->method('getExternAbsenceTypes')->willReturn($externAbsenceTypes);
@@ -69,6 +72,7 @@ class DailyKmServiceTest extends TestCase {
             $this->absenceMapper,
             $this->settings,
             $timeEntryService,
+            $this->monthStatusService,
         );
     }
 
@@ -166,25 +170,17 @@ class DailyKmServiceTest extends TestCase {
     }
 
     public function testUpsertRejectedInSubmittedMonth(): void {
-        // Nach der Einreichung (alle Einträge eingereicht, noch nicht genehmigt)
-        // sind km eingefroren — wie die eingereichten Zeiteinträge selbst.
-        $service = $this->makeService(
-            [$this->entry(1)],
-            [$this->project(1, true)],
-            statusSummary: ['draft' => 0, 'submitted' => 3, 'approved' => 0, 'rejected' => 0],
-        );
+        // Nach der Einreichung (Monatsstatus eingereicht, noch nicht genehmigt)
+        // sind km eingefroren — auch wenn der Monat keine Zeiteintraege hat.
+        $service = $this->makeService([$this->entry(1)], [$this->project(1, true)], monthFrozen: true);
 
         $this->expectException(ValidationException::class);
         $service->upsert(5, new DateTime('2026-07-06'), 42, 'user');
     }
 
     public function testUpsertAllowedAgainAfterRejection(): void {
-        // Ein abgelehnter Monat ist wieder in Bearbeitung — km wieder änderbar.
-        $service = $this->makeService(
-            [$this->entry(1)],
-            [$this->project(1, true)],
-            statusSummary: ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 2],
-        );
+        // Ein zurueckgewiesener Monat ist wieder in Bearbeitung (nicht eingefroren).
+        $service = $this->makeService([$this->entry(1)], [$this->project(1, true)], monthFrozen: false);
         $this->dailyKmMapper->method('findByEmployeeAndDate')->willReturn(null);
         $this->dailyKmMapper->method('insert')->willReturnArgument(0);
 

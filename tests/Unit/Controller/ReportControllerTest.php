@@ -18,6 +18,7 @@ use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AllowanceService;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\OvertimeCalculationService;
 use OCA\Zeitwerk\Service\OvertimePayoutService;
 use OCA\Zeitwerk\Service\PdfService;
@@ -40,6 +41,7 @@ class ReportControllerTest extends TestCase {
     private EmployeeService $employeeService;
     private ProjectService $projectService;
     private PermissionService $permissionService;
+    private MonthStatusService $monthStatusService;
     private ReportController $controller;
 
     protected function setUp(): void {
@@ -48,6 +50,7 @@ class ReportControllerTest extends TestCase {
         $this->projectService = $this->createMock(ProjectService::class);
         $this->permissionService = $this->createMock(PermissionService::class);
         $this->permissionService->method('canManageEmployees')->willReturn(true);
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
 
         $this->controller = new ReportController(
             $this->createMock(IRequest::class),
@@ -68,6 +71,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(AllowanceService::class),
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
     }
 
@@ -159,6 +163,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(AllowanceService::class),
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
 
         $this->assertSame(403, $controller->projects(2026, 6, 'month')->getStatus());
@@ -207,6 +212,7 @@ class ReportControllerTest extends TestCase {
             $allowance,
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
 
         $this->projectService->method('findAll')->willReturn([$this->project(2, 'Acme', true)]);
@@ -300,6 +306,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(AllowanceService::class),
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
     }
 
@@ -390,6 +397,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(AllowanceService::class),
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
 
         // Future year → the month loop breaks immediately, only dailyMinutes is computed.
@@ -446,6 +454,7 @@ class ReportControllerTest extends TestCase {
             $this->createMock(AllowanceService::class),
             $this->createMock(DailyKmMapper::class),
             $this->createMock(IL10N::class),
+            $this->monthStatusService,
         );
 
         // Future year: every month is skipped, only the year-level stats are built.
@@ -453,5 +462,25 @@ class ReportControllerTest extends TestCase {
 
         $this->assertSame(200, $response->getStatus(), json_encode($response->getData()));
         $this->assertSame(12.5, $response->getData()[0]['vacationStats']['carryover']);
+    }
+
+    // ---------------------------------------------------------------------
+    // Monatsstatus: allEmployeesStatus liest den Status aus MonthStatusService
+    // ---------------------------------------------------------------------
+
+    public function testAllEmployeesStatusUsesMonthStatusRows(): void {
+        $this->permissionService->method('isAdmin')->willReturn(true);
+        $employee = new Employee();
+        $employee->setId(4);
+        $this->employeeService->method('findAllActive')->willReturn([$employee]);
+        $this->timeEntryMapper->method('getMonthlyStatusSummaryBatch')
+            ->willReturn([4 => ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]]);
+        $this->monthStatusService->method('getStatusesForMonth')->with([4], 2026, 8)->willReturn([4 => 'submitted']);
+
+        $data = $this->controller->allEmployeesStatus(2026, 8)->getData();
+
+        $this->assertSame('submitted', $data[0]['monthStatus']['status']);
+        $this->assertTrue($data[0]['monthStatus']['canApprove']);
+        $this->assertFalse($data[0]['monthStatus']['isFullyApproved']);
     }
 }

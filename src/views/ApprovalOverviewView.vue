@@ -420,7 +420,9 @@ export default {
             this.reopeningKey = this.approvedKey(m)
             try {
                 const result = await TimeEntryService.reopenMonth(m.employeeId, m.year, m.month, this.reopenReason.trim())
-                showSuccess(t('zeitwerk', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened }))
+                showSuccess(result.reopened > 0
+                    ? t('zeitwerk', '{count} Einträge zur Korrektur freigegeben', { count: result.reopened })
+                    : t('zeitwerk', 'Monat zur Korrektur freigegeben'))
                 this.closeReopenModal()
                 await this.loadApprovedMonths()
             } catch (error) {
@@ -491,16 +493,21 @@ export default {
             // öffnet – zwei NcModals im selben Tick brechen das Vue-DOM-Patching.
             setTimeout(() => this.openRejectModal(item), 300)
         },
+        approvedLabel(count) {
+            return count > 0
+                ? t('zeitwerk', '{count} Einträge genehmigt', { count })
+                : t('zeitwerk', 'Monat genehmigt')
+        },
         async approveMonthItem(item, withArchive = false) {
             this.processingMonth = item.key
             try {
                 const result = await TimeEntryService.approveMonth(item.employeeId, item.year, item.month)
                 if (withArchive) {
                     await this.archiveAndNotify(item, result.approved)
-                } else if (result.archiveQueued) {
-                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { count: result.approved }))
                 } else {
-                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt', { count: result.approved }))
+                    showSuccess(result.archiveQueued
+                        ? t('zeitwerk', '{label} – PDF wird im Hintergrund archiviert (kann einige Minuten dauern).', { label: this.approvedLabel(result.approved) })
+                        : this.approvedLabel(result.approved))
                 }
                 await this.loadData()
             } catch (error) {
@@ -514,11 +521,11 @@ export default {
             try {
                 const res = await TimeEntryService.archiveNow(item.employeeId, item.year, item.month)
                 if (res?.result === 'replaced') {
-                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF im Archiv aktualisiert.', { count: approvedCount }))
+                    showSuccess(t('zeitwerk', '{label} – PDF im Archiv aktualisiert.', { label: this.approvedLabel(approvedCount) }))
                 } else if (res?.result === 'created') {
-                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt – PDF im Archiv erstellt.', { count: approvedCount }))
+                    showSuccess(t('zeitwerk', '{label} – PDF im Archiv erstellt.', { label: this.approvedLabel(approvedCount) }))
                 } else {
-                    showSuccess(t('zeitwerk', '{count} Einträge genehmigt', { count: approvedCount }))
+                    showSuccess(this.approvedLabel(approvedCount))
                 }
             } catch (e) {
                 console.error('Archive now failed:', e)
@@ -541,7 +548,9 @@ export default {
             this.rejectingKey = item.key
             try {
                 const result = await TimeEntryService.rejectMonth(item.employeeId, item.year, item.month, this.rejectReason.trim())
-                showSuccess(t('zeitwerk', '{count} Einträge zurückgewiesen', { count: result.rejected }))
+                showSuccess(result.rejected > 0
+                    ? t('zeitwerk', '{count} Einträge zurückgewiesen', { count: result.rejected })
+                    : t('zeitwerk', 'Monat zurückgewiesen'))
                 this.closeRejectModal()
                 await this.loadData()
             } catch (error) {

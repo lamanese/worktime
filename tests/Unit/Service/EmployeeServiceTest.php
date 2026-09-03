@@ -7,6 +7,7 @@ namespace OCA\Zeitwerk\Tests\Unit\Service;
 use DateTime;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\MonthStatusMapper;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCA\Zeitwerk\Db\Project;
@@ -36,6 +37,7 @@ class EmployeeServiceTest extends TestCase {
     private LoggerInterface $logger;
     private CompanySettingsService $companySettings;
     private ProjectService $projectService;
+    private MonthStatusMapper $monthStatusMapper;
 
     protected function setUp(): void {
         $this->employeeMapper = $this->createMock(EmployeeMapper::class);
@@ -46,6 +48,7 @@ class EmployeeServiceTest extends TestCase {
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->companySettings = $this->createMock(CompanySettingsService::class);
         $this->projectService = $this->createMock(ProjectService::class);
+        $this->monthStatusMapper = $this->createMock(MonthStatusMapper::class);
 
         $this->service = new EmployeeService(
             $this->employeeMapper,
@@ -56,6 +59,7 @@ class EmployeeServiceTest extends TestCase {
             $this->logger,
             $this->companySettings,
             $this->projectService,
+            $this->monthStatusMapper,
         );
     }
 
@@ -233,5 +237,20 @@ class EmployeeServiceTest extends TestCase {
         $this->assertSame('07:30', $result->getDefaultStartTime()?->format('H:i'));
         $this->assertSame('16:30', $result->getDefaultEndTime()?->format('H:i'));
         $this->assertSame('team', $result->getAbsenceVisibility());
+    }
+
+    // ---- delete: cascade ----
+
+    public function testDeleteRemovesMonthStatusRows(): void {
+        $employee = $this->makeEmployee(5, '40', 30);
+        $this->employeeMapper->method('find')->willReturn($employee);
+        // delete() loads the employee via find(), which enriches it with the
+        // active schedule (audit log payload) — stub it like primeMyDefaults().
+        $this->workScheduleService->method('getScheduleForDate')->willReturn($this->makeSchedule(8.0, 30));
+        $this->workScheduleMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
+        $this->monthStatusMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
+        $this->employeeMapper->expects($this->once())->method('delete');
+
+        $this->service->delete(5, 'admin');
     }
 }

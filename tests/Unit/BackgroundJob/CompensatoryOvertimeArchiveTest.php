@@ -13,6 +13,7 @@ use OCA\Zeitwerk\Service\ArchiveService;
 use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\PdfService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\WorkScheduleService;
@@ -37,6 +38,7 @@ class CompensatoryOvertimeArchiveTest extends TestCase {
 			$schedule,
 			$this->createMock(PdfService::class),
 			$this->createMock(AllowanceService::class),
+			$this->createMock(MonthStatusService::class),
 		);
 	}
 
