@@ -34,6 +34,7 @@ class ArchiveService {
         private WorkScheduleService $workScheduleService,
         private PdfService $pdfService,
         private AllowanceService $allowanceService,
+        private MonthStatusService $monthStatusService,
     ) {
     }
 
@@ -61,8 +62,12 @@ class ArchiveService {
         $absences = $this->absenceService->findByEmployeeAndMonth($employeeId, $year, $month);
         $holidays = $this->holidayService->findByMonth($year, $month, $employee->getFederalState());
 
-        // For on-demand archiving the submission timestamp is not passed in; derive
-        // it from the entries so the PDF footer still shows when the month was submitted.
+        // For on-demand archiving the submission timestamp is not passed in; derive it
+        // from the month status row first (works for absence-only months without time
+        // entries too), falling back to the time entries for legacy data.
+        if ($submittedAt === null) {
+            $submittedAt = $this->monthStatusService->find($employeeId, $year, $month)?->getSubmittedAt();
+        }
         if ($submittedAt === null) {
             foreach ($timeEntries as $entry) {
                 if ($entry->getSubmittedAt() !== null) {

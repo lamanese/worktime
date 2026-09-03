@@ -12,6 +12,7 @@ namespace OCA\Zeitwerk\Service;
 use DateTime;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\MonthStatusMapper;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -29,6 +30,7 @@ class EmployeeService {
         private LoggerInterface $logger,
         private CompanySettingsService $companySettings,
         private ProjectService $projectService,
+        private MonthStatusMapper $monthStatusMapper,
     ) {
     }
 
@@ -276,6 +278,9 @@ class EmployeeService {
 
         // Delete associated work schedules
         $this->workScheduleMapper->deleteByEmployeeId($id);
+
+        // Delete the month status rows (approval history)
+        $this->monthStatusMapper->deleteByEmployeeId($id);
 
         $this->employeeMapper->delete($employee);
     }

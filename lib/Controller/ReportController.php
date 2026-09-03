@@ -14,11 +14,13 @@ use OCA\Zeitwerk\Db\AbsenceMapper;
 use OCA\Zeitwerk\Db\DailyKmMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\Absence;
+use OCA\Zeitwerk\Db\MonthStatus;
 use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AllowanceService;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\OvertimeCalculationService;
 use OCA\Zeitwerk\Service\OvertimePayoutService;
 use OCA\Zeitwerk\Service\PdfService;
@@ -58,6 +60,7 @@ class ReportController extends BaseController {
         private AllowanceService $allowanceService,
         private DailyKmMapper $dailyKmMapper,
         private IL10N $l,
+        private MonthStatusService $monthStatusService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -109,6 +112,8 @@ class ReportController extends BaseController {
                 'statistics' => $stats,
                 'dayWarnings' => $dayWarnings,
                 'allowance' => $allowance,
+                'monthStatus' => $this->monthStatusService->getStatus($employeeId, $year, $month),
+                'canSubmitMonth' => $this->monthStatusService->canSubmit($employeeId, $year, $month),
             ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
@@ -817,6 +822,7 @@ class ReportController extends BaseController {
         $allTimeEntries = $this->timeEntryMapper->findByEmployeeIdsAndMonth($employeeIds, $year, $month);
         $allAbsences = $this->absenceMapper->findByEmployeeIdsAndMonth($employeeIds, $year, $month);
         $allStatusSummaries = $this->timeEntryMapper->getMonthlyStatusSummaryBatch($employeeIds, $year, $month);
+        $monthStatuses = $this->monthStatusService->getStatusesForMonth($employeeIds, $year, $month);
 
         $report = [];
 
@@ -838,7 +844,8 @@ class ReportController extends BaseController {
                     'submitted' => $statusSummary['submitted'],
                     'approved' => $statusSummary['approved'],
                     'rejected' => $statusSummary['rejected'],
-                    'canApprove' => $statusSummary['submitted'] > 0,
+                    'status' => $monthStatuses[$empId] ?? MonthStatus::STATUS_DRAFT,
+                    'canApprove' => ($monthStatuses[$empId] ?? MonthStatus::STATUS_DRAFT) === MonthStatus::STATUS_SUBMITTED,
                 ],
             ];
         }
@@ -873,11 +880,8 @@ class ReportController extends BaseController {
             $kmByEmployee[$record->getEmployeeId()][] = $record;
         }
 
-        // Batch-load status summaries for all months (12 queries total, not 12×N)
-        $allStatusByMonth = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $allStatusByMonth[$m] = $this->timeEntryMapper->getMonthlyStatusSummaryBatch($employeeIds, $year, $m);
-        }
+        // Month status per employee/month (single query instead of 12).
+        $yearStatuses = $this->monthStatusService->getStatusesForYear($employeeIds, $year);
 
         $report = [];
 
@@ -936,17 +940,7 @@ class ReportController extends BaseController {
                 $holidays = $this->getHolidaysCached($year, $month, $employee->getFederalState());
 
                 $stats = $this->overtimeCalc->getMonthlyStats($employee, $year, $month, $timeEntries, $absences, $holidays);
-                $statusSummary = $allStatusByMonth[$month][$empId] ?? ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0];
-
-                // Determine dominant status
-                $status = 'draft';
-                if ($statusSummary['approved'] > 0 && $statusSummary['submitted'] === 0 && $statusSummary['draft'] === 0 && $statusSummary['rejected'] === 0) {
-                    $status = 'approved';
-                } elseif ($statusSummary['submitted'] > 0) {
-                    $status = 'submitted';
-                } elseif ($statusSummary['rejected'] > 0) {
-                    $status = 'rejected';
-                }
+                $status = $yearStatuses[$empId][$month] ?? MonthStatus::STATUS_DRAFT;
 
                 // Count vacation days in this month
                 $vacationDays = 0;
@@ -961,7 +955,7 @@ class ReportController extends BaseController {
                     'overtimeMinutes' => $stats['overtimeMinutes'],
                     'vacationDays' => $vacationDays,
                     'status' => $status,
-                    'canApprove' => $statusSummary['submitted'] > 0,
+                    'canApprove' => $status === MonthStatus::STATUS_SUBMITTED,
                 ];
 
                 $totalOvertimeMinutes += $stats['overtimeMinutes'];
@@ -1083,12 +1077,16 @@ class ReportController extends BaseController {
         }
 
         $allEmployees = $this->employeeService->findAllActive();
+        $employeeIds = array_map(fn(Employee $e) => $e->getId(), $allEmployees);
+        $summaries = $this->timeEntryMapper->getMonthlyStatusSummaryBatch($employeeIds, $year, $month);
+        $monthStatuses = $this->monthStatusService->getStatusesForMonth($employeeIds, $year, $month);
 
         $report = [];
-
         foreach ($allEmployees as $employee) {
-            $statusSummary = $this->timeEntryMapper->getMonthlyStatusSummary($employee->getId(), $year, $month);
+            $empId = $employee->getId();
+            $statusSummary = $summaries[$empId] ?? ['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0];
             $totalEntries = $statusSummary['draft'] + $statusSummary['submitted'] + $statusSummary['approved'] + $statusSummary['rejected'];
+            $status = $monthStatuses[$empId] ?? MonthStatus::STATUS_DRAFT;
 
             $report[] = [
                 'employee' => $employee,
@@ -1098,8 +1096,9 @@ class ReportController extends BaseController {
                     'approved' => $statusSummary['approved'],
                     'rejected' => $statusSummary['rejected'],
                     'total' => $totalEntries,
-                    'canApprove' => $statusSummary['submitted'] > 0,
-                    'isFullyApproved' => $totalEntries > 0 && $statusSummary['approved'] === $totalEntries,
+                    'status' => $status,
+                    'canApprove' => $status === MonthStatus::STATUS_SUBMITTED,
+                    'isFullyApproved' => $status === MonthStatus::STATUS_APPROVED,
                 ],
             ];
         }
