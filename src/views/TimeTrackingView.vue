@@ -32,7 +32,7 @@
                     {{ monthStatusLabel }}
                 </span>
 
-                <NcButton v-if="!isYearMode && approvalRequired && monthStatus === 'draft' && hasSubmittableEntries"
+                <NcButton v-if="!isYearMode && canSubmitMonth"
                     type="secondary"
                     @click="confirmSubmitMonth">
                     <template #icon>
@@ -223,6 +223,7 @@ import { showSuccess, showError } from '@nextcloud/dialogs'
 import { confirmAction } from '../utils/errorHandler.js'
 import { getCurrentYear, getCurrentMonth, getMonthDays, getToday, formatDateISO, getLocale } from '../utils/dateUtils.js'
 import { getAbsenceTypeLabel } from '../utils/formatters.js'
+import { resolveMonthStatus, resolveCanSubmit } from '../utils/monthStatus.js'
 import MonthPicker from '../components/MonthPicker.vue'
 import YearPicker from '../components/YearPicker.vue'
 import OvertimeSummary from '../components/OvertimeSummary.vue'
@@ -265,6 +266,8 @@ export default {
             statistics: null,
             allowance: null,
             reportAbsences: [],
+            reportMonthStatus: null,
+            reportCanSubmit: null,
             reportHolidays: [],
             reportDayWarnings: {},
             dailyKmByDate: {},
@@ -335,16 +338,13 @@ export default {
         maxYear() {
             return getCurrentYear() + 1
         },
-        hasSubmittableEntries() {
-            return this.timeEntries.some(e => e.status === 'draft' || e.status === 'rejected')
+        canSubmitMonth() {
+            if (!this.approvalRequired) return false
+            return resolveCanSubmit(this.reportCanSubmit, this.monthStatus, this.timeEntries)
         },
         monthStatus() {
             if (!this.approvalRequired) return null
-            const entries = this.timeEntries
-            if (!entries.length) return 'draft'
-            if (entries.every(e => e.status === 'approved')) return 'approved'
-            if (entries.every(e => e.status !== 'draft' && e.status !== 'rejected')) return 'submitted'
-            return 'draft'
+            return resolveMonthStatus(this.reportMonthStatus, this.timeEntries)
         },
         locked() {
             return this.monthStatus === 'approved'
@@ -354,6 +354,7 @@ export default {
                 draft: this.t('zeitwerk', 'Entwurf'),
                 submitted: this.t('zeitwerk', 'Eingereicht – wartet auf Genehmigung'),
                 approved: this.t('zeitwerk', 'Genehmigt'),
+                rejected: this.t('zeitwerk', 'Zurückgewiesen – bitte korrigieren und erneut einreichen'),
             }[this.monthStatus] || ''
         },
         absenceByDate() {
@@ -537,8 +538,12 @@ export default {
                 this.reportAbsences = (report.absences || []).filter(a => a.status === 'approved')
                 this.reportHolidays = report.holidays || []
                 this.reportDayWarnings = report.dayWarnings || {}
+                this.reportMonthStatus = report.monthStatus || null
+                this.reportCanSubmit = typeof report.canSubmitMonth === 'boolean' ? report.canSubmitMonth : null
             } catch (error) {
                 console.error('Failed to load statistics:', error)
+                this.reportMonthStatus = null
+                this.reportCanSubmit = null
             }
         },
         async loadVacationStats() {
@@ -597,7 +602,11 @@ export default {
 
             try {
                 const result = await TimeEntryService.submitMonth(this.activeEmployeeId, this.selectedMonth.year, this.selectedMonth.month)
-                showSuccess(this.t('zeitwerk', '{count} Einträge wurden eingereicht.', { count: result.submitted }))
+                if (result.submitted > 0) {
+                    showSuccess(this.t('zeitwerk', '{count} Einträge wurden eingereicht.', { count: result.submitted }))
+                } else {
+                    showSuccess(this.t('zeitwerk', 'Monat wurde eingereicht.'))
+                }
                 await this.loadData()
             } catch (error) {
                 console.error('Failed to submit month:', error)
@@ -705,6 +714,11 @@ export default {
 .month-badge.approved {
     background: var(--color-background-hover);
     color: var(--wt-vacation);
+}
+
+.month-badge.rejected {
+    background: var(--color-error-hover);
+    color: var(--color-error-text);
 }
 
 .lock-banner {

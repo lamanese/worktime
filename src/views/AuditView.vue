@@ -170,6 +170,7 @@ export default {
                 { id: 'employee', label: this.t('zeitwerk', 'Mitarbeiter') },
                 { id: 'project', label: this.t('zeitwerk', 'Projekt') },
                 { id: 'setting', label: this.t('zeitwerk', 'Einstellung') },
+                { id: 'month_status', label: this.t('zeitwerk', 'Monatsabschluss') },
             ]
         },
     },
@@ -211,6 +212,7 @@ export default {
                 employee: this.t('zeitwerk', 'Mitarbeiter'),
                 project: this.t('zeitwerk', 'Projekt'),
                 setting: this.t('zeitwerk', 'Einstellung'),
+                month_status: this.t('zeitwerk', 'Monatsabschluss'),
             }
             return map[type] || type
         },

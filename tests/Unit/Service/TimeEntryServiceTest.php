@@ -10,10 +10,12 @@ use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\MonthStatus;
 use OCA\Zeitwerk\Db\TimeEntry;
 use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Notification\NotificationService;
 use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\ProjectService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\ValidationException;
@@ -34,6 +36,7 @@ class TimeEntryServiceTest extends TestCase {
     private ProjectService $projectService;
     private LoggerInterface $logger;
     private IL10N $l;
+    private MonthStatusService $monthStatusService;
 
     protected function setUp(): void {
         $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
@@ -50,6 +53,7 @@ class TimeEntryServiceTest extends TestCase {
         $this->l->method('t')->willReturnCallback(
             fn(string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
         );
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
 
         // Default settings
         $this->settingsMapper->method('getValueAsInt')
@@ -86,7 +90,8 @@ class TimeEntryServiceTest extends TestCase {
             $this->notificationService,
             $this->projectService,
             $this->logger,
-            $this->l
+            $this->l,
+            $this->monthStatusService
         );
     }
 
@@ -227,15 +232,13 @@ class TimeEntryServiceTest extends TestCase {
 
     public function testIsMonthLockedCurrentYearApprovedIsLocked(): void {
         $year = (int)(new DateTime())->format('Y');
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 0, 'submitted' => 0, 'approved' => 3, 'rejected' => 0]);
+        $this->monthStatusService->method('isApproved')->willReturn(true);
         $this->assertTrue($this->service->isMonthLocked(1, $year, 3));
     }
 
     public function testIsMonthLockedCurrentYearNotApprovedIsOpen(): void {
         $year = (int)(new DateTime())->format('Y');
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 1, 'approved' => 2, 'rejected' => 0]);
+        $this->monthStatusService->method('isApproved')->willReturn(false);
         $this->assertFalse($this->service->isMonthLocked(1, $year, 3));
     }
 
@@ -322,9 +325,8 @@ class TimeEntryServiceTest extends TestCase {
         $entry->setDate(new DateTime("$year-" . (new DateTime())->format('m') . '-10'));
         $entry->setStatus(TimeEntry::STATUS_APPROVED);
         $this->timeEntryMapper->method('find')->willReturn($entry);
-        // Month is NOT fully approved → not locked.
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 1, 'submitted' => 0, 'approved' => 1, 'rejected' => 0]);
+        // Month is NOT approved → not locked.
+        $this->monthStatusService->method('isApproved')->willReturn(false);
         $this->expectException(ForbiddenException::class);
         $this->service->delete(99, 'admin', 'genug lange Begründung', true);
     }
@@ -349,6 +351,7 @@ class TimeEntryServiceTest extends TestCase {
             $projectService,
             $this->logger,
             $this->l,
+            $this->monthStatusService,
         );
         // No overlapping entries and no absence on that day.
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
@@ -488,6 +491,7 @@ class TimeEntryServiceTest extends TestCase {
             $projectService,
             $this->logger,
             $this->l,
+            $this->monthStatusService,
         );
     }
 
@@ -501,8 +505,7 @@ class TimeEntryServiceTest extends TestCase {
         $service = $this->serviceWithRequiredFields(true, false, false);
         $this->timeEntryMapper->method('findByEmployeeAndDate')->willReturn([]);
         $this->absenceMapper->method('findByEmployeeAndDate')->willReturn([]);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturn(['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        $this->monthStatusService->method('isApproved')->willReturn(false);
         $this->timeEntryMapper->method('insert')->willReturnArgument(0);
 
         // Must not throw a ValidationException for the missing project.
@@ -672,15 +675,36 @@ class TimeEntryServiceTest extends TestCase {
         return $e;
     }
 
+    private function statusRow(int $employeeId, int $year, int $month, string $status, ?string $submittedAt = null): MonthStatus {
+        $row = new MonthStatus();
+        $row->setEmployeeId($employeeId);
+        $row->setYear($year);
+        $row->setMonth($month);
+        $row->setStatus($status);
+        if ($submittedAt !== null) {
+            $row->setSubmittedAt(new DateTime($submittedAt));
+        }
+        return $row;
+    }
+
     /**
-     * #344: submitted entries are grouped per (employee, year, month) and the
-     * resulting months are returned oldest-submission-first (FIFO).
+     * #344: submitted months come from the month-status rows; entries are only
+     * used to aggregate actualMinutes/entryCount per row. Result is returned
+     * oldest-submission-first (FIFO).
      */
     public function testFindSubmittedMonthsGroupsByMonthAndSortsFifo(): void {
         $e1 = $this->makeEmployee(1, 'u1', 'Ben', 'Conradi');
         $e2 = $this->makeEmployee(2, 'u2', 'Carla', 'Adam');
         $this->employeeMapper->method('find')
             ->willReturnCallback(fn(int $id): Employee => $id === 1 ? $e1 : $e2);
+
+        $rows = [
+            $this->statusRow(1, 2026, 3, MonthStatus::STATUS_SUBMITTED, '2026-04-01T09:00:00+00:00'),
+            $this->statusRow(1, 2026, 4, MonthStatus::STATUS_SUBMITTED, '2026-05-02T10:00:00+00:00'),
+            $this->statusRow(2, 2026, 4, MonthStatus::STATUS_SUBMITTED, '2026-05-03T08:00:00+00:00'),
+        ];
+        $this->monthStatusService->method('findByStatus')
+            ->with(MonthStatus::STATUS_SUBMITTED, [1, 2])->willReturn($rows);
 
         $entries = [
             $this->submittedEntry(1, '2026-04-10', 480, '2026-05-02T10:00:00+00:00'),
@@ -714,6 +738,8 @@ class TimeEntryServiceTest extends TestCase {
      * #344: no visible employees → empty inbox, no query side effects.
      */
     public function testFindSubmittedMonthsEmptyWhenNoEmployees(): void {
+        $this->monthStatusService->method('findByStatus')
+            ->with(MonthStatus::STATUS_SUBMITTED, [])->willReturn([]);
         $this->timeEntryMapper->method('findSubmittedByEmployeeIds')
             ->with([])->willReturn([]);
         $this->assertSame([], $this->service->findSubmittedMonths([]));
@@ -924,5 +950,205 @@ class TimeEntryServiceTest extends TestCase {
 
         $this->expectException(ValidationException::class);
         $this->service->delete(7, 'hr', 'zu kurz', true);
+    }
+
+    // --- Monatsstatus: submit/approve/reject/reopen a month drive the month status ---
+
+    private function monthRow(string $status): MonthStatus {
+        $row = new MonthStatus();
+        $row->setId(3);
+        $row->setEmployeeId(1);
+        $row->setYear(2026);
+        $row->setMonth(8);
+        $row->setStatus($status);
+        return $row;
+    }
+
+    public function testSubmitMonthWithOnlyAbsencesMarksMonthSubmitted(): void {
+        $this->expectActiveEmployee();
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->monthStatusService->expects($this->once())->method('assertCanSubmit')->with(1, 2026, 8);
+        $this->monthStatusService->expects($this->once())->method('markSubmitted')
+            ->with(1, 2026, 8, $this->anything(), $this->anything())
+            ->willReturn($this->monthRow('submitted'));
+        $this->notificationService->expects($this->once())->method('notifyTimeEntriesSubmitted')->with(1, 2026, 8);
+        $this->auditLogService->expects($this->once())->method('log')
+            ->with('employee', 'submit', 'month_status', 3, $this->anything(), $this->anything());
+
+        $result = $this->service->submitMonth(1, 2026, 8, 'employee');
+
+        $this->assertSame(0, $result['submitted']);
+        $this->assertSame('submitted', $result['monthStatus']);
+    }
+
+    public function testSubmitMonthRejectedByRuleChangesNothing(): void {
+        $this->expectActiveEmployee();
+        $this->monthStatusService->method('assertCanSubmit')
+            ->willThrowException(ValidationException::fromSingleError('month', 'In diesem Monat gibt es nichts einzureichen.'));
+        $this->timeEntryMapper->expects($this->never())->method('update');
+        $this->monthStatusService->expects($this->never())->method('markSubmitted');
+        $this->notificationService->expects($this->never())->method('notifyTimeEntriesSubmitted');
+
+        $this->expectException(ValidationException::class);
+        $this->service->submitMonth(1, 2026, 8, 'employee');
+    }
+
+    public function testApproveMonthRequiresSubmittedStatus(): void {
+        $this->monthStatusService->method('getStatus')->willReturn('draft');
+        $this->timeEntryMapper->expects($this->never())->method('update');
+        $this->monthStatusService->expects($this->never())->method('markApproved');
+
+        $this->expectException(ValidationException::class);
+        $this->service->approveMonth(1, 2026, 8, 'boss');
+    }
+
+    public function testApproveMonthWithOnlyAbsencesMarksMonthApproved(): void {
+        $this->monthStatusService->method('getStatus')->willReturn('submitted');
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 0, 'submitted' => 0, 'approved' => 0, 'rejected' => 0]);
+        $this->monthStatusService->expects($this->once())->method('markApproved')->willReturn($this->monthRow('approved'));
+        $this->notificationService->expects($this->once())->method('notifyTimeEntriesApproved')->with(1, 2026, 8);
+
+        $result = $this->service->approveMonth(1, 2026, 8, 'boss');
+
+        $this->assertSame(0, $result['approved']);
+        $this->assertSame('approved', $result['monthStatus']);
+    }
+
+    /**
+     * #Codex-P1: assertCanSubmit() deliberately lets an employee re-submit
+     * leftover draft/rejected entries even while the month row is already
+     * "submitted" (HR corrections after submission). Approving before that
+     * re-submit would lock the month while those entries stay open — must be
+     * refused, with no partial writes.
+     */
+    public function testApproveMonthRefusedWhileOpenEntriesRemain(): void {
+        $this->monthStatusService->method('getStatus')->willReturn('submitted');
+        $this->timeEntryMapper->method('getMonthlyStatusSummary')
+            ->willReturn(['draft' => 1, 'submitted' => 3, 'approved' => 0, 'rejected' => 0]);
+        $this->timeEntryMapper->expects($this->never())->method('update');
+        $this->monthStatusService->expects($this->never())->method('markApproved');
+        $this->notificationService->expects($this->never())->method('notifyTimeEntriesApproved');
+
+        try {
+            $this->service->approveMonth(1, 2026, 8, 'boss');
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('month', $e->getErrors());
+            $this->assertStringContainsString('nicht eingereichte', $e->getErrors()['month'][0]);
+        }
+    }
+
+    public function testRejectMonthRequiresSubmittedStatus(): void {
+        $this->monthStatusService->method('getStatus')->willReturn('approved');
+        $this->monthStatusService->expects($this->never())->method('markRejected');
+
+        $this->expectException(ValidationException::class);
+        $this->service->rejectMonth(1, 2026, 8, 'Bitte Pausen pruefen', 'boss');
+    }
+
+    public function testRejectMonthWithOnlyAbsencesMarksMonthRejected(): void {
+        $this->monthStatusService->method('getStatus')->willReturn('submitted');
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->monthStatusService->expects($this->once())->method('markRejected')->willReturn($this->monthRow('rejected'));
+        $this->notificationService->expects($this->once())->method('notifyTimeEntriesRejected');
+
+        $result = $this->service->rejectMonth(1, 2026, 8, 'Bitte Pausen pruefen', 'boss');
+
+        $this->assertSame('rejected', $result['monthStatus']);
+    }
+
+    public function testReopenMonthResetsApprovedAbsenceOnlyMonth(): void {
+        $this->monthStatusService->method('isApproved')->willReturn(true);
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->monthStatusService->expects($this->once())->method('markReopened')->willReturn($this->monthRow('draft'));
+        $this->notificationService->expects($this->once())->method('notifyTimeEntriesReopened')->with(1, 2026, 8, 'Korrektur Urlaub');
+
+        $result = $this->service->reopenMonth(1, 2026, 8, 'Korrektur Urlaub', 'hr');
+
+        $this->assertSame(0, $result['reopened']);
+        $this->assertTrue($result['monthReopened']);
+    }
+
+    public function testReopenMonthSurvivesNotificationFailure(): void {
+        $this->monthStatusService->method('isApproved')->willReturn(true);
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->monthStatusService->expects($this->once())->method('markReopened')->willReturn($this->monthRow('draft'));
+        $this->notificationService->expects($this->once())->method('notifyTimeEntriesReopened')
+            ->willThrowException(new \RuntimeException('boom'));
+
+        $result = $this->service->reopenMonth(1, 2026, 8, 'Korrektur Urlaub', 'hr');
+
+        $this->assertTrue($result['monthReopened']);
+    }
+
+    public function testReopenMonthIsNoopForUnapprovedMonth(): void {
+        $this->monthStatusService->method('isApproved')->willReturn(false);
+        $this->timeEntryMapper->method('findByEmployeeAndMonth')->willReturn([]);
+        $this->monthStatusService->expects($this->never())->method('markReopened');
+        $this->notificationService->expects($this->never())->method('notifyTimeEntriesReopened');
+
+        $result = $this->service->reopenMonth(1, 2025, 3, 'Nachtrag', 'hr');
+
+        $this->assertFalse($result['monthReopened']);
+    }
+
+    public function testIsMonthApprovedDelegatesToMonthStatus(): void {
+        $this->monthStatusService->method('isApproved')->with(1, 2026, 8)->willReturn(true);
+        $this->assertTrue($this->service->isMonthApproved(1, 2026, 8));
+    }
+
+    // --- Task 4: inbox/approved list driven by month rows (absence-only months) ---
+
+    public function testFindSubmittedMonthsIncludesAbsenceOnlyMonth(): void {
+        $row = $this->monthRow('submitted');
+        $row->setSubmittedAt(new DateTime('2026-09-01 08:00:00'));
+        $this->monthStatusService->method('findByStatus')->with('submitted', [1])->willReturn([$row]);
+        $this->timeEntryMapper->method('findSubmittedByEmployeeIds')->willReturn([]);
+        $employee = new Employee();
+        $employee->setId(1);
+        $employee->setFirstName('Sven');
+        $employee->setLastName('Test');
+        $employee->setUserId('sven');
+        $this->employeeMapper->method('find')->willReturn($employee);
+
+        $items = $this->service->findSubmittedMonths([1]);
+
+        $this->assertCount(1, $items);
+        $this->assertSame(0, $items[0]['entryCount']);
+        $this->assertSame(0, $items[0]['actualMinutes']);
+        $this->assertSame(8, $items[0]['month']);
+        $this->assertSame('Sven Test', $items[0]['employeeName']);
+        $this->assertStringStartsWith('2026-09-01T08:00:00', $items[0]['submittedAt']);
+    }
+
+    public function testFindSubmittedMonthsAggregatesEntriesOfTheRow(): void {
+        $row = $this->monthRow('submitted');
+        $this->monthStatusService->method('findByStatus')->willReturn([$row]);
+        $entry = $this->draftEntry();
+        $entry->setStatus(TimeEntry::STATUS_SUBMITTED);
+        $entry->setDate(new DateTime('2026-08-12'));
+        $entry->setWorkMinutes(480);
+        $this->timeEntryMapper->method('findSubmittedByEmployeeIds')->willReturn([$entry]);
+        $this->employeeMapper->method('find')->willReturn(new Employee());
+
+        $items = $this->service->findSubmittedMonths([1]);
+
+        $this->assertSame(1, $items[0]['entryCount']);
+        $this->assertSame(480, $items[0]['actualMinutes']);
+    }
+
+    public function testFindApprovedMonthsUsesRowApprovalTime(): void {
+        $row = $this->monthRow('approved');
+        $row->setApprovedAt(new DateTime('2026-09-02 10:00:00'));
+        $this->monthStatusService->method('findByStatus')->with('approved', [1])->willReturn([$row]);
+        $this->timeEntryMapper->method('findApprovedByEmployeeIds')->willReturn([]);
+        $this->employeeMapper->method('find')->willReturn(new Employee());
+
+        $items = $this->service->findApprovedMonths([1]);
+
+        $this->assertCount(1, $items);
+        $this->assertStringStartsWith('2026-09-02T10:00:00', $items[0]['approvedAt']);
     }
 }

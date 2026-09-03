@@ -335,18 +335,20 @@ class TimeEntryController extends BaseController {
             return $this->forbiddenResponse();
         }
 
-        $result = $this->timeEntryService->approveMonth($employeeId, $year, $month, $this->userId);
-
-        // Queue PDF archiving if any entries were approved
-        $archiveQueued = false;
-        if ($result['approved'] > 0) {
-            $archiveQueued = $this->queueArchiveJob($employeeId, $year, $month);
+        try {
+            $result = $this->timeEntryService->approveMonth($employeeId, $year, $month, $this->userId);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
         }
+
+        // The month is approved (also without time entries) -> archive the PDF.
+        $archiveQueued = $this->queueArchiveJob($employeeId, $year, $month);
 
         return $this->successResponse([
             'status' => 'success',
             'approved' => $result['approved'],
             'skipped' => $result['skipped'],
+            'monthStatus' => $result['monthStatus'],
             'archiveQueued' => $archiveQueued,
         ]);
     }
@@ -368,8 +370,12 @@ class TimeEntryController extends BaseController {
         }
 
         // The archived PDF no longer reflects an approved month — remove it and cancel
-        // any still-queued archive job so the archive stays consistent (#323).
-        if ($result['reopened'] > 0) {
+        // any still-queued archive job so the archive stays consistent (#323). This
+        // must run whenever approved entries were reverted (reopened > 0), not only
+        // when the month row itself was reset: a mixed or legacy month can have
+        // approved entries (and therefore a stored/queued PDF) without the row
+        // being "approved".
+        if ($result['monthReopened'] || $result['reopened'] > 0) {
             $this->cleanupArchiveOnReopen($employeeId, $year, $month);
         }
 
@@ -377,6 +383,7 @@ class TimeEntryController extends BaseController {
             'status' => 'success',
             'reopened' => $result['reopened'],
             'skipped' => $result['skipped'],
+            'monthReopened' => $result['monthReopened'],
         ]);
     }
 
@@ -400,6 +407,7 @@ class TimeEntryController extends BaseController {
             'status' => 'success',
             'rejected' => $result['rejected'],
             'skipped' => $result['skipped'],
+            'monthStatus' => $result['monthStatus'],
         ]);
     }
 

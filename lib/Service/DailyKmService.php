@@ -41,6 +41,7 @@ class DailyKmService {
         private AbsenceMapper $absenceMapper,
         private CompanySettingsService $settings,
         private TimeEntryService $timeEntryService,
+        private MonthStatusService $monthStatusService,
     ) {
     }
 
@@ -69,16 +70,14 @@ class DailyKmService {
         // Eingereichte/abgeschlossene Monate sind auch für Kilometer gesperrt
         // (gilt auch für das Löschen, km=0) — sonst liessen sich Vergütungs-
         // beträge unter einer laufenden Genehmigung oder nach dem Abschluss noch
-        // ändern. "Eingereicht" entspricht der UI-Semantik: es gibt Einträge und
-        // keiner ist mehr Entwurf/abgelehnt. Dazu die Sperre aus #148 (voll
-        // genehmigt oder Vorjahr). HR öffnet den Monat bei Bedarf über den
-        // bestehenden Korrektur-Flow (reopenMonth) und passt die km danach an.
+        // ändern. "Eingereicht" ist der Monatsstatus (eingereicht oder genehmigt),
+        // unabhängig davon, ob der Monat überhaupt Zeiteinträge hat. Dazu die
+        // Sperre aus #148 (voll genehmigt oder Vorjahr). HR öffnet den Monat bei
+        // Bedarf über den bestehenden Korrektur-Flow (reopenMonth) und passt die
+        // km danach an.
         $year = (int)$date->format('Y');
         $month = (int)$date->format('n');
-        $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
-        $totalEntries = $summary['draft'] + $summary['submitted'] + $summary['approved'] + $summary['rejected'];
-        $monthFrozen = $totalEntries > 0 && $summary['draft'] === 0 && $summary['rejected'] === 0;
-        if ($monthFrozen || $this->timeEntryService->isMonthLocked($employeeId, $year, $month)) {
+        if ($this->monthStatusService->isFrozen($employeeId, $year, $month) || $this->timeEntryService->isMonthLocked($employeeId, $year, $month)) {
             throw new ValidationException(['date' => 'Dieser Zeitraum ist eingereicht oder abgeschlossen. Bitte wende dich an HR.']);
         }
 

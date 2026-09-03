@@ -15,6 +15,7 @@ use OCA\Zeitwerk\Db\AbsenceMapper;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
 use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Db\MonthStatus;
 use OCA\Zeitwerk\Db\TimeEntry;
 use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Notification\NotificationService;
@@ -34,6 +35,7 @@ class TimeEntryService {
         private ProjectService $projectService,
         private LoggerInterface $logger,
         private IL10N $l,
+        private MonthStatusService $monthStatusService,
     ) {
     }
 
@@ -396,6 +398,7 @@ class TimeEntryService {
         $entry->setApprovedBy(null);
 
         $entry = $this->timeEntryMapper->update($entry);
+        $this->monthStatusService->syncFromEntries($entry->getEmployeeId(), (int)$entry->getDate()->format('Y'), (int)$entry->getDate()->format('n'));
 
         // Audit log
         if ($currentUserId) {
@@ -406,12 +409,19 @@ class TimeEntryService {
     }
 
     /**
-     * Submit all draft entries for a month
+     * Submit all draft entries for a month, then mark the month itself submitted
+     * (the month status is the source of truth for the workflow — see
+     * MonthStatusService — so a month with only approved absences and no time
+     * entries can be submitted too).
      *
-     * @return array{submitted: int, skipped: int}
+     * @return array{submitted: int, skipped: int, monthStatus: string}
+     * @throws ValidationException
      */
     public function submitMonth(int $employeeId, int $year, int $month, string $currentUserId = ''): array {
         $this->assertEmployeeActive($employeeId);
+        $this->monthStatusService->assertCanSubmit($employeeId, $year, $month);
+
+        $previousStatus = $this->monthStatusService->getStatus($employeeId, $year, $month);
         $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
 
         $submitted = 0;
@@ -442,17 +452,21 @@ class TimeEntryService {
             }
         }
 
-        if ($submitted > 0) {
-            try {
-                $this->notificationService->notifyTimeEntriesSubmitted($employeeId, $year, $month);
-            } catch (\Throwable $e) {
-                $this->logger->error('Failed to send time entries submitted notification', ['exception' => $e]);
-            }
+        $monthStatus = $this->monthStatusService->markSubmitted($employeeId, $year, $month, $submittedByEmployeeId, $now);
+        if ($currentUserId) {
+            $this->auditLogService->log($currentUserId, 'submit', 'month_status', $monthStatus->getId(), ['status' => $previousStatus], $monthStatus->jsonSerialize());
+        }
+
+        try {
+            $this->notificationService->notifyTimeEntriesSubmitted($employeeId, $year, $month);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to send time entries submitted notification', ['exception' => $e]);
         }
 
         return [
             'submitted' => $submitted,
             'skipped' => $skipped,
+            'monthStatus' => MonthStatus::STATUS_SUBMITTED,
         ];
     }
 
@@ -475,6 +489,7 @@ class TimeEntryService {
         }
 
         $entry = $this->timeEntryMapper->update($entry);
+        $this->monthStatusService->syncFromEntries($entry->getEmployeeId(), (int)$entry->getDate()->format('Y'), (int)$entry->getDate()->format('n'));
 
         // Audit log
         if ($currentUserId) {
@@ -515,6 +530,7 @@ class TimeEntryService {
         }
 
         $entry = $this->timeEntryMapper->update($entry);
+        $this->monthStatusService->syncFromEntries($entry->getEmployeeId(), (int)$entry->getDate()->format('Y'), (int)$entry->getDate()->format('n'));
 
         // Audit log
         if ($currentUserId) {
@@ -536,11 +552,28 @@ class TimeEntryService {
     }
 
     /**
-     * Approve all submitted entries for a month
+     * Approve all submitted entries for a month, then mark the month itself
+     * approved. Only a submitted month may be approved (see MonthStatusService).
      *
-     * @return array{approved: int, skipped: int}
+     * @return array{approved: int, skipped: int, monthStatus: string}
+     * @throws ValidationException when the month is not submitted, or when
+     *         draft/rejected entries remain in the month
      */
     public function approveMonth(int $employeeId, int $year, int $month, string $currentUserId = ''): array {
+        if ($this->monthStatusService->getStatus($employeeId, $year, $month) !== MonthStatus::STATUS_SUBMITTED) {
+            throw ValidationException::fromSingleError('month', $this->l->t('Dieser Monat ist nicht eingereicht.'));
+        }
+
+        // assertCanSubmit() deliberately lets an employee re-submit leftover
+        // draft/rejected entries even while the month row is already
+        // "submitted" (HR corrections after submission). Approving before that
+        // re-submit would lock the month while those entries stay open and the
+        // archived PDF would miss them — so refuse until they are resubmitted.
+        $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
+        if (($summary[TimeEntry::STATUS_DRAFT] ?? 0) + ($summary[TimeEntry::STATUS_REJECTED] ?? 0) > 0) {
+            throw ValidationException::fromSingleError('month', $this->l->t('Im Monat liegen noch nicht eingereichte Einträge. Bitte den Mitarbeiter erneut einreichen lassen.'));
+        }
+
         $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
 
         $approved = 0;
@@ -568,25 +601,32 @@ class TimeEntryService {
             }
         }
 
-        if ($approved > 0) {
-            try {
-                $this->notificationService->notifyTimeEntriesApproved($employeeId, $year, $month);
-            } catch (\Throwable $e) {
-                $this->logger->error('Failed to send time entries approved notification', ['exception' => $e]);
-            }
+        $monthStatus = $this->monthStatusService->markApproved($employeeId, $year, $month, $approvedByEmployeeId, $now);
+        if ($currentUserId) {
+            $this->auditLogService->log($currentUserId, 'approve', 'month_status', $monthStatus->getId(), ['status' => MonthStatus::STATUS_SUBMITTED], $monthStatus->jsonSerialize());
+        }
+        try {
+            $this->notificationService->notifyTimeEntriesApproved($employeeId, $year, $month);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to send time entries approved notification', ['exception' => $e]);
         }
 
         return [
             'approved' => $approved,
             'skipped' => $skipped,
+            'monthStatus' => MonthStatus::STATUS_APPROVED,
         ];
     }
 
     /**
-     * Reopen an approved month for correction: approved entries go back to draft.
+     * Reopen a month for correction: approved entries go back to draft, and the
+     * month status is reset to draft when it was approved. Stays lenient by
+     * design (no exception for a not-approved month): this is also called from
+     * the HR correction flow (reopenLockedMonths) and from AbsenceService for
+     * months locked only by the "past year" rule.
      * A reason is mandatory and recorded in the audit log.
      *
-     * @return array{reopened: int, skipped: int}
+     * @return array{reopened: int, skipped: int, monthReopened: bool}
      * @throws ValidationException
      */
     public function reopenMonth(int $employeeId, int $year, int $month, string $reason, string $currentUserId = ''): array {
@@ -623,24 +663,47 @@ class TimeEntryService {
             }
         }
 
-        if ($reopened > 0) {
-            $this->notificationService->notifyTimeEntriesReopened($employeeId, $year, $month, $reason);
+        $monthReopened = false;
+        if ($this->monthStatusService->isApproved($employeeId, $year, $month)) {
+            $monthStatus = $this->monthStatusService->markReopened($employeeId, $year, $month, $now);
+            $monthReopened = true;
+            if ($currentUserId) {
+                $newValues = $monthStatus->jsonSerialize();
+                $newValues['reason'] = $reason;
+                $this->auditLogService->log($currentUserId, 'reopen', 'month_status', $monthStatus->getId(), ['status' => MonthStatus::STATUS_APPROVED], $newValues);
+            }
+        }
+
+        if ($monthReopened || $reopened > 0) {
+            try {
+                $this->notificationService->notifyTimeEntriesReopened($employeeId, $year, $month, $reason);
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to send time entries reopened notification', ['exception' => $e]);
+            }
         }
 
         return [
             'reopened' => $reopened,
             'skipped' => $skipped,
+            'monthReopened' => $monthReopened,
         ];
     }
 
     /**
      * Reject a submitted month: set all submitted entries back to rejected so the
      * employee can correct and resubmit. Mirrors the per-entry reject (submitted → rejected).
+     * Only a submitted month may be rejected (see MonthStatusService).
+     *
+     * @return array{rejected: int, skipped: int, monthStatus: string}
+     * @throws ValidationException
      */
     public function rejectMonth(int $employeeId, int $year, int $month, string $reason, string $currentUserId = ''): array {
         $reason = trim($reason);
         if ($reason === '') {
             throw ValidationException::fromSingleError('reason', $this->l->t('Begründung erforderlich'));
+        }
+        if ($this->monthStatusService->getStatus($employeeId, $year, $month) !== MonthStatus::STATUS_SUBMITTED) {
+            throw ValidationException::fromSingleError('month', $this->l->t('Dieser Monat ist nicht eingereicht.'));
         }
 
         $entries = $this->findByEmployeeAndMonth($employeeId, $year, $month);
@@ -671,17 +734,22 @@ class TimeEntryService {
             }
         }
 
-        if ($rejected > 0) {
-            try {
-                $this->notificationService->notifyTimeEntriesRejected($employeeId, $year, $month);
-            } catch (\Throwable $e) {
-                $this->logger->error('Failed to send time entries rejected notification', ['exception' => $e]);
-            }
+        $monthStatus = $this->monthStatusService->markRejected($employeeId, $year, $month, $now);
+        if ($currentUserId) {
+            $newValues = $monthStatus->jsonSerialize();
+            $newValues['reason'] = $reason;
+            $this->auditLogService->log($currentUserId, 'reject', 'month_status', $monthStatus->getId(), ['status' => MonthStatus::STATUS_SUBMITTED], $newValues);
+        }
+        try {
+            $this->notificationService->notifyTimeEntriesRejected($employeeId, $year, $month);
+        } catch (\Throwable $e) {
+            $this->logger->error('Failed to send time entries rejected notification', ['exception' => $e]);
         }
 
         return [
             'rejected' => $rejected,
             'skipped' => $skipped,
+            'monthStatus' => MonthStatus::STATUS_REJECTED,
         ];
     }
 
@@ -872,153 +940,115 @@ class TimeEntryService {
 
     /**
      * Build the cross-month approval inbox for submitted month-ends (#344).
-     * Groups all submitted entries of the given (already permission-scoped)
-     * employees by (employee, year, month) and returns one item per submitted
-     * month, oldest submission first (FIFO).
+     * Driven by the month-status rows (source of truth, see MonthStatusService)
+     * so absence-only months without a single time entry show up too; entries
+     * are only used to aggregate actualMinutes/entryCount per row. Returns one
+     * item per submitted month, oldest submission first (FIFO).
      *
      * @param int[] $employeeIds Employees the requester may see/approve.
      * @return array<int, array{employeeId:int, employeeName:string, employeeUserId:string, year:int, month:int, actualMinutes:int, entryCount:int, submittedAt:?string}>
      */
     public function findSubmittedMonths(array $employeeIds): array {
-        $entries = $this->timeEntryMapper->findSubmittedByEmployeeIds($employeeIds);
+        $rows = $this->monthStatusService->findByStatus(MonthStatus::STATUS_SUBMITTED, $employeeIds);
+        $aggregates = $this->aggregateEntriesByMonth($this->timeEntryMapper->findSubmittedByEmployeeIds($employeeIds));
 
-        $groups = [];
-        foreach ($entries as $entry) {
-            $employeeId = $entry->getEmployeeId();
-            $date = $entry->getDate();
-            $year = (int)$date->format('Y');
-            $month = (int)$date->format('n');
-            $key = $employeeId . '-' . $year . '-' . $month;
-
-            if (!isset($groups[$key])) {
-                $groups[$key] = [
-                    'employeeId' => $employeeId,
-                    'year' => $year,
-                    'month' => $month,
-                    'actualMinutes' => 0,
-                    'entryCount' => 0,
-                    'submittedAt' => null,
-                ];
-            }
-            $groups[$key]['actualMinutes'] += $entry->getWorkMinutes();
-            $groups[$key]['entryCount']++;
-
-            // FIFO key: earliest submission timestamp of the month.
-            $submittedAt = $entry->getSubmittedAt();
-            if ($submittedAt !== null) {
-                $iso = $submittedAt->format('c');
-                if ($groups[$key]['submittedAt'] === null || $iso < $groups[$key]['submittedAt']) {
-                    $groups[$key]['submittedAt'] = $iso;
-                }
-            }
-        }
-
-        // Resolve employee names (once per employee).
-        $employeeCache = [];
         $items = [];
-        foreach ($groups as $group) {
-            $employeeId = $group['employeeId'];
-            if (!isset($employeeCache[$employeeId])) {
-                try {
-                    $employeeCache[$employeeId] = $this->employeeMapper->find($employeeId);
-                } catch (\Exception) {
-                    $employeeCache[$employeeId] = null;
-                }
-            }
-            $employee = $employeeCache[$employeeId];
-            $group['employeeName'] = $employee?->getFullName() ?? '';
-            $group['employeeUserId'] = $employee?->getUserId() ?? '';
-            $items[] = $group;
+        foreach ($rows as $row) {
+            $key = $row->getEmployeeId() . '-' . $row->getYear() . '-' . $row->getMonth();
+            $items[] = [
+                'employeeId' => $row->getEmployeeId(),
+                'year' => $row->getYear(),
+                'month' => $row->getMonth(),
+                'actualMinutes' => $aggregates[$key]['actualMinutes'] ?? 0,
+                'entryCount' => $aggregates[$key]['entryCount'] ?? 0,
+                'submittedAt' => $row->getSubmittedAt()?->format('c'),
+            ];
         }
+        $items = $this->attachEmployeeNames($items);
 
         // Oldest first: by submission time, then by calendar month as fallback.
         usort($items, static function (array $a, array $b): int {
             $byTime = ($a['submittedAt'] ?? '') <=> ($b['submittedAt'] ?? '');
-            if ($byTime !== 0) {
-                return $byTime;
-            }
-            return [$a['year'], $a['month']] <=> [$b['year'], $b['month']];
+            return $byTime !== 0 ? $byTime : [$a['year'], $a['month']] <=> [$b['year'], $b['month']];
         });
-
         return $items;
     }
 
     /**
      * Approved months for the given employees, newest approval first (#387).
-     * Lets HR find and reopen a recently approved month for correction.
+     * Driven by the month-status rows (source of truth) so absence-only months
+     * show up too; entries are only used to aggregate actualMinutes/entryCount
+     * per row. Lets HR find and reopen a recently approved month for correction.
      *
      * @param int[] $employeeIds
+     * @return array<int, array{employeeId:int, employeeName:string, employeeUserId:string, year:int, month:int, actualMinutes:int, entryCount:int, approvedAt:?string}>
      */
     public function findApprovedMonths(array $employeeIds): array {
-        $entries = $this->timeEntryMapper->findApprovedByEmployeeIds($employeeIds);
+        $rows = $this->monthStatusService->findByStatus(MonthStatus::STATUS_APPROVED, $employeeIds);
+        $aggregates = $this->aggregateEntriesByMonth($this->timeEntryMapper->findApprovedByEmployeeIds($employeeIds));
 
-        $groups = [];
-        foreach ($entries as $entry) {
-            $employeeId = $entry->getEmployeeId();
-            $date = $entry->getDate();
-            $year = (int)$date->format('Y');
-            $month = (int)$date->format('n');
-            $key = $employeeId . '-' . $year . '-' . $month;
-
-            if (!isset($groups[$key])) {
-                $groups[$key] = [
-                    'employeeId' => $employeeId,
-                    'year' => $year,
-                    'month' => $month,
-                    'actualMinutes' => 0,
-                    'entryCount' => 0,
-                    'approvedAt' => null,
-                ];
-            }
-            $groups[$key]['actualMinutes'] += $entry->getWorkMinutes();
-            $groups[$key]['entryCount']++;
-
-            // Newest approval timestamp of the month (for sorting newest first).
-            $approvedAt = $entry->getApprovedAt();
-            if ($approvedAt !== null) {
-                $iso = $approvedAt->format('c');
-                if ($groups[$key]['approvedAt'] === null || $iso > $groups[$key]['approvedAt']) {
-                    $groups[$key]['approvedAt'] = $iso;
-                }
-            }
-        }
-
-        $employeeCache = [];
         $items = [];
-        foreach ($groups as $group) {
-            $employeeId = $group['employeeId'];
-            if (!isset($employeeCache[$employeeId])) {
-                try {
-                    $employeeCache[$employeeId] = $this->employeeMapper->find($employeeId);
-                } catch (\Exception) {
-                    $employeeCache[$employeeId] = null;
-                }
-            }
-            $employee = $employeeCache[$employeeId];
-            $group['employeeName'] = $employee?->getFullName() ?? '';
-            $group['employeeUserId'] = $employee?->getUserId() ?? '';
-            $items[] = $group;
+        foreach ($rows as $row) {
+            $key = $row->getEmployeeId() . '-' . $row->getYear() . '-' . $row->getMonth();
+            $items[] = [
+                'employeeId' => $row->getEmployeeId(),
+                'year' => $row->getYear(),
+                'month' => $row->getMonth(),
+                'actualMinutes' => $aggregates[$key]['actualMinutes'] ?? 0,
+                'entryCount' => $aggregates[$key]['entryCount'] ?? 0,
+                'approvedAt' => $row->getApprovedAt()?->format('c'),
+            ];
         }
+        $items = $this->attachEmployeeNames($items);
 
         // Newest approval first.
         usort($items, static function (array $a, array $b): int {
             $byTime = ($b['approvedAt'] ?? '') <=> ($a['approvedAt'] ?? '');
-            if ($byTime !== 0) {
-                return $byTime;
-            }
-            return [$b['year'], $b['month']] <=> [$a['year'], $a['month']];
+            return $byTime !== 0 ? $byTime : [$b['year'], $b['month']] <=> [$a['year'], $a['month']];
         });
-
         return $items;
     }
 
     /**
-     * Check if a month is fully approved (all time entries approved)
+     * @param TimeEntry[] $entries
+     * @return array<string, array{actualMinutes: int, entryCount: int}> keyed "emp-year-month"
+     */
+    private function aggregateEntriesByMonth(array $entries): array {
+        $aggregates = [];
+        foreach ($entries as $entry) {
+            $date = $entry->getDate();
+            $key = $entry->getEmployeeId() . '-' . (int)$date->format('Y') . '-' . (int)$date->format('n');
+            $aggregates[$key]['actualMinutes'] = ($aggregates[$key]['actualMinutes'] ?? 0) + $entry->getWorkMinutes();
+            $aggregates[$key]['entryCount'] = ($aggregates[$key]['entryCount'] ?? 0) + 1;
+        }
+        return $aggregates;
+    }
+
+    /** Resolve employeeName/employeeUserId once per employee. */
+    private function attachEmployeeNames(array $items): array {
+        $cache = [];
+        foreach ($items as &$item) {
+            $employeeId = $item['employeeId'];
+            if (!array_key_exists($employeeId, $cache)) {
+                try {
+                    $cache[$employeeId] = $this->employeeMapper->find($employeeId);
+                } catch (\Exception) {
+                    $cache[$employeeId] = null;
+                }
+            }
+            $item['employeeName'] = $cache[$employeeId]?->getFullName() ?? '';
+            $item['employeeUserId'] = $cache[$employeeId]?->getUserId() ?? '';
+        }
+        unset($item);
+        return $items;
+    }
+
+    /**
+     * Check if a month is approved (delegates to the month status — the source
+     * of truth for the workflow, see MonthStatusService).
      */
     public function isMonthApproved(int $employeeId, int $year, int $month): bool {
-        $summary = $this->timeEntryMapper->getMonthlyStatusSummary($employeeId, $year, $month);
-        $total = $summary['draft'] + $summary['submitted'] + $summary['approved'] + $summary['rejected'];
-        return $total > 0 && $summary['approved'] === $total;
+        return $this->monthStatusService->isApproved($employeeId, $year, $month);
     }
 
     /**

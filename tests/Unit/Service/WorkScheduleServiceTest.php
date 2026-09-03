@@ -8,9 +8,9 @@ use DateTime;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
 use OCA\Zeitwerk\Db\EmployeeMapper;
-use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\CompanySettingsService;
+use OCA\Zeitwerk\Service\MonthStatusService;
 use OCA\Zeitwerk\Service\ValidationException;
 use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -29,13 +29,13 @@ class WorkScheduleServiceTest extends TestCase {
 
     private WorkScheduleService $service;
     private WorkScheduleMapper $mapper;
-    private TimeEntryMapper $timeEntryMapper;
+    private MonthStatusService $monthStatusService;
 
     protected function setUp(): void {
         $this->mapper = $this->createMock(WorkScheduleMapper::class);
-        $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
-        // Default: no time entries anywhere, so no month counts as approved.
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')->willReturn(self::summary(0, 0));
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        // Default: no month is approved.
+        $this->monthStatusService->method('isApproved')->willReturn(false);
 
         $l = $this->createMock(IL10N::class);
         $l->method('t')->willReturnCallback(
@@ -49,15 +49,8 @@ class WorkScheduleServiceTest extends TestCase {
             $this->createMock(AuditLogService::class),
             $this->createMock(LoggerInterface::class),
             $l,
-            $this->timeEntryMapper,
+            $this->monthStatusService,
         );
-    }
-
-    /**
-     * @return array{draft: int, submitted: int, approved: int, rejected: int}
-     */
-    private static function summary(int $approved, int $draft): array {
-        return ['draft' => $draft, 'submitted' => 0, 'approved' => $approved, 'rejected' => 0];
     }
 
     /** First day of the month $monthsAgo months before the current month. */
@@ -166,10 +159,9 @@ class WorkScheduleServiceTest extends TestCase {
         $approvedMonth = self::firstOfMonthsAgo(2);
         [$y, $m] = self::ym($approvedMonth);
 
-        $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturnCallback(static fn (int $e, int $year, int $month): array =>
-                ($year === $y && $month === $m) ? self::summary(5, 0) : self::summary(0, 0));
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        $this->monthStatusService->method('isApproved')
+            ->willReturnCallback(static fn (int $e, int $year, int $month): bool => $year === $y && $month === $m);
         $this->setUpServiceWithCurrentMocks();
 
         $this->mapper->method('findByEmployeeId')->willReturn([]);
@@ -195,10 +187,9 @@ class WorkScheduleServiceTest extends TestCase {
         $laterProfileFrom = self::firstOfMonthsAgo(1);
         [$y, $m] = self::ym($laterProfileFrom);
 
-        $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturnCallback(static fn (int $e, int $year, int $month): array =>
-                ($year === $y && $month === $m) ? self::summary(5, 0) : self::summary(0, 0));
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        $this->monthStatusService->method('isApproved')
+            ->willReturnCallback(static fn (int $e, int $year, int $month): bool => $year === $y && $month === $m);
         $this->setUpServiceWithCurrentMocks();
 
         $this->mapper->method('findByEmployeeId')->willReturn([$this->scheduleAt($laterProfileFrom, 7)]);
@@ -210,18 +201,11 @@ class WorkScheduleServiceTest extends TestCase {
     }
 
     /**
-     * A month with a mix of approved and open entries is not "fully approved"
-     * and therefore does not block the change (HR corrects open months freely).
+     * A month is either approved or not (no more per-entry blend at month
+     * level): with no approved month, the change goes through.
      */
-    public function testCreateAllowsPartiallyApprovedMonth(): void {
+    public function testCreateAllowedWhenNoMonthIsApproved(): void {
         $month = self::firstOfMonthsAgo(1);
-        [$y, $m] = self::ym($month);
-
-        $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturnCallback(static fn (int $e, int $year, int $mo): array =>
-                ($year === $y && $mo === $m) ? self::summary(3, 2) : self::summary(0, 0));
-        $this->setUpServiceWithCurrentMocks();
 
         $this->mapper->method('findByEmployeeId')->willReturn([]);
         $this->mapper->expects($this->once())
@@ -229,6 +213,28 @@ class WorkScheduleServiceTest extends TestCase {
             ->willReturnCallback(static fn (WorkSchedule $s): WorkSchedule => $s);
 
         $this->service->create(1, $month->format('Y-m-d'), self::DAY_HOURS, 30, 'hr');
+    }
+
+    public function testCreateIsRejectedWhenApprovedMonthHasNoTimeEntries(): void {
+        // Urlaubsmonat: ueber den Monatsstatus genehmigt, ohne einen einzigen Zeiteintrag.
+        $approvedMonth = self::firstOfMonthsAgo(2);
+        [$y, $m] = self::ym($approvedMonth);
+
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        $this->monthStatusService->method('isApproved')
+            ->willReturnCallback(static fn (int $e, int $year, int $month): bool => $year === $y && $month === $m);
+        $this->setUpServiceWithCurrentMocks();
+
+        $this->mapper->method('findByEmployeeId')->willReturn([]);
+        $this->mapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create(1, $approvedMonth->modify('+19 days')->format('Y-m-d'), self::DAY_HOURS, 30, 'hr');
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('period', $e->getErrors());
+            $this->assertStringContainsString(sprintf('%02d/%d', $m, $y), $e->getErrors()['period'][0]);
+        }
     }
 
     /** Rebuild the service after a test swapped one of the mocks. */
@@ -244,7 +250,7 @@ class WorkScheduleServiceTest extends TestCase {
             $this->createMock(AuditLogService::class),
             $this->createMock(LoggerInterface::class),
             $l,
-            $this->timeEntryMapper,
+            $this->monthStatusService,
         );
     }
 
@@ -357,12 +363,11 @@ class WorkScheduleServiceTest extends TestCase {
         $this->service->delete(5, 1, 'hr');
     }
 
-    /** Make exactly one month count as fully approved. */
+    /** Make exactly one month count as approved. */
     private function useApprovedMonth(int $y, int $m): void {
-        $this->timeEntryMapper = $this->createMock(TimeEntryMapper::class);
-        $this->timeEntryMapper->method('getMonthlyStatusSummary')
-            ->willReturnCallback(static fn (int $e, int $year, int $month): array =>
-                ($year === $y && $month === $m) ? self::summary(5, 0) : self::summary(0, 0));
+        $this->monthStatusService = $this->createMock(MonthStatusService::class);
+        $this->monthStatusService->method('isApproved')
+            ->willReturnCallback(static fn (int $e, int $year, int $month): bool => $year === $y && $month === $m);
         $this->setUpServiceWithCurrentMocks();
     }
 }
