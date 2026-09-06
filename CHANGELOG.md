@@ -13,7 +13,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Changed
 - **Regionscodes nach ISO 3166-2**: Bundeslaender und Kantone tragen laenderpraefigierte Codes (`DE-BY`, `CH-ZH`), weil sich Zweibuchstaben-Codes zwischen den Laendern ueberschneiden (Berlin/Bern, Schleswig-Holstein/Schaffhausen, Nordrhein-Westfalen/Nidwalden). Bestehende Daten werden beim Update automatisch umgeschrieben (Mitarbeitende, Feiertage, Standard-Region). Alte Zweibuchstaben-Codes in Anfragen werden weiterhin als deutsche Bundeslaender gelesen. **Kein Downgrade auf 0.17.x nach diesem Update.** Das Update laeuft wie gewohnt ueber den App Store oder `occ upgrade` (Nextcloud sperrt dabei Anfragen und Hintergrundjobs); Eintraege mit unbekannten Regionscodes werden bei der Migration gezaehlt und als Warnung gemeldet.
-- **Einstellungen**: «Standard-Bundesland» heisst jetzt «Standard-Region» mit vorgeschaltetem Land; die Feiertagsverwaltung filtert nach Land und Region, das Formular fuer manuelle Feiertage gruppiert die Regionen nach Land; «Feiertage neu erstellen» erzeugt alle 42 Regionen.
+- **Einstellungen**: «Standard-Bundesland» heisst jetzt «Standard-Region» mit vorgeschaltetem Land; die Feiertagsverwaltung filtert nach Land und Region, das Formular fuer manuelle Feiertage gruppiert die Regionen nach Land; «Feiertage neu erstellen» erzeugt alle 42 Regionen. Die Feiertagstabelle gruppiert nach Datum, Name und Umfang, damit ein halber Tag (Solothurn, 1. Mai) nicht zusammen mit den ganzen Tagen der anderen Kantone bearbeitet und dabei ueberschrieben wird.
 - **Feiertagsregeln als Provider pro Land** (`OCA\Zeitwerk\Holiday`): weitere Laender lassen sich als reine Daten ergaenzen.
 
 ### Fixed

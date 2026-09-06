@@ -929,6 +929,7 @@ import InfoIcon from '../components/InfoIcon.vue'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { ABSENCE_TYPE_LABELS } from '../constants.js'
 import { countryOf, countryOptions, regionOptions, firstRegionOf, regionCodesOf } from '../utils/regions.js'
+import { groupHolidays } from '../utils/holidayGroups.js'
 
 function round2(value) {
     return Math.round(value * 100) / 100
@@ -1166,28 +1167,7 @@ export default {
             },
         },
         groupedHolidays() {
-            const groups = {}
-            for (const holiday of this.filteredHolidays) {
-                const key = `${holiday.date}_${holiday.name}`
-                if (!groups[key]) {
-                    groups[key] = {
-                        key,
-                        date: holiday.date,
-                        name: holiday.name,
-                        scope: holiday.scope ?? 1.0,
-                        isManual: holiday.isManual,
-                        states: [],
-                        holidays: [],
-                    }
-                }
-                groups[key].states.push(holiday.federalState)
-                groups[key].holidays.push(holiday)
-                // If any holiday in the group is manual, mark the group as manual
-                if (holiday.isManual) {
-                    groups[key].isManual = true
-                }
-            }
-            return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+            return groupHolidays(this.filteredHolidays)
         },
         navGroups() {
             const group = (label, items) => ({ label, items: items.filter(i => i.visible) })
