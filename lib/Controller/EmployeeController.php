@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\Zeitwerk\Controller;
 
-use OCA\Zeitwerk\Db\Employee;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -87,7 +87,7 @@ class EmployeeController extends BaseController {
         float $weeklyHours = 40.0,
         int $vacationDays = 30,
         ?int $supervisorId = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
         int $workingDaysPerWeek = 5
     ): JSONResponse {
@@ -129,7 +129,7 @@ class EmployeeController extends BaseController {
         ?string $email = null,
         ?string $personnelNumber = null,
         ?int $supervisorId = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
         ?string $exitDate = null,
         bool $isActive = true,
@@ -198,7 +198,10 @@ class EmployeeController extends BaseController {
 
     #[NoAdminRequired]
     public function federalStates(): JSONResponse {
-        return $this->successResponse(Employee::FEDERAL_STATES);
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        return $this->successResponse(RegionRegistry::flatLabels());
     }
 
     #[NoAdminRequired]

@@ -59,6 +59,15 @@ export default {
         }
     },
 
+    async getRegions() {
+        try {
+            const response = await api.get('/holidays/regions')
+            return response.data
+        } catch (error) {
+            handleApiError(error)
+        }
+    },
+
     async getByYear(year) {
         try {
             const response = await api.get('/holidays', {

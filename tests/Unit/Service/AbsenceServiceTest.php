@@ -313,7 +313,7 @@ class AbsenceServiceTest extends TestCase {
             $this->currentMonthDate('10')->format('Y-m-d'),
             $this->currentMonthDate('12')->format('Y-m-d'),
             null,
-            'BY',
+            'DE-BY',
             'user1',
             1.0
         );
@@ -349,7 +349,7 @@ class AbsenceServiceTest extends TestCase {
             $this->currentMonthDate('11')->format('Y-m-d'),
             $this->currentMonthDate('11')->format('Y-m-d'),
             null,
-            'BY',
+            'DE-BY',
             'user1',
             0.5
         );
@@ -849,7 +849,7 @@ class AbsenceServiceTest extends TestCase {
         $today = (new DateTime('today'))->format('Y-m-d');
 
         try {
-            $this->service->create(1, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+            $this->service->create(1, Absence::TYPE_VACATION, $today, $today, null, 'DE-BY', 'hr', 1.0, null, true);
             $this->fail('Expected ValidationException');
         } catch (ValidationException $e) {
             $this->assertArrayHasKey('reason', $e->getErrors());
@@ -864,7 +864,7 @@ class AbsenceServiceTest extends TestCase {
         $today = (new DateTime('today'))->format('Y-m-d');
 
         $this->expectException(ValidationException::class);
-        $this->service->update(99, Absence::TYPE_VACATION, $today, $today, null, 'BY', 'hr', 1.0, null, true);
+        $this->service->update(99, Absence::TYPE_VACATION, $today, $today, null, 'DE-BY', 'hr', 1.0, null, true);
     }
 
     public function testDeleteForInactiveEmployeeWithHrOverrideRequiresReason(): void {
@@ -890,7 +890,7 @@ class AbsenceServiceTest extends TestCase {
     private function remaining(int $year): float {
         $m = new \ReflectionMethod($this->service, 'remainingVacationDays');
         $m->setAccessible(true);
-        return $m->invoke($this->service, 1, $year, 'BY', null);
+        return $m->invoke($this->service, 1, $year, 'DE-BY', null);
     }
 
     public function testRejectedVacationDoesNotConsumeQuota(): void {

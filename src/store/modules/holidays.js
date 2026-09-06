@@ -3,6 +3,9 @@ import HolidayService from '../../services/HolidayService.js'
 const state = {
     holidays: [],
     federalStates: {},
+    regions: [],
+    defaultRegion: null,
+    regionsLoaded: false,
     loading: false,
     error: null,
 }
@@ -10,6 +13,8 @@ const state = {
 const getters = {
     holidays: (state) => state.holidays,
     federalStates: (state) => state.federalStates,
+    regions: (state) => state.regions,
+    defaultRegion: (state) => state.defaultRegion,
     loading: (state) => state.loading,
     error: (state) => state.error,
     holidaysByDate: (state) => {
@@ -30,6 +35,11 @@ const mutations = {
     },
     SET_FEDERAL_STATES(state, states) {
         state.federalStates = states
+    },
+    SET_REGIONS(state, { countries, defaultRegion }) {
+        state.regions = countries || []
+        state.defaultRegion = defaultRegion || null
+        state.regionsLoaded = true
     },
     SET_LOADING(state, loading) {
         state.loading = loading
@@ -59,6 +69,18 @@ const actions = {
             commit('SET_FEDERAL_STATES', states)
         } catch (error) {
             console.error('Failed to fetch federal states:', error)
+        }
+    },
+
+    async fetchRegions({ commit, state }, { force = false } = {}) {
+        if (state.regionsLoaded && !force) {
+            return
+        }
+        try {
+            const result = await HolidayService.getRegions()
+            commit('SET_REGIONS', result || {})
+        } catch (error) {
+            console.error('Failed to fetch regions:', error)
         }
     },
 

@@ -69,7 +69,7 @@ class CompanySetting extends Entity implements JsonSerializable {
 
     public const DEFAULTS = [
         self::KEY_COMPANY_NAME => '',
-        self::KEY_DEFAULT_FEDERAL_STATE => 'BY',
+        self::KEY_DEFAULT_FEDERAL_STATE => 'DE-BY',
         self::KEY_DEFAULT_WEEKLY_HOURS => '40',
         self::KEY_DEFAULT_VACATION_DAYS => '30',
         self::KEY_REQUIRE_PROJECT => '0',

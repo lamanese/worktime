@@ -110,13 +110,24 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="federalState">{{ t('zeitwerk', 'Bundesland') }} <InfoIcon>{{ t('zeitwerk', 'Legt fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg.') }}</InfoIcon> *</label>
+                <label for="country">{{ t('zeitwerk', 'Land') }} <InfoIcon>{{ t('zeitwerk', 'Land und Region legen fest, welche gesetzlichen Feiertage für diesen Mitarbeiter gelten. Bayern hat z.B. mehr Feiertage als Hamburg, das Tessin mehr als Zürich.') }}</InfoIcon> *</label>
+                <NcSelect id="country"
+                    v-model="selectedCountry"
+                    :options="countryOptions"
+                    :clearable="false"
+                    label="label" />
+            </div>
+            <div class="form-group">
+                <label for="federalState">{{ regionLabel }} *</label>
                 <NcSelect id="federalState"
                     v-model="selectedFederalState"
                     :options="federalStateOptions"
                     :clearable="false"
                     label="label" />
             </div>
+        </div>
+
+        <div class="form-row">
             <div class="form-group">
                 <label for="supervisor">{{ t('zeitwerk', 'Vorgesetzter') }} <InfoIcon>{{ t('zeitwerk', 'Diese Person kann die Zeiteinträge und Abwesenheitsanträge dieses Mitarbeiters einsehen und genehmigen.') }}</InfoIcon></label>
                 <NcSelect id="supervisor"
@@ -173,6 +184,7 @@ import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadi
 import WorkScheduleEditor from './WorkScheduleEditor.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO } from '../utils/dateUtils.js'
+import { countryOf, countryOptions, regionOptions, regionLabelFor, firstRegionOf } from '../utils/regions.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 export default {
@@ -190,12 +202,12 @@ export default {
             type: Object,
             default: null,
         },
-        // Standard-Bundesland aus den Firmendaten (#337): Vorauswahl fuer neue
-        // Mitarbeitende. Bleibt frei aenderbar; im Bearbeiten-Modus wird das am
-        // Mitarbeiter gespeicherte Bundesland verwendet.
+        // Standard-Region aus den Firmendaten (#337): Vorauswahl fuer neue
+        // Mitarbeitende (Regionscode DE-BY, CH-ZH). Bleibt frei aenderbar; im
+        // Bearbeiten-Modus wird die am Mitarbeiter gespeicherte Region verwendet.
         defaultFederalState: {
             type: String,
-            default: 'BY',
+            default: 'DE-BY',
         },
     },
     data() {
@@ -218,7 +230,8 @@ export default {
         }
     },
     computed: {
-        ...mapGetters('employees', ['employees', 'federalStates', 'availableUsers']),
+        ...mapGetters('employees', ['employees', 'availableUsers']),
+        ...mapGetters('holidays', ['regions']),
         isEdit() {
             return !!this.employee
         },
@@ -255,16 +268,41 @@ export default {
                 }
             },
         },
+        countryOptions() {
+            return countryOptions(this.regions)
+        },
+        currentCountry() {
+            return countryOf(this.form.federalState) || countryOf(this.defaultFederalState) || 'DE'
+        },
+        selectedCountry: {
+            get() {
+                return this.countryOptions.find(c => c.id === this.currentCountry) || null
+            },
+            set(value) {
+                if (!value || value.id === this.currentCountry) {
+                    return
+                }
+                // Landwechsel: erste Region des neuen Landes vorbelegen
+                this.form.federalState = firstRegionOf(this.regions, value.id) || ''
+            },
+        },
         federalStateOptions() {
-            return Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
+            return regionOptions(this.regions, this.currentCountry)
         },
         selectedFederalState: {
             get() {
                 return this.federalStateOptions.find(s => s.id === this.form.federalState) || null
             },
             set(value) {
-                this.form.federalState = value?.id || 'BY'
+                this.form.federalState = value?.id || this.defaultFederalState
             },
+        },
+        regionLabel() {
+            const labels = {
+                Bundesland: this.t('zeitwerk', 'Bundesland'),
+                Kanton: this.t('zeitwerk', 'Kanton'),
+            }
+            return labels[regionLabelFor(this.regions, this.currentCountry)] || this.t('zeitwerk', 'Region')
         },
         supervisorOptions() {
             return this.employees
@@ -323,7 +361,7 @@ export default {
         },
     },
     created() {
-        this.$store.dispatch('employees/fetchFederalStates')
+        this.$store.dispatch('holidays/fetchRegions')
         this.$store.dispatch('employees/fetchEmployees')
         if (!this.isEdit) {
             this.$store.dispatch('employees/fetchAvailableUsers')

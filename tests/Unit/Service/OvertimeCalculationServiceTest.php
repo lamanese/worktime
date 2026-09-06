@@ -49,7 +49,7 @@ class OvertimeCalculationServiceTest extends TestCase {
 
         $employee = new Employee();
         $employee->setId(1);
-        $employee->setFederalState('BY');
+        $employee->setFederalState('DE-BY');
         $this->employeeService->method('find')->willReturn($employee);
         $this->timeEntryService->method('findByEmployeeAndMonth')->willReturn([]);
         $this->absenceService->method('findByEmployeeAndMonth')->willReturn([]);

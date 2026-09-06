@@ -1,6 +1,6 @@
 {
     "name": "zeitwerk",
-    "version": "0.17.0",
+    "version": "0.18.0",
     "description": "Nextcloud App zur Arbeitszeiterfassung",
     "main": "src/main.js",
     "scripts": {

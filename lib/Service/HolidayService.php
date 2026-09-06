@@ -12,37 +12,25 @@ namespace OCA\Zeitwerk\Service;
 use DateTime;
 use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
-use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\Holiday;
 use OCA\Zeitwerk\Db\HolidayMapper;
+use OCA\Zeitwerk\Holiday\Provider\ProviderRegistry;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
+use OCA\Zeitwerk\Holiday\Rules;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\Exception as DbException;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Feiertage je Region (DE-Bundesland, CH-Kanton). Die Regeln liegen in den
+ * Providern unter OCA\Zeitwerk\Holiday\Provider, dieser Service kuemmert sich um
+ * Persistenz, Lazy-Ensure (#438), Sondertage aus den Firmeneinstellungen und
+ * manuelle Feiertage. Der Spaltenname federal_state ist historisch, er traegt
+ * seit 0.18.0 den Regionscode (RegionRegistry).
+ */
 class HolidayService {
 
-    /**
-     * German holidays by federal state
-     * Format: 'name' => ['all' => true] for nationwide, or ['states' => ['BY', 'BW', ...]]
-     */
-    private const FIXED_HOLIDAYS = [
-        'Neujahr' => ['month' => 1, 'day' => 1, 'all' => true],
-        'Heilige Drei Könige' => ['month' => 1, 'day' => 6, 'states' => ['BY', 'BW', 'ST']],
-        'Tag der Arbeit' => ['month' => 5, 'day' => 1, 'all' => true],
-        'Mariä Himmelfahrt' => ['month' => 8, 'day' => 15, 'states' => ['BY', 'SL']],
-        'Tag der Deutschen Einheit' => ['month' => 10, 'day' => 3, 'all' => true],
-        'Reformationstag' => ['month' => 10, 'day' => 31, 'states' => ['BB', 'HB', 'HH', 'MV', 'NI', 'SN', 'ST', 'SH', 'TH']],
-        'Allerheiligen' => ['month' => 11, 'day' => 1, 'states' => ['BY', 'BW', 'NW', 'RP', 'SL']],
-        '1. Weihnachtstag' => ['month' => 12, 'day' => 25, 'all' => true],
-        '2. Weihnachtstag' => ['month' => 12, 'day' => 26, 'all' => true],
-    ];
-
-    /**
-     * States with Fronleichnam
-     */
-    private const FRONLEICHNAM_STATES = ['BY', 'BW', 'HE', 'NW', 'RP', 'SL'];
-
-    /** @var array<string, true> memo of (year, state) combos already ensured this request */
+    /** @var array<string, true> memo of (year, region) combos already ensured this request */
     private array $ensuredYearStates = [];
 
     public function __construct(
@@ -50,22 +38,24 @@ class HolidayService {
         private CompanySettingMapper $settingsMapper,
         private AuditLogService $auditLogService,
         private LoggerInterface $logger,
+        private ProviderRegistry $providers,
     ) {
     }
 
     /**
-     * #438: German public holidays are deterministic, but the database is only
-     * populated when an admin manually generates a (year, state) combination. If
-     * a vacation is booked over a holiday for a year/state that was never
-     * generated, the holiday is missing from the range query and gets counted as
-     * a vacation day. This ensures the relevant holidays exist on demand before
-     * any working-day calculation reads them — safe because generation is purely
-     * a function of year + state.
+     * #438: Public holidays are deterministic, but the database is only populated
+     * when an admin manually generates a (year, region) combination. If a vacation
+     * is booked over a holiday for a year/region that was never generated, the
+     * holiday is missing from the range query and gets counted as a vacation day.
+     * This ensures the relevant holidays exist on demand before any working-day
+     * calculation reads them — safe because generation is purely a function of
+     * year + region.
      *
      * Idempotent: only generates when nothing exists yet for the combo, and
      * memoises checked combos so a request does not re-query per calculation.
      */
     public function ensureHolidaysForYear(int $year, string $federalState, string $currentUserId = ''): void {
+        $federalState = RegionRegistry::normalize($federalState);
         $key = $year . '|' . $federalState;
         if (isset($this->ensuredYearStates[$key])) {
             return;
@@ -94,13 +84,14 @@ class HolidayService {
      * @return Holiday[]
      */
     public function findByYearAndState(int $year, string $federalState): array {
-        return $this->holidayMapper->findByYearAndState($year, $federalState);
+        return $this->holidayMapper->findByYearAndState($year, RegionRegistry::normalize($federalState));
     }
 
     /**
      * @return Holiday[]
      */
     public function findByMonth(int $year, int $month, string $federalState): array {
+        $federalState = RegionRegistry::normalize($federalState);
         $this->ensureHolidaysForYear($year, $federalState);
         return $this->holidayMapper->findByMonth($year, $month, $federalState);
     }
@@ -120,55 +111,45 @@ class HolidayService {
      * Check if a specific date is a holiday
      */
     public function isHoliday(DateTime $date, string $federalState): bool {
-        return $this->holidayMapper->isHoliday($date, $federalState);
+        return $this->holidayMapper->isHoliday($date, RegionRegistry::normalize($federalState));
     }
 
     /**
-     * Generate all holidays for a year and federal state
+     * Generate all automatic holidays for a year and region: the provider set of
+     * the region's country plus the company-wide special days (24.12./31.12.).
+     * Manual holidays are kept.
      *
      * @return Holiday[]
      */
     public function generateHolidays(int $year, string $federalState, string $currentUserId = ''): array {
-        // Delete only auto-generated holidays for this year/state (keep manual ones)
+        $federalState = RegionRegistry::normalize($federalState);
+
+        $provider = $this->providers->forRegion($federalState);
+        if ($provider === null) {
+            $this->logger->warning('Zeitwerk: no holiday provider for region {region}, nothing generated', [
+                'region' => $federalState,
+                'year' => $year,
+            ]);
+            return [];
+        }
+
+        // Delete only auto-generated holidays for this year/region (keep manual ones)
         $this->holidayMapper->deleteAutoByYearAndState($year, $federalState);
 
         $holidays = [];
-
-        // Add fixed holidays
-        foreach (self::FIXED_HOLIDAYS as $name => $config) {
-            if ($this->isHolidayInState($config, $federalState)) {
-                $holidays[] = $this->createHoliday($year, $config['month'], $config['day'], $name, $federalState);
-            }
-        }
-
-        // Add Easter-dependent holidays
-        $easterSunday = $this->calculateEasterSunday($year);
-
-        // Karfreitag (Good Friday) - 2 days before Easter
-        $karfreitag = (clone $easterSunday)->modify('-2 days');
-        $holidays[] = $this->createHoliday($year, (int)$karfreitag->format('m'), (int)$karfreitag->format('d'), 'Karfreitag', $federalState);
-
-        // Ostermontag (Easter Monday) - 1 day after Easter
-        $ostermontag = (clone $easterSunday)->modify('+1 day');
-        $holidays[] = $this->createHoliday($year, (int)$ostermontag->format('m'), (int)$ostermontag->format('d'), 'Ostermontag', $federalState);
-
-        // Christi Himmelfahrt (Ascension Day) - 39 days after Easter
-        $himmelfahrt = (clone $easterSunday)->modify('+39 days');
-        $holidays[] = $this->createHoliday($year, (int)$himmelfahrt->format('m'), (int)$himmelfahrt->format('d'), 'Christi Himmelfahrt', $federalState);
-
-        // Pfingstmontag (Whit Monday) - 50 days after Easter
-        $pfingstmontag = (clone $easterSunday)->modify('+50 days');
-        $holidays[] = $this->createHoliday($year, (int)$pfingstmontag->format('m'), (int)$pfingstmontag->format('d'), 'Pfingstmontag', $federalState);
-
-        // Fronleichnam (Corpus Christi) - 60 days after Easter, only in some states
-        if (in_array($federalState, self::FRONLEICHNAM_STATES)) {
-            $fronleichnam = (clone $easterSunday)->modify('+60 days');
-            $holidays[] = $this->createHoliday($year, (int)$fronleichnam->format('m'), (int)$fronleichnam->format('d'), 'Fronleichnam', $federalState);
+        foreach ($provider->holidaysFor($year, $federalState) as $definition) {
+            $holidays[] = $this->createHoliday(
+                $year,
+                (int)$definition->date->format('n'),
+                (int)$definition->date->format('j'),
+                $definition->name,
+                $federalState,
+                $definition->scope
+            );
         }
 
         // Add special half-day holidays (Christmas Eve, New Year's Eve)
-        $specialDays = $this->generateSpecialDays($year, $federalState);
-        $holidays = array_merge($holidays, $specialDays);
+        $holidays = array_merge($holidays, $this->generateSpecialDays($year, $federalState));
 
         // Audit log
         if ($currentUserId) {
@@ -184,7 +165,8 @@ class HolidayService {
 
     /**
      * Generate special days (Christmas Eve, New Year's Eve) as half-day holidays
-     * based on company settings
+     * based on company settings. Company practice, not law, so they apply to
+     * every region of every country.
      *
      * @return Holiday[]
      */
@@ -207,35 +189,11 @@ class HolidayService {
     }
 
     /**
-     * Calculate Easter Sunday using the Gauss algorithm
-     *
-     * The algorithm calculates the date of Easter Sunday for any year
-     * in the Gregorian calendar.
-     *
-     * Known dates for verification:
-     * - 2025: April 20
-     * - 2026: April 5
-     * - 2027: March 28
-     * - 2028: April 16
+     * Easter Sunday (Gauss algorithm, see Rules::easterSunday). Kept as DateTime
+     * for the existing controller endpoint.
      */
     public function calculateEasterSunday(int $year): DateTime {
-        // Gauss algorithm for Easter calculation
-        $a = $year % 19;
-        $b = intdiv($year, 100);
-        $c = $year % 100;
-        $d = intdiv($b, 4);
-        $e = $b % 4;
-        $f = intdiv($b + 8, 25);
-        $g = intdiv($b - $f + 1, 3);
-        $h = (19 * $a + $b - $d - $g + 15) % 30;
-        $i = intdiv($c, 4);
-        $k = $c % 4;
-        $l = (32 + 2 * $e + 2 * $i - $h - $k) % 7;
-        $m = intdiv($a + 11 * $h + 22 * $l, 451);
-        $month = intdiv($h + $l - 7 * $m + 114, 31);
-        $day = (($h + $l - 7 * $m + 114) % 31) + 1;
-
-        return new DateTime("$year-$month-$day");
+        return DateTime::createFromImmutable(Rules::easterSunday($year));
     }
 
     /**
@@ -273,59 +231,61 @@ class HolidayService {
     }
 
     /**
-     * Check if a holiday applies to a specific federal state
-     */
-    private function isHolidayInState(array $config, string $federalState): bool {
-        if (isset($config['all']) && $config['all']) {
-            return true;
-        }
-
-        if (isset($config['states']) && in_array($federalState, $config['states'])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Count holidays in a date range for a federal state
+     * Count holidays in a date range for a region
      */
     public function countHolidaysInRange(DateTime $startDate, DateTime $endDate, string $federalState): int {
-        return $this->holidayMapper->countHolidaysInRange($startDate, $endDate, $federalState);
+        return $this->holidayMapper->countHolidaysInRange($startDate, $endDate, RegionRegistry::normalize($federalState));
     }
 
     /**
-     * Get holidays in a date range for a federal state
+     * Get holidays in a date range for a region
      *
      * @return Holiday[]
      */
     public function findHolidaysInRange(DateTime $startDate, DateTime $endDate, string $federalState): array {
+        $federalState = RegionRegistry::normalize($federalState);
         $this->ensureHolidaysForRange($startDate, $endDate, $federalState);
         return $this->holidayMapper->findHolidaysInRange($startDate, $endDate, $federalState);
     }
 
     /**
-     * Check if holidays exist for a year and state
+     * Check if holidays exist for a year and region
      */
     public function existsForYearAndState(int $year, string $federalState): bool {
-        return $this->holidayMapper->existsForYearAndState($year, $federalState);
+        return $this->holidayMapper->existsForYearAndState($year, RegionRegistry::normalize($federalState));
     }
 
     /**
-     * Get all federal states
+     * All regions (DE-Bundeslaender und CH-Kantone), code => name
+     *
+     * @return array<string, string>
      */
     public function getFederalStates(): array {
-        return Employee::FEDERAL_STATES;
+        return RegionRegistry::flatLabels();
     }
 
     /**
-     * Create a manual holiday for multiple federal states
+     * Create a manual holiday for multiple regions
      *
+     * @param string[] $federalStates region codes (legacy two-letter codes are read as German states)
      * @param float $scope 1.0 = full day, 0.5 = half day
      * @return Holiday[]
-     * @throws \Exception if holiday already exists for any state
+     * @throws ValidationException if a region code is unknown
+     * @throws \Exception if holiday already exists for any region
      */
     public function createManual(string $date, string $name, array $federalStates, float $scope, string $currentUserId): array {
+        $federalStates = array_values(array_unique(array_map(
+            static fn(string $code): string => RegionRegistry::normalize($code),
+            array_map('strval', $federalStates)
+        )));
+        $invalid = array_values(array_filter(
+            $federalStates,
+            static fn(string $code): bool => !RegionRegistry::isValid($code)
+        ));
+        if ($invalid !== []) {
+            throw ValidationException::fromSingleError('federalStates', 'Unbekannte Region: ' . implode(', ', $invalid));
+        }
+
         $dateObj = new DateTime($date);
         $year = (int)$dateObj->format('Y');
         $holidays = [];
@@ -339,7 +299,7 @@ class HolidayService {
         }
 
         if (!empty($existingStates)) {
-            $stateNames = array_map(fn($s) => Employee::FEDERAL_STATES[$s] ?? $s, $existingStates);
+            $stateNames = array_map(static fn(string $s): string => RegionRegistry::name($s), $existingStates);
             throw new \Exception(
                 sprintf(
                     'Für das Datum %s existiert bereits ein Feiertag in: %s',
@@ -408,7 +368,7 @@ class HolidayService {
     }
 
     /**
-     * Find all holidays for a year (across all federal states)
+     * Find all holidays for a year (across all regions)
      *
      * @return Holiday[]
      */

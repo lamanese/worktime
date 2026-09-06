@@ -8,7 +8,7 @@
     <description><![CDATA[
 # Zeitwerk - Arbeitszeiterfassung für Nextcloud
 
-Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland.
+Gesetzeskonforme Arbeitszeiterfassung für kleine Unternehmen in Deutschland und der Schweiz.
 
 Eigenständig gepflegter Fork der App WorkTime ([cpcMomentum/worktime](https://github.com/cpcMomentum/worktime), Original von Axel Deffner), erweitert um Aussendienst-Spesen, Extern-Kilometer und persönliche Standard-Vorgaben.
 
@@ -19,7 +19,7 @@ Eigenständig gepflegter Fork der App WorkTime ([cpcMomentum/worktime](https://g
 - **Überstundenkonto** mit Soll/Ist-Vergleich und Eintrittsdatum-Berücksichtigung
 - **Projektbezogene Erfassung** für bessere Auswertung
 - **Persönliche Standard-Vorgaben**: Standard-Arbeitszeiten sowie — nach Admin-Freigabe — Standard-Projekt und Standard-Beschreibung als Vorbelegung neuer Einträge
-- **Deutsche Feiertage** automatisch nach Bundesland
+- **Feiertage** automatisch für 16 deutsche Bundesländer und 26 Schweizer Kantone
 
 ## Spesen & Kilometer
 
@@ -54,7 +54,7 @@ Eigenständig gepflegter Fork der App WorkTime ([cpcMomentum/worktime](https://g
 Behalten Sie den Überblick über Arbeitszeiten, Überstunden und Urlaub.
     ]]></description>
 
-    <version>0.17.0</version>
+    <version>0.18.0</version>
     <licence>AGPL-3.0-or-later</licence>
 
     <author mail="gilbeau.hammoud@gmail.com" homepage="https://github.com/lamanese">Ahmad Gilbeau-Hammoud</author>

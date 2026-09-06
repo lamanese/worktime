@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OCA\Zeitwerk\Controller;
 
+use OCA\Zeitwerk\Holiday\RegionRegistry;
+use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
@@ -23,6 +25,7 @@ class HolidayController extends BaseController {
         ?string $userId,
         private HolidayService $holidayService,
         private PermissionService $permissionService,
+        private CompanySettingsService $companySettingsService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -32,6 +35,8 @@ class HolidayController extends BaseController {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
+
+        $federalState = RegionRegistry::normalize($federalState);
 
         if ($federalState === '') {
             $holidays = $this->holidayService->findByYear($year);
@@ -61,6 +66,8 @@ class HolidayController extends BaseController {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
+
+        $federalState = RegionRegistry::normalize($federalState);
 
         if (!$this->permissionService->canManageHolidays($this->userId)) {
             return $this->forbiddenResponse();
@@ -105,6 +112,8 @@ class HolidayController extends BaseController {
             return $authError;
         }
 
+        $federalState = RegionRegistry::normalize($federalState);
+
         $exists = $this->holidayService->existsForYearAndState($year, $federalState);
 
         return $this->successResponse(['exists' => $exists]);
@@ -117,6 +126,22 @@ class HolidayController extends BaseController {
         }
 
         return $this->successResponse($this->holidayService->getFederalStates());
+    }
+
+    /**
+     * Laender mit ihren Regionen fuer die Land-Region-Auswahl im Frontend,
+     * plus die Standard-Region der Firma.
+     */
+    #[NoAdminRequired]
+    public function regions(): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+
+        return $this->successResponse([
+            'countries' => RegionRegistry::toApiStructure(),
+            'defaultRegion' => $this->companySettingsService->getDefaultFederalState(),
+        ]);
     }
 
     #[NoAdminRequired]
