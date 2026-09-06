@@ -805,7 +805,6 @@ class ReportController extends BaseController {
         }
 
         try {
-
             $employee = $this->employeeService->find($employeeId);
             $timeEntries = $this->timeEntryService->findByEmployeeAndDateRange($employeeId, $start, $end);
             $absences = $this->absenceService->findByEmployeeAndDateRange($employeeId, $start, $end);

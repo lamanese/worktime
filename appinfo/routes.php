@@ -54,9 +54,9 @@ return [
         ['name' => 'employee#availableUsers', 'url' => '/api/employees/available-users', 'verb' => 'GET'],
         ['name' => 'employee#index', 'url' => '/api/employees', 'verb' => 'GET'],
         ['name' => 'employee#create', 'url' => '/api/employees', 'verb' => 'POST'],
-        ['name' => 'employee#show', 'url' => '/api/employees/{id}', 'verb' => 'GET'],
-        ['name' => 'employee#update', 'url' => '/api/employees/{id}', 'verb' => 'PUT'],
-        ['name' => 'employee#destroy', 'url' => '/api/employees/{id}', 'verb' => 'DELETE'],
+        ['name' => 'employee#show', 'url' => '/api/employees/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'employee#update', 'url' => '/api/employees/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'employee#destroy', 'url' => '/api/employees/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
         // Holidays API (specific routes before {id})
         ['name' => 'holiday#generate', 'url' => '/api/holidays/generate', 'verb' => 'POST'],
@@ -97,8 +97,8 @@ return [
         ['name' => 'settings#reset', 'url' => '/api/settings/{key}/reset', 'verb' => 'POST'],
 
         // Work Schedules API
-        ['name' => 'work_schedule#index',   'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'GET'],
-        ['name' => 'work_schedule#create',  'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'POST'],
+        ['name' => 'work_schedule#index',   'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'GET', 'requirements' => ['employeeId' => '\d+']],
+        ['name' => 'work_schedule#create',  'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'POST', 'requirements' => ['employeeId' => '\d+']],
         ['name' => 'work_schedule#update',  'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'work_schedule#destroy', 'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
