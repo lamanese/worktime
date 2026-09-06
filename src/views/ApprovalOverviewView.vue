@@ -452,10 +452,14 @@ export default {
             this.archiveConfigured = results[3].status === 'fulfilled' ? !!(results[3].value?.configured) : false
             // A failed request leaves its list empty, which looks exactly like
             // "nothing to approve". Say so instead of showing a silent gap (#537).
-            const failed = results.some(r => r.status === 'rejected')
-            results.forEach((r, i) => {
+            // Only the three approval-data requests count: the archive status is
+            // admin-only (canManageSettings) and answers 403 for supervisors and
+            // HR managers, which is expected and must not trigger the warning.
+            const approvalResults = results.slice(0, 3)
+            const failed = approvalResults.some(r => r.status === 'rejected')
+            approvalResults.forEach((r, i) => {
                 if (r.status === 'rejected') {
-                    const names = ['getPending', 'getPendingMonths', 'getInformational', 'getArchiveStatus']
+                    const names = ['getPending', 'getPendingMonths', 'getInformational']
                     console.error(`Failed: ${names[i]}`, r.reason)
                 }
             })
