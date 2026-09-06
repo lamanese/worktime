@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.18.0] - 2026-09-06
 
 ### Added
 - **Feiertage fuer die Schweiz**: Zeitwerk kennt jetzt die 26 Kantone mit ihren kantonsweit arbeitsfreien Feiertagen (Basis: Verzeichnis des Bundesamts fuer Justiz, Stand 2011, plus kantonsweit faktisch arbeitsfreie Tage). Sonderregeln sind abgebildet: Naefelser Fahrt, Jeune genevois, Bettagsmontag, Neuenburger Montagsregel, entfallender Stephanstag an Dienstag oder Samstag in Uri, Appenzell und Aargau, halber 1. Mai in Solothurn. Mitarbeitende waehlen Land und Region (Bundesland oder Kanton), Firmen koennen deutsche und Schweizer Mitarbeitende gemischt fuehren. Details und Grenzen in `FEIERTAGE.md`.
