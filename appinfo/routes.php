@@ -63,6 +63,7 @@ return [
         ['name' => 'holiday#generateAll', 'url' => '/api/holidays/generate-all', 'verb' => 'POST'],
         ['name' => 'holiday#check', 'url' => '/api/holidays/check', 'verb' => 'GET'],
         ['name' => 'holiday#federalStates', 'url' => '/api/holidays/federal-states', 'verb' => 'GET'],
+        ['name' => 'holiday#regions', 'url' => '/api/holidays/regions', 'verb' => 'GET'],
         ['name' => 'holiday#easter', 'url' => '/api/holidays/easter', 'verb' => 'GET'],
         ['name' => 'holiday#byYear', 'url' => '/api/holidays/by-year', 'verb' => 'GET'],
         ['name' => 'holiday#create', 'url' => '/api/holidays', 'verb' => 'POST'],

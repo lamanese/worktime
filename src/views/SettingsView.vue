@@ -48,7 +48,7 @@
                     @close="closeEmployeeForm">
                     <EmployeeForm
                         :employee="editingEmployee"
-                        :default-federal-state="settings.default_federal_state || 'BY'"
+                        :default-federal-state="settings.default_federal_state || 'DE-BY'"
                         @saved="onEmployeeSaved"
                         @cancel="closeEmployeeForm" />
                 </NcModal>
@@ -118,12 +118,22 @@
                         class="input-field"
                         @change="saveSetting('company_name')">
                 </div>
-                <div class="form-group">
-                    <label for="defaultState">{{ t('zeitwerk', 'Standard-Bundesland') }} <InfoIcon>{{ t('zeitwerk', 'Neue Mitarbeiter bekommen dieses Bundesland automatisch zugewiesen. Jeder Mitarbeiter kann ein eigenes Bundesland haben — das bestimmt, welche Feiertage für ihn gelten.') }}</InfoIcon></label>
-                    <NcSelect id="defaultState"
-                        v-model="selectedFederalState"
-                        :options="federalStateOptions"
-                        @input="saveSetting('default_federal_state')" />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="defaultCountry">{{ t('zeitwerk', 'Land') }}</label>
+                        <NcSelect id="defaultCountry"
+                            v-model="selectedDefaultCountry"
+                            :options="countryOptions"
+                            :clearable="false" />
+                    </div>
+                    <div class="form-group">
+                        <label for="defaultState">{{ t('zeitwerk', 'Standard-Region') }} <InfoIcon>{{ t('zeitwerk', 'Neue Mitarbeiter bekommen diese Region automatisch zugewiesen. Jeder Mitarbeiter kann eine eigene Region haben — sie bestimmt, welche Feiertage für ihn gelten.') }}</InfoIcon></label>
+                        <NcSelect id="defaultState"
+                            v-model="selectedFederalState"
+                            :options="defaultRegionOptions"
+                            :clearable="false"
+                            @input="saveSetting('default_federal_state')" />
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -427,7 +437,14 @@
                             @change="loadHolidays">
                     </div>
                     <div class="form-group">
-                        <label for="holidayStateFilter">{{ t('zeitwerk', 'Bundesland') }}</label>
+                        <label for="holidayCountryFilter">{{ t('zeitwerk', 'Land') }}</label>
+                        <NcSelect id="holidayCountryFilter"
+                            v-model="selectedHolidayCountryFilter"
+                            :options="holidayCountryFilterOptions"
+                            :clearable="false" />
+                    </div>
+                    <div class="form-group">
+                        <label for="holidayStateFilter">{{ t('zeitwerk', 'Region') }}</label>
                         <NcSelect id="holidayStateFilter"
                             v-model="selectedHolidayStateFilter"
                             :options="holidayStateFilterOptions"
@@ -453,7 +470,7 @@
                             <th class="col-expand"></th>
                             <th>{{ t('zeitwerk', 'Datum') }}</th>
                             <th>{{ t('zeitwerk', 'Name') }}</th>
-                            <th>{{ t('zeitwerk', 'Bundesländer') }}</th>
+                            <th>{{ t('zeitwerk', 'Regionen') }}</th>
                             <th>{{ t('zeitwerk', 'Umfang') }}</th>
                             <th>{{ t('zeitwerk', 'Typ') }}</th>
                             <th>{{ t('zeitwerk', 'Aktionen') }}</th>
@@ -469,7 +486,7 @@
                                 <td>{{ formatDate(group.date) }}</td>
                                 <td>{{ group.name }}</td>
                                 <td>
-                                    <span class="state-count">{{ group.states.length }} {{ t('zeitwerk', 'Bundesländer') }}</span>
+                                    <span class="state-count">{{ group.states.length }} {{ t('zeitwerk', 'Regionen') }}</span>
                                 </td>
                                 <td>{{ group.scope < 1.0 ? t('zeitwerk', '½ Tag') : t('zeitwerk', '1 Tag') }}</td>
                                 <td>
@@ -537,26 +554,29 @@
                                 :placeholder="t('zeitwerk', 'z.B. Brückentag')">
                         </div>
                         <div v-if="!editingHoliday" class="form-group">
-                            <label>{{ t('zeitwerk', 'Bundesländer') }}</label>
-                            <div class="state-selection">
-                                <NcButton type="tertiary" @click="selectAllStates">
-                                    {{ t('zeitwerk', 'Alle auswählen') }}
-                                </NcButton>
-                                <NcButton type="tertiary" @click="deselectAllStates">
-                                    {{ t('zeitwerk', 'Alle abwählen') }}
-                                </NcButton>
-                            </div>
-                            <div class="state-checkboxes">
-                                <NcCheckboxRadioSwitch v-for="(label, id) in federalStates"
-                                    :key="id"
-                                    :checked="holidayFormData.federalStates.includes(id)"
-                                    @update:checked="toggleState(id, $event)">
-                                    {{ label }}
-                                </NcCheckboxRadioSwitch>
+                            <label>{{ t('zeitwerk', 'Regionen') }}</label>
+                            <div v-for="country in regions" :key="country.code" class="state-group">
+                                <div class="state-selection">
+                                    <strong class="state-group-title">{{ country.name }}</strong>
+                                    <NcButton type="tertiary" @click="selectCountryStates(country.code)">
+                                        {{ t('zeitwerk', 'Alle auswählen') }}
+                                    </NcButton>
+                                    <NcButton type="tertiary" @click="deselectCountryStates(country.code)">
+                                        {{ t('zeitwerk', 'Alle abwählen') }}
+                                    </NcButton>
+                                </div>
+                                <div class="state-checkboxes">
+                                    <NcCheckboxRadioSwitch v-for="region in country.regions"
+                                        :key="region.code"
+                                        :checked="holidayFormData.federalStates.includes(region.code)"
+                                        @update:checked="toggleState(region.code, $event)">
+                                        {{ region.name }}
+                                    </NcCheckboxRadioSwitch>
+                                </div>
                             </div>
                         </div>
                         <div v-else class="form-group">
-                            <label>{{ t('zeitwerk', 'Bundesländer') }}</label>
+                            <label>{{ t('zeitwerk', 'Regionen') }}</label>
                             <div class="state-chips readonly">
                                 <span v-for="state in holidayFormData.federalStates" :key="state" class="state-chip">
                                     {{ federalStates[state] || state }}
@@ -908,6 +928,8 @@ import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
 import { formatMinutes } from '../utils/timeUtils.js'
 import { ABSENCE_TYPE_LABELS } from '../constants.js'
+import { countryOf, countryOptions, regionOptions, firstRegionOf, regionCodesOf } from '../utils/regions.js'
+import { groupHolidays } from '../utils/holidayGroups.js'
 
 function round2(value) {
     return Math.round(value * 100) / 100
@@ -973,6 +995,7 @@ export default {
             holidays: [],
             loadingHolidays: false,
             selectedHolidayStateFilter: null,
+            selectedHolidayCountryFilter: null,
             showHolidayForm: false,
             editingHoliday: null,
             holidayFormData: {
@@ -1024,7 +1047,7 @@ export default {
         archiveDoneJobs() {
             return (this.archiveStatus.jobs || []).filter(j => j.status === 'completed').slice(0, 5)
         },
-        ...mapGetters('holidays', ['federalStates']),
+        ...mapGetters('holidays', ['federalStates', 'regions', 'defaultRegion']),
         ...mapGetters('employees', { employees: 'employees' }),
         ...mapGetters('projects', { allProjects: 'projects' }),
         externAbsenceTypeOptions() {
@@ -1051,15 +1074,34 @@ export default {
             }
             return years
         },
-        federalStateOptions() {
-            return Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
+        countryOptions() {
+            return countryOptions(this.regions)
+        },
+        defaultCountry() {
+            return countryOf(this.settings.default_federal_state) || 'DE'
+        },
+        selectedDefaultCountry: {
+            get() {
+                return this.countryOptions.find(c => c.id === this.defaultCountry) || null
+            },
+            set(value) {
+                if (!value || value.id === this.defaultCountry) {
+                    return
+                }
+                // Landwechsel: erste Region des Landes wird neue Standard-Region
+                this.settings.default_federal_state = firstRegionOf(this.regions, value.id) || 'DE-BY'
+                this.saveSetting('default_federal_state')
+            },
+        },
+        defaultRegionOptions() {
+            return regionOptions(this.regions, this.defaultCountry)
         },
         selectedFederalState: {
             get() {
-                return this.federalStateOptions.find(s => s.id === this.settings.default_federal_state) || null
+                return this.defaultRegionOptions.find(s => s.id === this.settings.default_federal_state) || null
             },
             set(value) {
-                this.settings.default_federal_state = value?.id || 'BY'
+                this.settings.default_federal_state = value?.id || 'DE-BY'
             },
         },
         principalOptions() {
@@ -1080,17 +1122,32 @@ export default {
                 this.hrManagers = value.map(p => p.id)
             },
         },
-        holidayStateFilterOptions() {
+        holidayCountryFilterOptions() {
             return [
-                { id: null, label: this.t('zeitwerk', 'Alle Bundesländer') },
-                ...this.federalStateOptions,
+                { id: null, label: this.t('zeitwerk', 'Alle Länder') },
+                ...this.countryOptions,
+            ]
+        },
+        holidayStateFilterOptions() {
+            const country = this.selectedHolidayCountryFilter?.id || null
+            const options = country
+                ? regionOptions(this.regions, country)
+                : Object.entries(this.federalStates).map(([id, label]) => ({ id, label }))
+            return [
+                { id: null, label: this.t('zeitwerk', 'Alle Regionen') },
+                ...options,
             ]
         },
         filteredHolidays() {
-            if (!this.selectedHolidayStateFilter || !this.selectedHolidayStateFilter.id) {
-                return this.holidays
+            const region = this.selectedHolidayStateFilter?.id || null
+            if (region) {
+                return this.holidays.filter(h => h.federalState === region)
             }
-            return this.holidays.filter(h => h.federalState === this.selectedHolidayStateFilter.id)
+            const country = this.selectedHolidayCountryFilter?.id || null
+            if (country) {
+                return this.holidays.filter(h => countryOf(h.federalState) === country)
+            }
+            return this.holidays
         },
         isHolidayFormValid() {
             if (!this.holidayFormData.date || !this.holidayFormData.name.trim()) {
@@ -1110,28 +1167,7 @@ export default {
             },
         },
         groupedHolidays() {
-            const groups = {}
-            for (const holiday of this.filteredHolidays) {
-                const key = `${holiday.date}_${holiday.name}`
-                if (!groups[key]) {
-                    groups[key] = {
-                        key,
-                        date: holiday.date,
-                        name: holiday.name,
-                        scope: holiday.scope ?? 1.0,
-                        isManual: holiday.isManual,
-                        states: [],
-                        holidays: [],
-                    }
-                }
-                groups[key].states.push(holiday.federalState)
-                groups[key].holidays.push(holiday)
-                // If any holiday in the group is manual, mark the group as manual
-                if (holiday.isManual) {
-                    groups[key].isManual = true
-                }
-            }
-            return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+            return groupHolidays(this.filteredHolidays)
         },
         navGroups() {
             const group = (label, items) => ({ label, items: items.filter(i => i.visible) })
@@ -1166,17 +1202,37 @@ export default {
             return this.navGroups.flatMap(g => g.items.map(i => i.id))
         },
     },
+    watch: {
+        availableSectionIds: {
+            immediate: false,
+            handler(ids) {
+                if (!this.activeSection || !ids.includes(this.activeSection)) {
+                    this.activeSection = ids[0] || null
+                }
+            },
+        },
+        // Landfilter gewechselt: Regionsfilter aus einem anderen Land zuruecksetzen
+        selectedHolidayCountryFilter(value) {
+            const country = value?.id || null
+            const region = this.selectedHolidayStateFilter?.id || null
+            if (country && region && countryOf(region) !== country) {
+                this.selectedHolidayStateFilter = null
+            }
+        },
+    },
     created() {
-        // Standard-Bundesland (#337): Feiertags-Filter vorbelegen, sobald sowohl
-        // die Firmen-Einstellungen als auch die Bundesland-Labels geladen sind.
+        // Standard-Region (#337): Land- und Regionsfilter der Feiertage vorbelegen,
+        // sobald Firmen-Einstellungen und Regionen geladen sind.
         Promise.all([
             this.loadSettings(),
             this.$store.dispatch('holidays/fetchFederalStates'),
+            this.$store.dispatch('holidays/fetchRegions'),
         ]).then(() => {
-            const defaultState = this.settings.default_federal_state
-            if (defaultState && !this.selectedHolidayStateFilter) {
-                this.selectedHolidayStateFilter = this.holidayStateFilterOptions
-                    .find(o => o.id === defaultState) || null
+            const region = this.settings.default_federal_state || this.defaultRegion
+            if (region && !this.selectedHolidayStateFilter) {
+                const country = countryOf(region)
+                this.selectedHolidayCountryFilter = this.holidayCountryFilterOptions.find(o => o.id === country) || null
+                this.selectedHolidayStateFilter = this.holidayStateFilterOptions.find(o => o.id === region) || null
             }
         })
         if (this.canManageEmployees) {
@@ -1197,16 +1253,6 @@ export default {
             this.loadPayouts()
         }
         this.initActiveSection()
-    },
-    watch: {
-        availableSectionIds: {
-            immediate: false,
-            handler(ids) {
-                if (!this.activeSection || !ids.includes(this.activeSection)) {
-                    this.activeSection = ids[0] || null
-                }
-            },
-        },
     },
     methods: {
         ...mapActions('holidays', ['generateAllHolidays']),
@@ -1342,7 +1388,7 @@ export default {
         generateHolidays() {
             const dialog = new DialogBuilder()
                 .setName(this.t('zeitwerk', 'Feiertage neu erstellen'))
-                .setText(this.t('zeitwerk', 'Die automatisch erzeugten Feiertage für {year} werden für alle Bundesländer neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
+                .setText(this.t('zeitwerk', 'Die automatisch erzeugten Feiertage für {year} werden für alle Regionen (Deutschland und Schweiz) neu erstellt. Manuell angelegte Feiertage bleiben erhalten.', { year: this.holidayYear }))
                 .setButtons([
                     {
                         label: this.t('zeitwerk', 'Abbrechen'),
@@ -1552,7 +1598,7 @@ export default {
                 this.holidayFormData = {
                     date: null,
                     name: '',
-                    federalStates: Object.keys(this.federalStates),
+                    federalStates: regionCodesOf(this.regions, this.defaultCountry),
                     scope: 1.0,
                 }
             }
@@ -1562,11 +1608,13 @@ export default {
             this.showHolidayForm = false
             this.editingHoliday = null
         },
-        selectAllStates() {
-            this.holidayFormData.federalStates = Object.keys(this.federalStates)
+        selectCountryStates(country) {
+            const codes = regionCodesOf(this.regions, country)
+            this.holidayFormData.federalStates = Array.from(new Set([...this.holidayFormData.federalStates, ...codes]))
         },
-        deselectAllStates() {
-            this.holidayFormData.federalStates = []
+        deselectCountryStates(country) {
+            const codes = new Set(regionCodesOf(this.regions, country))
+            this.holidayFormData.federalStates = this.holidayFormData.federalStates.filter(s => !codes.has(s))
         },
         toggleState(stateId, checked) {
             if (checked) {
@@ -1638,7 +1686,7 @@ export default {
             this.showHolidayForm = true
         },
         async confirmDeleteHolidayGroup(group) {
-            const message = this.t('zeitwerk', 'Möchten Sie den Feiertag "{name}" ({count} Bundesländer) wirklich löschen?', {
+            const message = this.t('zeitwerk', 'Möchten Sie den Feiertag "{name}" ({count} Regionen) wirklich löschen?', {
                 name: group.name,
                 count: group.states.length,
             })
@@ -2384,6 +2432,15 @@ export default {
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
+    align-items: center;
+}
+
+.state-group {
+    margin-bottom: 12px;
+}
+
+.state-group-title {
+    margin-right: auto;
 }
 
 .state-checkboxes {

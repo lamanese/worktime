@@ -5,7 +5,19 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.18.0] - 2026-09-06
+
+### Added
+- **Feiertage fuer die Schweiz**: Zeitwerk kennt jetzt die 26 Kantone mit ihren kantonsweit arbeitsfreien Feiertagen (Basis: Verzeichnis des Bundesamts fuer Justiz, Stand 2011, plus kantonsweit faktisch arbeitsfreie Tage). Sonderregeln sind abgebildet: Naefelser Fahrt, Jeune genevois, Bettagsmontag, Neuenburger Montagsregel, entfallender Stephanstag an Dienstag oder Samstag in Uri, Appenzell und Aargau, halber 1. Mai in Solothurn. Mitarbeitende waehlen Land und Region (Bundesland oder Kanton), Firmen koennen deutsche und Schweizer Mitarbeitende gemischt fuehren. Details und Grenzen in `FEIERTAGE.md`.
+- **Endpunkt `GET /api/holidays/regions`** liefert Laender, Regionen und die Standard-Region der Firma.
+
+### Changed
+- **Regionscodes nach ISO 3166-2**: Bundeslaender und Kantone tragen laenderpraefigierte Codes (`DE-BY`, `CH-ZH`), weil sich Zweibuchstaben-Codes zwischen den Laendern ueberschneiden (Berlin/Bern, Schleswig-Holstein/Schaffhausen, Nordrhein-Westfalen/Nidwalden). Bestehende Daten werden beim Update automatisch umgeschrieben (Mitarbeitende, Feiertage, Standard-Region). Alte Zweibuchstaben-Codes in Anfragen werden weiterhin als deutsche Bundeslaender gelesen. **Kein Downgrade auf 0.17.x nach diesem Update.** Das Update laeuft wie gewohnt ueber den App Store oder `occ upgrade` (Nextcloud sperrt dabei Anfragen und Hintergrundjobs); Eintraege mit unbekannten Regionscodes werden bei der Migration gezaehlt und als Warnung gemeldet.
+- **Einstellungen**: «Standard-Bundesland» heisst jetzt «Standard-Region» mit vorgeschaltetem Land; die Feiertagsverwaltung filtert nach Land und Region, das Formular fuer manuelle Feiertage gruppiert die Regionen nach Land; «Feiertage neu erstellen» erzeugt alle 42 Regionen. Die Feiertagstabelle gruppiert nach Datum, Name und Umfang, damit ein halber Tag (Solothurn, 1. Mai) nicht zusammen mit den ganzen Tagen der anderen Kantone bearbeitet und dabei ueberschrieben wird.
+- **Feiertagsregeln als Provider pro Land** (`OCA\Zeitwerk\Holiday`): weitere Laender lassen sich als reine Daten ergaenzen.
+
+### Fixed
+- **Fehlende deutsche Feiertage**: Buss- und Bettag (Sachsen, Mittwoch vor dem 23.11.), Internationaler Frauentag (Berlin ab 2019, Mecklenburg-Vorpommern ab 2023) und Weltkindertag (Thueringen ab 2019) werden jetzt erzeugt. Bestehende Jahre uebernehmen die Tage nach «Feiertage neu erstellen».
 
 ## [0.17.0] - 2026-09-03
 

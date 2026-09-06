@@ -11,6 +11,7 @@ namespace OCA\Zeitwerk\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -60,25 +61,6 @@ use OCP\AppFramework\Db\Entity;
  */
 class Employee extends Entity implements JsonSerializable {
 
-    public const FEDERAL_STATES = [
-        'BW' => 'Baden-Württemberg',
-        'BY' => 'Bayern',
-        'BE' => 'Berlin',
-        'BB' => 'Brandenburg',
-        'HB' => 'Bremen',
-        'HH' => 'Hamburg',
-        'HE' => 'Hessen',
-        'MV' => 'Mecklenburg-Vorpommern',
-        'NI' => 'Niedersachsen',
-        'NW' => 'Nordrhein-Westfalen',
-        'RP' => 'Rheinland-Pfalz',
-        'SL' => 'Saarland',
-        'SN' => 'Sachsen',
-        'ST' => 'Sachsen-Anhalt',
-        'SH' => 'Schleswig-Holstein',
-        'TH' => 'Thüringen',
-    ];
-
     protected string $userId = '';
     protected ?string $personnelNumber = null;
     protected string $firstName = '';
@@ -87,7 +69,7 @@ class Employee extends Entity implements JsonSerializable {
     protected string $weeklyHours = '40.00';
     protected int $vacationDays = 30;
     protected ?int $supervisorId = null;
-    protected string $federalState = 'BY';
+    protected string $federalState = RegionRegistry::DEFAULT_REGION;
     protected ?DateTime $entryDate = null;
     protected ?DateTime $exitDate = null;
     protected int $workingDaysPerWeek = 5;
@@ -148,7 +130,8 @@ class Employee extends Entity implements JsonSerializable {
             'workingDaysPerWeek' => $this->workingDaysPerWeek,
             'supervisorId' => $this->supervisorId,
             'federalState' => $this->federalState,
-            'federalStateName' => self::FEDERAL_STATES[$this->federalState] ?? $this->federalState,
+            'federalStateName' => RegionRegistry::name($this->federalState),
+            'country' => RegionRegistry::countryOf($this->federalState),
             'entryDate' => $this->entryDate?->format('Y-m-d'),
             'exitDate' => $this->exitDate?->format('Y-m-d'),
             'isActive' => (bool)$this->isActive,

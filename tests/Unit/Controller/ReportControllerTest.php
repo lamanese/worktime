@@ -322,7 +322,7 @@ class ReportControllerTest extends TestCase {
     private function countInMonth(ReportController $c, Absence $a, int $year, int $month): float {
         $m = new \ReflectionMethod($c, 'countWorkingDaysInMonth');
         $m->setAccessible(true);
-        return $m->invoke($c, $a, $year, $month, 'BY');
+        return $m->invoke($c, $a, $year, $month, 'DE-BY');
     }
 
     public function testPerMonthVacationAppliesHalfDayScope(): void {
@@ -417,7 +417,7 @@ class ReportControllerTest extends TestCase {
         $employee->setFirstName('Chef');
         $employee->setLastName('1');
         $employee->setWeeklyHours('40');
-        $employee->setFederalState('BY');
+        $employee->setFederalState('DE-BY');
 
         $permissionService = $this->createMock(PermissionService::class);
         $permissionService->method('getVisibleTeamMembers')->willReturn([$employee]);

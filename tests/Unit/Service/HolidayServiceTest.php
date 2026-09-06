@@ -8,8 +8,12 @@ use DateTime;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
 use OCA\Zeitwerk\Db\Holiday;
 use OCA\Zeitwerk\Db\HolidayMapper;
+use OCA\Zeitwerk\Holiday\Provider\GermanyHolidays;
+use OCA\Zeitwerk\Holiday\Provider\ProviderRegistry;
+use OCA\Zeitwerk\Holiday\Provider\SwitzerlandHolidays;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\HolidayService;
+use OCA\Zeitwerk\Service\ValidationException;
 use OCP\DB\Exception as DbException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -33,6 +37,7 @@ class HolidayServiceTest extends TestCase {
             $this->settingsMapper,
             $this->auditLogService,
             $this->logger,
+            new ProviderRegistry(new GermanyHolidays(), new SwitzerlandHolidays()),
         );
     }
 
@@ -105,41 +110,99 @@ class HolidayServiceTest extends TestCase {
         $this->assertEquals('2026-06-04', $fronleichnam->format('Y-m-d'));
     }
 
-    public function testGetFederalStates(): void {
+    public function testGetFederalStatesListsAllRegionsOfBothCountries(): void {
         $states = $this->service->getFederalStates();
 
-        // Check all 16 German federal states are present
-        $this->assertCount(16, $states);
-
-        // Check some specific states
-        $this->assertArrayHasKey('BY', $states);
-        $this->assertEquals('Bayern', $states['BY']);
-
-        $this->assertArrayHasKey('NW', $states);
-        $this->assertEquals('Nordrhein-Westfalen', $states['NW']);
-
-        $this->assertArrayHasKey('BE', $states);
-        $this->assertEquals('Berlin', $states['BE']);
+        $this->assertCount(42, $states);
+        $this->assertSame('Bayern', $states['DE-BY']);
+        $this->assertSame('Berlin', $states['DE-BE']);
+        $this->assertSame('Bern', $states['CH-BE']);
+        $this->assertSame('Zürich', $states['CH-ZH']);
+        $this->assertArrayNotHasKey('BY', $states);
     }
 
     /**
-     * @dataProvider holidayCountByStateProvider
+     * generateHolidays() legt genau die Provider-Feiertage der Region an
+     * (ohne Sondertage, die Firmeneinstellung ist hier aus).
+     * @dataProvider generatedCountProvider
      */
-    public function testHolidayCountByState(string $state, int $minExpected, int $maxExpected): void {
-        // We can't fully test generateHolidays without DB, but we can verify
-        // that the service recognizes which holidays apply to which states
+    public function testGenerateInsertsProviderHolidays(string $region, int $expectedCount): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('insert')->willReturnArgument(0);
+        $this->holidayMapper->expects($this->once())->method('deleteAutoByYearAndState')->with(2026, $region);
 
-        // Bayern has the most holidays (13), Berlin has the fewest (9)
-        $this->assertGreaterThanOrEqual($minExpected, $minExpected);
-        $this->assertLessThanOrEqual($maxExpected, $maxExpected);
+        $holidays = $this->service->generateHolidays(2026, $region);
+
+        $this->assertCount($expectedCount, $holidays);
+        foreach ($holidays as $holiday) {
+            $this->assertSame($region, $holiday->getFederalState());
+            $this->assertSame(2026, $holiday->getYear());
+            $this->assertFalse((bool)$holiday->getIsManual());
+        }
     }
 
-    public static function holidayCountByStateProvider(): array {
+    public static function generatedCountProvider(): array {
         return [
-            ['BY', 13, 13], // Bayern: all holidays
-            ['BE', 9, 9],   // Berlin: only nationwide holidays
-            ['NW', 11, 11], // NRW: nationwide + Allerheiligen + Fronleichnam
+            ['DE-BY', 13], // Bayern: alle deutschen Feiertage
+            ['DE-BE', 10], // Berlin: bundesweit plus Frauentag
+            ['DE-NW', 11], // NRW: bundesweit plus Allerheiligen, Fronleichnam
+            ['DE-SN', 11], // Sachsen: bundesweit plus Reformationstag, Buss- und Bettag
+            ['CH-ZH', 10],
+            ['CH-TI', 15],
+            ['CH-AR', 7],  // Stephanstag 2026 (Samstag) entfaellt
         ];
+    }
+
+    public function testGenerateAppendsSpecialDaysForEveryCountry(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(true);
+        $this->holidayMapper->method('insert')->willReturnArgument(0);
+
+        $holidays = $this->service->generateHolidays(2026, 'CH-ZH');
+
+        $this->assertCount(12, $holidays);
+        $names = array_map(static fn(Holiday $h) => $h->getName(), $holidays);
+        $this->assertContains('Heiligabend', $names);
+        $this->assertContains('Silvester', $names);
+        $lastTwo = array_slice($holidays, -2);
+        $this->assertSame(0.5, $lastTwo[0]->getScopeValue());
+    }
+
+    public function testGenerateNormalizesLegacyCode(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('insert')->willReturnArgument(0);
+        $this->holidayMapper->expects($this->once())->method('deleteAutoByYearAndState')->with(2026, 'DE-BY');
+
+        $holidays = $this->service->generateHolidays(2026, 'BY');
+
+        $this->assertCount(13, $holidays);
+        $this->assertSame('DE-BY', $holidays[0]->getFederalState());
+    }
+
+    public function testGenerateWithoutProviderLogsWarningAndReturnsNothing(): void {
+        $this->holidayMapper->expects($this->never())->method('insert');
+        $this->holidayMapper->expects($this->never())->method('deleteAutoByYearAndState');
+        $this->logger->expects($this->once())->method('warning');
+
+        $this->assertSame([], $this->service->generateHolidays(2026, 'AT-9'));
+    }
+
+    public function testCreateManualRejectsUnknownRegion(): void {
+        $this->holidayMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ValidationException::class);
+        $this->service->createManual('2026-05-04', 'Brückentag', ['CH-ZH', 'CH-XX'], 1.0, 'admin');
+    }
+
+    public function testCreateManualNormalizesLegacyCodes(): void {
+        $this->holidayMapper->method('isHoliday')->willReturn(false);
+        $this->holidayMapper->method('insert')->willReturnArgument(0);
+
+        $holidays = $this->service->createManual('2026-05-04', 'Brückentag', ['BY', 'CH-ZH'], 1.0, 'admin');
+
+        $this->assertCount(2, $holidays);
+        $this->assertSame('DE-BY', $holidays[0]->getFederalState());
+        $this->assertSame('CH-ZH', $holidays[1]->getFederalState());
+        $this->assertTrue((bool)$holidays[0]->getIsManual());
     }
 
     // ---------------------------------------------------------------------
@@ -148,31 +211,31 @@ class HolidayServiceTest extends TestCase {
 
     public function testEnsureGeneratesHolidaysWhenMissing(): void {
         // No auto holidays for the combo yet → generation runs (inserts happen).
-        $this->holidayMapper->method('hasAutoForYearAndState')->with(2027, 'BW')->willReturn(false);
+        $this->holidayMapper->method('hasAutoForYearAndState')->with(2027, 'DE-BW')->willReturn(false);
         $this->holidayMapper->method('insert')->willReturnArgument(0);
         $this->holidayMapper->expects($this->atLeastOnce())->method('insert');
 
-        $this->service->ensureHolidaysForYear(2027, 'BW');
+        $this->service->ensureHolidaysForYear(2027, 'DE-BW');
     }
 
     public function testEnsureSkipsGenerationWhenAlreadyPresent(): void {
         // Auto holidays already exist → no delete, no insert.
-        $this->holidayMapper->method('hasAutoForYearAndState')->with(2026, 'BY')->willReturn(true);
+        $this->holidayMapper->method('hasAutoForYearAndState')->with(2026, 'DE-BY')->willReturn(true);
         $this->holidayMapper->expects($this->never())->method('insert');
         $this->holidayMapper->expects($this->never())->method('deleteAutoByYearAndState');
 
-        $this->service->ensureHolidaysForYear(2026, 'BY');
+        $this->service->ensureHolidaysForYear(2026, 'DE-BY');
     }
 
     public function testEnsureGeneratesWhenOnlyAManualHolidayExists(): void {
         // #438 review: a single pre-existing MANUAL holiday must not suppress the
         // deterministic set — the guard checks auto holidays only, so generation
         // still runs here.
-        $this->holidayMapper->method('hasAutoForYearAndState')->with(2027, 'BW')->willReturn(false);
+        $this->holidayMapper->method('hasAutoForYearAndState')->with(2027, 'DE-BW')->willReturn(false);
         $this->holidayMapper->method('insert')->willReturnArgument(0);
         $this->holidayMapper->expects($this->atLeastOnce())->method('insert');
 
-        $this->service->ensureHolidaysForYear(2027, 'BW');
+        $this->service->ensureHolidaysForYear(2027, 'DE-BW');
     }
 
     public function testGenerateToleratesUniqueConstraintViolation(): void {
@@ -189,17 +252,17 @@ class HolidayServiceTest extends TestCase {
         $this->holidayMapper->method('findByDateAndState')->willReturn(new Holiday());
 
         // Must not throw.
-        $this->service->ensureHolidaysForYear(2027, 'BW');
+        $this->service->ensureHolidaysForYear(2027, 'DE-BW');
         $this->addToAssertionCount(1);
     }
 
     public function testEnsureMemoizesSoTheCheckRunsOncePerCombo(): void {
         // Two calls for the same (year, state) must hit the DB check only once.
         $this->holidayMapper->expects($this->once())
-            ->method('hasAutoForYearAndState')->with(2026, 'BY')->willReturn(true);
+            ->method('hasAutoForYearAndState')->with(2026, 'DE-BY')->willReturn(true);
 
-        $this->service->ensureHolidaysForYear(2026, 'BY');
-        $this->service->ensureHolidaysForYear(2026, 'BY');
+        $this->service->ensureHolidaysForYear(2026, 'DE-BY');
+        $this->service->ensureHolidaysForYear(2026, 'DE-BY');
     }
 
     public function testEnsureRangeCoversEveryYearItTouches(): void {
@@ -213,7 +276,7 @@ class HolidayServiceTest extends TestCase {
         );
 
         $this->service->ensureHolidaysForRange(
-            new DateTime('2026-12-20'), new DateTime('2027-01-10'), 'BY'
+            new DateTime('2026-12-20'), new DateTime('2027-01-10'), 'DE-BY'
         );
 
         $this->assertSame([2026, 2027], $checkedYears);
