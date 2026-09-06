@@ -164,6 +164,69 @@ class HolidayService {
     }
 
     /**
+     * 0.18.1: Nachtragen von Feiertagen, die ein Provider inzwischen definiert,
+     * die aber in bereits erzeugten Auto-Sets fehlen (nach dem Update auf 0.18.0:
+     * Buss- und Bettag SN, Frauentag BE/MV, Weltkindertag TH). Die Ensure-Logik
+     * generiert nur, wenn fuer Jahr und Region noch gar keine Auto-Zeilen
+     * existieren, deshalb blieben solche Sets bis zum manuellen
+     * «Feiertage neu erstellen» unvollstaendig.
+     *
+     * Nur ergaenzend und idempotent: nichts wird geloescht, manuelle Eintraege
+     * bleiben unberuehrt, ein bereits belegtes Datum (auto oder manuell) wird
+     * uebersprungen, Regionen ohne Provider werden ausgelassen. Sondertage
+     * (Heiligabend, Silvester) werden hier nicht behandelt.
+     *
+     * Mit $onlyNames werden ausschliesslich Feiertage dieser Namen nachgetragen.
+     * Migrationen sollen die Liste immer setzen: ohne Filter kaeme jeder bewusst
+     * geloeschte Auto-Feiertag zurueck (Codex-Review 0.18.1).
+     *
+     * @param string[] $onlyNames Namen, die nachgetragen werden duerfen; leer = alle fehlenden
+     * @return array<string, int> "<Jahr> <Region>" => Anzahl nachgetragener Tage (nur Eintraege > 0)
+     */
+    public function fillMissingAutoHolidays(array $onlyNames = []): array {
+        $added = [];
+        foreach ($this->holidayMapper->findAutoYearStateCombos() as $combo) {
+            $year = (int)$combo['year'];
+            $region = (string)$combo['federal_state'];
+            $provider = $this->providers->forRegion($region);
+            if ($provider === null) {
+                continue;
+            }
+
+            $taken = [];
+            foreach ($this->holidayMapper->findByYearAndState($year, $region) as $existing) {
+                $taken[$existing->getDate()->format('Y-m-d')] = true;
+            }
+
+            $count = 0;
+            foreach ($provider->holidaysFor($year, $region) as $definition) {
+                if ($onlyNames !== [] && !in_array($definition->name, $onlyNames, true)) {
+                    continue;
+                }
+                $date = $definition->date->format('Y-m-d');
+                if (isset($taken[$date])) {
+                    continue;
+                }
+                $this->createHoliday(
+                    $year,
+                    (int)$definition->date->format('n'),
+                    (int)$definition->date->format('j'),
+                    $definition->name,
+                    $region,
+                    $definition->scope
+                );
+                $taken[$date] = true;
+                $count++;
+            }
+            if ($count > 0) {
+                $added[$year . ' ' . $region] = $count;
+            }
+        }
+
+        return $added;
+    }
+
+    /**
      * Generate special days (Christmas Eve, New Year's Eve) as half-day holidays
      * based on company settings. Company practice, not law, so they apply to
      * every region of every country.
