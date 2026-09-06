@@ -5,6 +5,25 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [Unreleased]
+
+Wartungsrelease mit Fehlerbehebungen aus dem Ursprungsprojekt WorkTime (Paket 3). Keine Datenbankmigration, keine Aenderung an bestehenden Daten.
+
+### Fixed
+- **Betriebsferien ueberspringen bestehende eigene Abwesenheiten tagesgenau** (WorkTime #454): Lag im Zeitraum einer zentralen Betriebsferien-Buchung bereits ein eigener Urlaub oder eine Krankmeldung, entstanden bisher ueberlappende Eintraege und der Tag wurde doppelt gezaehlt. Belegte Tage werden jetzt ausgelassen; Mitarbeitende, deren Zeitraum komplett belegt ist, werden mit Grund uebersprungen, teilweise belegte werden im Ergebnis mit den ausgelassenen Tagen ausgewiesen. Abgelehnte Antraege blockieren keine Tage.
+- **Validierungsmeldungen bei Abwesenheiten waren teils Englisch** (WorkTime #528): «End date must be after start date», «Not enough vacation days» und vier weitere Meldungen erscheinen jetzt in der Sprache der Oberflaeche.
+- **Team-Reiter fuer Admin und HR ohne eigenes Mitarbeiterprofil** (WorkTime #604): Geschaeftsfuehrung oder HR ohne eigenen Mitarbeiterdatensatz sahen den Team-Reiter nicht.
+- **Korrekturmodus fuer HR ohne eigenes Profil** (WorkTime #631): Im Korrekturmodus fehlten die Reiter Zeiterfassung und Abwesenheiten, und «Abwesenheiten» fuehrte auf die Startseite zurueck.
+- **Bemerkung des Antragstellers in der Genehmiger-Inbox** (WorkTime #461): Die beim Abwesenheitsantrag eingegebene Bemerkung war fuer Genehmigende nicht sichtbar.
+- **Mitarbeitende koennen ihr eigenes Arbeitszeitprofil lesen** (WorkTime #526): `GET /api/employees/{id}/schedules` verlangte fuer das eigene Profil Verwaltungsrechte. Schreiben bleibt Admin und HR vorbehalten.
+- **Mitarbeiteruebersicht bei zukuenftigem Eintrittsdatum** (WorkTime #581): Ein Neuzugang mit erst kuenftig gueltigem Arbeitszeitprofil erschien bis zum Eintritt mit 40 Stunden und 30 Urlaubstagen statt mit seinen Profilwerten. Nur Anzeige, Sollstunden und Urlaubsanspruch waren korrekt.
+- **Anlegen mit weniger als fuenf Arbeitstagen** (WorkTime #578): Beim Anlegen eines Mitarbeiters mit z. B. vier Tagen und 30 Stunden entstand ein Montag-bis-Freitag-Profil mit sechs Stunden pro Tag. Das Initialprofil belegt jetzt die angegebene Zahl an Wochentagen. Bestehende Profile bleiben unveraendert.
+- **Sammelbefunde aus dem WorkTime-Review** (WorkTime #537):
+  - Datumsangaben aus der API (Abwesenheiten, Zeiteintraege, PDF-Zeitraum) muessen ein echtes Kalenderdatum im Format JJJJ-MM-TT sein; relative Ausdruecke oder Werte wie 30. Februar werden mit klarer Meldung abgewiesen statt still umgerechnet. Die Oberflaeche sendet seit jeher dieses Format.
+  - PDF-Archiv: Mitarbeiternamen werden als Ordnername abgesichert (keine Pfadtrenner, Steuerzeichen oder «..»). Bestehende Archivordner behalten ihren Namen, auch mit Punkten, Apostrophen oder Leerzeichen.
+  - Benachrichtigungen nennen den Monat in der Sprache des Empfaengers statt immer auf Deutsch. Bereits vorhandene Benachrichtigungen bleiben lesbar.
+  - PDF-Endpunkt prueft Monat und Jahr, numerische Routen-Parameter fuer Zeiteintraege und Projekte sind auf Zahlen eingeschraenkt, die Genehmigungsuebersicht meldet ein fehlgeschlagenes Laden sichtbar statt eine leere Liste zu zeigen.
+
 ## [0.18.1] - 2026-09-06
 
 ### Fixed
