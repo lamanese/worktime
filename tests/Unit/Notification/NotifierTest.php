@@ -12,9 +12,11 @@ use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\UnknownNotificationException;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
- * Notifier behaviour on Nextcloud 34 (uebernommen aus WorkTime #551).
+ * Notifier behaviour on Nextcloud 34 (uebernommen aus WorkTime #551) und
+ * Monatsnamen in Empfaengersprache (uebernommen aus WorkTime #537).
  */
 class NotifierTest extends TestCase {
 
@@ -114,5 +116,66 @@ class NotifierTest extends TestCase {
             ->willReturnSelf();
 
         $notifier->prepare($notification, 'de');
+    }
+
+    // --- Month names in the recipient's language (WorkTime #537) -----------
+    //
+    // They used to be a hardcoded German array in NotificationService, so an
+    // English or Czech recipient was told their time entries for "März 2026"
+    // were approved. The name is now resolved per recipient in the Notifier.
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private function format(array $params, string $languageCode): string {
+        $method = new ReflectionMethod(Notifier::class, 'formatMonthYear');
+        $method->setAccessible(true);
+        return $method->invoke($this->notifier, $params, $languageCode);
+    }
+
+    public function testKeepsPreRenderedMonthYearOfOlderNotifications(): void {
+        // Notifications written before this change are still in the database and
+        // carry a pre-rendered string. Dropping it would make prepare() fail and
+        // hide the whole entry from the notification panel.
+        $this->assertSame('Mai 2026', $this->format(['monthYear' => 'Mai 2026'], 'en'));
+    }
+
+    public function testFallsBackToYearOnUnusableMonth(): void {
+        $this->assertSame('2026', $this->format(['month' => 0, 'year' => 2026], 'de'));
+        $this->assertSame('2026', $this->format(['month' => 13, 'year' => 2026], 'de'));
+    }
+
+    public function testDoesNotFailOnMissingParameters(): void {
+        $this->assertSame('0', $this->format([], 'de'));
+    }
+
+    /**
+     * @dataProvider localisedMonths
+     */
+    public function testUsesRecipientLanguage(string $languageCode, string $expected): void {
+        if (!class_exists(\IntlDateFormatter::class)) {
+            $this->markTestSkipped('intl not available in this PHP build; the numeric fallback applies instead');
+        }
+
+        $this->assertSame($expected, $this->format(['month' => 3, 'year' => 2026], $languageCode));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function localisedMonths(): array {
+        return [
+            'german' => ['de', 'März 2026'],
+            'english' => ['en', 'March 2026'],
+            'czech' => ['cs', 'březen 2026'],
+        ];
+    }
+
+    public function testNumericFallbackWithoutIntl(): void {
+        if (class_exists(\IntlDateFormatter::class)) {
+            $this->markTestSkipped('intl is available, so the localised path is used');
+        }
+
+        $this->assertSame('03/2026', $this->format(['month' => 3, 'year' => 2026], 'de'));
     }
 }

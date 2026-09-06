@@ -52,6 +52,26 @@ class AbsenceService {
     }
 
     /**
+     * Parse a date coming in from the API, or fail with a validation error (#537).
+     *
+     * Without this, `new DateTime($string)` accepted relative expressions like
+     * "+1 week" — the resulting absence then depended on the request time.
+     *
+     * @throws ValidationException
+     */
+    private function parseDateOrFail(string $value, string $field): DateTime {
+        $date = DateParser::parseIsoDate($value);
+        if ($date === null) {
+            throw ValidationException::fromSingleError(
+                $field,
+                $this->l->t('Ungültiges Datum. Erwartet wird das Format JJJJ-MM-TT.')
+            );
+        }
+
+        return $date;
+    }
+
+    /**
      * @return Absence[]
      */
     public function findByEmployee(int $employeeId): array {
@@ -157,8 +177,8 @@ class AbsenceService {
     ): Absence {
         $this->assertEmployeeActive($employeeId, $allowLockedOverride, $reason);
 
-        $startDateObj = new DateTime($startDate);
-        $endDateObj = new DateTime($endDate);
+        $startDateObj = $this->parseDateOrFail($startDate, 'startDate');
+        $endDateObj = $this->parseDateOrFail($endDate, 'endDate');
 
         // #15 Stufe 2: Betriebsschließung entsteht nur über den zentralen Weg.
         if ($type === Absence::TYPE_COMPANY_CLOSURE) {
@@ -274,8 +294,8 @@ class AbsenceService {
         string $currentUserId = '',
         string $overageHandling = self::OVERAGE_SKIP
     ): array {
-        $startDateObj = new DateTime($startDate);
-        $endDateObj = new DateTime($endDate);
+        $startDateObj = $this->parseDateOrFail($startDate, 'startDate');
+        $endDateObj = $this->parseDateOrFail($endDate, 'endDate');
         if ($startDateObj > $endDateObj) {
             throw new ValidationException(['endDate' => [$this->l->t('Enddatum muss nach dem Startdatum liegen')]]);
         }
@@ -566,7 +586,10 @@ class AbsenceService {
      * date range). Returns the number of removed entries (#15).
      */
     public function deleteCompanyVacation(string $startDate, string $endDate, string $currentUserId = ''): int {
-        $entries = $this->absenceMapper->findCentralByRange(new DateTime($startDate), new DateTime($endDate));
+        $entries = $this->absenceMapper->findCentralByRange(
+            $this->parseDateOrFail($startDate, 'startDate'),
+            $this->parseDateOrFail($endDate, 'endDate')
+        );
         return $this->deleteCentralEntries($entries, $currentUserId);
     }
 
@@ -626,8 +649,8 @@ class AbsenceService {
             throw new ValidationException(['type' => [$this->l->t('Betriebsschließung kann nur zentral über die Betriebsferien gesetzt werden')]]);
         }
 
-        $startDateObj = new DateTime($startDate);
-        $endDateObj = new DateTime($endDate);
+        $startDateObj = $this->parseDateOrFail($startDate, 'startDate');
+        $endDateObj = $this->parseDateOrFail($endDate, 'endDate');
 
         // Validate basic rules
         $errors = $this->validate($absence->getEmployeeId(), $type, $startDateObj, $endDateObj, $id, $scope);
