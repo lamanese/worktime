@@ -135,7 +135,7 @@ class EmployeeServiceTest extends TestCase {
         // Cache holds 40h / 30 days, but the schedule active today is 31.5h / 28 days.
         $this->employeeMapper->method('find')
             ->willReturn($this->makeEmployee(6, '40.00', 30));
-        $this->workScheduleService->method('getScheduleForDate')
+        $this->workScheduleService->method('getDisplaySchedule')
             ->willReturn($this->makeSchedule(6.3, 28)); // 6.3 * 5 = 31.5
 
         $employee = $this->service->find(6);
@@ -146,11 +146,11 @@ class EmployeeServiceTest extends TestCase {
 
     public function testFindIgnoresFutureProfileForOverview(): void {
         // Active profile today = 31.5h; a future-dated 40h profile must not leak
-        // into the overview. getScheduleForDate already returns the active one.
+        // into the overview. getDisplaySchedule already returns the active one (#581).
         $this->employeeMapper->method('find')
             ->willReturn($this->makeEmployee(6, '40.00', 30));
-        $this->workScheduleService->method('getScheduleForDate')
-            ->with(6, $this->isInstanceOf(DateTime::class))
+        $this->workScheduleService->method('getDisplaySchedule')
+            ->with(6)
             ->willReturn($this->makeSchedule(6.3, 28));
 
         $employee = $this->service->find(6);
@@ -202,7 +202,7 @@ class EmployeeServiceTest extends TestCase {
         $this->employeeMapper->method('findByUserId')->willReturn($employee);
         $this->employeeMapper->method('update')->willReturnArgument(0);
         // findByUserId reichert den Mitarbeiter mit dem aktiven Profil an.
-        $this->workScheduleService->method('getScheduleForDate')->willReturn($this->makeSchedule(8.0, 30));
+        $this->workScheduleService->method('getDisplaySchedule')->willReturn($this->makeSchedule(8.0, 30));
     }
 
     private function project(int $id): Project {
@@ -281,7 +281,7 @@ class EmployeeServiceTest extends TestCase {
         $this->employeeMapper->method('find')->willReturn($employee);
         // delete() loads the employee via find(), which enriches it with the
         // active schedule (audit log payload) — stub it like primeMyDefaults().
-        $this->workScheduleService->method('getScheduleForDate')->willReturn($this->makeSchedule(8.0, 30));
+        $this->workScheduleService->method('getDisplaySchedule')->willReturn($this->makeSchedule(8.0, 30));
         $this->workScheduleMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
         $this->monthStatusMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
         $this->employeeMapper->expects($this->once())->method('delete');
