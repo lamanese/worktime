@@ -7,7 +7,7 @@
                     <th>{{ t('zeitwerk', 'Personalnr.') }}</th>
                     <th class="text-right">{{ t('zeitwerk', 'Wochenstd.') }}</th>
                     <th class="text-right">{{ t('zeitwerk', 'Urlaubstage') }}</th>
-                    <th>{{ t('zeitwerk', 'Bundesland') }}</th>
+                    <th>{{ t('zeitwerk', 'Region') }}</th>
                     <th>{{ t('zeitwerk', 'Status') }}</th>
                     <th class="actions-col">{{ t('zeitwerk', 'Aktionen') }}</th>
                 </tr>

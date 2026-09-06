@@ -18,7 +18,7 @@ Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 - **PDF-Export**: Monatsbericht als PDF herunterladen
 - **Abwesenheitsverwaltung**: Urlaub, Krankheit, Sonderurlaub etc.
 - **Urlaubskonto**: Automatische Berechnung verbleibender Urlaubstage
-- **Feiertage**: Automatische Generierung deutscher Feiertage pro Bundesland
+- **Feiertage**: Automatische Generierung fuer Deutschland (16 Bundeslaender) und die Schweiz (26 Kantone), Details in `FEIERTAGE.md`
 - **Team-Übersicht**: Vorgesetzte sehen Statistiken ihrer Teammitglieder
 - **Genehmigungsworkflow**: Optionale Freigabe von Zeiteinträgen und Abwesenheiten
 - **Außendienst-Spesen**: Konfigurierbare Tagespauschale ab Stundenschwelle auf Außendienst-Projekten
@@ -58,7 +58,7 @@ php occ app:enable zeitwerk
 ### Ersteinrichtung
 
 1. Als Admin die App öffnen → Einstellungen
-2. Firmennamen und Standard-Bundesland setzen
+2. Firmennamen sowie Land und Standard-Region setzen
 3. Feiertage für das aktuelle/nächste Jahr generieren
 4. Mitarbeiter anlegen (Employees)
 
@@ -98,10 +98,10 @@ npm run watch
 
 | Tabelle | Beschreibung |
 |---------|--------------|
-| `zw_employees` | Mitarbeiter mit Wochenstunden, Urlaubstagen, Bundesland |
+| `zw_employees` | Mitarbeiter mit Wochenstunden, Urlaubstagen, Region (Bundesland oder Kanton) |
 | `zw_time_entries` | Zeiteinträge mit Status (draft/submitted/approved/rejected) |
 | `zw_absences` | Abwesenheiten (Urlaub, Krankheit etc.) |
-| `zw_holidays` | Feiertage pro Bundesland |
+| `zw_holidays` | Feiertage pro Region |
 | `zw_projects` | Projekte für Zeiterfassung |
 | `zw_audit_logs` | Änderungsprotokoll |
 | `zw_company_settings` | App-Einstellungen |

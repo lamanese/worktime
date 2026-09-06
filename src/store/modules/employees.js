@@ -3,7 +3,6 @@ import EmployeeService from '../../services/EmployeeService.js'
 const state = {
     employees: [],
     currentEmployee: null,
-    federalStates: {},
     availableUsers: [],
     loading: false,
     error: null,
@@ -12,7 +11,6 @@ const state = {
 const getters = {
     employees: (state) => state.employees,
     currentEmployee: (state) => state.currentEmployee,
-    federalStates: (state) => state.federalStates,
     availableUsers: (state) => state.availableUsers,
     loading: (state) => state.loading,
     error: (state) => state.error,
@@ -25,9 +23,6 @@ const mutations = {
     },
     SET_CURRENT_EMPLOYEE(state, employee) {
         state.currentEmployee = employee
-    },
-    SET_FEDERAL_STATES(state, states) {
-        state.federalStates = states
     },
     SET_AVAILABLE_USERS(state, users) {
         state.availableUsers = users
@@ -79,15 +74,6 @@ const actions = {
             commit('SET_ERROR', error.message)
         } finally {
             commit('SET_LOADING', false)
-        }
-    },
-
-    async fetchFederalStates({ commit }) {
-        try {
-            const states = await EmployeeService.getFederalStates()
-            commit('SET_FEDERAL_STATES', states)
-        } catch (error) {
-            console.error('Failed to fetch federal states:', error)
         }
     },
 

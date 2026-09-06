@@ -15,6 +15,7 @@ use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCA\Zeitwerk\Db\MonthStatusMapper;
 use OCA\Zeitwerk\Db\WorkSchedule;
 use OCA\Zeitwerk\Db\WorkScheduleMapper;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -147,11 +148,12 @@ class EmployeeService {
         float $weeklyHours = 40.0,
         int $vacationDays = 30,
         ?int $supervisorId = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
         string $currentUserId = '',
         int $workingDaysPerWeek = 5
     ): Employee {
+        $federalState = RegionRegistry::normalize($federalState);
         // Validate
         $errors = $this->validate($userId, $firstName, $lastName, $federalState);
         if (!empty($errors)) {
@@ -216,7 +218,7 @@ class EmployeeService {
         ?string $email = null,
         ?string $personnelNumber = null,
         ?int $supervisorId = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
         ?string $exitDate = null,
         bool $isActive = true,
@@ -226,6 +228,7 @@ class EmployeeService {
         $employee = $this->find($id);
         $oldValues = $employee->jsonSerialize();
 
+        $federalState = RegionRegistry::normalize($federalState);
         // Validate
         $errors = $this->validate($employee->getUserId(), $firstName, $lastName, $federalState);
         if (!empty($errors)) {
@@ -303,8 +306,8 @@ class EmployeeService {
             $errors['lastName'] = ['Last name is required'];
         }
 
-        if (!array_key_exists($federalState, Employee::FEDERAL_STATES)) {
-            $errors['federalState'] = ['Invalid federal state'];
+        if (!RegionRegistry::isValid($federalState)) {
+            $errors['federalState'] = ['Invalid region'];
         }
 
         return $errors;

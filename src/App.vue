@@ -176,7 +176,7 @@ export default {
 		navVisible(routeName) {
 			return isNavVisible(routeName, this.permissions)
 		},
-		...mapActions('employees', ['fetchCurrentEmployee', 'fetchFederalStates']),
+		...mapActions('employees', ['fetchCurrentEmployee']),
 		...mapActions('projects', ['fetchProjects']),
 		...mapActions('absences', ['fetchAbsenceTypes']),
 		...mapActions('permissions', ['endCorrection']),
@@ -187,7 +187,6 @@ export default {
 		async initializeApp() {
 			// Load initial data
 			await Promise.all([
-				this.fetchFederalStates(),
 				this.fetchProjects(),
 				this.fetchAbsenceTypes(),
 			])

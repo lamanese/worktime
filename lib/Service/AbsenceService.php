@@ -15,6 +15,7 @@ use OCA\Zeitwerk\Db\AbsenceMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCA\Zeitwerk\Db\HolidayMapper;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
 use OCA\Zeitwerk\Notification\NotificationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -148,7 +149,7 @@ class AbsenceService {
         string $startDate,
         string $endDate,
         ?string $note = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         string $currentUserId = '',
         float $scope = 1.0,
         ?string $reason = null,
@@ -380,6 +381,8 @@ class AbsenceService {
         string $federalState,
         string $overageType
     ): array {
+        $federalState = RegionRegistry::normalize($federalState);
+
         // #438: ensure the period's holidays exist so the day-walk classifies them
         // as non-working (not vacation/overage).
         $this->holidayService->ensureHolidaysForRange($startDate, $endDate, $federalState);
@@ -525,7 +528,7 @@ class AbsenceService {
         string $startDate,
         string $endDate,
         ?string $note = null,
-        string $federalState = 'BY',
+        string $federalState = RegionRegistry::DEFAULT_REGION,
         string $currentUserId = '',
         float $scope = 1.0,
         ?string $reason = null,
@@ -804,6 +807,8 @@ class AbsenceService {
      * Falls back to Mon-Fri if no employeeId is available.
      */
     public function calculateWorkingDays(DateTime $startDate, DateTime $endDate, string $federalState, ?int $employeeId = null): float {
+        $federalState = RegionRegistry::normalize($federalState);
+
         // #438: make sure the range's holidays exist before subtracting them —
         // otherwise a holiday in a never-generated year/state counts as a working
         // (and thus deducted) day.

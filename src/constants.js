@@ -82,38 +82,11 @@ export function ABSENCE_TYPE_LABELS() {
 }
 
 /**
- * Federal States (German Bundesländer, translated)
- * Entspricht Employee::FEDERAL_STATES in PHP
- * @returns {Object}
- */
-export function FEDERAL_STATES() {
-    return {
-        BW: t('zeitwerk', 'Baden-Württemberg'),
-        BY: t('zeitwerk', 'Bayern'),
-        BE: t('zeitwerk', 'Berlin'),
-        BB: t('zeitwerk', 'Brandenburg'),
-        HB: t('zeitwerk', 'Bremen'),
-        HH: t('zeitwerk', 'Hamburg'),
-        HE: t('zeitwerk', 'Hessen'),
-        MV: t('zeitwerk', 'Mecklenburg-Vorpommern'),
-        NI: t('zeitwerk', 'Niedersachsen'),
-        NW: t('zeitwerk', 'Nordrhein-Westfalen'),
-        RP: t('zeitwerk', 'Rheinland-Pfalz'),
-        SL: t('zeitwerk', 'Saarland'),
-        SN: t('zeitwerk', 'Sachsen'),
-        ST: t('zeitwerk', 'Sachsen-Anhalt'),
-        SH: t('zeitwerk', 'Schleswig-Holstein'),
-        TH: t('zeitwerk', 'Thüringen'),
-    }
-}
-
-/**
  * Default Values
  */
 export const DEFAULTS = {
     WEEKLY_HOURS: 40.0,
     VACATION_DAYS: 30,
-    FEDERAL_STATE: 'BY',
     BREAK_MINUTES_6H: 30,
     BREAK_MINUTES_9H: 45,
     MAX_DAILY_HOURS: 10,
@@ -125,6 +98,5 @@ export default {
     ABSENCE_STATUS,
     STATUS_LABELS,
     ABSENCE_TYPE_LABELS,
-    FEDERAL_STATES,
     DEFAULTS,
 }

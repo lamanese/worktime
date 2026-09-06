@@ -93,7 +93,42 @@ class EmployeeServiceTest extends TestCase {
         $this->workScheduleMapper->expects($this->never())->method('insert');
 
         $this->expectException(\OCA\Zeitwerk\Service\ValidationException::class);
-        $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'BY', null, 'admin');
+        $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'DE-BY', null, 'admin');
+    }
+
+    public function testCreateAcceptsPrefixedRegionCode(): void {
+        // Vor 0.18.0 kannte die Validierung nur 'BY': 'DE-BY' fiel als ungueltig
+        // durch. Jetzt meldet die Exception nur die Wochenstunden (0.0). Kein
+        // Persistieren noetig, die Validierung laeuft vor jedem Mapper-Zugriff.
+        try {
+            $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'DE-BY', null, 'admin');
+            $this->fail('ValidationException expected');
+        } catch (ValidationException $e) {
+            $this->assertFalse($e->hasError('federalState'));
+            $this->assertTrue($e->hasError('weeklyHours'));
+        }
+    }
+
+    public function testCreateAcceptsLegacyStateCode(): void {
+        // 'BY' wird vor der Validierung zu 'DE-BY' normalisiert.
+        try {
+            $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 0.0, 30, null, 'BY', null, 'admin');
+            $this->fail('ValidationException expected');
+        } catch (ValidationException $e) {
+            $this->assertFalse($e->hasError('federalState'));
+            $this->assertTrue($e->hasError('weeklyHours'));
+        }
+    }
+
+    public function testCreateRejectsUnknownRegion(): void {
+        $this->employeeMapper->expects($this->never())->method('insert');
+
+        try {
+            $this->service->create('user42', 'Erika', 'Musterfrau', null, null, 40.0, 30, null, 'CH-XX', null, 'admin');
+            $this->fail('ValidationException expected');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('federalState'));
+        }
     }
 
     public function testFindSurfacesActiveScheduleValuesOverStaleCache(): void {

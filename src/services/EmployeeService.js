@@ -63,15 +63,6 @@ export default {
         }
     },
 
-    async getFederalStates() {
-        try {
-            const response = await api.get('/employees/federal-states')
-            return response.data
-        } catch (error) {
-            handleApiError(error)
-        }
-    },
-
     async getAvailableUsers() {
         try {
             const response = await api.get('/employees/available-users')

@@ -12,6 +12,7 @@ namespace OCA\Zeitwerk\Service;
 use DateTime;
 use OCA\Zeitwerk\Db\CompanySetting;
 use OCA\Zeitwerk\Db\CompanySettingMapper;
+use OCA\Zeitwerk\Holiday\RegionRegistry;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 class CompanySettingsService {
@@ -133,10 +134,10 @@ class CompanySettingsService {
     }
 
     /**
-     * Get default federal state
+     * Default region for new employees, always a normalized region code (DE-BY, CH-ZH).
      */
     public function getDefaultFederalState(): string {
-        return $this->get(CompanySetting::KEY_DEFAULT_FEDERAL_STATE) ?? 'BY';
+        return RegionRegistry::normalize($this->get(CompanySetting::KEY_DEFAULT_FEDERAL_STATE) ?? RegionRegistry::DEFAULT_REGION);
     }
 
     /**

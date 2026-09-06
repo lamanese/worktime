@@ -38,7 +38,7 @@ class ArchiveServiceSubmittedAtTest extends TestCase {
         $employee->setId(1);
         $employee->setFirstName('Erika');
         $employee->setLastName('Musterfrau');
-        $employee->setFederalState('BY');
+        $employee->setFederalState('DE-BY');
         $employeeService = $this->createMock(EmployeeService::class);
         $employeeService->method('find')->willReturn($employee);
 
