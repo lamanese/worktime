@@ -408,19 +408,30 @@ class EmployeeService {
      */
     private function createInitialWorkSchedule(Employee $employee): void {
         try {
-            $dailyHours = round((float)$employee->getWeeklyHours() / 5, 2);
+            // Respect the requested number of working days per week instead of
+            // always assuming Mon-Fri (WorkTime #578): the first N weekdays are worked at
+            // weeklyHours / N, the remaining days are off. N=5 reproduces the
+            // previous Mon-Fri behaviour unchanged.
+            $workingDays = max(1, min(7, $employee->getWorkingDaysPerWeek()));
+            $dailyHours = round((float)$employee->getWeeklyHours() / $workingDays, 2);
+            $formatted = number_format($dailyHours, 2, '.', '');
             $validFrom = $employee->getEntryDate() ?? new DateTime('2020-01-01');
+
+            $hours = array_fill(0, 7, '0.00');
+            for ($i = 0; $i < $workingDays; $i++) {
+                $hours[$i] = $formatted;
+            }
 
             $schedule = new \OCA\Zeitwerk\Db\WorkSchedule();
             $schedule->setEmployeeId($employee->getId());
             $schedule->setValidFrom($validFrom);
-            $schedule->setMonHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setTueHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setWedHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setThuHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setFriHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setSatHours('0.00');
-            $schedule->setSunHours('0.00');
+            $schedule->setMonHours($hours[0]);
+            $schedule->setTueHours($hours[1]);
+            $schedule->setWedHours($hours[2]);
+            $schedule->setThuHours($hours[3]);
+            $schedule->setFriHours($hours[4]);
+            $schedule->setSatHours($hours[5]);
+            $schedule->setSunHours($hours[6]);
             $schedule->setVacationDays($employee->getVacationDays());
             $schedule->setCreatedAt(new DateTime());
             $schedule->setUpdatedAt(new DateTime());

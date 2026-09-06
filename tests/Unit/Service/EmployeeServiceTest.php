@@ -288,4 +288,75 @@ class EmployeeServiceTest extends TestCase {
 
         $this->service->delete(5, 'admin');
     }
+
+    // ---------------------------------------------------------------------
+    // WorkTime #578: initial work schedule honours workingDaysPerWeek
+    // ---------------------------------------------------------------------
+
+    /**
+     * The initial work schedule must honour the requested working days per week
+     * (WorkTime #578): a 4-day week produces a Mon-Thu profile at weeklyHours / 4, not the
+     * old hard-coded Mon-Fri at weeklyHours / 5.
+     */
+    public function testCreateInitialScheduleHonoursWorkingDaysPerWeek(): void {
+        $this->employeeMapper->method('existsByUserId')->willReturn(false);
+        $this->employeeMapper->method('insert')->willReturnCallback(
+            function (Employee $e): Employee {
+                $e->setId(9);
+                return $e;
+            }
+        );
+
+        $captured = null;
+        $this->workScheduleMapper->method('insert')->willReturnCallback(
+            function (WorkSchedule $s) use (&$captured): WorkSchedule {
+                $captured = $s;
+                return $s;
+            }
+        );
+
+        // 30h across 4 days => 7.5h on Mon-Thu, nothing Fri-Sun.
+        $this->service->create('user9', 'Nina', 'Vier', null, null, 30.0, 24, null, 'BY', null, 'admin', 4);
+
+        $this->assertNotNull($captured, 'initial work schedule must be persisted');
+        $this->assertSame(7.5, (float)$captured->getMonHours());
+        $this->assertSame(7.5, (float)$captured->getTueHours());
+        $this->assertSame(7.5, (float)$captured->getWedHours());
+        $this->assertSame(7.5, (float)$captured->getThuHours());
+        $this->assertSame(0.0, (float)$captured->getFriHours());
+        $this->assertSame(0.0, (float)$captured->getSatHours());
+        $this->assertSame(0.0, (float)$captured->getSunHours());
+        $this->assertSame(4, $captured->getWorkingDaysPerWeek());
+    }
+
+    /**
+     * A 5-day week keeps the previous Mon-Fri / weeklyHours-÷-5 behaviour
+     * unchanged (regression guard for the default path).
+     */
+    public function testCreateInitialScheduleFiveDayWeekUnchanged(): void {
+        $this->employeeMapper->method('existsByUserId')->willReturn(false);
+        $this->employeeMapper->method('insert')->willReturnCallback(
+            function (Employee $e): Employee {
+                $e->setId(10);
+                return $e;
+            }
+        );
+
+        $captured = null;
+        $this->workScheduleMapper->method('insert')->willReturnCallback(
+            function (WorkSchedule $s) use (&$captured): WorkSchedule {
+                $captured = $s;
+                return $s;
+            }
+        );
+
+        $this->service->create('user10', 'Erik', 'Fünf', null, null, 40.0, 30, null, 'BY', null, 'admin', 5);
+
+        $this->assertNotNull($captured);
+        $this->assertSame(8.0, (float)$captured->getMonHours());
+        $this->assertSame(8.0, (float)$captured->getFriHours());
+        $this->assertSame(0.0, (float)$captured->getSatHours());
+        $this->assertSame(5, $captured->getWorkingDaysPerWeek());
+    }
+
 }
