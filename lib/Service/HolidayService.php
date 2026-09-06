@@ -176,9 +176,14 @@ class HolidayService {
      * uebersprungen, Regionen ohne Provider werden ausgelassen. Sondertage
      * (Heiligabend, Silvester) werden hier nicht behandelt.
      *
+     * Mit $onlyNames werden ausschliesslich Feiertage dieser Namen nachgetragen.
+     * Migrationen sollen die Liste immer setzen: ohne Filter kaeme jeder bewusst
+     * geloeschte Auto-Feiertag zurueck (Codex-Review 0.18.1).
+     *
+     * @param string[] $onlyNames Namen, die nachgetragen werden duerfen; leer = alle fehlenden
      * @return array<string, int> "<Jahr> <Region>" => Anzahl nachgetragener Tage (nur Eintraege > 0)
      */
-    public function fillMissingAutoHolidays(): array {
+    public function fillMissingAutoHolidays(array $onlyNames = []): array {
         $added = [];
         foreach ($this->holidayMapper->findAutoYearStateCombos() as $combo) {
             $year = (int)$combo['year'];
@@ -195,6 +200,9 @@ class HolidayService {
 
             $count = 0;
             foreach ($provider->holidaysFor($year, $region) as $definition) {
+                if ($onlyNames !== [] && !in_array($definition->name, $onlyNames, true)) {
+                    continue;
+                }
                 $date = $definition->date->format('Y-m-d');
                 if (isset($taken[$date])) {
                     continue;

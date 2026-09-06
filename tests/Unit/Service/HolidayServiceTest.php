@@ -294,6 +294,31 @@ class HolidayServiceTest extends TestCase {
         $this->assertFalse((bool)$inserted[0]->getIsManual());
     }
 
+    /**
+     * Codex-Review 0.18.1: mit Namensfilter werden nur die genannten Feiertage
+     * nachgetragen. Ein bewusst geloeschter anderer Auto-Feiertag (hier
+     * Reformationstag) bleibt geloescht.
+     */
+    public function testFillMissingWithNameFilterLeavesOtherMissingHolidaysAlone(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([
+            ['year' => 2026, 'federal_state' => 'DE-SN'],
+        ]);
+        $existing = $this->providerHolidaysWithout(2026, 'DE-SN', ['Buß- und Bettag', 'Reformationstag']);
+        $this->holidayMapper->method('findByYearAndState')->willReturn($existing);
+        $inserted = [];
+        $this->holidayMapper->method('insert')->willReturnCallback(function (Holiday $h) use (&$inserted) {
+            $inserted[] = $h;
+            return $h;
+        });
+
+        $result = $this->service->fillMissingAutoHolidays(['Buß- und Bettag', 'Internationaler Frauentag', 'Weltkindertag']);
+
+        $this->assertSame(['2026 DE-SN' => 1], $result);
+        $this->assertCount(1, $inserted);
+        $this->assertSame('Buß- und Bettag', $inserted[0]->getName());
+    }
+
     public function testFillMissingDoesNothingForCompleteSets(): void {
         $this->settingsMapper->method('getValueAsBool')->willReturn(false);
         $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([

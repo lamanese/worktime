@@ -22,10 +22,24 @@ use OCP\Migration\SimpleMigrationStep;
  * und Region noch gar keine Auto-Zeilen existieren; ohne diesen Schritt fehlten
  * die Tage bis zum manuellen «Feiertage neu erstellen», und Sollstunden wie
  * Urlaubsrechnung waren an diesen Tagen falsch. Nur ergaenzend, idempotent,
- * keine Schemaaenderung. Die Ausgabe landet in nextcloud.log, nicht in der
- * occ-upgrade-Ausgabe.
+ * keine Schemaaenderung; beschraenkt auf genau diese drei Namen, damit bewusst
+ * geloeschte andere Auto-Feiertage geloescht bleiben.
+ *
+ * Abweichend von V22/V23 wird hier bewusst der HolidayService injiziert statt
+ * die Logik mit IDBConnection nachzubauen: die Provider-Regeln und die
+ * Unique-Behandlung in createHoliday() sollen nicht dupliziert werden, die
+ * Methode ist getestet, bei einer Neuinstallation (keine Auto-Zeilen) ein
+ * No-op, und alle Abhaengigkeiten sind ueber den App-Container autowirebar
+ * (auf NC 34 beim occ upgrade verifiziert).
+ *
+ * Die IOutput-Meldung landet beim App-Upgrade in nextcloud.log (Nextcloud
+ * nutzt dort den logbasierten Output), in der Konsole nur bei
+ * `occ migrations:execute`.
  */
 class Version000024Date20260906000000 extends SimpleMigrationStep {
+
+    /** Feiertage, die der Deutschland-Provider seit 0.18.0 zusaetzlich liefert. */
+    private const ADDED_IN_0_18_0 = ['Buß- und Bettag', 'Internationaler Frauentag', 'Weltkindertag'];
 
     public function __construct(
         private HolidayService $holidayService,
@@ -33,7 +47,7 @@ class Version000024Date20260906000000 extends SimpleMigrationStep {
     }
 
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
-        $added = $this->holidayService->fillMissingAutoHolidays();
+        $added = $this->holidayService->fillMissingAutoHolidays(self::ADDED_IN_0_18_0);
         $total = array_sum($added);
         $details = [];
         foreach ($added as $combo => $count) {
