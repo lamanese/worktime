@@ -119,6 +119,31 @@ class HolidayMapper extends QBMapper {
         return (int)$count > 0;
     }
 
+    /**
+     * 0.18.1: alle (Jahr, Region)-Kombinationen, fuer die Auto-Feiertage
+     * (is_manual = 0) existieren — Grundlage fuer das Nachtragen neuer
+     * Provider-Feiertage in bereits erzeugten Sets.
+     *
+     * @return array<int, array{year: int, federal_state: string}>
+     */
+    public function findAutoYearStateCombos(): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->selectDistinct(['year', 'federal_state'])
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_manual', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+            ->orderBy('federal_state', 'ASC')
+            ->addOrderBy('year', 'ASC');
+
+        $result = $qb->executeQuery();
+        $combos = [];
+        while ($row = $result->fetch()) {
+            $combos[] = ['year' => (int)$row['year'], 'federal_state' => (string)$row['federal_state']];
+        }
+        $result->closeCursor();
+
+        return $combos;
+    }
+
     public function deleteByYearAndState(int $year, string $federalState): int {
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())

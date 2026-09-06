@@ -5,6 +5,11 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [0.18.1] - 2026-09-06
+
+### Fixed
+- **Neue deutsche Feiertage fehlten in bestehenden Jahren nach dem Update auf 0.18.0**: Feiertage, die vor dem Update automatisch erzeugt wurden, bekamen Buss- und Bettag (Sachsen), Frauentag (Berlin, Mecklenburg-Vorpommern) und Weltkindertag (Thueringen) erst nach einem manuellen «Feiertage neu erstellen»; bis dahin wurden an diesen Tagen Sollstunden verlangt und Urlaub verbraucht. Das Update traegt fehlende Feiertage jetzt in allen vorhandenen Jahren und Regionen nach, ohne etwas zu loeschen; manuelle Feiertage bleiben unberuehrt.
+
 ## [0.18.0] - 2026-09-06
 
 ### Added

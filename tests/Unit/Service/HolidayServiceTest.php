@@ -265,6 +265,103 @@ class HolidayServiceTest extends TestCase {
         $this->service->ensureHolidaysForYear(2026, 'DE-BY');
     }
 
+    /**
+     * 0.18.1: Auto-Sets, die vor 0.18.0 erzeugt wurden, bekommen die neuen
+     * Provider-Feiertage nachgetragen, ohne dass etwas geloescht wird.
+     */
+    public function testFillMissingAddsProviderHolidaysToExistingAutoSet(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([
+            ['year' => 2026, 'federal_state' => 'DE-SN'],
+        ]);
+        $existing = $this->providerHolidaysWithout(2026, 'DE-SN', ['Buß- und Bettag']);
+        $this->holidayMapper->method('findByYearAndState')->with(2026, 'DE-SN')->willReturn($existing);
+        $this->holidayMapper->expects($this->never())->method('deleteAutoByYearAndState');
+        $inserted = [];
+        $this->holidayMapper->method('insert')->willReturnCallback(function (Holiday $h) use (&$inserted) {
+            $inserted[] = $h;
+            return $h;
+        });
+
+        $result = $this->service->fillMissingAutoHolidays();
+
+        $this->assertSame(['2026 DE-SN' => 1], $result);
+        $this->assertCount(1, $inserted);
+        $this->assertSame('Buß- und Bettag', $inserted[0]->getName());
+        $this->assertSame('2026-11-18', $inserted[0]->getDate()->format('Y-m-d'));
+        $this->assertSame('DE-SN', $inserted[0]->getFederalState());
+        $this->assertSame(2026, $inserted[0]->getYear());
+        $this->assertFalse((bool)$inserted[0]->getIsManual());
+    }
+
+    public function testFillMissingDoesNothingForCompleteSets(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([
+            ['year' => 2026, 'federal_state' => 'DE-BW'],
+            ['year' => 2026, 'federal_state' => 'CH-ZH'],
+        ]);
+        $this->holidayMapper->method('findByYearAndState')->willReturnCallback(
+            fn (int $year, string $region) => $this->providerHolidaysWithout($year, $region, [])
+        );
+        $this->holidayMapper->expects($this->never())->method('insert');
+
+        $this->assertSame([], $this->service->fillMissingAutoHolidays());
+    }
+
+    public function testFillMissingSkipsDatesTakenByManualHolidays(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([
+            ['year' => 2026, 'federal_state' => 'DE-SN'],
+        ]);
+        $existing = $this->providerHolidaysWithout(2026, 'DE-SN', ['Buß- und Bettag']);
+        $manual = new Holiday();
+        $manual->setDate(new DateTime('2026-11-18'));
+        $manual->setName('Betriebsfeiertag');
+        $manual->setFederalState('DE-SN');
+        $manual->setYear(2026);
+        $manual->setIsManual(true);
+        $existing[] = $manual;
+        $this->holidayMapper->method('findByYearAndState')->willReturn($existing);
+        $this->holidayMapper->expects($this->never())->method('insert');
+
+        $this->assertSame([], $this->service->fillMissingAutoHolidays());
+    }
+
+    public function testFillMissingSkipsRegionsWithoutProvider(): void {
+        $this->settingsMapper->method('getValueAsBool')->willReturn(false);
+        $this->holidayMapper->method('findAutoYearStateCombos')->willReturn([
+            ['year' => 2026, 'federal_state' => 'XX'],
+        ]);
+        $this->holidayMapper->expects($this->never())->method('findByYearAndState');
+        $this->holidayMapper->expects($this->never())->method('insert');
+
+        $this->assertSame([], $this->service->fillMissingAutoHolidays());
+    }
+
+    /**
+     * Baut das Auto-Set eines Providers als Entities, optional ohne einzelne Namen.
+     *
+     * @param string[] $withoutNames
+     * @return Holiday[]
+     */
+    private function providerHolidaysWithout(int $year, string $region, array $withoutNames): array {
+        $registry = new ProviderRegistry(new GermanyHolidays(), new SwitzerlandHolidays());
+        $holidays = [];
+        foreach ($registry->forRegion($region)->holidaysFor($year, $region) as $definition) {
+            if (in_array($definition->name, $withoutNames, true)) {
+                continue;
+            }
+            $holiday = new Holiday();
+            $holiday->setDate(new DateTime($definition->date->format('Y-m-d')));
+            $holiday->setName($definition->name);
+            $holiday->setFederalState($region);
+            $holiday->setYear($year);
+            $holiday->setScopeValue($definition->scope);
+            $holidays[] = $holiday;
+        }
+        return $holidays;
+    }
+
     public function testEnsureRangeCoversEveryYearItTouches(): void {
         // A range crossing New Year must ensure both 2026 and 2027.
         $checkedYears = [];
