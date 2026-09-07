@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.18.2] - 2026-09-07
 
 Wartungsrelease mit Fehlerbehebungen aus dem Ursprungsprojekt WorkTime (Paket 3). Keine Datenbankmigration, keine Aenderung an bestehenden Daten.
 
