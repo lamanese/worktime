@@ -35,6 +35,33 @@ const ROLES = {
 		canManageEmployees: false, canManageSettings: false,
 		canManageProjects: false, canManageHolidays: false, canApprove: false,
 	},
+	// HR manager (or managing director) WITHOUT an own employee record (#604):
+	// role comes from group membership, not from zw_employees, so employeeId is
+	// null. Must still reach the Team tab — the backend scopes team data by role.
+	hrNoProfile: {
+		isAdmin: false, isHrManager: true, isSupervisor: false, isEmployee: false,
+		employeeId: null, hasEmployees: true,
+		canManageEmployees: true, canManageSettings: false,
+		canManageProjects: true, canManageHolidays: true, canApprove: true,
+	},
+	// Same class as hrNoProfile, but Admin without an own record — the fix rule
+	// (employeeId || isAdmin || isHrManager) is symmetric, so lock both sides.
+	adminNoProfile: {
+		isAdmin: true, isHrManager: false, isSupervisor: false, isEmployee: false,
+		employeeId: null, hasEmployees: true,
+		canManageEmployees: true, canManageSettings: true,
+		canManageProjects: true, canManageHolidays: true, canApprove: true,
+	},
+	// #631: hrNoProfile WHILE correcting an employee. The correction target is
+	// merged into the access profile (store getter accessProfile), so the
+	// correctable tabs (tracking, absences) must become reachable even though the
+	// user has no own profile. my-settings stays own-only (not correctable).
+	hrNoProfileCorrecting: {
+		isAdmin: false, isHrManager: true, isSupervisor: false, isEmployee: false,
+		employeeId: null, hasEmployees: true, targetEmployeeId: 42,
+		canManageEmployees: true, canManageSettings: false,
+		canManageProjects: true, canManageHolidays: true, canApprove: true,
+	},
 	// Degenerate: authenticated user with no employee record and no role at all.
 	bare: {
 		isAdmin: false, isHrManager: false, isSupervisor: false, isEmployee: false,
@@ -61,6 +88,37 @@ describe('route access matrix', () => {
 		expect(canAccess('team', ROLES.employee)).toBe(true)
 	})
 
+	// Pin the concrete #604 regression: an HR manager without an own profile can
+	// open and see the Team tab (role-based, not profile-based).
+	it('HR manager without own profile can access and see the Team tab (#604)', () => {
+		expect(canAccess('team', ROLES.hrNoProfile)).toBe(true)
+		expect(isNavVisible('team', ROLES.hrNoProfile)).toBe(true)
+	})
+
+	// Symmetric case: Admin without an own profile reaches the Team tab too (#604).
+	it('Admin without own profile can access and see the Team tab (#604)', () => {
+		expect(canAccess('team', ROLES.adminNoProfile)).toBe(true)
+		expect(isNavVisible('team', ROLES.adminNoProfile)).toBe(true)
+	})
+
+	// Pin the #631 regression: an HR manager without an own profile, while
+	// correcting an employee, can reach AND see the Tracking and Absences tabs —
+	// but only while correcting.
+	it('HR without own profile can access + see tracking/absences WHILE correcting (#631)', () => {
+		for (const route of ['tracking', 'absences']) {
+			expect(canAccess(route, ROLES.hrNoProfileCorrecting)).toBe(true)
+			expect(isNavVisible(route, ROLES.hrNoProfileCorrecting)).toBe(true)
+		}
+	})
+
+	it('HR without own profile does NOT see tracking/absences when NOT correcting (#631)', () => {
+		expect(canAccess('absences', ROLES.hrNoProfile)).toBe(false)
+		expect(isNavVisible('absences', ROLES.hrNoProfile)).toBe(false)
+		expect(isNavVisible('tracking', ROLES.hrNoProfile)).toBe(false)
+		// my-settings stays own-only even while correcting (#631).
+		expect(canAccess('my-settings', ROLES.hrNoProfileCorrecting)).toBe(false)
+	})
+
 	// Pin the degenerate fallback: a roleless user is bounced everywhere except
 	// the universal /tracking fallback, and sees no tabs.
 	it('bare user can only reach tracking', () => {
@@ -82,6 +140,10 @@ describe('route access matrix', () => {
 			hrManager: ['tracking', 'absences', 'team', 'approvals', 'evaluation', 'my-settings', 'settings', 'audit'],
 			supervisor: ['tracking', 'absences', 'team', 'approvals', 'my-settings'],
 			employee: ['tracking', 'absences', 'my-settings'],
+			hrNoProfile: ['team', 'approvals', 'evaluation', 'settings', 'audit'],
+			adminNoProfile: ['team', 'approvals', 'evaluation', 'settings', 'audit'],
+			// #631: correcting adds tracking + absences (but not my-settings).
+			hrNoProfileCorrecting: ['tracking', 'absences', 'team', 'approvals', 'evaluation', 'settings', 'audit'],
 			bare: [],
 		})
 	})

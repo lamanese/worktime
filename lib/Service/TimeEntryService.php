@@ -40,6 +40,26 @@ class TimeEntryService {
     }
 
     /**
+     * Parse a date coming in from the API, or fail with a validation error (#537).
+     *
+     * Without this, `new DateTime($string)` accepted relative expressions like
+     * "+1 week" — the resulting time entry then depended on the request time.
+     *
+     * @throws ValidationException
+     */
+    private function parseDateOrFail(string $value): DateTime {
+        $date = DateParser::parseIsoDate($value);
+        if ($date === null) {
+            throw ValidationException::fromSingleError(
+                'date',
+                $this->l->t('Ungültiges Datum. Erwartet wird das Format JJJJ-MM-TT.')
+            );
+        }
+
+        return $date;
+    }
+
+    /**
      * Get employee ID for a user ID
      */
     private function getEmployeeIdForUser(string $userId): ?int {
@@ -151,7 +171,7 @@ class TimeEntryService {
     ): TimeEntry {
         $this->assertEmployeeActive($employeeId, $allowLockedOverride, $reason);
 
-        $dateObj = new DateTime($date);
+        $dateObj = $this->parseDateOrFail($date);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 
@@ -239,7 +259,7 @@ class TimeEntryService {
         $oldValues = $entry->jsonSerialize();
         $oldDate = clone $entry->getDate();
 
-        $dateObj = new DateTime($date);
+        $dateObj = $this->parseDateOrFail($date);
         $startTimeObj = DateTime::createFromFormat('H:i', $startTime) ?: null;
         $endTimeObj = DateTime::createFromFormat('H:i', $endTime) ?: null;
 

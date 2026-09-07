@@ -675,6 +675,18 @@ OC.L10N.register(
     "Alle Länder" : "Všechny země",
     "Alle Regionen" : "Všechny regiony",
     "Die automatisch erzeugten Feiertage für {year} werden für alle Regionen (Deutschland und Schweiz) neu erstellt. Manuell angelegte Feiertage bleiben erhalten." : "Automaticky vytvořené svátky pro rok {year} budou znovu vytvořeny pro všechny regiony (Německo a Švýcarsko). Ručně přidané svátky zůstanou zachovány.",
-    "Möchten Sie den Feiertag \"{name}\" ({count} Regionen) wirklich löschen?" : "Opravdu chcete smazat svátek „{name}“ ({count} regionů)?"
+    "Möchten Sie den Feiertag \"{name}\" ({count} Regionen) wirklich löschen?" : "Opravdu chcete smazat svátek „{name}“ ({count} regionů)?",
+    "Teilweise gebucht – bereits eigene Abwesenheit im Zeitraum:" : "Teilweise gebucht – bereits eigene Abwesenheit im Zeitraum:",
+    "bereits eigene Abwesenheit im gesamten Zeitraum" : "bereits eigene Abwesenheit im gesamten Zeitraum",
+    "{name} – {booked} Tage gebucht, {skipped} Tage bereits abwesend" : "{name} – {booked} Tage gebucht, {skipped} Tage bereits abwesend",
+    "Genehmigungsdaten konnten nicht vollständig geladen werden. Die Liste ist möglicherweise unvollständig." : "Genehmigungsdaten konnten nicht vollständig geladen werden. Die Liste ist möglicherweise unvollständig.",
+    "Ungültiger Zeitraum. Monat muss zwischen 1 und 12 liegen, Jahr zwischen 2000 und 2100." : "Ungültiger Zeitraum. Monat muss zwischen 1 und 12 liegen, Jahr zwischen 2000 und 2100.",
+    "Start- und Enddatum sind erforderlich" : "Start- und Enddatum sind erforderlich",
+    "Ungültiges Datum. Erwartet wird das Format JJJJ-MM-TT." : "Ungültiges Datum. Erwartet wird das Format JJJJ-MM-TT.",
+    "Enddatum muss nach dem Startdatum liegen" : "Enddatum muss nach dem Startdatum liegen",
+    "Ungültige Option für den Umgang mit fehlendem Resturlaub" : "Ungültige Option für den Umgang mit fehlendem Resturlaub",
+    "Nicht genügend Urlaubstage. Verfügbar: %s, beantragt: %s." : "Nicht genügend Urlaubstage. Verfügbar: %s, beantragt: %s.",
+    "Ungültige Abwesenheitsart" : "Ungültige Abwesenheitsart",
+    "Es existiert bereits eine Abwesenheit in diesem Zeitraum" : "Es existiert bereits eine Abwesenheit in diesem Zeitraum"
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");
