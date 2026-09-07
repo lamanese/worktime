@@ -21,12 +21,12 @@ return [
         ['name' => 'time_entry#approvedMonths', 'url' => '/api/time-entries/approved-months', 'verb' => 'GET'],
         ['name' => 'time_entry#index', 'url' => '/api/time-entries', 'verb' => 'GET'],
         ['name' => 'time_entry#create', 'url' => '/api/time-entries', 'verb' => 'POST'],
-        ['name' => 'time_entry#show', 'url' => '/api/time-entries/{id}', 'verb' => 'GET'],
-        ['name' => 'time_entry#update', 'url' => '/api/time-entries/{id}', 'verb' => 'PUT'],
-        ['name' => 'time_entry#destroy', 'url' => '/api/time-entries/{id}', 'verb' => 'DELETE'],
-        ['name' => 'time_entry#submit', 'url' => '/api/time-entries/{id}/submit', 'verb' => 'POST'],
-        ['name' => 'time_entry#approve', 'url' => '/api/time-entries/{id}/approve', 'verb' => 'POST'],
-        ['name' => 'time_entry#reject', 'url' => '/api/time-entries/{id}/reject', 'verb' => 'POST'],
+        ['name' => 'time_entry#show', 'url' => '/api/time-entries/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#update', 'url' => '/api/time-entries/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#destroy', 'url' => '/api/time-entries/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#submit', 'url' => '/api/time-entries/{id}/submit', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#approve', 'url' => '/api/time-entries/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'time_entry#reject', 'url' => '/api/time-entries/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Absences API (static routes first, then {id} with numeric constraint)
         ['name' => 'absence#overview', 'url' => '/api/absences/overview', 'verb' => 'GET'],
@@ -54,9 +54,9 @@ return [
         ['name' => 'employee#availableUsers', 'url' => '/api/employees/available-users', 'verb' => 'GET'],
         ['name' => 'employee#index', 'url' => '/api/employees', 'verb' => 'GET'],
         ['name' => 'employee#create', 'url' => '/api/employees', 'verb' => 'POST'],
-        ['name' => 'employee#show', 'url' => '/api/employees/{id}', 'verb' => 'GET'],
-        ['name' => 'employee#update', 'url' => '/api/employees/{id}', 'verb' => 'PUT'],
-        ['name' => 'employee#destroy', 'url' => '/api/employees/{id}', 'verb' => 'DELETE'],
+        ['name' => 'employee#show', 'url' => '/api/employees/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'employee#update', 'url' => '/api/employees/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'employee#destroy', 'url' => '/api/employees/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
         // Holidays API (specific routes before {id})
         ['name' => 'holiday#generate', 'url' => '/api/holidays/generate', 'verb' => 'POST'],
@@ -76,9 +76,9 @@ return [
         ['name' => 'project#indexAll', 'url' => '/api/projects/all', 'verb' => 'GET'],
         ['name' => 'project#index', 'url' => '/api/projects', 'verb' => 'GET'],
         ['name' => 'project#create', 'url' => '/api/projects', 'verb' => 'POST'],
-        ['name' => 'project#show', 'url' => '/api/projects/{id}', 'verb' => 'GET'],
-        ['name' => 'project#update', 'url' => '/api/projects/{id}', 'verb' => 'PUT'],
-        ['name' => 'project#destroy', 'url' => '/api/projects/{id}', 'verb' => 'DELETE'],
+        ['name' => 'project#show', 'url' => '/api/projects/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'project#update', 'url' => '/api/projects/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'project#destroy', 'url' => '/api/projects/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
         // Daily Kilometers API (Extern)
         ['name' => 'daily_km#index', 'url' => '/api/daily-km', 'verb' => 'GET'],
@@ -97,8 +97,8 @@ return [
         ['name' => 'settings#reset', 'url' => '/api/settings/{key}/reset', 'verb' => 'POST'],
 
         // Work Schedules API
-        ['name' => 'work_schedule#index',   'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'GET'],
-        ['name' => 'work_schedule#create',  'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'POST'],
+        ['name' => 'work_schedule#index',   'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'GET', 'requirements' => ['employeeId' => '\d+']],
+        ['name' => 'work_schedule#create',  'url' => '/api/employees/{employeeId}/schedules',      'verb' => 'POST', 'requirements' => ['employeeId' => '\d+']],
         ['name' => 'work_schedule#update',  'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'work_schedule#destroy', 'url' => '/api/employees/{employeeId}/schedules/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 

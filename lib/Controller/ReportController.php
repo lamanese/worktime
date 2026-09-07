@@ -18,6 +18,7 @@ use OCA\Zeitwerk\Db\MonthStatus;
 use OCA\Zeitwerk\Db\TimeEntryMapper;
 use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AllowanceService;
+use OCA\Zeitwerk\Service\DateParser;
 use OCA\Zeitwerk\Service\EmployeeService;
 use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\MonthStatusService;
@@ -29,6 +30,7 @@ use OCA\Zeitwerk\Service\ProjectService;
 use OCA\Zeitwerk\Service\TimeEntryService;
 use OCA\Zeitwerk\Service\WorkScheduleService;
 use OCA\Zeitwerk\Service\YearlyCarryoverService;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -63,6 +65,24 @@ class ReportController extends BaseController {
         private MonthStatusService $monthStatusService,
     ) {
         parent::__construct($request, $userId);
+    }
+
+    /**
+     * Reject out-of-range periods before they reach the report generation (#537).
+     *
+     * Used on the PDF endpoint, where the frontend always sends a concrete year
+     * and month. The project reports deliberately keep their `0` defaults and
+     * clamp instead, so they are not covered here.
+     */
+    private function validatePeriod(int $year, int $month): ?JSONResponse {
+        if ($month < 1 || $month > 12 || $year < 2000 || $year > 2100) {
+            return $this->successResponse(
+                ['error' => $this->l->t('Ungültiger Zeitraum. Monat muss zwischen 1 und 12 liegen, Jahr zwischen 2000 und 2100.')],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        return null;
     }
 
     private function getHolidaysCached(int $year, int $month, string $federalState): array {
@@ -705,6 +725,10 @@ class ReportController extends BaseController {
             return $this->forbiddenResponse();
         }
 
+        if ($error = $this->validatePeriod($year, $month)) {
+            return $error;
+        }
+
         try {
             $employee = $this->employeeService->find($employeeId);
             $timeEntries = $this->timeEntryService->findByEmployeeAndMonth($employeeId, $year, $month);
@@ -760,17 +784,27 @@ class ReportController extends BaseController {
         }
 
         if ($startDate === '' || $endDate === '') {
-            return $this->successResponse(['error' => 'Start- und Enddatum sind erforderlich'], 400);
+            return $this->successResponse(
+                ['error' => $this->l->t('Start- und Enddatum sind erforderlich')],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $start = DateParser::parseIsoDate($startDate);
+        $end = DateParser::parseIsoDate($endDate);
+        if ($start === null || $end === null) {
+            return $this->successResponse(
+                ['error' => $this->l->t('Ungültiges Datum. Erwartet wird das Format JJJJ-MM-TT.')],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        // Tolerate a reversed range by normalising the order.
+        if ($start > $end) {
+            [$start, $end] = [$end, $start];
         }
 
         try {
-            $start = new DateTime($startDate);
-            $end = new DateTime($endDate);
-            // Tolerate a reversed range by normalising the order.
-            if ($start > $end) {
-                [$start, $end] = [$end, $start];
-            }
-
             $employee = $this->employeeService->find($employeeId);
             $timeEntries = $this->timeEntryService->findByEmployeeAndDateRange($employeeId, $start, $end);
             $absences = $this->absenceService->findByEmployeeAndDateRange($employeeId, $start, $end);

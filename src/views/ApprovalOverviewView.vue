@@ -65,7 +65,12 @@
                                     {{ item.kind === 'month' ? t('zeitwerk', 'Monat') : item.typeLabel }}
                                 </span>
                             </td>
-                            <td class="detail">{{ item.detail }}</td>
+                            <td class="detail">
+                                <div>{{ item.detail }}</div>
+                                <div v-if="item.note" class="note-line">
+                                    <span class="note-label">{{ t('zeitwerk', 'Bemerkung') }}:</span> {{ item.note }}
+                                </div>
+                            </td>
                             <td class="actions-col">
                                 <div class="actions" @click.stop>
                                     <template v-if="item.kind === 'absence'">
@@ -308,6 +313,7 @@ export default {
                 employeeUserId: a.employeeUserId,
                 typeLabel: getAbsenceTypeLabel(a.type),
                 detail: `${formatDate(a.startDate)} – ${formatDate(a.endDate)} · ${a.days} ${t('zeitwerk', 'Tage')}`,
+                note: a.note || '',
                 waitingSince: (a.createdAt || a.startDate || '').slice(0, 10),
             }))
         },
@@ -444,12 +450,22 @@ export default {
             this.pendingMonths = results[1].status === 'fulfilled' ? (results[1].value || []) : []
             this.informationalAbsences = results[2].status === 'fulfilled' ? (results[2].value || []) : []
             this.archiveConfigured = results[3].status === 'fulfilled' ? !!(results[3].value?.configured) : false
-            results.forEach((r, i) => {
+            // A failed request leaves its list empty, which looks exactly like
+            // "nothing to approve". Say so instead of showing a silent gap (#537).
+            // Only the three approval-data requests count: the archive status is
+            // admin-only (canManageSettings) and answers 403 for supervisors and
+            // HR managers, which is expected and must not trigger the warning.
+            const approvalResults = results.slice(0, 3)
+            const failed = approvalResults.some(r => r.status === 'rejected')
+            approvalResults.forEach((r, i) => {
                 if (r.status === 'rejected') {
-                    const names = ['getPending', 'getPendingMonths', 'getInformational', 'getArchiveStatus']
+                    const names = ['getPending', 'getPendingMonths', 'getInformational']
                     console.error(`Failed: ${names[i]}`, r.reason)
                 }
             })
+            if (failed) {
+                showError(t('zeitwerk', 'Genehmigungsdaten konnten nicht vollständig geladen werden. Die Liste ist möglicherweise unvollständig.'))
+            }
             this.loading = false
         },
         async approveAbsence(absenceId) {
@@ -721,6 +737,20 @@ export default {
 
 .detail {
     color: var(--color-main-text);
+}
+
+.note-line {
+    margin-top: 2px;
+    color: var(--color-text-maxcontrast);
+    font-style: italic;
+    font-size: 0.9em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.note-line .note-label {
+    font-style: normal;
+    font-weight: 600;
 }
 
 .actions-col {

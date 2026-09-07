@@ -54,7 +54,9 @@ class EmployeeService {
     private function withActiveSchedule(Employee $employee): Employee {
         return $this->applyScheduleValues(
             $employee,
-            $this->workScheduleService->getScheduleForDate($employee->getId(), new DateTime()),
+            // #581: show the earliest profile for a not-yet-started employee
+            // instead of the synthetic 40h/30 default.
+            $this->workScheduleService->getDisplaySchedule($employee->getId()),
         );
     }
 
@@ -76,7 +78,7 @@ class EmployeeService {
         return array_map(
             fn (Employee $e): Employee => isset($active[$e->getId()])
                 ? $this->applyScheduleValues($e, $active[$e->getId()])
-                : $this->withActiveSchedule($e), // schedule-less employee: use default fallback
+                : $this->withActiveSchedule($e), // no profile active today: resolve via getDisplaySchedule (#581)
             $employees,
         );
     }
@@ -406,19 +408,30 @@ class EmployeeService {
      */
     private function createInitialWorkSchedule(Employee $employee): void {
         try {
-            $dailyHours = round((float)$employee->getWeeklyHours() / 5, 2);
+            // Respect the requested number of working days per week instead of
+            // always assuming Mon-Fri (WorkTime #578): the first N weekdays are worked at
+            // weeklyHours / N, the remaining days are off. N=5 reproduces the
+            // previous Mon-Fri behaviour unchanged.
+            $workingDays = max(1, min(7, $employee->getWorkingDaysPerWeek()));
+            $dailyHours = round((float)$employee->getWeeklyHours() / $workingDays, 2);
+            $formatted = number_format($dailyHours, 2, '.', '');
             $validFrom = $employee->getEntryDate() ?? new DateTime('2020-01-01');
+
+            $hours = array_fill(0, 7, '0.00');
+            for ($i = 0; $i < $workingDays; $i++) {
+                $hours[$i] = $formatted;
+            }
 
             $schedule = new \OCA\Zeitwerk\Db\WorkSchedule();
             $schedule->setEmployeeId($employee->getId());
             $schedule->setValidFrom($validFrom);
-            $schedule->setMonHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setTueHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setWedHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setThuHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setFriHours(number_format($dailyHours, 2, '.', ''));
-            $schedule->setSatHours('0.00');
-            $schedule->setSunHours('0.00');
+            $schedule->setMonHours($hours[0]);
+            $schedule->setTueHours($hours[1]);
+            $schedule->setWedHours($hours[2]);
+            $schedule->setThuHours($hours[3]);
+            $schedule->setFriHours($hours[4]);
+            $schedule->setSatHours($hours[5]);
+            $schedule->setSunHours($hours[6]);
             $schedule->setVacationDays($employee->getVacationDays());
             $schedule->setCreatedAt(new DateTime());
             $schedule->setUpdatedAt(new DateTime());

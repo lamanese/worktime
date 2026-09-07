@@ -1059,6 +1059,49 @@ class PdfService {
     }
 
     /**
+     * Build the archive folder for one employee and year (#537).
+     *
+     * Employee names end up as a path segment here, so anything that could
+     * escape the archive tree — slashes, backslashes, ".." runs, control
+     * characters — is folded into an underscore. Everything else (umlauts,
+     * dots, apostrophes, spaces) is kept byte-identical on purpose: archive
+     * folders created by earlier versions must keep their names, otherwise an
+     * update would split an employee's archive across two folders.
+     *
+     * All three archive operations share this method: writing, deleting and the
+     * existence check have to agree on the path, otherwise a report would be
+     * archived under one name and looked for under another.
+     */
+    private function buildArchiveFolderPath(string $archivePath, Employee $employee, int $year): string {
+        $lastName = self::sanitizePathSegment($employee->getLastName());
+        $firstName = self::sanitizePathSegment($employee->getFirstName());
+
+        return sprintf(
+            '%s/%d/%s_%s',
+            trim($archivePath, '/'),
+            $year,
+            $lastName,
+            $firstName
+        );
+    }
+
+    private static function sanitizePathSegment(string $value): string {
+        // Path separators and control characters can never be part of a folder
+        // name; a run of two or more dots could otherwise form a ".." component.
+        // No /u flag: the classes are ASCII-only and must not fail on odd bytes.
+        $sanitized = preg_replace('~[/\\\\\x00-\x1F\x7F]~', '_', $value) ?? '_';
+        $sanitized = preg_replace_callback(
+            '/\.{2,}/',
+            static fn (array $match): string => str_repeat('_', strlen($match[0])),
+            $sanitized
+        ) ?? '_';
+
+        // The segment is always "<last>_<first>", so it can never collapse into
+        // an empty name or into "." / ".." even if one of the parts is empty.
+        return $sanitized;
+    }
+
+    /**
      * Archive monthly report PDF to Nextcloud folder
      *
      * @param string $adminUserId User ID with write access (usually admin or HR)
@@ -1079,13 +1122,7 @@ class PdfService {
         $archivePath = $this->settingsService->get(CompanySetting::KEY_PDF_ARCHIVE_PATH);
 
         // Build folder path: {archivePath}/{Jahr}/{Nachname_Vorname}/
-        $folderPath = sprintf(
-            '%s/%d/%s_%s',
-            trim($archivePath, '/'),
-            $year,
-            $employee->getLastName(),
-            $employee->getFirstName()
-        );
+        $folderPath = $this->buildArchiveFolderPath($archivePath, $employee, $year);
 
         // Build filename: Arbeitszeitnachweis_{YYYY-MM}.pdf
         $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
@@ -1145,13 +1182,7 @@ class PdfService {
             return false;
         }
 
-        $folderPath = sprintf(
-            '%s/%d/%s_%s',
-            trim($archivePath, '/'),
-            $year,
-            $employee->getLastName(),
-            $employee->getFirstName()
-        );
+        $folderPath = $this->buildArchiveFolderPath($archivePath, $employee, $year);
         $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
         $relativePath = ltrim($folderPath . '/' . $filename, '/');
 
@@ -1183,13 +1214,7 @@ class PdfService {
             return false;
         }
 
-        $folderPath = sprintf(
-            '%s/%d/%s_%s',
-            trim($archivePath, '/'),
-            $year,
-            $employee->getLastName(),
-            $employee->getFirstName()
-        );
+        $folderPath = $this->buildArchiveFolderPath($archivePath, $employee, $year);
         $filename = sprintf('Arbeitszeitnachweis_%d-%02d.pdf', $year, $month);
         $relativePath = ltrim($folderPath . '/' . $filename, '/');
 

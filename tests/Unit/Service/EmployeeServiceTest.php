@@ -135,7 +135,7 @@ class EmployeeServiceTest extends TestCase {
         // Cache holds 40h / 30 days, but the schedule active today is 31.5h / 28 days.
         $this->employeeMapper->method('find')
             ->willReturn($this->makeEmployee(6, '40.00', 30));
-        $this->workScheduleService->method('getScheduleForDate')
+        $this->workScheduleService->method('getDisplaySchedule')
             ->willReturn($this->makeSchedule(6.3, 28)); // 6.3 * 5 = 31.5
 
         $employee = $this->service->find(6);
@@ -146,11 +146,11 @@ class EmployeeServiceTest extends TestCase {
 
     public function testFindIgnoresFutureProfileForOverview(): void {
         // Active profile today = 31.5h; a future-dated 40h profile must not leak
-        // into the overview. getScheduleForDate already returns the active one.
+        // into the overview. getDisplaySchedule already returns the active one (#581).
         $this->employeeMapper->method('find')
             ->willReturn($this->makeEmployee(6, '40.00', 30));
-        $this->workScheduleService->method('getScheduleForDate')
-            ->with(6, $this->isInstanceOf(DateTime::class))
+        $this->workScheduleService->method('getDisplaySchedule')
+            ->with(6)
             ->willReturn($this->makeSchedule(6.3, 28));
 
         $employee = $this->service->find(6);
@@ -202,7 +202,7 @@ class EmployeeServiceTest extends TestCase {
         $this->employeeMapper->method('findByUserId')->willReturn($employee);
         $this->employeeMapper->method('update')->willReturnArgument(0);
         // findByUserId reichert den Mitarbeiter mit dem aktiven Profil an.
-        $this->workScheduleService->method('getScheduleForDate')->willReturn($this->makeSchedule(8.0, 30));
+        $this->workScheduleService->method('getDisplaySchedule')->willReturn($this->makeSchedule(8.0, 30));
     }
 
     private function project(int $id): Project {
@@ -281,11 +281,82 @@ class EmployeeServiceTest extends TestCase {
         $this->employeeMapper->method('find')->willReturn($employee);
         // delete() loads the employee via find(), which enriches it with the
         // active schedule (audit log payload) — stub it like primeMyDefaults().
-        $this->workScheduleService->method('getScheduleForDate')->willReturn($this->makeSchedule(8.0, 30));
+        $this->workScheduleService->method('getDisplaySchedule')->willReturn($this->makeSchedule(8.0, 30));
         $this->workScheduleMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
         $this->monthStatusMapper->expects($this->once())->method('deleteByEmployeeId')->with(5);
         $this->employeeMapper->expects($this->once())->method('delete');
 
         $this->service->delete(5, 'admin');
     }
+
+    // ---------------------------------------------------------------------
+    // WorkTime #578: initial work schedule honours workingDaysPerWeek
+    // ---------------------------------------------------------------------
+
+    /**
+     * The initial work schedule must honour the requested working days per week
+     * (WorkTime #578): a 4-day week produces a Mon-Thu profile at weeklyHours / 4, not the
+     * old hard-coded Mon-Fri at weeklyHours / 5.
+     */
+    public function testCreateInitialScheduleHonoursWorkingDaysPerWeek(): void {
+        $this->employeeMapper->method('existsByUserId')->willReturn(false);
+        $this->employeeMapper->method('insert')->willReturnCallback(
+            function (Employee $e): Employee {
+                $e->setId(9);
+                return $e;
+            }
+        );
+
+        $captured = null;
+        $this->workScheduleMapper->method('insert')->willReturnCallback(
+            function (WorkSchedule $s) use (&$captured): WorkSchedule {
+                $captured = $s;
+                return $s;
+            }
+        );
+
+        // 30h across 4 days => 7.5h on Mon-Thu, nothing Fri-Sun.
+        $this->service->create('user9', 'Nina', 'Vier', null, null, 30.0, 24, null, 'BY', null, 'admin', 4);
+
+        $this->assertNotNull($captured, 'initial work schedule must be persisted');
+        $this->assertSame(7.5, (float)$captured->getMonHours());
+        $this->assertSame(7.5, (float)$captured->getTueHours());
+        $this->assertSame(7.5, (float)$captured->getWedHours());
+        $this->assertSame(7.5, (float)$captured->getThuHours());
+        $this->assertSame(0.0, (float)$captured->getFriHours());
+        $this->assertSame(0.0, (float)$captured->getSatHours());
+        $this->assertSame(0.0, (float)$captured->getSunHours());
+        $this->assertSame(4, $captured->getWorkingDaysPerWeek());
+    }
+
+    /**
+     * A 5-day week keeps the previous Mon-Fri / weeklyHours-÷-5 behaviour
+     * unchanged (regression guard for the default path).
+     */
+    public function testCreateInitialScheduleFiveDayWeekUnchanged(): void {
+        $this->employeeMapper->method('existsByUserId')->willReturn(false);
+        $this->employeeMapper->method('insert')->willReturnCallback(
+            function (Employee $e): Employee {
+                $e->setId(10);
+                return $e;
+            }
+        );
+
+        $captured = null;
+        $this->workScheduleMapper->method('insert')->willReturnCallback(
+            function (WorkSchedule $s) use (&$captured): WorkSchedule {
+                $captured = $s;
+                return $s;
+            }
+        );
+
+        $this->service->create('user10', 'Erik', 'Fünf', null, null, 40.0, 30, null, 'BY', null, 'admin', 5);
+
+        $this->assertNotNull($captured);
+        $this->assertSame(8.0, (float)$captured->getMonHours());
+        $this->assertSame(8.0, (float)$captured->getFriHours());
+        $this->assertSame(0.0, (float)$captured->getSatHours());
+        $this->assertSame(5, $captured->getWorkingDaysPerWeek());
+    }
+
 }
