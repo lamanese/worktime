@@ -57,22 +57,6 @@ class DutyJobMapper extends QBMapper {
     }
 
     /**
-     * @return DutyJob[]
-     */
-    public function findByEmployeeAndDateRange(int $employeeId, DateTime $from, DateTime $to): array {
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from($this->getTableName())
-            ->where($qb->expr()->eq('employee_id', $qb->createNamedParameter($employeeId, IQueryBuilder::PARAM_INT)))
-            ->andWhere($qb->expr()->gte('job_date', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATE)))
-            ->andWhere($qb->expr()->lte('job_date', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATE)))
-            ->orderBy('job_date', 'ASC')
-            ->addOrderBy('start_time', 'ASC');
-
-        return $this->findEntities($qb);
-    }
-
-    /**
      * Distinct titles starting with the prefix (case-insensitive), for suggestions.
      *
      * @return string[]
