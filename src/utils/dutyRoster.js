@@ -68,29 +68,30 @@ export function formatDuration(minutes) {
 }
 
 /**
- * Visual state of one cell (employee x day).
+ * Visual state of one cell (employee x day). Returns no user-facing text —
+ * the view composes the label via t() (see DutyRosterView.cellLabel).
  * Precedence: holiday > approved full day > approved half day > pending > normal.
  *
  * @param {Array<{type:string,typeName:string,status:string,scope:number}>} absences absences of that employee on that day
  * @param {Array<{date:string,name:string}>} holidays holidays of that employee's region on that day
- * @return {{state: 'normal'|'absent'|'absent-half'|'pending', label: string|null}}
+ * @return {{state: 'normal'|'absent'|'absent-half'|'pending', labelKind: 'holiday'|'absence'|'half'|'pending'|null, labelText: string|null}}
  */
 export function cellState(absences, holidays) {
 	if (holidays.length > 0) {
-		return { state: 'absent', label: `Feiertag: ${holidays[0].name}` }
+		return { state: 'absent', labelKind: 'holiday', labelText: holidays[0].name }
 	}
 	const approved = absences.filter(a => a.status === 'approved')
 	const full = approved.find(a => Number(a.scope) >= 1)
 	if (full) {
-		return { state: 'absent', label: full.typeName }
+		return { state: 'absent', labelKind: 'absence', labelText: full.typeName }
 	}
 	const half = approved.find(a => Number(a.scope) < 1)
 	if (half) {
-		return { state: 'absent-half', label: `½ ${half.typeName}` }
+		return { state: 'absent-half', labelKind: 'half', labelText: half.typeName }
 	}
 	const pending = absences.find(a => a.status === 'pending')
 	if (pending) {
-		return { state: 'pending', label: `beantragt: ${pending.typeName}` }
+		return { state: 'pending', labelKind: 'pending', labelText: pending.typeName }
 	}
-	return { state: 'normal', label: null }
+	return { state: 'normal', labelKind: null, labelText: null }
 }

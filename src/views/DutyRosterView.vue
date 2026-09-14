@@ -167,6 +167,7 @@ export default {
 					)
 					map[key] = {
 						...info,
+						label: this.cellLabel(info),
 						jobs: sortJobs(row.jobs.filter(j => j.date === day.date)),
 					}
 				}
@@ -220,6 +221,26 @@ export default {
 				if (freshRow) this.notifyAbsence(freshRow, day)
 			} catch (error) {
 				showErrorMessage(error.message)
+			}
+		},
+		/**
+		 * Composes the cell label from the translation-free cellState() result.
+		 *
+		 * @param {{labelKind: string|null, labelText: string|null}} cell cell state
+		 * @return {string|null} translated label or null
+		 */
+		cellLabel(cell) {
+			switch (cell.labelKind) {
+			case 'holiday':
+				return this.t('zeitwerk', 'Feiertag: {name}', { name: cell.labelText })
+			case 'absence':
+				return cell.labelText
+			case 'half':
+				return this.t('zeitwerk', '½ {type}', { type: cell.labelText })
+			case 'pending':
+				return this.t('zeitwerk', 'beantragt: {type}', { type: cell.labelText })
+			default:
+				return null
 			}
 		},
 		notifyAbsence(row, day) {

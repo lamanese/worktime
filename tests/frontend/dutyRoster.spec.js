@@ -63,31 +63,36 @@ describe('cellState precedence: holiday > approved full > approved half > pendin
 	const pending = (type, typeName) => ({ type, typeName, status: 'pending', scope: 1 })
 
 	it('normal when nothing', () => {
-		expect(cellState([], [])).toEqual({ state: 'normal', label: null })
+		expect(cellState([], [])).toEqual({ state: 'normal', labelKind: null, labelText: null })
 	})
 	it('holiday wins over everything', () => {
 		const r = cellState([approved('vacation', 'Urlaub', 0.5), pending('sick', 'Krank')], [{ date: 'x', name: 'Bettag' }])
 		expect(r.state).toBe('absent')
-		expect(r.label).toBe('Feiertag: Bettag')
+		expect(r.labelKind).toBe('holiday')
+		expect(r.labelText).toBe('Bettag')
 	})
 	it('approved full day dims', () => {
-		expect(cellState([approved('sick', 'Krank')], [])).toEqual({ state: 'absent', label: 'Krank' })
+		expect(cellState([approved('sick', 'Krank')], [])).toEqual({ state: 'absent', labelKind: 'absence', labelText: 'Krank' })
 	})
 	it('approved beats pending', () => {
 		const r = cellState([pending('vacation', 'Urlaub'), approved('sick', 'Krank')], [])
-		expect(r).toEqual({ state: 'absent', label: 'Krank' })
+		expect(r).toEqual({ state: 'absent', labelKind: 'absence', labelText: 'Krank' })
 	})
 	it('half day', () => {
-		expect(cellState([approved('vacation', 'Urlaub', 0.5)], [])).toEqual({ state: 'absent-half', label: '½ Urlaub' })
+		expect(cellState([approved('vacation', 'Urlaub', 0.5)], [])).toEqual({ state: 'absent-half', labelKind: 'half', labelText: 'Urlaub' })
 	})
 	it('full beats half', () => {
 		const r = cellState([approved('vacation', 'Urlaub', 0.5), approved('training', 'Weiterbildung', 1)], [])
 		expect(r.state).toBe('absent')
 	})
 	it('pending only', () => {
-		expect(cellState([pending('vacation', 'Urlaub')], [])).toEqual({ state: 'pending', label: 'beantragt: Urlaub' })
+		expect(cellState([pending('vacation', 'Urlaub')], [])).toEqual({ state: 'pending', labelKind: 'pending', labelText: 'Urlaub' })
 	})
 	it('masked absence for non-planners', () => {
-		expect(cellState([approved('absent', 'Abwesend')], [])).toEqual({ state: 'absent', label: 'Abwesend' })
+		expect(cellState([approved('absent', 'Abwesend')], [])).toEqual({ state: 'absent', labelKind: 'absence', labelText: 'Abwesend' })
+	})
+	it('returns no user-facing text (labels are composed via t() in the view)', () => {
+		const r = cellState([approved('vacation', 'Urlaub', 0.5)], [])
+		expect(r.labelText).not.toMatch(/½|beantragt|Feiertag/)
 	})
 })
