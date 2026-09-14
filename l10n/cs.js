@@ -748,7 +748,6 @@ OC.L10N.register(
     "Neue Vorlage" : "Neue Vorlage",
     "z.B. HU Werkstatt Nord" : "z.B. HU Werkstatt Nord",
     "In der Seitenleiste zeigen" : "In der Seitenleiste zeigen",
-    "{minutes} min" : "{minutes} min",
     "Vorlage gespeichert" : "Vorlage gespeichert",
     "Vorlage löschen" : "Vorlage löschen",
     "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen." : "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen.",

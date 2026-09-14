@@ -748,7 +748,6 @@ OC.L10N.register(
     "Neue Vorlage" : "New template",
     "z.B. HU Werkstatt Nord" : "e.g. Inspection workshop north",
     "In der Seitenleiste zeigen" : "Show in the sidebar",
-    "{minutes} min" : "{minutes} min",
     "Vorlage gespeichert" : "Template saved",
     "Vorlage löschen" : "Delete template",
     "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen." : "Really delete the template \"{title}\"? Jobs already scheduled remain unchanged.",
