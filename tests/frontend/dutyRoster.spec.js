@@ -114,6 +114,13 @@ describe('resolveDrop', () => {
 			.toEqual({ kind: 'template', id: 7 })
 	})
 
+	it('recognises a dragged template with the text/plain fallback set (sidebar payload)', () => {
+		expect(resolveDrop(transfer({
+			'text/plain': '7',
+			'application/x-zeitwerk-duty-template': '7',
+		}))).toEqual({ kind: 'template', id: 7 })
+	})
+
 	it('prefers the job marker when both are present', () => {
 		expect(resolveDrop(transfer({
 			'application/x-zeitwerk-duty-job': '42',

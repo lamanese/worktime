@@ -50,6 +50,7 @@ export default {
 			return formatDuration(template.durationMinutes)
 		},
 		onDragStart(event, template) {
+			event.dataTransfer.setData('text/plain', String(template.id))
 			event.dataTransfer.setData(DUTY_TEMPLATE_MIME, String(template.id))
 			event.dataTransfer.effectAllowed = 'copy'
 		},

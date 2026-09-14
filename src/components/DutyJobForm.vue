@@ -25,9 +25,9 @@
 					<input id="dj-time"
 						v-model="form.startTime"
 						type="text"
-						class="time-text-input"
 						pattern="^([01]\d|2[0-3]):[0-5]\d$"
 						:placeholder="t('zeitwerk', 'HH:MM')"
+						:title="t('zeitwerk', 'HH:MM')"
 						inputmode="numeric"
 						maxlength="5">
 					<p v-if="errors.startTime" class="field-error">{{ errors.startTime[0] }}</p>
@@ -101,6 +101,7 @@ import DutyRosterService from '../services/DutyRosterService.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { formatDateISO } from '../utils/dateUtils.js'
 import { parseLocalDate } from '../utils/dutyRoster.js'
+import { isValidTimeString } from '../utils/timeUtils.js'
 
 export default {
 	name: 'DutyJobForm',
@@ -176,8 +177,12 @@ export default {
 			}
 		},
 		async save() {
-			this.saving = true
 			this.errors = {}
+			if (this.form.startTime && !isValidTimeString(this.form.startTime)) {
+				this.errors.startTime = [this.t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)')]
+				return
+			}
+			this.saving = true
 			try {
 				const job = this.isEdit
 					? await this.updateJob({ id: this.job.id, data: this.payload() })

@@ -433,7 +433,7 @@
                                     <div v-if="template.note" class="template-note">{{ template.note }}</div>
                                 </td>
                                 <td>{{ template.startTime || '–' }}</td>
-                                <td>{{ formatTemplateDuration(template.durationMinutes) }}</td>
+                                <td>{{ formatDuration(template.durationMinutes) || '–' }}</td>
                                 <td>{{ template.onCall ? t('zeitwerk', 'Ja') : '–' }}</td>
                                 <td>
                                     <NcCheckboxRadioSwitch :checked="template.isVisible"
@@ -1049,6 +1049,7 @@ import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
 import { canTakeOverActuals, takeOverAndSave } from '../utils/carryoverTakeOver.js'
+import { formatDuration } from '../utils/dutyRoster.js'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
@@ -1768,17 +1769,7 @@ export default {
                 this.loadingTemplates = false
             }
         },
-        formatTemplateDuration(minutes) {
-            if (!minutes) {
-                return '–'
-            }
-            const h = Math.floor(minutes / 60)
-            const m = minutes % 60
-            if (!h) {
-                return this.t('zeitwerk', '{minutes} min', { minutes: m })
-            }
-            return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`
-        },
+        formatDuration,
         openTemplateForm(template) {
             this.editingTemplate = template
             this.templateErrors = {}
