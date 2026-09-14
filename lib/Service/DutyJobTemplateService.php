@@ -82,6 +82,7 @@ class DutyJobTemplateService {
     public function update(int $id, array $data, string $userId): DutyJobTemplate {
         $template = $this->find($id);
         $old = $template->jsonSerialize();
+        $data['sortOrder'] = $data['sortOrder'] ?? $template->getSortOrder();
         $clean = $this->validate($data);
 
         $this->apply($template, $clean);

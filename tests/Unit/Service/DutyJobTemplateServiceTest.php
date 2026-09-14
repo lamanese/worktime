@@ -143,6 +143,31 @@ class DutyJobTemplateServiceTest extends TestCase {
         $this->assertSame(0, $updated->getIsVisible());
     }
 
+    public function testUpdateWithoutSortOrderKeepsExistingValue(): void {
+        $existing = $this->makeTemplate(7, 'Alt');
+        $existing->setSortOrder(5);
+        $this->mapper->method('find')->with(7)->willReturn($existing);
+        $this->mapper->method('update')->willReturnArgument(0);
+
+        $payload = $this->validPayload(['title' => 'Neu']);
+        unset($payload['sortOrder']);
+
+        $updated = $this->service->update(7, $payload, 'admin');
+
+        $this->assertSame(5, $updated->getSortOrder());
+    }
+
+    public function testUpdateWithSortOrderSetsNewValue(): void {
+        $existing = $this->makeTemplate(7, 'Alt');
+        $existing->setSortOrder(5);
+        $this->mapper->method('find')->with(7)->willReturn($existing);
+        $this->mapper->method('update')->willReturnArgument(0);
+
+        $updated = $this->service->update(7, $this->validPayload(['title' => 'Neu', 'sortOrder' => 2]), 'admin');
+
+        $this->assertSame(2, $updated->getSortOrder());
+    }
+
     public function testUpdateUnknownIdThrowsNotFound(): void {
         $this->mapper->method('find')->willThrowException(new DoesNotExistException('nope'));
         $this->expectException(NotFoundException::class);
