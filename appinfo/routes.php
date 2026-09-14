@@ -89,6 +89,13 @@ return [
         ['name' => 'duty_roster#move', 'url' => '/api/duty-roster/jobs/{id}/move', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'duty_roster#destroy', 'url' => '/api/duty-roster/jobs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
+        // Duty roster templates (Auftragsvorlagen; static 'visible' before {id})
+        ['name' => 'duty_job_template#index', 'url' => '/api/duty-roster/templates', 'verb' => 'GET'],
+        ['name' => 'duty_job_template#visible', 'url' => '/api/duty-roster/templates/visible', 'verb' => 'GET'],
+        ['name' => 'duty_job_template#create', 'url' => '/api/duty-roster/templates', 'verb' => 'POST'],
+        ['name' => 'duty_job_template#update', 'url' => '/api/duty-roster/templates/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'duty_job_template#destroy', 'url' => '/api/duty-roster/templates/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
         // Daily Kilometers API (Extern)
         ['name' => 'daily_km#index', 'url' => '/api/daily-km', 'verb' => 'GET'],
         ['name' => 'daily_km#upsert', 'url' => '/api/daily-km', 'verb' => 'PUT'],
