@@ -13,9 +13,12 @@
                         <label for="defaultStartTime">{{ t('zeitwerk', 'Arbeitsbeginn') }}</label>
                         <input id="defaultStartTime"
                             v-model="form.defaultStartTime"
-                            type="time"
+                            type="text"
                             class="time-input"
+                            pattern="^([01]\d|2[0-3]):[0-5]\d$"
                             :placeholder="t('zeitwerk', 'z.B. 08:00')"
+                            inputmode="numeric"
+                            maxlength="5"
                             @change="saveWorkTimes">
                     </div>
 
@@ -23,9 +26,12 @@
                         <label for="defaultEndTime">{{ t('zeitwerk', 'Arbeitsende') }}</label>
                         <input id="defaultEndTime"
                             v-model="form.defaultEndTime"
-                            type="time"
+                            type="text"
                             class="time-input"
+                            pattern="^([01]\d|2[0-3]):[0-5]\d$"
                             :placeholder="t('zeitwerk', 'z.B. 17:00')"
+                            inputmode="numeric"
+                            maxlength="5"
                             @change="saveWorkTimes">
                     </div>
 

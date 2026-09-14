@@ -15,8 +15,12 @@
                 <label for="startTime">{{ t('zeitwerk', 'Beginn') }}</label>
                 <input id="startTime"
                     v-model="form.startTime"
-                    type="time"
+                    type="text"
                     class="time-input"
+                    pattern="^([01]\d|2[0-3]):[0-5]\d$"
+                    :placeholder="t('zeitwerk', 'HH:MM')"
+                    inputmode="numeric"
+                    maxlength="5"
                     @change="onTimeChange">
             </div>
 
@@ -24,8 +28,12 @@
                 <label for="endTime">{{ t('zeitwerk', 'Ende') }}</label>
                 <input id="endTime"
                     v-model="form.endTime"
-                    type="time"
+                    type="text"
                     class="time-input"
+                    pattern="^([01]\d|2[0-3]):[0-5]\d$"
+                    :placeholder="t('zeitwerk', 'HH:MM')"
+                    inputmode="numeric"
+                    maxlength="5"
                     @change="onTimeChange">
             </div>
         </div>

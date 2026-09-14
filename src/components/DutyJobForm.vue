@@ -14,12 +14,22 @@
 			<div class="form-row">
 				<div class="form-group">
 					<label for="dj-date">{{ t('zeitwerk', 'Datum') }}</label>
-					<input id="dj-date" v-model="form.date" type="date" required>
+					<NcDateTimePicker id="dj-date"
+						v-model="formDate"
+						type="date"
+						:format="'DD.MM.YYYY'" />
 					<p v-if="errors.date" class="field-error">{{ errors.date[0] }}</p>
 				</div>
 				<div class="form-group">
 					<label for="dj-time">{{ t('zeitwerk', 'Uhrzeit') }}</label>
-					<input id="dj-time" v-model="form.startTime" type="time">
+					<input id="dj-time"
+						v-model="form.startTime"
+						type="text"
+						class="time-text-input"
+						pattern="^([01]\d|2[0-3]):[0-5]\d$"
+						:placeholder="t('zeitwerk', 'HH:MM')"
+						inputmode="numeric"
+						maxlength="5">
 					<p v-if="errors.startTime" class="field-error">{{ errors.startTime[0] }}</p>
 				</div>
 			</div>
@@ -84,14 +94,17 @@
 import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import { DialogBuilder } from '@nextcloud/dialogs'
 import { mapActions } from 'vuex'
 import DutyRosterService from '../services/DutyRosterService.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
+import { formatDateISO } from '../utils/dateUtils.js'
+import { parseLocalDate } from '../utils/dutyRoster.js'
 
 export default {
 	name: 'DutyJobForm',
-	components: { NcModal, NcButton, NcCheckboxRadioSwitch },
+	components: { NcModal, NcButton, NcCheckboxRadioSwitch, NcDateTimePicker },
 	props: {
 		job: { type: Object, default: null },
 		employeeId: { type: Number, required: true },
@@ -121,6 +134,14 @@ export default {
 		},
 		title() {
 			return this.isEdit ? this.t('zeitwerk', 'Auftrag bearbeiten') : this.t('zeitwerk', 'Auftrag einplanen')
+		},
+		formDate: {
+			get() {
+				return this.form.date ? parseLocalDate(this.form.date) : null
+			},
+			set(value) {
+				this.form.date = value ? formatDateISO(value) : ''
+			},
 		},
 	},
 	mounted() {
