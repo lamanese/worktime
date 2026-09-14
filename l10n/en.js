@@ -723,6 +723,9 @@ OC.L10N.register(
     "Dauer muss zwischen 1 und 1440 Minuten liegen" : "Duration must be between 1 and 1440 minutes",
     "Titel ist erforderlich" : "Title is required",
     "Titel darf höchstens %d Zeichen haben" : "Title must not exceed %d characters",
-    "Notiz darf höchstens %d Zeichen haben" : "Note must not exceed %d characters"
+    "Notiz darf höchstens %d Zeichen haben" : "Note must not exceed %d characters",
+    "Feiertag: {name}" : "Holiday: {name}",
+    "½ {type}" : "½ {type}",
+    "beantragt: {type}" : "requested: {type}"
 },
 "nplurals=2; plural=(n != 1);");
