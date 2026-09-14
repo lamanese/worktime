@@ -6,7 +6,7 @@
 			{{ t('zeitwerk', 'In eine Zelle ziehen, um den Auftrag einzuplanen. Die Vorlage bleibt hier stehen.') }}
 		</p>
 
-		<div class="duty-template-sidebar__list" :class="{ 'sidebar--two-cols': templates.length > 18 }">
+		<div class="duty-template-sidebar__list">
 			<div v-for="template in templates"
 				:key="template.id"
 				class="duty-template"
@@ -14,12 +14,9 @@
 				draggable="true"
 				:title="template.note || ''"
 				@dragstart="onDragStart($event, template)">
-				<div class="duty-template__head">
-					<span class="duty-template__time">{{ template.startTime || '–' }}</span>
-					<span v-if="duration(template)" class="duty-template__duration">{{ duration(template) }}</span>
-				</div>
-				<div class="duty-template__title">{{ template.title }}</div>
-				<div v-if="template.note" class="duty-template__note">{{ template.note }}</div>
+				<span class="duty-template__time">{{ template.startTime || '–' }}</span>
+				<span class="duty-template__title">{{ template.title }}</span>
+				<span v-if="duration(template)" class="duty-template__duration">{{ duration(template) }}</span>
 			</div>
 		</div>
 
@@ -62,8 +59,8 @@ export default {
 
 <style scoped>
 .duty-template-sidebar {
-	flex: 0 0 240px;
-	min-width: 240px;
+	flex: 0 0 220px;
+	min-width: 220px;
 	align-self: flex-start;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border-dark);
@@ -71,11 +68,12 @@ export default {
 	padding: 10px 12px;
 }
 .duty-template-sidebar.sidebar--two-cols {
-	flex: 0 0 480px;
-	min-width: 480px;
+	flex: 0 0 320px;
+	min-width: 320px;
 }
-.duty-template-sidebar__list.sidebar--two-cols {
-	column-count: 2;
+.duty-template-sidebar__list {
+	column-width: 150px;
+	column-count: auto;
 	column-gap: 8px;
 }
 .duty-template-sidebar__title { margin: 0 0 6px; font-size: 15px; }
@@ -83,11 +81,15 @@ export default {
 .duty-template-sidebar__empty { font-size: 12px; color: var(--color-text-maxcontrast); }
 .duty-template-sidebar__hint { margin: 0 0 10px; }
 .duty-template {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	min-height: 0;
 	background: var(--color-background-hover);
 	border: 1px solid var(--color-border-dark);
 	border-left: 3px solid var(--color-primary-element);
 	border-radius: var(--border-radius-element, 8px);
-	padding: 4px 8px;
+	padding: 4px 6px;
 	margin-bottom: 6px;
 	font-size: 13px;
 	line-height: 1.3;
@@ -96,18 +98,10 @@ export default {
 	break-inside: avoid;
 }
 .duty-template:active { cursor: grabbing; }
-.duty-template__head { display: flex; justify-content: space-between; gap: 6px; }
-.duty-template__time { font-weight: 600; }
-.duty-template__duration, .duty-template__note { color: var(--color-text-maxcontrast); font-size: 12px; }
-.duty-template__note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.duty-template__time { font-weight: 600; flex: 0 0 auto; }
+.duty-template__title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.duty-template__duration { color: var(--color-text-maxcontrast); font-size: 12px; flex: 0 0 auto; }
 .duty-template--on-call { border-style: dashed; font-style: italic; }
-
-@media (max-width: 1100px) {
-	.duty-template-sidebar:not(.sidebar--two-cols) { flex: 1 1 100%; min-width: 0; }
-}
-@media (max-width: 1300px) {
-	.duty-template-sidebar.sidebar--two-cols { flex: 1 1 100%; min-width: 0; }
-}
 
 @media print {
 	body.zw-printing-roster .duty-template-sidebar { display: none !important; }
