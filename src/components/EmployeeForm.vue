@@ -167,6 +167,17 @@
             </NcCheckboxRadioSwitch>
         </div>
 
+        <div v-if="form.inDutyRoster" class="form-group">
+            <label for="dutyRosterOrder">{{ t('zeitwerk', 'Reihenfolge im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.') }}</InfoIcon></label>
+            <input id="dutyRosterOrder"
+                v-model.number="form.dutyRosterOrder"
+                type="number"
+                min="0"
+                max="999"
+                step="1"
+                class="input-field input-small">
+        </div>
+
         <WorkScheduleEditor v-if="isEdit && employee"
             :employee-id="employee.id"
             @updated="$emit('schedule-updated')" />
@@ -233,6 +244,7 @@ export default {
                 exitDate: null,
                 isActive: true,
                 inDutyRoster: false,
+                dutyRosterOrder: 0,
             },
         }
     },
@@ -361,6 +373,7 @@ export default {
                         exitDate: employee.exitDate ? new Date(employee.exitDate) : null,
                         isActive: employee.isActive,
                         inDutyRoster: !!employee.inDutyRoster,
+                        dutyRosterOrder: employee.dutyRosterOrder ?? 0,
                     }
                 } else {
                     this.resetForm()
@@ -393,6 +406,7 @@ export default {
                 exitDate: null,
                 isActive: true,
                 inDutyRoster: false,
+                dutyRosterOrder: 0,
             }
         },
         cancel() {
@@ -415,6 +429,7 @@ export default {
                     exitDate: this.form.exitDate ? formatDateISO(this.form.exitDate) : null,
                     isActive: this.form.isActive,
                     inDutyRoster: this.form.inDutyRoster,
+                    dutyRosterOrder: Number(this.form.dutyRosterOrder) || 0,
                 }
 
                 if (this.isEdit) {

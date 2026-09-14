@@ -751,6 +751,8 @@ OC.L10N.register(
     "Vorlage gespeichert" : "Template saved",
     "Vorlage löschen" : "Delete template",
     "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen." : "Really delete the template \"{title}\"? Jobs already scheduled remain unchanged.",
-    "Vorlage gelöscht" : "Template deleted"
+    "Vorlage gelöscht" : "Template deleted",
+    "Reihenfolge im Dienstplan" : "Duty roster order",
+    "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert." : "Lower numbers appear higher up. Equal numbers are sorted by last name."
 },
 "nplurals=2; plural=(n != 1);");

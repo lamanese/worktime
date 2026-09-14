@@ -751,6 +751,8 @@ OC.L10N.register(
     "Vorlage gespeichert" : "Vorlage gespeichert",
     "Vorlage löschen" : "Vorlage löschen",
     "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen." : "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen.",
-    "Vorlage gelöscht" : "Vorlage gelöscht"
+    "Vorlage gelöscht" : "Vorlage gelöscht",
+    "Reihenfolge im Dienstplan" : "Reihenfolge im Dienstplan",
+    "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert." : "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert."
 },
 "nplurals=2; plural=(n != 1);");
