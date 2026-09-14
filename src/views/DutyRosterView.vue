@@ -401,15 +401,17 @@ export default {
 .roster-name {
 	display: flex; align-items: center; gap: 8px;
 	padding: 8px 10px; font-weight: 600; font-size: 13px;
-	border-bottom: 1px solid var(--color-border-light, var(--color-border));
+	border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 	border-left: 4px solid var(--duty-row-color, transparent);
+	/* gleiche dezente Mitarbeiterfarbe wie die Zellen der Zeile, etwas kraeftiger */
+	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.12);
 }
 .roster-cell {
 	position: relative;
 	min-height: 76px;
 	padding: 5px;
-	border-left: 1px solid var(--color-border-light, var(--color-border));
-	border-bottom: 1px solid var(--color-border-light, var(--color-border));
+	border-left: 1px solid var(--color-border-dark, var(--color-border));
+	border-bottom: 1px solid var(--color-border-dark, var(--color-border));
 	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.06);
 }
 .roster-cell.weekend, .roster-day-header.weekend { background: var(--color-background-hover); }
