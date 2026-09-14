@@ -50,9 +50,9 @@ export default {
 	border: 1px solid var(--color-border-dark);
 	border-left: 3px solid var(--duty-row-color, var(--color-primary-element));
 	border-radius: var(--border-radius-element, 8px);
-	padding: 2px 6px;
-	margin-bottom: 3px;
-	font-size: 12.5px;
+	padding: 4px 7px;
+	margin-bottom: 4px;
+	font-size: 13px;
 	line-height: 1.3;
 	cursor: pointer;
 	user-select: none;

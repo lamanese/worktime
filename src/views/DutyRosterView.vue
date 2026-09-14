@@ -387,27 +387,27 @@ export default {
 }
 .roster-grid {
 	display: grid;
-	grid-template-columns: 150px repeat(var(--day-count), minmax(130px, 1fr));
+	grid-template-columns: 160px repeat(var(--day-count), minmax(140px, 1fr));
 }
 .roster-corner, .roster-day-header {
 	position: sticky; top: 0; z-index: 1;
 	background: var(--color-main-background);
 	border-bottom: 1px solid var(--color-border-dark);
-	padding: 6px 10px;
+	padding: 8px 10px;
 }
 .roster-day-header { display: flex; flex-direction: column; font-weight: 600; font-size: 14px; color: var(--color-text-maxcontrast); }
 .roster-day-header.today { color: var(--color-primary-element); }
 .roster-day-date { font-weight: 400; font-size: 12px; }
 .roster-name {
 	display: flex; align-items: center; gap: 8px;
-	padding: 6px 10px; font-weight: 600; font-size: 13px;
+	padding: 8px 10px; font-weight: 600; font-size: 13px;
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 	border-left: 4px solid var(--duty-row-color, transparent);
 }
 .roster-cell {
 	position: relative;
-	min-height: 64px;
-	padding: 4px;
+	min-height: 76px;
+	padding: 5px;
 	border-left: 1px solid var(--color-border-light, var(--color-border));
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.06);

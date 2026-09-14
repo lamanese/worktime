@@ -753,6 +753,7 @@ OC.L10N.register(
     "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen." : "Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen.",
     "Vorlage gelöscht" : "Vorlage gelöscht",
     "Reihenfolge im Dienstplan" : "Reihenfolge im Dienstplan",
-    "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert." : "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert."
+    "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert." : "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.",
+    "z. B. 8, 830 oder 8:30" : "z. B. 8, 830 oder 8:30"
 },
 "nplurals=2; plural=(n != 1);");
