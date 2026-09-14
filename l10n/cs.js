@@ -728,6 +728,7 @@ OC.L10N.register(
     "½ {type}" : "½ {type}",
     "beantragt: {type}" : "beantragt: {type}",
     "Woche kopiert" : "Woche kopiert",
-    "KW" : "KW"
+    "KW" : "KW",
+    "HH:MM" : "HH:MM"
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");
