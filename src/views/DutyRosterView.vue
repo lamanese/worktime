@@ -373,26 +373,17 @@ export default {
 .week-date { width: 150px; }
 .view-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
 
-.board { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; container-type: inline-size; overflow-x: auto; }
+/* Wochenplan links (flexibel, scrollt bei Bedarf intern), Vorlagen-Leiste rechts
+ * mit fester Breite — nie umbrechen, nie unter den Plan (Ahmad, 2026-09-14). */
+.board { display: flex; gap: 12px; align-items: flex-start; flex-wrap: nowrap; }
 .roster-card {
 	flex: 1 1 auto;
-	min-width: 1230px;
+	min-width: 0;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border-dark);
 	border-radius: var(--border-radius-large, 12px);
 	max-height: calc(100vh - 220px);
 	overflow: auto;
-}
-/* Die Vorlagen-Leiste (DutyRosterView.vue -> DutyTemplateSidebar.vue) rutscht
- * per flex-wrap automatisch unter das Raster, sobald der Platz fuer beide
- * nicht mehr reicht (1230px Raster + 320px Leiste + 12px Abstand = 1562px).
- * Unterhalb dieser Breite nimmt sie die volle Breite ein statt gequetscht
- * daneben zu stehen. */
-@container (max-width: 1560px) {
-	.duty-template-sidebar {
-		width: 100%;
-		flex: 1 1 100%;
-	}
 }
 .roster-grid {
 	display: grid;

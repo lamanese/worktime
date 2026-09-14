@@ -1,5 +1,5 @@
 <template>
-	<aside class="duty-template-sidebar" :class="{ 'sidebar--two-cols': templates.length > 18 }">
+	<aside class="duty-template-sidebar">
 		<h3 class="duty-template-sidebar__title">{{ t('zeitwerk', 'Vorlagen') }}</h3>
 
 		<p v-if="templates.length" class="duty-template-sidebar__hint">
@@ -59,22 +59,19 @@ export default {
 
 <style scoped>
 .duty-template-sidebar {
-	flex: 0 0 220px;
-	min-width: 220px;
+	flex: 0 0 240px;
+	min-width: 240px;
 	align-self: flex-start;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border-dark);
 	border-radius: var(--border-radius-large, 12px);
 	padding: 10px 12px;
 }
-.duty-template-sidebar.sidebar--two-cols {
-	flex: 0 0 320px;
-	min-width: 320px;
-}
+/* Immer einspaltig und rechts vom Wochenplan — nie darunter (Ahmad, 2026-09-14). */
 .duty-template-sidebar__list {
-	column-width: 150px;
-	column-count: auto;
-	column-gap: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 .duty-template-sidebar__title { margin: 0 0 6px; font-size: 15px; }
 .duty-template-sidebar__hint,
