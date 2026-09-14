@@ -136,7 +136,7 @@ class EmployeeController extends BaseController {
         ?string $exitDate = null,
         bool $isActive = true,
         int $workingDaysPerWeek = 5,
-        bool $inDutyRoster = false
+        ?bool $inDutyRoster = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;

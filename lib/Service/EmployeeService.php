@@ -228,7 +228,7 @@ class EmployeeService {
         bool $isActive = true,
         string $currentUserId = '',
         int $workingDaysPerWeek = 5,
-        bool $inDutyRoster = false
+        ?bool $inDutyRoster = null
     ): Employee {
         $employee = $this->find($id);
         $oldValues = $employee->jsonSerialize();
@@ -261,7 +261,10 @@ class EmployeeService {
         $employee->setExitDate($exitDate ? new DateTime($exitDate) : null);
 
         $employee->setIsActive($isActive);
-        $employee->setInDutyRoster($inDutyRoster);
+        // Teil-Update: ohne das Flag im Request bleibt die Dienstplan-Zugehoerigkeit unveraendert.
+        if ($inDutyRoster !== null) {
+            $employee->setInDutyRoster($inDutyRoster);
+        }
         $employee->setUpdatedAt(new DateTime());
 
         $employee = $this->withActiveSchedule($this->employeeMapper->update($employee));
