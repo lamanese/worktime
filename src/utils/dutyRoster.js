@@ -37,12 +37,12 @@ export function getWeekDays(mondayStr) {
 }
 
 /** 'KW 38 · 14.09. – 20.09.2026' */
-export function formatWeekLabel(mondayStr) {
+export function formatWeekLabel(mondayStr, prefix = 'KW') {
 	const monday = parseLocalDate(mondayStr)
 	const sunday = parseLocalDate(addDays(mondayStr, 6))
 	const week = getISOWeek(monday)
 	const dm = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`
-	return `KW ${week} · ${dm(monday)} – ${dm(sunday)}${sunday.getFullYear()}`
+	return `${prefix} ${week} · ${dm(monday)} – ${dm(sunday)}${sunday.getFullYear()}`
 }
 
 /** Timed cards first (by time), untimed last, ties by title. Returns a copy. */
@@ -53,7 +53,7 @@ export function sortJobs(jobs) {
 		if (a.startTime && b.startTime && a.startTime !== b.startTime) {
 			return a.startTime < b.startTime ? -1 : 1
 		}
-		return (a.title || '').localeCompare(b.title || '', 'de')
+		return (a.title || '').localeCompare(b.title || '')
 	})
 }
 

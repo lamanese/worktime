@@ -25,6 +25,10 @@ describe('week helpers (local dates, no UTC shift)', () => {
 		expect(formatWeekLabel('2026-09-14')).toBe('KW 38 · 14.09. – 20.09.2026')
 		expect(formatWeekLabel('2025-12-29')).toBe('KW 1 · 29.12. – 04.01.2026')
 	})
+
+	it('formatWeekLabel accepts a custom prefix', () => {
+		expect(formatWeekLabel('2026-09-14', 'Wk')).toBe('Wk 38 · 14.09. – 20.09.2026')
+	})
 })
 
 describe('sortJobs', () => {

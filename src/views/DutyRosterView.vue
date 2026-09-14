@@ -90,9 +90,9 @@
 			:employee-id="form.employeeId"
 			:date="form.date"
 			:employees="employeeOptions"
-			@saved="closeForm(true)"
-			@deleted="closeForm(false)"
-			@cancel="closeForm(false)" />
+			@saved="closeForm"
+			@deleted="closeForm"
+			@cancel="closeForm" />
 	</div>
 </template>
 
@@ -114,6 +114,7 @@ import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
 import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
+import { getLocale } from '../utils/dateUtils.js'
 
 export default {
 	name: 'DutyRosterView',
@@ -143,7 +144,7 @@ export default {
 			return toDateString(new Date())
 		},
 		weekLabel() {
-			return formatWeekLabel(this.weekStart)
+			return formatWeekLabel(this.weekStart, this.t('zeitwerk', 'KW'))
 		},
 		employeeOptions() {
 			return this.rows.map(r => ({ id: r.employee.id, fullName: r.employee.fullName }))
@@ -178,13 +179,19 @@ export default {
 	created() {
 		this.loadWeek()
 	},
+	mounted() {
+		window.addEventListener('afterprint', this.onAfterPrint)
+	},
+	beforeDestroy() {
+		window.removeEventListener('afterprint', this.onAfterPrint)
+	},
 	methods: {
 		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'copyToNextWeek']),
 		dayName(date) {
-			return parseLocalDate(date).toLocaleDateString('de-DE', { weekday: 'short' })
+			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
 		dayDate(date) {
-			return parseLocalDate(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+			return parseLocalDate(date).toLocaleDateString(getLocale(), { day: '2-digit', month: '2-digit' })
 		},
 		onDatePick(event) {
 			if (event.target.value) this.goToDate(event.target.value)
@@ -257,12 +264,11 @@ export default {
 			if (!this.canManage) return
 			this.form = { open: true, job, employeeId: row.employee.id, date: day.date }
 		},
-		closeForm(saved) {
-			const { employeeId, date } = this.form
+		closeForm(job) {
 			this.form = { open: false, job: null, employeeId: 0, date: '' }
-			if (saved) {
-				const row = this.rows.find(r => r.employee.id === employeeId)
-				const day = this.days.find(d => d.date === date)
+			if (job) {
+				const row = this.rows.find(r => r.employee.id === job.employeeId)
+				const day = this.days.find(d => d.date === job.date)
 				if (row && day) this.notifyAbsence(row, day)
 			}
 		},
@@ -289,7 +295,16 @@ export default {
 			dialog.show()
 		},
 		print() {
+			const style = document.createElement('style')
+			style.id = 'zw-roster-print'
+			style.textContent = '@page { size: landscape; }'
+			document.head.appendChild(style)
+			document.body.classList.add('zw-printing-roster')
 			window.print()
+		},
+		onAfterPrint() {
+			document.body.classList.remove('zw-printing-roster')
+			document.getElementById('zw-roster-print')?.remove()
 		},
 	},
 }
@@ -359,18 +374,30 @@ export default {
 }
 
 @media print {
-	.view-header__nav, .view-toolbar, .roster-add { display: none !important; }
-	.duty-roster-view { padding: 0; max-width: none; }
-	.roster-card { border: none; overflow: visible; max-height: none; }
+	body.zw-printing-roster .view-header__nav,
+	body.zw-printing-roster .view-toolbar,
+	body.zw-printing-roster .roster-add { display: none !important; }
+	body.zw-printing-roster .duty-roster-view { padding: 0; max-width: none; }
+	body.zw-printing-roster .roster-card { border: none; overflow: visible; max-height: none; }
 }
 </style>
 
 <style>
+/*
+ * @page cannot be scoped to this view. Its landscape orientation is added
+ * dynamically via a <style id="zw-roster-print"> element in print() and
+ * removed again in onAfterPrint(), so it only applies while this view
+ * prints. The body class below is toggled the same way, so the chrome
+ * hiding here likewise only applies to the duty roster print.
+ */
 @media print {
-	#header, #app-navigation, #app-navigation-toggle, .app-navigation {
+	body.zw-printing-roster #header,
+	body.zw-printing-roster #app-navigation,
+	body.zw-printing-roster #app-navigation-toggle,
+	body.zw-printing-roster .app-navigation {
 		display: none !important;
 	}
-	.app-content {
+	body.zw-printing-roster .app-content {
 		padding: 0 !important;
 		margin: 0 !important;
 	}

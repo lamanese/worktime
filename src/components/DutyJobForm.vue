@@ -8,6 +8,7 @@
 				<select id="dj-employee" v-model.number="form.employeeId" required>
 					<option v-for="e in employees" :key="e.id" :value="e.id">{{ e.fullName }}</option>
 				</select>
+				<p v-if="errors.employeeId" class="field-error">{{ errors.employeeId[0] }}</p>
 			</div>
 
 			<div class="form-row">
@@ -157,12 +158,10 @@ export default {
 			this.saving = true
 			this.errors = {}
 			try {
-				if (this.isEdit) {
-					await this.updateJob({ id: this.job.id, data: this.payload() })
-				} else {
-					await this.createJob(this.payload())
-				}
-				this.$emit('saved')
+				const job = this.isEdit
+					? await this.updateJob({ id: this.job.id, data: this.payload() })
+					: await this.createJob(this.payload())
+				this.$emit('saved', job)
 			} catch (error) {
 				if (error.errors) {
 					this.errors = error.errors
