@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method string getAbsenceDetail()
  * @method void setAbsenceDetail(string $absenceDetail)
  * @method int getInDutyRoster()
+ * @method int getDutyRosterOrder()
+ * @method void setDutyRosterOrder(int $dutyRosterOrder)
  */
 class Employee extends Entity implements JsonSerializable {
 
@@ -85,6 +87,8 @@ class Employee extends Entity implements JsonSerializable {
     protected string $absenceDetail = 'hidden';
     /** 1 = Zeile im Dienstplan (Wochenplan) */
     protected int $inDutyRoster = 0;
+    /** Reihenfolge der Zeile im Dienstplan, kleinere Zahlen stehen weiter oben */
+    protected int $dutyRosterOrder = 0;
 
     public function __construct() {
         $this->addType('id', 'integer');
@@ -100,6 +104,7 @@ class Employee extends Entity implements JsonSerializable {
         $this->addType('defaultEndTime', 'time');
         $this->addType('defaultProjectId', 'integer');
         $this->addType('inDutyRoster', 'integer');
+        $this->addType('dutyRosterOrder', 'integer');
     }
 
     public function setIsActive(bool|int $isActive): void {
@@ -154,6 +159,7 @@ class Employee extends Entity implements JsonSerializable {
             'absenceVisibility' => $this->absenceVisibility,
             'absenceDetail' => $this->absenceDetail,
             'inDutyRoster' => (bool)$this->inDutyRoster,
+            'dutyRosterOrder' => $this->dutyRosterOrder,
         ];
     }
 }

@@ -29,4 +29,17 @@ class EmployeeDutyRosterTest extends TestCase {
         $employee->setInDutyRoster(0);
         $this->assertSame(0, $employee->getInDutyRoster());
     }
+
+    public function testDutyRosterOrderDefaultsToZero(): void {
+        $employee = new Employee();
+        $this->assertSame(0, $employee->getDutyRosterOrder());
+        $this->assertSame(0, $employee->jsonSerialize()['dutyRosterOrder']);
+    }
+
+    public function testDutyRosterOrderSetterAndJsonSerialize(): void {
+        $employee = new Employee();
+        $employee->setDutyRosterOrder(7);
+        $this->assertSame(7, $employee->getDutyRosterOrder());
+        $this->assertSame(7, $employee->jsonSerialize()['dutyRosterOrder']);
+    }
 }

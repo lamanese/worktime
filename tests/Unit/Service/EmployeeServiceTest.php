@@ -308,6 +308,32 @@ class EmployeeServiceTest extends TestCase {
         $this->assertSame(0, $result->getInDutyRoster());
     }
 
+    // ---- update: partial payload must not clear dutyRosterOrder ----
+
+    public function testUpdateWithoutDutyRosterOrderKeepsValue(): void {
+        $employee = $this->makeEmployee(3, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setDutyRosterOrder(3);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(3, 'Anna', 'Muster');
+
+        $this->assertSame(3, $result->getDutyRosterOrder());
+    }
+
+    public function testUpdateWithDutyRosterOrderSetsValue(): void {
+        $employee = $this->makeEmployee(4, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setDutyRosterOrder(3);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(4, 'Anna', 'Muster', dutyRosterOrder: 7);
+
+        $this->assertSame(7, $result->getDutyRosterOrder());
+    }
+
     // ---- delete: cascade ----
 
     public function testDeleteRemovesMonthStatusRows(): void {

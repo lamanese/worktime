@@ -154,7 +154,8 @@ class EmployeeService {
         ?string $entryDate = null,
         string $currentUserId = '',
         int $workingDaysPerWeek = 5,
-        bool $inDutyRoster = false
+        bool $inDutyRoster = false,
+        int $dutyRosterOrder = 0
     ): Employee {
         $federalState = RegionRegistry::normalize($federalState);
         // Validate
@@ -195,6 +196,7 @@ class EmployeeService {
 
         $employee->setIsActive(true);
         $employee->setInDutyRoster($inDutyRoster);
+        $employee->setDutyRosterOrder($dutyRosterOrder);
         $employee->setCreatedAt(new DateTime());
         $employee->setUpdatedAt(new DateTime());
 
@@ -228,7 +230,8 @@ class EmployeeService {
         bool $isActive = true,
         string $currentUserId = '',
         int $workingDaysPerWeek = 5,
-        ?bool $inDutyRoster = null
+        ?bool $inDutyRoster = null,
+        ?int $dutyRosterOrder = null
     ): Employee {
         $employee = $this->find($id);
         $oldValues = $employee->jsonSerialize();
@@ -264,6 +267,9 @@ class EmployeeService {
         // Teil-Update: ohne das Flag im Request bleibt die Dienstplan-Zugehoerigkeit unveraendert.
         if ($inDutyRoster !== null) {
             $employee->setInDutyRoster($inDutyRoster);
+        }
+        if ($dutyRosterOrder !== null) {
+            $employee->setDutyRosterOrder($dutyRosterOrder);
         }
         $employee->setUpdatedAt(new DateTime());
 

@@ -103,8 +103,9 @@ class EmployeeMapper extends QBMapper {
             ->from($this->getTableName())
             ->where($qb->expr()->eq('is_active', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->eq('in_duty_roster', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
-            ->orderBy('last_name', 'ASC')
-            ->addOrderBy('first_name', 'ASC');
+            ->orderBy('duty_roster_order', 'ASC')
+            ->addOrderBy($qb->func()->lower('last_name'), 'ASC')
+            ->addOrderBy($qb->func()->lower('first_name'), 'ASC');
 
         return $this->findEntities($qb);
     }
