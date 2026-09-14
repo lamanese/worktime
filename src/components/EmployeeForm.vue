@@ -155,27 +155,28 @@
             </div>
         </div>
 
-        <div v-if="isEdit" class="form-group">
-            <NcCheckboxRadioSwitch :checked.sync="form.isActive">
-                {{ t('zeitwerk', 'Aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
-            </NcCheckboxRadioSwitch>
-        </div>
-
-        <div class="form-group">
-            <NcCheckboxRadioSwitch :checked.sync="form.inDutyRoster">
-                {{ t('zeitwerk', 'Im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Der Mitarbeiter erscheint als Zeile im Wochenplan (nur relevant, wenn der Dienstplan in den Firmeneinstellungen aktiv ist).') }}</InfoIcon>
-            </NcCheckboxRadioSwitch>
-        </div>
-
-        <div v-if="form.inDutyRoster" class="form-group">
-            <label for="dutyRosterOrder">{{ t('zeitwerk', 'Reihenfolge im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.') }}</InfoIcon></label>
-            <input id="dutyRosterOrder"
-                v-model.number="form.dutyRosterOrder"
-                type="number"
-                min="0"
-                max="999"
-                step="1"
-                class="input-field input-small">
+        <!-- Aktiv + Im Dienstplan links, Reihenfolge rechts daneben (unter dem Austrittsdatum) -->
+        <div class="form-row">
+            <div class="form-group">
+                <NcCheckboxRadioSwitch v-if="isEdit" :checked.sync="form.isActive">
+                    {{ t('zeitwerk', 'Aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
+                </NcCheckboxRadioSwitch>
+                <NcCheckboxRadioSwitch :checked.sync="form.inDutyRoster">
+                    {{ t('zeitwerk', 'Im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Der Mitarbeiter erscheint als Zeile im Wochenplan (nur relevant, wenn der Dienstplan in den Firmeneinstellungen aktiv ist).') }}</InfoIcon>
+                </NcCheckboxRadioSwitch>
+            </div>
+            <div class="form-group">
+                <template v-if="form.inDutyRoster">
+                    <label for="dutyRosterOrder">{{ t('zeitwerk', 'Reihenfolge im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.') }}</InfoIcon></label>
+                    <input id="dutyRosterOrder"
+                        v-model.number="form.dutyRosterOrder"
+                        type="number"
+                        min="0"
+                        max="999"
+                        step="1"
+                        class="input-field input-small">
+                </template>
+            </div>
         </div>
 
         <WorkScheduleEditor v-if="isEdit && employee"
