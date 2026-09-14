@@ -80,6 +80,15 @@ return [
         ['name' => 'project#update', 'url' => '/api/projects/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'project#destroy', 'url' => '/api/projects/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
+        // Duty roster API (Dienstplan; static routes before {id})
+        ['name' => 'duty_roster#week', 'url' => '/api/duty-roster/week', 'verb' => 'GET'],
+        ['name' => 'duty_roster#titles', 'url' => '/api/duty-roster/titles', 'verb' => 'GET'],
+        ['name' => 'duty_roster#copyWeek', 'url' => '/api/duty-roster/copy-week', 'verb' => 'POST'],
+        ['name' => 'duty_roster#create', 'url' => '/api/duty-roster/jobs', 'verb' => 'POST'],
+        ['name' => 'duty_roster#update', 'url' => '/api/duty-roster/jobs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'duty_roster#move', 'url' => '/api/duty-roster/jobs/{id}/move', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'duty_roster#destroy', 'url' => '/api/duty-roster/jobs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
         // Daily Kilometers API (Extern)
         ['name' => 'daily_km#index', 'url' => '/api/daily-km', 'verb' => 'GET'],
         ['name' => 'daily_km#upsert', 'url' => '/api/daily-km', 'verb' => 'PUT'],
