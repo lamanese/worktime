@@ -725,7 +725,9 @@
 		"Notiz darf höchstens %d Zeichen haben": "Notiz darf höchstens %d Zeichen haben",
 		"Feiertag: {name}": "Feiertag: {name}",
 		"½ {type}": "½ {type}",
-		"beantragt: {type}": "beantragt: {type}"
+		"beantragt: {type}": "beantragt: {type}",
+		"Woche kopiert": "Woche kopiert",
+		"KW": "KW"
 	},
 	"pluralForm": "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;"
 }

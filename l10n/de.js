@@ -726,6 +726,8 @@ OC.L10N.register(
     "Notiz darf höchstens %d Zeichen haben" : "Notiz darf höchstens %d Zeichen haben",
     "Feiertag: {name}" : "Feiertag: {name}",
     "½ {type}" : "½ {type}",
-    "beantragt: {type}" : "beantragt: {type}"
+    "beantragt: {type}" : "beantragt: {type}",
+    "Woche kopiert" : "Woche kopiert",
+    "KW" : "KW"
 },
 "nplurals=2; plural=(n != 1);");
