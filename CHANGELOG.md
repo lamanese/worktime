@@ -9,6 +9,11 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Added
 - **Dienstplan (Wochenplan)** als abschaltbares Modul: Zeile pro Mitarbeiter mit Haekchen «Im Dienstplan», Spalten Mo–So, Auftragskarten (Uhrzeit, Dauer, Titel mit Vorschlaegen, Notiz, «Auf Abruf»), Drag and Drop, «Woche in naechste Woche kopieren», Druckansicht. Zellen mit genehmigter Abwesenheit oder Feiertag werden gedimmt, beantragte Abwesenheiten gestrichelt markiert (nur Planer). Planen duerfen Admin, HR und Vorgesetzte; alle anderen sehen den Plan lesend. Firmeneinstellung «Dienstplan aktiv», Standard aus. Migration V25 (Tabelle `zw_duty_jobs`, Spalte `in_duty_roster`).
+- **Auftragsvorlagen fuer den Dienstplan**: Wiederkehrende Standard-Auftraege werden in den Einstellungen unter «Dienstplan-Vorlagen» gepflegt (Titel, Uhrzeit, Dauer, Notiz, «Auf Abruf», sichtbar ja/nein) und erscheinen in der Wochenansicht als Seitenleiste. Planer ziehen eine Vorlage beliebig oft in eine Zelle; daraus entsteht sofort eine Auftragskarte, die Vorlage bleibt stehen. Pflegen darf nur die Administration, ist das Modul aus, sind alle Vorlagen-Routen gesperrt. Migration V26 (Tabelle `zw_duty_job_templates`).
+
+### Fixed
+- **Dauer-Feld im Dienstplan akzeptierte nicht jede Minutenzahl**: `min="1" step="5"` liess im Auftragsformular nur 1, 6, 11, ... 1436 als gueltige Werte zu, der Browser meldete z.B. 30 Minuten als ungueltig. Das Feld erlaubt jetzt jede Minutenzahl, die Schnellwahl-Buttons (30/60/90/120) bleiben unveraendert.
+- **Uhrzeit- und Datumsfelder folgten der Browser-Locale statt fest 24 h und DD.MM.YYYY**: Native `<input type="time">`/`type="date"` zeigten je nach Spracheinstellung z.B. AM/PM oder MM/DD/YYYY. Betroffen waren das Auftragsformular im Dienstplan, die Zeiterfassung (Beginn/Ende) und «Meine Einstellungen» (Standard-Arbeitsbeginn/-ende); Uhrzeiten werden jetzt zusaetzlich clientseitig gegen das Muster HH:MM geprueft, bevor sie gespeichert werden.
 
 ## [0.18.2] - 2026-09-07
 
