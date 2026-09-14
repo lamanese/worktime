@@ -117,7 +117,7 @@ import { mapGetters, mapActions } from 'vuex'
 import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
 import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
-import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop } from '../utils/dutyRoster.js'
+import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { getLocale } from '../utils/dateUtils.js'
 
@@ -216,7 +216,7 @@ export default {
 		onDragOver(event, row, day) {
 			if (!this.canManage) return
 			event.preventDefault()
-			event.dataTransfer.dropEffect = event.dataTransfer.types.includes('application/x-zeitwerk-duty-template') ? 'copy' : 'move'
+			event.dataTransfer.dropEffect = event.dataTransfer.types.includes(DUTY_TEMPLATE_MIME) ? 'copy' : 'move'
 			this.overKey = this.cellKey(row, day)
 		},
 		onDragLeave(row, day) {

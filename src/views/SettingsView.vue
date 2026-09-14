@@ -1400,6 +1400,10 @@ export default {
                 this.selectedHolidayCountryFilter = this.holidayCountryFilterOptions.find(o => o.id === country) || null
                 this.selectedHolidayStateFilter = this.holidayStateFilterOptions.find(o => o.id === region) || null
             }
+            // Deeplink (#sec=...) kann auf eine Section zeigen, die erst nach dem
+            // Laden der Einstellungen sichtbar wird (z.B. Dienstplan-Vorlagen) -
+            // initActiveSection() lief in created() bereits vor deren Ankunft.
+            this.reapplySectionFromUrl()
         })
         if (this.canManageEmployees) {
             this.$store.dispatch('employees/fetchEmployees')
@@ -1479,6 +1483,14 @@ export default {
                 this.activeSection = fromUrl
             } else if (ids.length) {
                 this.activeSection = ids[0]
+            }
+        },
+        reapplySectionFromUrl() {
+            const hash = window.location.hash || ''
+            const match = hash.match(/sec=([^&]+)/)
+            const fromUrl = match ? decodeURIComponent(match[1]) : null
+            if (fromUrl && fromUrl !== this.activeSection && this.availableSectionIds.includes(fromUrl)) {
+                this.activeSection = fromUrl
             }
         },
         async loadSettings() {

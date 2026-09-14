@@ -95,6 +95,6 @@ export default {
 }
 
 @media print {
-	.duty-template-sidebar { display: none !important; }
+	body.zw-printing-roster .duty-template-sidebar { display: none !important; }
 }
 </style>
