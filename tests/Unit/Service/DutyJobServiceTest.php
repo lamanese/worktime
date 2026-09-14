@@ -26,7 +26,6 @@ use OCA\Zeitwerk\Service\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 class DutyJobServiceTest extends TestCase {
 
@@ -37,11 +36,15 @@ class DutyJobServiceTest extends TestCase {
     private PermissionService $permissionService;
     private AuditLogService $auditLogService;
     private DutyJobService $service;
+    private bool $absenceRowVisible = true;
 
     protected function setUp(): void {
         $this->jobMapper = $this->createMock(DutyJobMapper::class);
         $this->employeeMapper = $this->createMock(EmployeeMapper::class);
         $this->absenceService = $this->createMock(AbsenceService::class);
+        $this->absenceRowVisible = true;
+        $this->absenceService->method('isEmployeeVisibleInOverview')
+            ->willReturnCallback(fn (): bool => $this->absenceRowVisible);
         $this->holidayService = $this->createMock(HolidayService::class);
         $this->permissionService = $this->createMock(PermissionService::class);
         $this->auditLogService = $this->createMock(AuditLogService::class);
@@ -56,12 +59,13 @@ class DutyJobServiceTest extends TestCase {
             $this->permissionService,
             $this->auditLogService,
             $l10n,
-            $this->createMock(LoggerInterface::class),
         );
     }
 
-    private function makeEmployee(int $id, bool $inRoster = true, string $region = 'DE-BW', string $userId = 'u'): Employee {
+    private function makeEmployee(int $id, bool $inRoster = true, string $region = 'DE-BW', string $userId = 'u', string $visibility = 'all', string $detail = 'masked'): Employee {
         $e = new Employee();
+        $e->setAbsenceVisibility($visibility);
+        $e->setAbsenceDetail($detail);
         $e->setId($id);
         $e->setUserId($userId . $id);
         $e->setFirstName('F' . $id);
@@ -214,8 +218,19 @@ class DutyJobServiceTest extends TestCase {
 
     // --- getWeek ---
 
+    /**
+     * Viewer defaults: not privileged, no employee record, empty subtree.
+     */
+    private function mockViewer(bool $isPrivileged = false, ?Employee $viewer = null, array $subtree = []): void {
+        $this->permissionService->method('isAdmin')->willReturn($isPrivileged);
+        $this->permissionService->method('isHrManager')->willReturn(false);
+        $this->permissionService->method('getEmployeeForUser')->willReturn($viewer);
+        $this->permissionService->method('getSubordinateEmployees')->willReturn($subtree);
+    }
+
     public function testGetWeekOnlyRosterEmployeesAndResolvesAbsencesPerDay(): void {
         $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(true);
         $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
         $this->jobMapper->method('findByDateRange')->willReturn([
             $this->makeJob(1, 1, '2026-09-15', '09:00', 'A'),
@@ -250,8 +265,9 @@ class DutyJobServiceTest extends TestCase {
 
     public function testGetWeekMasksAbsencesForNonPlanner(): void {
         $this->permissionService->method('canManageDutyRoster')->willReturn(false);
+        $this->mockViewer();
         $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
-        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->jobMapper->method('findByDateRange')->willReturn([$this->makeJob(1, 1, '2026-09-15', '09:00', 'A')]);
         $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
             $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
             $this->makeAbsence('2026-09-16', '2026-09-16', 'vacation', 'pending'),
@@ -265,10 +281,118 @@ class DutyJobServiceTest extends TestCase {
         $this->assertCount(1, $absences);
         $this->assertSame('absent', $absences[0]['type']);
         $this->assertSame('Abwesend', $absences[0]['typeName']);
+        // L1: non-planners must not see who created a card or when
+        $job = $week['rows'][0]['jobs'][0];
+        $this->assertArrayNotHasKey('createdBy', $job);
+        $this->assertArrayNotHasKey('createdAt', $job);
+        $this->assertArrayNotHasKey('updatedAt', $job);
+        $this->assertSame('A', $job['title']);
+    }
+
+    public function testGetWeekMasksAbsencesForSupervisorOutsideOwnSubtree(): void {
+        // canManageDutyRoster is true (planner), but employee 3 is not in the subtree:
+        // planning rights must not unmask absence reasons.
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(false, $this->makeEmployee(2), [$this->makeEmployee(5)]);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(3)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
+            $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
+            $this->makeAbsence('2026-09-16', '2026-09-16', 'vacation', 'pending'),
+        ]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        $week = $this->service->getWeek(new DateTime('2026-09-14'), 'boss');
+
+        $absences = $week['rows'][0]['absences'];
+        $this->assertCount(1, $absences);
+        $this->assertSame('absent', $absences[0]['type']);
+        $this->assertSame('Abwesend', $absences[0]['typeName']);
+    }
+
+    public function testGetWeekShowsFullAbsencesForSupervisorInsideOwnSubtree(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(false, $this->makeEmployee(2), [$this->makeEmployee(3)]);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(3)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
+            $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
+            $this->makeAbsence('2026-09-16', '2026-09-16', 'vacation', 'pending'),
+        ]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        $week = $this->service->getWeek(new DateTime('2026-09-14'), 'boss');
+
+        $absences = $week['rows'][0]['absences'];
+        $this->assertCount(2, $absences);
+        $this->assertSame('sick', $absences[0]['type']);
+        $this->assertSame('pending', $absences[1]['status']);
+        $this->assertSame('vacation', $absences[1]['type']);
+    }
+
+    public function testGetWeekHidesAbsencesButKeepsRowWhenNotVisible(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(false);
+        $this->mockViewer(false, $this->makeEmployee(2));
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(3, true, 'DE-BW', 'u', 'none')]);
+        $this->jobMapper->method('findByDateRange')->willReturn([$this->makeJob(1, 3, '2026-09-15', '09:00', 'A')]);
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
+            $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
+        ]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        // The real visibility rule decides: 'none' hides the absences of employee 3.
+        $this->absenceRowVisible = false;
+
+        $week = $this->service->getWeek(new DateTime('2026-09-14'), 'worker');
+
+        $this->assertCount(1, $week['rows']);
+        $this->assertSame(3, $week['rows'][0]['employee']['id']);
+        $this->assertSame([], $week['rows'][0]['absences']);
+        $this->assertCount(1, $week['rows'][0]['jobs']);
+    }
+
+    public function testGetWeekDetailedAbsenceDetailShowsTypeButNoPending(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(false);
+        $this->mockViewer(false, $this->makeEmployee(2));
+        $this->employeeMapper->method('findAllActiveInDutyRoster')
+            ->willReturn([$this->makeEmployee(3, true, 'DE-BW', 'u', 'all', 'detailed')]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
+            $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
+            $this->makeAbsence('2026-09-16', '2026-09-16', 'vacation', 'pending'),
+        ]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        $week = $this->service->getWeek(new DateTime('2026-09-14'), 'worker');
+
+        $absences = $week['rows'][0]['absences'];
+        $this->assertCount(1, $absences);
+        $this->assertSame('sick', $absences[0]['type']);
+        $this->assertSame('approved', $absences[0]['status']);
+    }
+
+    public function testGetWeekOwnRowIsAlwaysUnmasked(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(false);
+        $this->mockViewer(false, $this->makeEmployee(3));
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(3)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([
+            $this->makeAbsence('2026-09-15', '2026-09-15', 'sick', 'approved'),
+            $this->makeAbsence('2026-09-16', '2026-09-16', 'vacation', 'pending'),
+        ]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        $week = $this->service->getWeek(new DateTime('2026-09-14'), 'worker');
+
+        $absences = $week['rows'][0]['absences'];
+        $this->assertCount(2, $absences);
+        $this->assertSame('sick', $absences[0]['type']);
+        $this->assertSame('vacation', $absences[1]['type']);
     }
 
     public function testGetWeekClampsAbsenceEndAtSundayWithoutMutating(): void {
         $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(true);
         $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
         $this->jobMapper->method('findByDateRange')->willReturn([]);
         $absence = $this->makeAbsence('2026-09-19', '2026-09-25', 'vacation', 'approved');

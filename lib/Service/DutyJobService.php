@@ -18,7 +18,6 @@ use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
-use Psr\Log\LoggerInterface;
 
 /**
  * Dienstplan (Wochenplan): Auftragskarten pro Mitarbeiter und Tag. Fachlich
@@ -39,7 +38,6 @@ class DutyJobService {
         private PermissionService $permissionService,
         private AuditLogService $auditLogService,
         private IL10N $l,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -62,6 +60,12 @@ class DutyJobService {
         $monday = self::mondayOf($monday);
         $sunday = (clone $monday)->add(new DateInterval('P6D'));
         $canManage = $this->permissionService->canManageDutyRoster($userId);
+        $isPrivileged = $this->permissionService->isAdmin($userId) || $this->permissionService->isHrManager($userId);
+        $viewer = $this->permissionService->getEmployeeForUser($userId);
+        $viewerId = $viewer?->getId();
+        $subtreeIds = $viewerId !== null
+            ? array_map(static fn (Employee $e) => $e->getId(), $this->permissionService->getSubordinateEmployees($viewerId))
+            : [];
         $today = (new DateTime())->format('Y-m-d');
 
         $days = [];
@@ -87,14 +91,27 @@ class DutyJobService {
 
         $rows = [];
         foreach ($employees as $employee) {
+            $visible = $this->absenceService->isEmployeeVisibleInOverview($employee, $isPrivileged, $viewerId, $subtreeIds);
+            $unmasked = $isPrivileged
+                || in_array($employee->getId(), $subtreeIds, true)
+                || $employee->getId() === $viewerId;
+
+            $jobs = $jobsByEmployee[$employee->getId()] ?? [];
+            if (!$canManage) {
+                $jobs = array_map(
+                    static fn (array $job) => array_diff_key($job, ['createdBy' => null, 'createdAt' => null, 'updatedAt' => null]),
+                    $jobs
+                );
+            }
+
             $rows[] = [
                 'employee' => [
                     'id' => $employee->getId(),
                     'userId' => $employee->getUserId(),
                     'fullName' => $employee->getFullName(),
                 ],
-                'jobs' => $jobsByEmployee[$employee->getId()] ?? [],
-                'absences' => $this->absenceDays($employee, $monday, $sunday, $canManage),
+                'jobs' => $jobs,
+                'absences' => $visible ? $this->absenceDays($employee, $monday, $sunday, $unmasked) : [],
                 'holidays' => $this->holidayDays($employee, $monday, $sunday),
             ];
         }
@@ -109,9 +126,12 @@ class DutyJobService {
     }
 
     /**
-     * Absences resolved to single days inside the week. Planners get approved and
-     * pending with the real type; everyone else only approved, masked as
-     * 'absent' (same rule as AbsenceService::getAbsenceOverview for non-team).
+     * Absences resolved to single days inside the week. Same rule as
+     * AbsenceService::getAbsenceOverview: viewers who see the employee unmasked
+     * (Admin/HR, own subtree, own row) get approved AND pending with the real
+     * type; everyone else only approved, masked as 'absent' — unless the
+     * employee's absenceDetail is 'detailed', then the real type is shown but
+     * still no pending requests.
      *
      * @return array<int, array{date:string,type:string,typeName:string,status:string,scope:float}>
      */
@@ -126,8 +146,9 @@ class DutyJobService {
             } else {
                 continue;
             }
-            $type = $unmasked ? (string)$absence->getType() : 'absent';
-            $typeName = $unmasked ? $absence->getTypeName() : $this->l->t('Abwesend');
+            $showType = $unmasked || $employee->getAbsenceDetail() === 'detailed';
+            $type = $showType ? (string)$absence->getType() : 'absent';
+            $typeName = $showType ? $absence->getTypeName() : $this->l->t('Abwesend');
 
             $cursor = $absence->getStartDate() > $monday ? $absence->getStartDate() : $monday;
             $end = $absence->getEndDate() < $sunday ? $absence->getEndDate() : $sunday;
