@@ -472,7 +472,7 @@
                 <NcModal v-if="showTemplateForm"
                     :name="editingTemplate ? t('zeitwerk', 'Vorlage bearbeiten') : t('zeitwerk', 'Neue Vorlage')"
                     @close="closeTemplateForm">
-                    <div class="holiday-form-modal">
+                    <form class="holiday-form-modal" @submit.prevent="saveTemplate">
                         <h3>{{ editingTemplate ? t('zeitwerk', 'Vorlage bearbeiten') : t('zeitwerk', 'Neue Vorlage') }}</h3>
                         <div class="form-group">
                             <label for="templateTitle">{{ t('zeitwerk', 'Titel') }}</label>
@@ -527,16 +527,16 @@
                             </NcCheckboxRadioSwitch>
                         </div>
                         <div class="form-actions">
-                            <NcButton type="tertiary" @click="closeTemplateForm">
+                            <NcButton type="tertiary" native-type="button" @click="closeTemplateForm">
                                 {{ t('zeitwerk', 'Abbrechen') }}
                             </NcButton>
                             <NcButton type="primary"
-                                :disabled="!templateFormData.title.trim()"
-                                @click="saveTemplate">
+                                native-type="submit"
+                                :disabled="!templateFormData.title.trim()">
                                 {{ editingTemplate ? t('zeitwerk', 'Speichern') : t('zeitwerk', 'Erstellen') }}
                             </NcButton>
                         </div>
-                    </div>
+                    </form>
                 </NcModal>
 
             </NcSettingsSection>
@@ -1076,7 +1076,7 @@ import OvertimePayoutService from '../services/OvertimePayoutService.js'
 import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
-import { formatMinutes } from '../utils/timeUtils.js'
+import { formatMinutes, isValidTimeString } from '../utils/timeUtils.js'
 import { ABSENCE_TYPE_LABELS } from '../constants.js'
 import { countryOf, countryOptions, regionOptions, firstRegionOf, regionCodesOf } from '../utils/regions.js'
 import { groupHolidays } from '../utils/holidayGroups.js'
@@ -1796,6 +1796,11 @@ export default {
         },
         async saveTemplate() {
             this.templateErrors = {}
+            const startTime = this.templateFormData.startTime.trim()
+            if (startTime && !isValidTimeString(startTime)) {
+                this.$set(this.templateErrors, 'startTime', this.t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)'))
+                return
+            }
             try {
                 if (this.editingTemplate) {
                     await DutyJobTemplateService.update(this.editingTemplate.id, this.templatePayload())
