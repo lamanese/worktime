@@ -161,6 +161,12 @@
             </NcCheckboxRadioSwitch>
         </div>
 
+        <div class="form-group">
+            <NcCheckboxRadioSwitch :checked.sync="form.inDutyRoster">
+                {{ t('zeitwerk', 'Im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Der Mitarbeiter erscheint als Zeile im Wochenplan (nur relevant, wenn der Dienstplan in den Firmeneinstellungen aktiv ist).') }}</InfoIcon>
+            </NcCheckboxRadioSwitch>
+        </div>
+
         <WorkScheduleEditor v-if="isEdit && employee"
             :employee-id="employee.id"
             @updated="$emit('schedule-updated')" />
@@ -226,6 +232,7 @@ export default {
                 entryDate: null,
                 exitDate: null,
                 isActive: true,
+                inDutyRoster: false,
             },
         }
     },
@@ -353,6 +360,7 @@ export default {
                         entryDate: employee.entryDate ? new Date(employee.entryDate) : null,
                         exitDate: employee.exitDate ? new Date(employee.exitDate) : null,
                         isActive: employee.isActive,
+                        inDutyRoster: !!employee.inDutyRoster,
                     }
                 } else {
                     this.resetForm()
@@ -384,6 +392,7 @@ export default {
                 entryDate: null,
                 exitDate: null,
                 isActive: true,
+                inDutyRoster: false,
             }
         },
         cancel() {
@@ -405,6 +414,7 @@ export default {
                     entryDate: this.form.entryDate ? formatDateISO(this.form.entryDate) : null,
                     exitDate: this.form.exitDate ? formatDateISO(this.form.exitDate) : null,
                     isActive: this.form.isActive,
+                    inDutyRoster: this.form.inDutyRoster,
                 }
 
                 if (this.isEdit) {

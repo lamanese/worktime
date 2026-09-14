@@ -206,6 +206,12 @@
                         {{ t('zeitwerk', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.duty_roster_enabled"
+                        @update:checked="saveSettingBool('duty_roster_enabled')">
+                        {{ t('zeitwerk', 'Dienstplan aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Schaltet den Wochenplan für den Aussendienst frei. Welche Mitarbeitenden als Zeile erscheinen, legen Sie im Mitarbeiterprofil über «Im Dienstplan» fest.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
@@ -1331,6 +1337,7 @@ export default {
                     fieldwork_allowance_on_extern_absence: settings.fieldwork_allowance_on_extern_absence === '1',
                     allow_employee_default_project: settings.allow_employee_default_project === '1',
                     allow_employee_default_description: settings.allow_employee_default_description === '1',
+                    duty_roster_enabled: settings.duty_roster_enabled === '1',
                 }
             } catch (error) {
                 console.error('Failed to load settings:', error)
@@ -1350,6 +1357,10 @@ export default {
             try {
                 await SettingsService.update(key, this.settings[key] ? '1' : '0')
                 showSuccessMessage(this.t('zeitwerk', 'Einstellung gespeichert'))
+                if (key === 'duty_roster_enabled') {
+                    // Navigation reagiert sofort (Tab ein-/ausblenden)
+                    await this.$store.dispatch('permissions/fetchPermissions')
+                }
             } catch (error) {
                 showErrorMessage(error.message)
             }
