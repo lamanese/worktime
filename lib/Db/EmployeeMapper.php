@@ -93,6 +93,23 @@ class EmployeeMapper extends QBMapper {
     }
 
     /**
+     * Active employees that appear as a row in the duty roster (Dienstplan).
+     *
+     * @return Employee[]
+     */
+    public function findAllActiveInDutyRoster(): array {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('is_active', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('in_duty_roster', $qb->createNamedParameter(1, IQueryBuilder::PARAM_INT)))
+            ->orderBy('last_name', 'ASC')
+            ->addOrderBy('first_name', 'ASC');
+
+        return $this->findEntities($qb);
+    }
+
+    /**
      * @return Employee[]
      */
     public function findBySupervisor(int $supervisorId): array {

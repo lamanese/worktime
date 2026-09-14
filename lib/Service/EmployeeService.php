@@ -153,7 +153,8 @@ class EmployeeService {
         string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
         string $currentUserId = '',
-        int $workingDaysPerWeek = 5
+        int $workingDaysPerWeek = 5,
+        bool $inDutyRoster = false
     ): Employee {
         $federalState = RegionRegistry::normalize($federalState);
         // Validate
@@ -193,6 +194,7 @@ class EmployeeService {
         }
 
         $employee->setIsActive(true);
+        $employee->setInDutyRoster($inDutyRoster);
         $employee->setCreatedAt(new DateTime());
         $employee->setUpdatedAt(new DateTime());
 
@@ -225,7 +227,8 @@ class EmployeeService {
         ?string $exitDate = null,
         bool $isActive = true,
         string $currentUserId = '',
-        int $workingDaysPerWeek = 5
+        int $workingDaysPerWeek = 5,
+        bool $inDutyRoster = false
     ): Employee {
         $employee = $this->find($id);
         $oldValues = $employee->jsonSerialize();
@@ -258,6 +261,7 @@ class EmployeeService {
         $employee->setExitDate($exitDate ? new DateTime($exitDate) : null);
 
         $employee->setIsActive($isActive);
+        $employee->setInDutyRoster($inDutyRoster);
         $employee->setUpdatedAt(new DateTime());
 
         $employee = $this->withActiveSchedule($this->employeeMapper->update($employee));
