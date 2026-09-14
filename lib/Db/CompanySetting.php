@@ -62,6 +62,9 @@ class CompanySetting extends Entity implements JsonSerializable {
     /** 1 = Mitarbeiter dürfen eine Standard-Beschreibung festlegen */
     public const KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION = 'allow_employee_default_description';
 
+    // Dienstplan-Modul (Wochenplan): 1 = Navigationseintrag und API aktiv
+    public const KEY_DUTY_ROSTER_ENABLED = 'duty_roster_enabled';
+
     public const OPERATOR_GTE = 'gte';
     public const OPERATOR_GT = 'gt';
     public const BASIS_GROSS = 'gross';
@@ -92,6 +95,7 @@ class CompanySetting extends Entity implements JsonSerializable {
         self::KEY_EXTERN_ABSENCE_TYPES => '',
         self::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT => '0',
         self::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION => '0',
+        self::KEY_DUTY_ROSTER_ENABLED => '0',
     ];
 
     protected string $settingKey = '';

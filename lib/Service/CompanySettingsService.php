@@ -176,6 +176,13 @@ class CompanySettingsService {
     }
 
     /**
+     * Whether the duty roster module (Dienstplan) is switched on
+     */
+    public function isDutyRosterEnabled(): bool {
+        return $this->getBool(CompanySetting::KEY_DUTY_ROSTER_ENABLED);
+    }
+
+    /**
      * Get minimum break minutes for >6h work
      */
     public function getMinBreakMinutes6h(): int {
