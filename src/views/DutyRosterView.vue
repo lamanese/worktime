@@ -56,7 +56,7 @@
 
 					<template v-for="row in rows">
 						<div :key="'name-' + row.employee.id" class="roster-name" :style="rowStyles[row.employee.id]">
-							<NcAvatar :user="row.employee.userId" :display-name="row.employee.fullName" :size="28" :show-user-status="false" />
+							<NcAvatar :user="row.employee.userId" :display-name="row.employee.fullName" :size="24" :show-user-status="false" />
 							<span>{{ row.employee.fullName }}</span>
 						</div>
 						<div v-for="day in days"
@@ -387,27 +387,27 @@ export default {
 }
 .roster-grid {
 	display: grid;
-	grid-template-columns: 180px repeat(var(--day-count), minmax(150px, 1fr));
+	grid-template-columns: 150px repeat(var(--day-count), minmax(130px, 1fr));
 }
 .roster-corner, .roster-day-header {
 	position: sticky; top: 0; z-index: 1;
 	background: var(--color-main-background);
 	border-bottom: 1px solid var(--color-border-dark);
-	padding: 10px 12px;
+	padding: 6px 10px;
 }
 .roster-day-header { display: flex; flex-direction: column; font-weight: 600; font-size: 14px; color: var(--color-text-maxcontrast); }
 .roster-day-header.today { color: var(--color-primary-element); }
 .roster-day-date { font-weight: 400; font-size: 12px; }
 .roster-name {
 	display: flex; align-items: center; gap: 8px;
-	padding: 10px 12px; font-weight: 600;
+	padding: 6px 10px; font-weight: 600; font-size: 13px;
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 	border-left: 4px solid var(--duty-row-color, transparent);
 }
 .roster-cell {
 	position: relative;
-	min-height: 96px;
-	padding: 6px;
+	min-height: 64px;
+	padding: 4px;
 	border-left: 1px solid var(--color-border-light, var(--color-border));
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
 	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.06);

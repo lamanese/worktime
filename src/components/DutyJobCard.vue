@@ -8,12 +8,9 @@
 		@click="$emit('edit', job)"
 		@keydown.enter.prevent="$emit('edit', job)"
 		@dragstart="onDragStart">
-		<div class="duty-job__head">
-			<span class="duty-job__time">{{ job.startTime || '–' }}</span>
-			<span v-if="duration" class="duty-job__duration">{{ duration }}</span>
-		</div>
-		<div class="duty-job__title">{{ job.title }}</div>
-		<div v-if="job.note" class="duty-job__note">{{ job.note }}</div>
+		<span class="duty-job__time">{{ job.startTime || '–' }}</span>
+		<span class="duty-job__title">{{ job.title }}</span>
+		<span v-if="duration" class="duty-job__duration">{{ duration }}</span>
 	</div>
 </template>
 
@@ -53,20 +50,21 @@ export default {
 	border: 1px solid var(--color-border-dark);
 	border-left: 3px solid var(--duty-row-color, var(--color-primary-element));
 	border-radius: var(--border-radius-element, 8px);
-	padding: 4px 8px;
-	margin-bottom: 4px;
-	font-size: 13px;
+	padding: 2px 6px;
+	margin-bottom: 3px;
+	font-size: 12.5px;
 	line-height: 1.3;
 	cursor: pointer;
 	user-select: none;
+	display: flex; align-items: center; gap: 6px;
 }
 .duty-job--draggable { cursor: grab; }
 .duty-job--draggable:active { cursor: grabbing; }
 .duty-job:hover { background: var(--color-background-hover); }
-.duty-job__head { display: flex; justify-content: space-between; gap: 6px; }
-.duty-job__time { font-weight: 600; }
-.duty-job__duration, .duty-job__note { color: var(--color-text-maxcontrast); font-size: 12px; }
-.duty-job__note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Kompakt, eine Zeile: Zeit links, Titel, Dauer rechts (Notiz nur als Tooltip). */
+.duty-job__time { font-weight: 600; flex: 0 0 auto; }
+.duty-job__title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.duty-job__duration { color: var(--color-text-maxcontrast); font-size: 11px; flex: 0 0 auto; }
 .duty-job--on-call { border-style: dashed; font-style: italic; }
 .duty-job--dimmed { opacity: 0.45; filter: grayscale(1); }
 </style>
