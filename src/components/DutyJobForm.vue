@@ -44,7 +44,7 @@
 			<div class="form-group">
 				<label for="dj-duration">{{ t('zeitwerk', 'Dauer (Minuten)') }}</label>
 				<div class="duration-row">
-					<input id="dj-duration" v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="5">
+					<input id="dj-duration" v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1">
 					<NcButton v-for="m in [30, 60, 90, 120]" :key="m" type="tertiary" @click="form.durationMinutes = m">
 						{{ m }}
 					</NcButton>
