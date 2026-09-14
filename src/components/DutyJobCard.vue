@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { formatDuration } from '../utils/dutyRoster.js'
+import { formatDuration, DUTY_JOB_MIME } from '../utils/dutyRoster.js'
 
 export default {
 	name: 'DutyJobCard',
@@ -39,7 +39,7 @@ export default {
 				return
 			}
 			event.dataTransfer.setData('text/plain', String(this.job.id))
-			event.dataTransfer.setData('application/x-zeitwerk-duty-job', String(this.job.id))
+			event.dataTransfer.setData(DUTY_JOB_MIME, String(this.job.id))
 			event.dataTransfer.effectAllowed = 'move'
 			this.$emit('dragstart', this.job)
 		},

@@ -1486,9 +1486,12 @@ export default {
             }
         },
         reapplySectionFromUrl() {
-            const hash = window.location.hash || ''
-            const match = hash.match(/sec=([^&]+)/)
-            const fromUrl = match ? decodeURIComponent(match[1]) : null
+            let fromUrl = this.$route?.query?.sec ?? null
+            if (!fromUrl) {
+                const hash = window.location.hash || ''
+                const match = hash.match(/[?&]sec=([^&]+)/)
+                fromUrl = match ? decodeURIComponent(match[1]) : null
+            }
             if (fromUrl && fromUrl !== this.activeSection && this.availableSectionIds.includes(fromUrl)) {
                 this.activeSection = fromUrl
             }
