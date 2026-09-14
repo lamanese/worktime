@@ -1,24 +1,26 @@
 <template>
-	<aside class="duty-template-sidebar">
+	<aside class="duty-template-sidebar" :class="{ 'sidebar--two-cols': templates.length > 18 }">
 		<h3 class="duty-template-sidebar__title">{{ t('zeitwerk', 'Vorlagen') }}</h3>
 
 		<p v-if="templates.length" class="duty-template-sidebar__hint">
 			{{ t('zeitwerk', 'In eine Zelle ziehen, um den Auftrag einzuplanen. Die Vorlage bleibt hier stehen.') }}
 		</p>
 
-		<div v-for="template in templates"
-			:key="template.id"
-			class="duty-template"
-			:class="{ 'duty-template--on-call': template.onCall }"
-			draggable="true"
-			:title="template.note || ''"
-			@dragstart="onDragStart($event, template)">
-			<div class="duty-template__head">
-				<span class="duty-template__time">{{ template.startTime || '–' }}</span>
-				<span v-if="duration(template)" class="duty-template__duration">{{ duration(template) }}</span>
+		<div class="duty-template-sidebar__list" :class="{ 'sidebar--two-cols': templates.length > 18 }">
+			<div v-for="template in templates"
+				:key="template.id"
+				class="duty-template"
+				:class="{ 'duty-template--on-call': template.onCall }"
+				draggable="true"
+				:title="template.note || ''"
+				@dragstart="onDragStart($event, template)">
+				<div class="duty-template__head">
+					<span class="duty-template__time">{{ template.startTime || '–' }}</span>
+					<span v-if="duration(template)" class="duty-template__duration">{{ duration(template) }}</span>
+				</div>
+				<div class="duty-template__title">{{ template.title }}</div>
+				<div v-if="template.note" class="duty-template__note">{{ template.note }}</div>
 			</div>
-			<div class="duty-template__title">{{ template.title }}</div>
-			<div v-if="template.note" class="duty-template__note">{{ template.note }}</div>
 		</div>
 
 		<div v-if="!templates.length" class="duty-template-sidebar__empty">
@@ -68,6 +70,14 @@ export default {
 	border-radius: var(--border-radius-large, 12px);
 	padding: 10px 12px;
 }
+.duty-template-sidebar.sidebar--two-cols {
+	flex: 0 0 480px;
+	min-width: 480px;
+}
+.duty-template-sidebar__list.sidebar--two-cols {
+	column-count: 2;
+	column-gap: 8px;
+}
 .duty-template-sidebar__title { margin: 0 0 6px; font-size: 15px; }
 .duty-template-sidebar__hint,
 .duty-template-sidebar__empty { font-size: 12px; color: var(--color-text-maxcontrast); }
@@ -83,6 +93,7 @@ export default {
 	line-height: 1.3;
 	cursor: grab;
 	user-select: none;
+	break-inside: avoid;
 }
 .duty-template:active { cursor: grabbing; }
 .duty-template__head { display: flex; justify-content: space-between; gap: 6px; }
@@ -92,7 +103,10 @@ export default {
 .duty-template--on-call { border-style: dashed; font-style: italic; }
 
 @media (max-width: 1100px) {
-	.duty-template-sidebar { flex: 1 1 100%; min-width: 0; }
+	.duty-template-sidebar:not(.sidebar--two-cols) { flex: 1 1 100%; min-width: 0; }
+}
+@media (max-width: 1300px) {
+	.duty-template-sidebar.sidebar--two-cols { flex: 1 1 100%; min-width: 0; }
 }
 
 @media print {

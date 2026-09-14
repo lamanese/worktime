@@ -159,7 +159,10 @@ export default {
 			const styles = {}
 			for (const row of this.rows) {
 				const c = usernameToColor(row.employee.userId)
-				styles[row.employee.id] = { '--duty-row-color': `rgb(${c.r}, ${c.g}, ${c.b})` }
+				styles[row.employee.id] = {
+					'--duty-row-color': `rgb(${c.r}, ${c.g}, ${c.b})`,
+					'--duty-row-rgb': `${c.r}, ${c.g}, ${c.b}`,
+				}
 			}
 			return styles
 		},
@@ -405,6 +408,7 @@ export default {
 	padding: 6px;
 	border-left: 1px solid var(--color-border-light, var(--color-border));
 	border-bottom: 1px solid var(--color-border-light, var(--color-border));
+	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.06);
 }
 .roster-cell.weekend, .roster-day-header.weekend { background: var(--color-background-hover); }
 .roster-cell.over { outline: 2px solid var(--color-primary-element); outline-offset: -2px; background: var(--color-primary-element-light); }
