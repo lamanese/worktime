@@ -23,13 +23,14 @@
 				<div class="form-group">
 					<label for="dj-time">{{ t('zeitwerk', 'Uhrzeit') }}</label>
 					<input id="dj-time"
+						ref="timeInput"
 						v-model="form.startTime"
 						type="text"
-						pattern="^([01]\d|2[0-3]):[0-5]\d$"
 						:placeholder="t('zeitwerk', 'HH:MM')"
-						:title="t('zeitwerk', 'HH:MM')"
+						:title="t('zeitwerk', 'z. B. 8, 830 oder 8:30')"
 						inputmode="numeric"
-						maxlength="5">
+						maxlength="5"
+						@blur="form.startTime = normalizeTimeInput(form.startTime)">
 					<p v-if="errors.startTime" class="field-error">{{ errors.startTime[0] }}</p>
 				</div>
 			</div>
@@ -101,7 +102,7 @@ import DutyRosterService from '../services/DutyRosterService.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { formatDateISO } from '../utils/dateUtils.js'
 import { parseLocalDate } from '../utils/dutyRoster.js'
-import { isValidTimeString } from '../utils/timeUtils.js'
+import { isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 
 export default {
 	name: 'DutyJobForm',
@@ -146,10 +147,18 @@ export default {
 		},
 	},
 	mounted() {
-		this.$nextTick(() => this.$refs.titleInput?.focus())
+		this.$nextTick(() => {
+			if (this.isEdit) {
+				this.$refs.timeInput?.focus()
+				this.$refs.timeInput?.select()
+			} else {
+				this.$refs.titleInput?.focus()
+			}
+		})
 	},
 	methods: {
 		...mapActions('dutyRoster', ['createJob', 'updateJob', 'deleteJob']),
+		normalizeTimeInput,
 		onTitleInput() {
 			clearTimeout(this.suggestTimer)
 			const q = this.form.title.trim()
@@ -178,6 +187,7 @@ export default {
 		},
 		async save() {
 			this.errors = {}
+			this.form.startTime = normalizeTimeInput(this.form.startTime)
 			if (this.form.startTime && !isValidTimeString(this.form.startTime)) {
 				this.errors.startTime = [this.t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)')]
 				return

@@ -17,11 +17,11 @@
                     v-model="form.startTime"
                     type="text"
                     class="time-input"
-                    pattern="^([01]\d|2[0-3]):[0-5]\d$"
                     :placeholder="t('zeitwerk', 'HH:MM')"
                     inputmode="numeric"
                     maxlength="5"
-                    @change="onTimeChange">
+                    @change="onTimeChange"
+                    @blur="form.startTime = normalizeTimeInput(form.startTime); onTimeChange()">
                 <p v-if="startTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
 
@@ -31,11 +31,11 @@
                     v-model="form.endTime"
                     type="text"
                     class="time-input"
-                    pattern="^([01]\d|2[0-3]):[0-5]\d$"
                     :placeholder="t('zeitwerk', 'HH:MM')"
                     inputmode="numeric"
                     maxlength="5"
-                    @change="onTimeChange">
+                    @change="onTimeChange"
+                    @blur="form.endTime = normalizeTimeInput(form.endTime); onTimeChange()">
                 <p v-if="endTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
         </div>
@@ -101,7 +101,7 @@ import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO } from '../utils/dateUtils.js'
-import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil, isValidTimeString } from '../utils/timeUtils.js'
+import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil, isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 import SettingsService from '../services/SettingsService.js'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -277,6 +277,7 @@ export default {
     },
     methods: {
         ...mapActions('timeEntries', ['createTimeEntry', 'updateTimeEntry']),
+        normalizeTimeInput,
         formatMinutes(minutes) {
             return formatMinutesWithUnit(minutes)
         },
@@ -327,6 +328,8 @@ export default {
             this.$emit('cancel')
         },
         save() {
+            this.form.startTime = normalizeTimeInput(this.form.startTime)
+            this.form.endTime = normalizeTimeInput(this.form.endTime)
             const data = {
                 date: formatDateISO(this.form.date),
                 startTime: this.form.startTime,

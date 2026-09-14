@@ -491,9 +491,9 @@
                                 type="text"
                                 inputmode="numeric"
                                 maxlength="5"
-                                pattern="^([01]\d|2[0-3]):[0-5]\d$"
                                 class="input-field input-small"
-                                :placeholder="t('zeitwerk', 'HH:MM')">
+                                :placeholder="t('zeitwerk', 'HH:MM')"
+                                @blur="templateFormData.startTime = normalizeTimeInput(templateFormData.startTime)">
                             <span v-if="templateErrors.startTime" class="field-error">{{ templateErrors.startTime }}</span>
                         </div>
                         <div class="form-group">
@@ -1077,7 +1077,7 @@ import OvertimePayoutService from '../services/OvertimePayoutService.js'
 import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
-import { formatMinutes, isValidTimeString } from '../utils/timeUtils.js'
+import { formatMinutes, isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 import { ABSENCE_TYPE_LABELS } from '../constants.js'
 import { countryOf, countryOptions, regionOptions, firstRegionOf, regionCodesOf } from '../utils/regions.js'
 import { groupHolidays } from '../utils/holidayGroups.js'
@@ -1429,6 +1429,7 @@ export default {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
+        normalizeTimeInput,
         archiveMonthLabel(month) {
             return getMonthName(month)
         },
@@ -1802,6 +1803,7 @@ export default {
         },
         async saveTemplate() {
             this.templateErrors = {}
+            this.templateFormData.startTime = normalizeTimeInput(this.templateFormData.startTime)
             const startTime = this.templateFormData.startTime.trim()
             if (startTime && !isValidTimeString(startTime)) {
                 this.$set(this.templateErrors, 'startTime', this.t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)'))
