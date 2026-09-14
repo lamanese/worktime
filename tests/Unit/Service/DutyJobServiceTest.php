@@ -267,6 +267,24 @@ class DutyJobServiceTest extends TestCase {
         $this->assertSame('Abwesend', $absences[0]['typeName']);
     }
 
+    public function testGetWeekClampsAbsenceEndAtSundayWithoutMutating(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $absence = $this->makeAbsence('2026-09-19', '2026-09-25', 'vacation', 'approved');
+        $this->absenceService->method('findByEmployeeAndDateRange')->willReturn([$absence]);
+        $this->holidayService->method('findHolidaysInRange')->willReturn([]);
+
+        $monday = new DateTime('2026-09-14');
+        $week = $this->service->getWeek($monday, 'admin');
+
+        $dates = array_map(fn ($a) => $a['date'], $week['rows'][0]['absences']);
+        $this->assertSame(['2026-09-19', '2026-09-20'], $dates);
+        // clamp must not mutate the source Absence or the caller's $monday
+        $this->assertSame('2026-09-25', $absence->getEndDate()->format('Y-m-d'));
+        $this->assertSame('2026-09-14', $monday->format('Y-m-d'));
+    }
+
     // --- copyWeek ---
 
     public function testCopyWeekSkipsDuplicatesAndCounts(): void {
@@ -290,6 +308,31 @@ class DutyJobServiceTest extends TestCase {
         $this->assertSame('2026-09-23', $inserted[0]->getJobDate()->format('Y-m-d'));
         $this->assertSame('B', $inserted[0]->getTitle());
         $this->assertSame('admin', $inserted[0]->getCreatedBy());
+    }
+
+    public function testCopyWeekDedupeIsCaseInsensitive(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturnCallback(function (DateTime $from) {
+            if ($from->format('Y-m-d') === '2026-09-14') {
+                return [$this->makeJob(1, 1, '2026-09-15', '09:00', 'CarTech')];
+            }
+            return [$this->makeJob(9, 1, '2026-09-22', '09:00', 'cartech')]; // same cell, different case
+        });
+        $this->jobMapper->expects($this->never())->method('insert');
+        $this->auditLogService->expects($this->once())->method('log');
+
+        $count = $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-21'), 'admin');
+
+        $this->assertSame(0, $count);
+    }
+
+    public function testCopyWeekSameWeekReturnsZeroWithoutAudit(): void {
+        $this->jobMapper->expects($this->never())->method('findByDateRange');
+        $this->auditLogService->expects($this->never())->method('log');
+
+        $count = $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-16'), 'admin');
+
+        $this->assertSame(0, $count);
     }
 
     // --- suggestTitles ---
