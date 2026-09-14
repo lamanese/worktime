@@ -423,6 +423,12 @@ export default {
                     await this.createEmployee(data)
                 }
 
+                // Die Dienstplan-Zugehoerigkeit bestimmt mit, ob der Nutzer den
+                // Wochenplan sieht — Berechtigungen sonst erst nach Reload aktuell.
+                if (this.form.inDutyRoster !== (this.employee?.inDutyRoster ?? false)) {
+                    await this.$store.dispatch('permissions/fetchPermissions')
+                }
+
                 this.$emit('saved')
             } catch (error) {
                 console.error('Failed to save employee:', error)
