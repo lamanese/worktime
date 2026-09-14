@@ -95,3 +95,35 @@ export function cellState(absences, holidays) {
 	}
 	return { state: 'normal', labelKind: null, labelText: null }
 }
+
+/** MIME types used by the duty roster drag sources. */
+export const DUTY_JOB_MIME = 'application/x-zeitwerk-duty-job'
+export const DUTY_TEMPLATE_MIME = 'application/x-zeitwerk-duty-template'
+
+/**
+ * Tells a cell drop apart: an existing card (move) or a sidebar template
+ * (create). Pure so Jest can lock the precedence down; the view only reacts to
+ * the result. Foreign drops answer {kind: null, id: 0} and must be ignored.
+ *
+ * @param {DataTransfer|null} dataTransfer the drop event's dataTransfer
+ * @return {{kind: ('job'|'template'|null), id: number}} what was dropped
+ */
+export function resolveDrop(dataTransfer) {
+	const none = { kind: null, id: 0 }
+	if (!dataTransfer || typeof dataTransfer.getData !== 'function') {
+		return none
+	}
+	const read = (type) => {
+		const id = Number(dataTransfer.getData(type))
+		return Number.isInteger(id) && id > 0 ? id : 0
+	}
+	const jobId = read(DUTY_JOB_MIME)
+	if (jobId) {
+		return { kind: 'job', id: jobId }
+	}
+	const templateId = read(DUTY_TEMPLATE_MIME)
+	if (templateId) {
+		return { kind: 'template', id: templateId }
+	}
+	return none
+}

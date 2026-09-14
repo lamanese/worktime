@@ -4,6 +4,7 @@
  */
 
 import DutyRosterService from '../../services/DutyRosterService.js'
+import DutyJobTemplateService from '../../services/DutyJobTemplateService.js'
 import { getWeekStart, addDays, toDateString } from '../../utils/dutyRoster.js'
 
 // `state` is a function so tests can build fresh copies.
@@ -12,6 +13,7 @@ const state = () => ({
 	week: null,
 	loading: false,
 	error: null,
+	templates: [],
 })
 
 const getters = {
@@ -22,6 +24,7 @@ const getters = {
 	canManage: (state) => !!state.week?.canManage,
 	loading: (state) => state.loading,
 	error: (state) => state.error,
+	templates: (state) => state.templates,
 }
 
 const mutations = {
@@ -36,6 +39,9 @@ const mutations = {
 	},
 	SET_ERROR(state, error) {
 		state.error = error
+	},
+	SET_TEMPLATES(state, templates) {
+		state.templates = templates
 	},
 }
 
@@ -85,6 +91,17 @@ const actions = {
 		const { created } = await DutyRosterService.copyWeek(state.weekStart, target)
 		await dispatch('loadWeek', target)
 		return created
+	},
+	/**
+	 * Visible templates for the sidebar. Only planners may call the endpoint;
+	 * a failure must not break the week view, so it falls back to an empty list.
+	 */
+	async loadTemplates({ commit }) {
+		try {
+			commit('SET_TEMPLATES', await DutyJobTemplateService.getVisible() || [])
+		} catch (error) {
+			commit('SET_TEMPLATES', [])
+		}
 	},
 }
 

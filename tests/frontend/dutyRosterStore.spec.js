@@ -13,7 +13,15 @@ jest.mock('../../src/services/DutyRosterService.js', () => ({
 	},
 }))
 
+jest.mock('../../src/services/DutyJobTemplateService.js', () => ({
+	__esModule: true,
+	default: {
+		getVisible: jest.fn(),
+	},
+}))
+
 import DutyRosterService from '../../src/services/DutyRosterService.js'
+import DutyJobTemplateService from '../../src/services/DutyJobTemplateService.js'
 import dutyRoster from '../../src/store/modules/dutyRoster.js'
 
 const run = async (action, state, payload) => {
@@ -73,5 +81,31 @@ describe('dutyRoster store', () => {
 		await run('loadWeek', state, '2026-09-14')
 		expect(state.error).toBe('kaputt')
 		expect(state.loading).toBe(false)
+	})
+})
+
+describe('dutyRoster templates', () => {
+	let state
+	beforeEach(() => {
+		state = { ...dutyRoster.state() }
+		jest.clearAllMocks()
+	})
+
+	it('starts empty', () => {
+		expect(state.templates).toEqual([])
+		expect(dutyRoster.getters.templates(state)).toEqual([])
+	})
+
+	it('loadTemplates stores the visible templates', async () => {
+		DutyJobTemplateService.getVisible.mockResolvedValue([{ id: 1, title: 'HU', isVisible: true }])
+		await run('loadTemplates', state)
+		expect(DutyJobTemplateService.getVisible).toHaveBeenCalled()
+		expect(dutyRoster.getters.templates(state)).toHaveLength(1)
+	})
+
+	it('loadTemplates keeps the week usable when the call fails', async () => {
+		DutyJobTemplateService.getVisible.mockRejectedValue(new Error('403'))
+		await run('loadTemplates', state)
+		expect(state.templates).toEqual([])
 	})
 })

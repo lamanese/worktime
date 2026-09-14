@@ -1,5 +1,5 @@
 import {
-	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState,
+	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState, resolveDrop,
 } from '../../src/utils/dutyRoster.js'
 
 describe('week helpers (local dates, no UTC shift)', () => {
@@ -98,5 +98,34 @@ describe('cellState precedence: holiday > approved full > approved half > pendin
 	it('returns no user-facing text (labels are composed via t() in the view)', () => {
 		const r = cellState([approved('vacation', 'Urlaub', 0.5)], [])
 		expect(r.labelText).not.toMatch(/½|beantragt|Feiertag/)
+	})
+})
+
+describe('resolveDrop', () => {
+	const transfer = (map) => ({ getData: (type) => map[type] ?? '' })
+
+	it('recognises a dragged job card', () => {
+		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-job': '42', 'text/plain': '42' })))
+			.toEqual({ kind: 'job', id: 42 })
+	})
+
+	it('recognises a dragged template', () => {
+		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-template': '7' })))
+			.toEqual({ kind: 'template', id: 7 })
+	})
+
+	it('prefers the job marker when both are present', () => {
+		expect(resolveDrop(transfer({
+			'application/x-zeitwerk-duty-job': '42',
+			'application/x-zeitwerk-duty-template': '7',
+		}))).toEqual({ kind: 'job', id: 42 })
+	})
+
+	it('ignores foreign drops, empty and non-numeric markers', () => {
+		expect(resolveDrop(transfer({ 'text/plain': 'irgendwas' }))).toEqual({ kind: null, id: 0 })
+		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-job': '' }))).toEqual({ kind: null, id: 0 })
+		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-template': 'abc' }))).toEqual({ kind: null, id: 0 })
+		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-job': '0' }))).toEqual({ kind: null, id: 0 })
+		expect(resolveDrop(null)).toEqual({ kind: null, id: 0 })
 	})
 })
