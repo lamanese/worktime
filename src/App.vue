@@ -29,6 +29,15 @@
 			</NcAppNavigationItem>
 
 			<NcAppNavigationItem
+				v-if="navVisible('dutyRoster')"
+				:name="t('zeitwerk', 'Dienstplan')"
+				to="/duty-roster">
+				<template #icon>
+					<CalendarWeekIcon :size="20" />
+				</template>
+			</NcAppNavigationItem>
+
+			<NcAppNavigationItem
 				v-if="navVisible('approvals')"
 				:name="t('zeitwerk', 'Genehmigungen')"
 				to="/approvals">
@@ -141,6 +150,7 @@ import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import ShieldIcon from 'vue-material-design-icons/Shield.vue'
 import ChartBarIcon from 'vue-material-design-icons/ChartBar.vue'
 import WrenchIcon from 'vue-material-design-icons/Wrench.vue'
+import CalendarWeekIcon from 'vue-material-design-icons/CalendarWeek.vue'
 import { mapGetters, mapActions } from 'vuex'
 import { isNavVisible } from './router/access.js'
 
@@ -163,6 +173,7 @@ export default {
 		ShieldIcon,
 		ChartBarIcon,
 		WrenchIcon,
+		CalendarWeekIcon,
 	},
 	computed: {
 		...mapGetters('permissions', ['accessProfile', 'isEmployee', 'hasEmployees', 'canManageSettings', 'canApprove', 'isCorrectionMode', 'correctionEmployeeName']),
