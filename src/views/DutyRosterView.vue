@@ -42,47 +42,51 @@
 			</template>
 		</NcEmptyContent>
 
-		<div v-else class="roster-card">
-			<div class="roster-grid" :style="{ '--day-count': days.length }">
-				<div class="roster-corner" />
-				<div v-for="day in days"
-					:key="day.date"
-					class="roster-day-header"
-					:class="{ weekend: day.isWeekend, today: day.isToday }">
-					<span class="roster-day-name">{{ dayName(day.date) }}</span>
-					<span class="roster-day-date">{{ dayDate(day.date) }}</span>
-				</div>
-
-				<template v-for="row in rows">
-					<div :key="'name-' + row.employee.id" class="roster-name" :style="rowStyles[row.employee.id]">
-						<NcAvatar :user="row.employee.userId" :display-name="row.employee.fullName" :size="28" :show-user-status="false" />
-						<span>{{ row.employee.fullName }}</span>
-					</div>
+		<div v-else class="board">
+			<div class="roster-card">
+				<div class="roster-grid" :style="{ '--day-count': days.length }">
+					<div class="roster-corner" />
 					<div v-for="day in days"
-						:key="row.employee.id + '-' + day.date"
-						class="roster-cell"
-						:class="['roster-cell--' + cellMap[row.employee.id + '|' + day.date].state, { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day) }]"
-						:style="rowStyles[row.employee.id]"
-						@dragover="onDragOver($event, row, day)"
-						@dragleave="onDragLeave(row, day)"
-						@drop="onDrop($event, row, day)">
-						<div v-if="cellMap[row.employee.id + '|' + day.date].label" class="roster-cell__label">{{ cellMap[row.employee.id + '|' + day.date].label }}</div>
-						<DutyJobCard v-for="job in cellMap[row.employee.id + '|' + day.date].jobs"
-							:key="job.id"
-							:job="job"
-							:draggable="canManage"
-							:dimmed="cellMap[row.employee.id + '|' + day.date].state === 'absent'"
-							@edit="openEdit(row, day, $event)" />
-						<button v-if="canManage"
-							class="roster-add"
-							type="button"
-							:aria-label="t('zeitwerk', 'Auftrag für {name} am {date} hinzufügen', { name: row.employee.fullName, date: dayDate(day.date) })"
-							@click="openCreate(row, day)">
-							+
-						</button>
+						:key="day.date"
+						class="roster-day-header"
+						:class="{ weekend: day.isWeekend, today: day.isToday }">
+						<span class="roster-day-name">{{ dayName(day.date) }}</span>
+						<span class="roster-day-date">{{ dayDate(day.date) }}</span>
 					</div>
-				</template>
+
+					<template v-for="row in rows">
+						<div :key="'name-' + row.employee.id" class="roster-name" :style="rowStyles[row.employee.id]">
+							<NcAvatar :user="row.employee.userId" :display-name="row.employee.fullName" :size="28" :show-user-status="false" />
+							<span>{{ row.employee.fullName }}</span>
+						</div>
+						<div v-for="day in days"
+							:key="row.employee.id + '-' + day.date"
+							class="roster-cell"
+							:class="['roster-cell--' + cellMap[row.employee.id + '|' + day.date].state, { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day) }]"
+							:style="rowStyles[row.employee.id]"
+							@dragover="onDragOver($event, row, day)"
+							@dragleave="onDragLeave(row, day)"
+							@drop="onDrop($event, row, day)">
+							<div v-if="cellMap[row.employee.id + '|' + day.date].label" class="roster-cell__label">{{ cellMap[row.employee.id + '|' + day.date].label }}</div>
+							<DutyJobCard v-for="job in cellMap[row.employee.id + '|' + day.date].jobs"
+								:key="job.id"
+								:job="job"
+								:draggable="canManage"
+								:dimmed="cellMap[row.employee.id + '|' + day.date].state === 'absent'"
+								@edit="openEdit(row, day, $event)" />
+							<button v-if="canManage"
+								class="roster-add"
+								type="button"
+								:aria-label="t('zeitwerk', 'Auftrag für {name} am {date} hinzufügen', { name: row.employee.fullName, date: dayDate(day.date) })"
+								@click="openCreate(row, day)">
+								+
+							</button>
+						</div>
+					</template>
+				</div>
 			</div>
+
+			<DutyTemplateSidebar v-if="canManage" :templates="templates" />
 		</div>
 
 		<DutyJobForm v-if="form.open"
@@ -112,7 +116,8 @@ import CalendarWeekIcon from 'vue-material-design-icons/CalendarWeek.vue'
 import { mapGetters, mapActions } from 'vuex'
 import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
-import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString } from '../utils/dutyRoster.js'
+import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
+import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { getLocale } from '../utils/dateUtils.js'
 
@@ -131,6 +136,7 @@ export default {
 		CalendarWeekIcon,
 		DutyJobCard,
 		DutyJobForm,
+		DutyTemplateSidebar,
 	},
 	data() {
 		return {
@@ -139,7 +145,7 @@ export default {
 		}
 	},
 	computed: {
-		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'loading', 'error']),
+		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'loading', 'error', 'templates']),
 		today() {
 			return toDateString(new Date())
 		},
@@ -176,8 +182,12 @@ export default {
 			return map
 		},
 	},
-	created() {
-		this.loadWeek()
+	async created() {
+		await this.loadWeek()
+		// canManage kommt aus der Wochenantwort, darum erst hier.
+		if (this.canManage) {
+			await this.loadTemplates()
+		}
 	},
 	mounted() {
 		window.addEventListener('afterprint', this.onAfterPrint)
@@ -186,7 +196,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'copyToNextWeek']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'loadTemplates']),
 		dayName(date) {
 			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
@@ -206,7 +216,7 @@ export default {
 		onDragOver(event, row, day) {
 			if (!this.canManage) return
 			event.preventDefault()
-			event.dataTransfer.dropEffect = 'move'
+			event.dataTransfer.dropEffect = event.dataTransfer.types.includes('application/x-zeitwerk-duty-template') ? 'copy' : 'move'
 			this.overKey = this.cellKey(row, day)
 		},
 		onDragLeave(row, day) {
@@ -216,16 +226,47 @@ export default {
 			this.overKey = null
 			if (!this.canManage) return
 			event.preventDefault()
-			const marker = event.dataTransfer.getData('application/x-zeitwerk-duty-job')
-			if (!marker) return
-			const id = Number(marker)
-			if (!id) return
+			const drop = resolveDrop(event.dataTransfer)
+			if (drop.kind === 'job') {
+				await this.dropJob(drop.id, row, day)
+			} else if (drop.kind === 'template') {
+				await this.dropTemplate(drop.id, row, day)
+			}
+		},
+		/** Existing card moved into another cell. */
+		async dropJob(id, row, day) {
 			const source = this.rows.flatMap(r => r.jobs).find(j => j.id === id)
 			if (!source || (source.employeeId === row.employee.id && source.date === day.date)) return
 			try {
 				await this.moveJob({ id, employeeId: row.employee.id, date: day.date })
 				const freshRow = this.rows.find(r => r.employee.id === row.employee.id)
 				if (freshRow) this.notifyAbsence(freshRow, day)
+			} catch (error) {
+				showErrorMessage(error.message)
+			}
+		},
+		/**
+		 * Template dropped into a cell: creates a new, independent card right
+		 * away (no form). The template itself stays in the sidebar and can be
+		 * dropped as often as wanted.
+		 */
+		async dropTemplate(id, row, day) {
+			const template = this.templates.find(t => t.id === id)
+			if (!template) return
+			try {
+				await this.createJob({
+					employeeId: row.employee.id,
+					date: day.date,
+					startTime: template.startTime || null,
+					durationMinutes: template.durationMinutes || null,
+					title: template.title,
+					note: template.note || null,
+					onCall: !!template.onCall,
+				})
+				const freshRow = this.rows.find(r => r.employee.id === row.employee.id)
+				if (freshRow && !this.notifyAbsence(freshRow, day)) {
+					showSuccessMessage(this.t('zeitwerk', '«{title}» eingeplant', { title: template.title }))
+				}
 			} catch (error) {
 				showErrorMessage(error.message)
 			}
@@ -250,11 +291,21 @@ export default {
 				return null
 			}
 		},
+		/**
+		 * Shows the absence hint for the target cell. Returns true when a toast
+		 * was shown, so callers can skip their own success message.
+		 *
+		 * @param {object} row roster row
+		 * @param {object} day day of the week
+		 * @return {boolean} whether a toast was shown
+		 */
 		notifyAbsence(row, day) {
 			const info = this.cellMap[row.employee.id + '|' + day.date]
 			if (info && info.state === 'absent') {
 				showSuccessMessage(this.t('zeitwerk', 'Gespeichert. Hinweis: {name} ist an diesem Tag abwesend ({reason}).', { name: row.employee.fullName, reason: info.label }))
+				return true
 			}
+			return false
 		},
 		// --- form ---
 		openCreate(row, day) {
@@ -319,7 +370,10 @@ export default {
 .week-date { width: 150px; }
 .view-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
 
+.board { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .roster-card {
+	flex: 1 1 640px;
+	min-width: 0;
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border-dark);
 	border-radius: var(--border-radius-large, 12px);
@@ -377,6 +431,7 @@ export default {
 	body.zw-printing-roster .view-header__nav,
 	body.zw-printing-roster .view-toolbar,
 	body.zw-printing-roster .roster-add { display: none !important; }
+	body.zw-printing-roster .board { display: block; }
 	body.zw-printing-roster .duty-roster-view { padding: 0; max-width: none; }
 	body.zw-printing-roster .roster-card { border: none; overflow: visible; max-height: none; }
 }
