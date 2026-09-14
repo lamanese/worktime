@@ -373,7 +373,7 @@ export default {
 .week-date { width: 150px; }
 .view-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
 
-.board { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; container-type: inline-size; }
+.board { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; container-type: inline-size; overflow-x: auto; }
 .roster-card {
 	flex: 1 1 auto;
 	min-width: 1230px;
