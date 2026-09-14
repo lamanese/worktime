@@ -43,7 +43,7 @@
 		</NcEmptyContent>
 
 		<div v-else class="roster-card">
-			<div class="roster-grid" :style="{ '--day-count': 7 }">
+			<div class="roster-grid" :style="{ '--day-count': days.length }">
 				<div class="roster-corner" />
 				<div v-for="day in days"
 					:key="day.date"
@@ -54,26 +54,30 @@
 				</div>
 
 				<template v-for="row in rows">
-					<div :key="'name-' + row.employee.id" class="roster-name" :style="rowStyle(row)">
+					<div :key="'name-' + row.employee.id" class="roster-name" :style="rowStyles[row.employee.id]">
 						<NcAvatar :user="row.employee.userId" :display-name="row.employee.fullName" :size="28" :show-user-status="false" />
 						<span>{{ row.employee.fullName }}</span>
 					</div>
 					<div v-for="day in days"
 						:key="row.employee.id + '-' + day.date"
 						class="roster-cell"
-						:class="[cellClass(row, day), { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day) }]"
-						:style="rowStyle(row)"
+						:class="['roster-cell--' + cellMap[row.employee.id + '|' + day.date].state, { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day) }]"
+						:style="rowStyles[row.employee.id]"
 						@dragover="onDragOver($event, row, day)"
 						@dragleave="onDragLeave(row, day)"
 						@drop="onDrop($event, row, day)">
-						<div v-if="cellInfo(row, day).label" class="roster-cell__label">{{ cellInfo(row, day).label }}</div>
-						<DutyJobCard v-for="job in jobsFor(row, day)"
+						<div v-if="cellMap[row.employee.id + '|' + day.date].label" class="roster-cell__label">{{ cellMap[row.employee.id + '|' + day.date].label }}</div>
+						<DutyJobCard v-for="job in cellMap[row.employee.id + '|' + day.date].jobs"
 							:key="job.id"
 							:job="job"
 							:draggable="canManage"
-							:dimmed="cellInfo(row, day).state === 'absent'"
+							:dimmed="cellMap[row.employee.id + '|' + day.date].state === 'absent'"
 							@edit="openEdit(row, day, $event)" />
-						<button v-if="canManage" class="roster-add" type="button" @click="openCreate(row, day)">
+						<button v-if="canManage"
+							class="roster-add"
+							type="button"
+							:aria-label="t('zeitwerk', 'Auftrag für {name} am {date} hinzufügen', { name: row.employee.fullName, date: dayDate(day.date) })"
+							@click="openCreate(row, day)">
 							+
 						</button>
 					</div>
@@ -144,6 +148,31 @@ export default {
 		employeeOptions() {
 			return this.rows.map(r => ({ id: r.employee.id, fullName: r.employee.fullName }))
 		},
+		rowStyles() {
+			const styles = {}
+			for (const row of this.rows) {
+				const c = usernameToColor(row.employee.userId)
+				styles[row.employee.id] = { '--duty-row-color': `rgb(${c.r}, ${c.g}, ${c.b})` }
+			}
+			return styles
+		},
+		cellMap() {
+			const map = {}
+			for (const row of this.rows) {
+				for (const day of this.days) {
+					const key = row.employee.id + '|' + day.date
+					const info = cellState(
+						row.absences.filter(a => a.date === day.date),
+						row.holidays.filter(h => h.date === day.date),
+					)
+					map[key] = {
+						...info,
+						jobs: sortJobs(row.jobs.filter(j => j.date === day.date)),
+					}
+				}
+			}
+			return map
+		},
 	},
 	created() {
 		this.loadWeek()
@@ -158,22 +187,6 @@ export default {
 		},
 		onDatePick(event) {
 			if (event.target.value) this.goToDate(event.target.value)
-		},
-		rowStyle(row) {
-			const c = usernameToColor(row.employee.userId)
-			return { '--duty-row-color': `rgb(${c.r}, ${c.g}, ${c.b})` }
-		},
-		jobsFor(row, day) {
-			return sortJobs(row.jobs.filter(j => j.date === day.date))
-		},
-		cellInfo(row, day) {
-			return cellState(
-				row.absences.filter(a => a.date === day.date),
-				row.holidays.filter(h => h.date === day.date),
-			)
-		},
-		cellClass(row, day) {
-			return 'roster-cell--' + this.cellInfo(row, day).state
 		},
 		// --- drag and drop ---
 		cellKey(row, day) {
@@ -195,20 +208,23 @@ export default {
 			this.overKey = null
 			if (!this.canManage) return
 			event.preventDefault()
-			const id = Number(event.dataTransfer.getData('text/plain'))
+			const marker = event.dataTransfer.getData('application/x-zeitwerk-duty-job')
+			if (!marker) return
+			const id = Number(marker)
 			if (!id) return
 			const source = this.rows.flatMap(r => r.jobs).find(j => j.id === id)
 			if (!source || (source.employeeId === row.employee.id && source.date === day.date)) return
 			try {
 				await this.moveJob({ id, employeeId: row.employee.id, date: day.date })
-				this.notifyAbsence(row, day)
+				const freshRow = this.rows.find(r => r.employee.id === row.employee.id)
+				if (freshRow) this.notifyAbsence(freshRow, day)
 			} catch (error) {
 				showErrorMessage(error.message)
 			}
 		},
 		notifyAbsence(row, day) {
-			const info = this.cellInfo(row, day)
-			if (info.state === 'absent') {
+			const info = this.cellMap[row.employee.id + '|' + day.date]
+			if (info && info.state === 'absent') {
 				showSuccessMessage(this.t('zeitwerk', 'Gespeichert. Hinweis: {name} ist an diesem Tag abwesend ({reason}).', { name: row.employee.fullName, reason: info.label }))
 			}
 		},
@@ -271,12 +287,12 @@ export default {
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border-dark);
 	border-radius: var(--border-radius-large, 12px);
-	overflow-x: auto;
+	max-height: calc(100vh - 220px);
+	overflow: auto;
 }
 .roster-grid {
 	display: grid;
 	grid-template-columns: 180px repeat(var(--day-count), minmax(150px, 1fr));
-	min-width: 900px;
 }
 .roster-corner, .roster-day-header {
 	position: sticky; top: 0; z-index: 1;
@@ -314,14 +330,28 @@ export default {
 .roster-add {
 	display: block; width: 100%; margin-top: 2px;
 	background: none; border: 1px dashed var(--color-border-dark); border-radius: var(--border-radius-element, 8px);
-	color: var(--color-text-maxcontrast); cursor: pointer; opacity: 0; transition: opacity .15s;
+	color: var(--color-text-maxcontrast); cursor: pointer; opacity: .35; transition: opacity .15s;
 }
 .roster-cell:hover .roster-add, .roster-add:focus { opacity: 1; }
+@media (hover: none) {
+	.roster-add { opacity: 1; }
+}
 
 @media print {
-	@page { size: landscape; }
 	.view-header__nav, .view-toolbar, .roster-add { display: none !important; }
 	.duty-roster-view { padding: 0; max-width: none; }
-	.roster-card { border: none; overflow: visible; }
+	.roster-card { border: none; overflow: visible; max-height: none; }
+}
+</style>
+
+<style>
+@media print {
+	#header, #app-navigation, #app-navigation-toggle, .app-navigation {
+		display: none !important;
+	}
+	.app-content {
+		padding: 0 !important;
+		margin: 0 !important;
+	}
 }
 </style>
