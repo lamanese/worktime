@@ -148,3 +148,17 @@ export function roundToNearestFive(timeStr) {
     const rounded = Math.round(minutes / 5) * 5
     return minutesToTime(rounded)
 }
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/**
+ * Check whether a string is a valid HH:MM time (00:00-23:59). Used to
+ * validate time text inputs client-side before saving, since the native
+ * `pattern` attribute only blocks a native form submit and several forms
+ * save via click/change handlers instead. #bugfix-round-1
+ * @param {string} timeStr
+ * @returns {boolean}
+ */
+export function isValidTimeString(timeStr) {
+    return TIME_PATTERN.test(timeStr)
+}

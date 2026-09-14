@@ -22,6 +22,7 @@
                     inputmode="numeric"
                     maxlength="5"
                     @change="onTimeChange">
+                <p v-if="startTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
 
             <div class="form-group">
@@ -35,6 +36,7 @@
                     inputmode="numeric"
                     maxlength="5"
                     @change="onTimeChange">
+                <p v-if="endTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
         </div>
 
@@ -99,7 +101,7 @@ import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO } from '../utils/dateUtils.js'
-import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil } from '../utils/timeUtils.js'
+import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil, isValidTimeString } from '../utils/timeUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 import SettingsService from '../services/SettingsService.js'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -200,8 +202,16 @@ export default {
         descriptionMissing() {
             return this.requireDescription && !(this.form.description && this.form.description.trim())
         },
+        startTimeInvalid() {
+            return !!this.form.startTime && !isValidTimeString(this.form.startTime)
+        },
+        endTimeInvalid() {
+            return !!this.form.endTime && !isValidTimeString(this.form.endTime)
+        },
         isValid() {
             return this.form.date && this.form.startTime && this.form.endTime
+                && isValidTimeString(this.form.startTime)
+                && isValidTimeString(this.form.endTime)
                 && this.calculatedWorkMinutes > 0
                 && !this.projectMissing
                 && !this.descriptionMissing

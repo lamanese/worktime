@@ -132,6 +132,7 @@ import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
+import { isValidTimeString } from '../utils/timeUtils.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 export default {
@@ -290,6 +291,14 @@ export default {
             }
         },
         async saveWorkTimes() {
+            // '' = Wert löschen ist erlaubt, alles andere muss HH:MM sein — die
+            // Felder sind Textfelder, `pattern` greift hier nicht (kein natives
+            // Form-Submit), also clientseitig vor dem Request prüfen.
+            if ((this.form.defaultStartTime && !isValidTimeString(this.form.defaultStartTime))
+                || (this.form.defaultEndTime && !isValidTimeString(this.form.defaultEndTime))) {
+                showError(t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)'))
+                return
+            }
             this.savingWorkTimes = true
             this.workTimesSaved = false
             try {
