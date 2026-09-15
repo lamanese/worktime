@@ -89,7 +89,9 @@ class EmployeeController extends BaseController {
         ?int $supervisorId = null,
         string $federalState = RegionRegistry::DEFAULT_REGION,
         ?string $entryDate = null,
-        int $workingDaysPerWeek = 5
+        int $workingDaysPerWeek = 5,
+        bool $inDutyRoster = false,
+        int $dutyRosterOrder = 0
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -112,7 +114,9 @@ class EmployeeController extends BaseController {
                 $federalState,
                 $entryDate,
                 $this->userId,
-                $workingDaysPerWeek
+                $workingDaysPerWeek,
+                $inDutyRoster,
+                $dutyRosterOrder
             );
 
             return $this->createdResponse($employee);
@@ -133,7 +137,9 @@ class EmployeeController extends BaseController {
         ?string $entryDate = null,
         ?string $exitDate = null,
         bool $isActive = true,
-        int $workingDaysPerWeek = 5
+        int $workingDaysPerWeek = 5,
+        ?bool $inDutyRoster = null,
+        ?int $dutyRosterOrder = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -156,7 +162,9 @@ class EmployeeController extends BaseController {
                 $exitDate,
                 $isActive,
                 $this->userId,
-                $workingDaysPerWeek
+                $workingDaysPerWeek,
+                $inDutyRoster,
+                $dutyRosterOrder
             );
 
             return $this->successResponse($employee);

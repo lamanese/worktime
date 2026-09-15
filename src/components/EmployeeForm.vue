@@ -155,10 +155,28 @@
             </div>
         </div>
 
-        <div v-if="isEdit" class="form-group">
-            <NcCheckboxRadioSwitch :checked.sync="form.isActive">
-                {{ t('zeitwerk', 'Aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
-            </NcCheckboxRadioSwitch>
+        <!-- Aktiv + Im Dienstplan links, Reihenfolge rechts daneben (unter dem Austrittsdatum) -->
+        <div class="form-row">
+            <div class="form-group">
+                <NcCheckboxRadioSwitch v-if="isEdit" :checked.sync="form.isActive">
+                    {{ t('zeitwerk', 'Aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Inaktive Mitarbeiter können keine Zeiten mehr erfassen und tauchen nicht in Auswahllisten auf. Ihre bisherigen Daten und Berichte bleiben erhalten.') }}</InfoIcon>
+                </NcCheckboxRadioSwitch>
+                <NcCheckboxRadioSwitch :checked.sync="form.inDutyRoster">
+                    {{ t('zeitwerk', 'Im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Der Mitarbeiter erscheint als Zeile im Wochenplan (nur relevant, wenn der Dienstplan in den Firmeneinstellungen aktiv ist).') }}</InfoIcon>
+                </NcCheckboxRadioSwitch>
+            </div>
+            <div class="form-group">
+                <template v-if="form.inDutyRoster">
+                    <label for="dutyRosterOrder">{{ t('zeitwerk', 'Reihenfolge im Dienstplan') }} <InfoIcon>{{ t('zeitwerk', 'Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.') }}</InfoIcon></label>
+                    <input id="dutyRosterOrder"
+                        v-model.number="form.dutyRosterOrder"
+                        type="number"
+                        min="0"
+                        max="999"
+                        step="1"
+                        class="input-field input-small">
+                </template>
+            </div>
         </div>
 
         <WorkScheduleEditor v-if="isEdit && employee"
@@ -226,6 +244,8 @@ export default {
                 entryDate: null,
                 exitDate: null,
                 isActive: true,
+                inDutyRoster: false,
+                dutyRosterOrder: 0,
             },
         }
     },
@@ -353,6 +373,8 @@ export default {
                         entryDate: employee.entryDate ? new Date(employee.entryDate) : null,
                         exitDate: employee.exitDate ? new Date(employee.exitDate) : null,
                         isActive: employee.isActive,
+                        inDutyRoster: !!employee.inDutyRoster,
+                        dutyRosterOrder: employee.dutyRosterOrder ?? 0,
                     }
                 } else {
                     this.resetForm()
@@ -384,6 +406,8 @@ export default {
                 entryDate: null,
                 exitDate: null,
                 isActive: true,
+                inDutyRoster: false,
+                dutyRosterOrder: 0,
             }
         },
         cancel() {
@@ -405,12 +429,20 @@ export default {
                     entryDate: this.form.entryDate ? formatDateISO(this.form.entryDate) : null,
                     exitDate: this.form.exitDate ? formatDateISO(this.form.exitDate) : null,
                     isActive: this.form.isActive,
+                    inDutyRoster: this.form.inDutyRoster,
+                    dutyRosterOrder: Number(this.form.dutyRosterOrder) || 0,
                 }
 
                 if (this.isEdit) {
                     await this.updateEmployee({ id: this.employee.id, data })
                 } else {
                     await this.createEmployee(data)
+                }
+
+                // Die Dienstplan-Zugehoerigkeit bestimmt mit, ob der Nutzer den
+                // Wochenplan sieht — Berechtigungen sonst erst nach Reload aktuell.
+                if (this.form.inDutyRoster !== (this.employee?.inDutyRoster ?? false)) {
+                    await this.$store.dispatch('permissions/fetchPermissions')
                 }
 
                 this.$emit('saved')

@@ -33,6 +33,9 @@ export const accessRules = {
 	// bleiben in der View per v-if gegated. (#394)
 	settings: (p) => !!(p.canManageSettings || p.canManageEmployees),
 	audit: (p) => !!(p.isAdmin || p.isHrManager),
+	// Dienstplan (0.19.0): nur wenn das Modul in den Firmeneinstellungen aktiv
+	// ist. Lesend fuer alle mit App-Zugang, Schreibrechte prueft das Backend.
+	dutyRoster: (p) => !!(p.dutyRosterEnabled && (p.employeeId || p.isAdmin || p.isHrManager)),
 }
 
 /**
@@ -62,6 +65,8 @@ const navUx = {
 	// Genehmigungs-Tab nur fuer aktive Genehmiger mit Team (Admin/HR ohne
 	// Genehmiger-Rolle koennen die Seite erreichen, brauchen aber keinen Tab).
 	approvals: (p) => !!(p.canApprove && p.hasEmployees),
+	// Tab nur, wenn mindestens ein Mitarbeiter im Dienstplan steht.
+	dutyRoster: (p) => !!p.hasDutyRosterEmployees,
 }
 
 /**

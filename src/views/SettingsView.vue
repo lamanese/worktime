@@ -206,6 +206,12 @@
                         {{ t('zeitwerk', 'Mitarbeiter dürfen eine Standard-Beschreibung festlegen') }} <InfoIcon>{{ t('zeitwerk', 'Wenn aktiv, können Mitarbeiter unter «Meine Einstellungen» einen Text hinterlegen, der bei neuen Zeiteinträgen als Beschreibung vorausgefüllt ist.') }}</InfoIcon>
                     </NcCheckboxRadioSwitch>
                 </div>
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.duty_roster_enabled"
+                        @update:checked="saveSettingBool('duty_roster_enabled')">
+                        {{ t('zeitwerk', 'Dienstplan aktiv') }} <InfoIcon>{{ t('zeitwerk', 'Schaltet den Wochenplan für den Aussendienst frei. Welche Mitarbeitenden als Zeile erscheinen, legen Sie im Mitarbeiterprofil über «Im Dienstplan» fest.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageSettings"
@@ -391,6 +397,154 @@
                         </NcButton>
                     </template>
                 </div>
+            </NcSettingsSection>
+
+            <NcSettingsSection v-if="canManageSettings && settings.duty_roster_enabled"
+                v-show="activeSection === 'sec-dienstplan-vorlagen'"
+                id="sec-dienstplan-vorlagen" :name="t('zeitwerk', 'Dienstplan-Vorlagen')"
+                :description="t('zeitwerk', 'Standard-Aufträge für den Dienstplan. Sichtbare Vorlagen erscheinen in der Seitenleiste der Wochenansicht und können von dort beliebig oft in eine Zelle gezogen werden.')">
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.duty_roster_templates_sidebar"
+                        @update:checked="saveSettingBool('duty_roster_templates_sidebar')">
+                        {{ t('zeitwerk', 'Vorlagen-Leiste im Dienstplan anzeigen') }} <InfoIcon>{{ t('zeitwerk', 'Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
+                <div class="form-row">
+                    <NcButton type="primary" @click="openTemplateForm(null)">
+                        <template #icon>
+                            <Plus :size="20" />
+                        </template>
+                        {{ t('zeitwerk', 'Vorlage hinzufügen') }}
+                    </NcButton>
+                </div>
+
+                <NcLoadingIcon v-if="loadingTemplates" :size="32" />
+
+                <div v-else-if="dutyTemplates.length > 0" class="settings-table-card">
+                    <table class="holiday-table">
+                        <thead>
+                            <tr>
+                                <th>{{ t('zeitwerk', 'Titel') }}</th>
+                                <th>{{ t('zeitwerk', 'Uhrzeit') }}</th>
+                                <th>{{ t('zeitwerk', 'Dauer') }}</th>
+                                <th>{{ t('zeitwerk', 'Auf Abruf') }}</th>
+                                <th>{{ t('zeitwerk', 'Sichtbar') }}</th>
+                                <th>{{ t('zeitwerk', 'Aktionen') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="template in dutyTemplates" :key="template.id">
+                                <td>
+                                    {{ template.title }}
+                                    <div v-if="template.note" class="template-note">{{ template.note }}</div>
+                                </td>
+                                <td>{{ template.startTime || '–' }}</td>
+                                <td>{{ formatDuration(template.durationMinutes) || '–' }}</td>
+                                <td>{{ template.onCall ? t('zeitwerk', 'Ja') : '–' }}</td>
+                                <td>
+                                    <NcCheckboxRadioSwitch :checked="template.isVisible"
+                                        :aria-label="t('zeitwerk', 'Vorlage in der Seitenleiste zeigen')"
+                                        @update:checked="toggleTemplateVisible(template, $event)" />
+                                </td>
+                                <td class="actions">
+                                    <NcButton type="tertiary"
+                                        :aria-label="t('zeitwerk', 'Bearbeiten')"
+                                        @click="openTemplateForm(template)">
+                                        <template #icon>
+                                            <Pencil :size="20" />
+                                        </template>
+                                    </NcButton>
+                                    <NcButton type="tertiary"
+                                        :aria-label="t('zeitwerk', 'Löschen')"
+                                        @click="confirmDeleteTemplate(template)">
+                                        <template #icon>
+                                            <Close :size="20" />
+                                        </template>
+                                    </NcButton>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <NcEmptyContent v-else
+                    :name="t('zeitwerk', 'Keine Vorlagen')"
+                    :description="t('zeitwerk', 'Legen Sie wiederkehrende Aufträge als Vorlage an, damit sie im Dienstplan nur noch gezogen werden müssen.')">
+                    <template #icon>
+                        <CalendarWeek :size="64" />
+                    </template>
+                </NcEmptyContent>
+
+                <NcModal v-if="showTemplateForm"
+                    :name="editingTemplate ? t('zeitwerk', 'Vorlage bearbeiten') : t('zeitwerk', 'Neue Vorlage')"
+                    @close="closeTemplateForm">
+                    <form class="holiday-form-modal" @submit.prevent="saveTemplate">
+                        <h3>{{ editingTemplate ? t('zeitwerk', 'Vorlage bearbeiten') : t('zeitwerk', 'Neue Vorlage') }}</h3>
+                        <div class="form-group">
+                            <label for="templateTitle">{{ t('zeitwerk', 'Titel') }}</label>
+                            <input id="templateTitle"
+                                v-model="templateFormData.title"
+                                type="text"
+                                maxlength="200"
+                                class="input-field"
+                                :placeholder="t('zeitwerk', 'z.B. HU Werkstatt Nord')">
+                            <span v-if="templateErrors.title" class="field-error">{{ templateErrors.title }}</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateStartTime">{{ t('zeitwerk', 'Uhrzeit') }}</label>
+                            <input id="templateStartTime"
+                                v-model="templateFormData.startTime"
+                                type="text"
+                                inputmode="numeric"
+                                maxlength="5"
+                                class="input-field input-small"
+                                :placeholder="t('zeitwerk', 'HH:MM')"
+                                @blur="templateFormData.startTime = normalizeTimeInput(templateFormData.startTime)">
+                            <span v-if="templateErrors.startTime" class="field-error">{{ templateErrors.startTime }}</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateDuration">{{ t('zeitwerk', 'Dauer (Minuten)') }}</label>
+                            <input id="templateDuration"
+                                v-model.number="templateFormData.durationMinutes"
+                                type="number"
+                                min="1"
+                                max="1440"
+                                step="1"
+                                class="input-field input-small">
+                            <span v-if="templateErrors.durationMinutes" class="field-error">{{ templateErrors.durationMinutes }}</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="templateNote">{{ t('zeitwerk', 'Notiz') }}</label>
+                            <input id="templateNote"
+                                v-model="templateFormData.note"
+                                type="text"
+                                maxlength="500"
+                                class="input-field">
+                            <span v-if="templateErrors.note" class="field-error">{{ templateErrors.note }}</span>
+                        </div>
+                        <div class="form-group">
+                            <NcCheckboxRadioSwitch :checked.sync="templateFormData.onCall">
+                                {{ t('zeitwerk', 'Auf Abruf') }}
+                            </NcCheckboxRadioSwitch>
+                        </div>
+                        <div class="form-group">
+                            <NcCheckboxRadioSwitch :checked.sync="templateFormData.isVisible">
+                                {{ t('zeitwerk', 'In der Seitenleiste zeigen') }}
+                            </NcCheckboxRadioSwitch>
+                        </div>
+                        <div class="form-actions">
+                            <NcButton type="tertiary" native-type="button" @click="closeTemplateForm">
+                                {{ t('zeitwerk', 'Abbrechen') }}
+                            </NcButton>
+                            <NcButton type="primary"
+                                native-type="submit"
+                                :disabled="!templateFormData.title.trim()">
+                                {{ editingTemplate ? t('zeitwerk', 'Speichern') : t('zeitwerk', 'Erstellen') }}
+                            </NcButton>
+                        </div>
+                    </form>
+                </NcModal>
+
             </NcSettingsSection>
 
             <NcSettingsSection v-if="canManageEmployees"
@@ -901,11 +1055,13 @@ import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
 import { canTakeOverActuals, takeOverAndSave } from '../utils/carryoverTakeOver.js'
+import { formatDuration } from '../utils/dutyRoster.js'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import CalendarStar from 'vue-material-design-icons/CalendarStar.vue'
+import CalendarWeek from 'vue-material-design-icons/CalendarWeek.vue'
 import Beach from 'vue-material-design-icons/Beach.vue'
 import SwapHorizontalBold from 'vue-material-design-icons/SwapHorizontalBold.vue'
 import CashMultiple from 'vue-material-design-icons/CashMultiple.vue'
@@ -914,6 +1070,7 @@ import { getFilePickerBuilder, FilePickerType, DialogBuilder } from '@nextcloud/
 import { mapGetters, mapActions } from 'vuex'
 import SettingsService from '../services/SettingsService.js'
 import HolidayService from '../services/HolidayService.js'
+import DutyJobTemplateService from '../services/DutyJobTemplateService.js'
 import EmployeeForm from '../components/EmployeeForm.vue'
 import EmployeeList from '../components/EmployeeList.vue'
 import BetriebsferienSettings from '../components/BetriebsferienSettings.vue'
@@ -926,7 +1083,7 @@ import OvertimePayoutService from '../services/OvertimePayoutService.js'
 import ReportService from '../services/ReportService.js'
 import TimeEntryService from '../services/TimeEntryService.js'
 import InfoIcon from '../components/InfoIcon.vue'
-import { formatMinutes } from '../utils/timeUtils.js'
+import { formatMinutes, isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 import { ABSENCE_TYPE_LABELS } from '../constants.js'
 import { countryOf, countryOptions, regionOptions, firstRegionOf, regionCodesOf } from '../utils/regions.js'
 import { groupHolidays } from '../utils/holidayGroups.js'
@@ -964,6 +1121,7 @@ export default {
         FilePdfBox,
         StarOutline,
         CalendarStar,
+        CalendarWeek,
         Beach,
         SwapHorizontalBold,
         CashMultiple,
@@ -991,6 +1149,20 @@ export default {
             archiveStatus: { configured: false, pending: 0, failed: 0, jobs: [] },
             archiveLoading: false,
             archiveRetryingId: null,
+            // Dienstplan-Vorlagen
+            dutyTemplates: [],
+            loadingTemplates: false,
+            showTemplateForm: false,
+            editingTemplate: null,
+            templateErrors: {},
+            templateFormData: {
+                title: '',
+                startTime: '',
+                durationMinutes: null,
+                note: '',
+                onCall: false,
+                isVisible: true,
+            },
             // Holiday management
             holidays: [],
             loadingHolidays: false,
@@ -1186,6 +1358,7 @@ export default {
                     { id: 'sec-pausen', label: this.t('zeitwerk', 'Pausenregelung'), icon: 'CoffeeOutline', visible: this.canManageSettings },
                     { id: 'sec-spesen', label: this.t('zeitwerk', 'Spesen & Kilometer'), icon: 'Car', visible: this.canManageSettings },
                     { id: 'sec-pdf', label: this.t('zeitwerk', 'PDF-Archiv'), icon: 'FilePdfBox', visible: this.canManageSettings },
+                    { id: 'sec-dienstplan-vorlagen', label: this.t('zeitwerk', 'Dienstplan-Vorlagen'), icon: 'CalendarWeek', visible: this.canManageSettings && !!this.settings.duty_roster_enabled },
                 ]),
                 group(this.t('zeitwerk', 'Kalender'), [
                     { id: 'sec-betriebsferien', label: this.t('zeitwerk', 'Betriebsferien'), icon: 'Beach', visible: this.canManageEmployees },
@@ -1234,6 +1407,10 @@ export default {
                 this.selectedHolidayCountryFilter = this.holidayCountryFilterOptions.find(o => o.id === country) || null
                 this.selectedHolidayStateFilter = this.holidayStateFilterOptions.find(o => o.id === region) || null
             }
+            // Deeplink (#sec=...) kann auf eine Section zeigen, die erst nach dem
+            // Laden der Einstellungen sichtbar wird (z.B. Dienstplan-Vorlagen) -
+            // initActiveSection() lief in created() bereits vor deren Ankunft.
+            this.reapplySectionFromUrl()
         })
         if (this.canManageEmployees) {
             this.$store.dispatch('employees/fetchEmployees')
@@ -1258,6 +1435,7 @@ export default {
         ...mapActions('holidays', ['generateAllHolidays']),
         ...mapActions('employees', ['deleteEmployee']),
         ...mapActions('projects', ['fetchProjects', 'deleteProject']),
+        normalizeTimeInput,
         archiveMonthLabel(month) {
             return getMonthName(month)
         },
@@ -1315,6 +1493,17 @@ export default {
                 this.activeSection = ids[0]
             }
         },
+        reapplySectionFromUrl() {
+            let fromUrl = this.$route?.query?.sec ?? null
+            if (!fromUrl) {
+                const hash = window.location.hash || ''
+                const match = hash.match(/[?&]sec=([^&]+)/)
+                fromUrl = match ? decodeURIComponent(match[1]) : null
+            }
+            if (fromUrl && fromUrl !== this.activeSection && this.availableSectionIds.includes(fromUrl)) {
+                this.activeSection = fromUrl
+            }
+        },
         async loadSettings() {
             this.loading = true
             try {
@@ -1331,7 +1520,10 @@ export default {
                     fieldwork_allowance_on_extern_absence: settings.fieldwork_allowance_on_extern_absence === '1',
                     allow_employee_default_project: settings.allow_employee_default_project === '1',
                     allow_employee_default_description: settings.allow_employee_default_description === '1',
+                    duty_roster_enabled: settings.duty_roster_enabled === '1',
+                    duty_roster_templates_sidebar: settings.duty_roster_templates_sidebar !== '0',
                 }
+                await this.loadDutyTemplates()
             } catch (error) {
                 console.error('Failed to load settings:', error)
             } finally {
@@ -1350,6 +1542,11 @@ export default {
             try {
                 await SettingsService.update(key, this.settings[key] ? '1' : '0')
                 showSuccessMessage(this.t('zeitwerk', 'Einstellung gespeichert'))
+                if (key === 'duty_roster_enabled') {
+                    // Navigation reagiert sofort (Tab ein-/ausblenden)
+                    await this.$store.dispatch('permissions/fetchPermissions')
+                    await this.loadDutyTemplates()
+                }
             } catch (error) {
                 showErrorMessage(error.message)
             }
@@ -1564,6 +1761,126 @@ export default {
                     console.error('Folder picker error:', error)
                 }
             }
+        },
+        // Dienstplan-Vorlagen methods
+        async loadDutyTemplates() {
+            if (!this.canManageSettings || !this.settings.duty_roster_enabled) {
+                this.dutyTemplates = []
+                return
+            }
+            this.loadingTemplates = true
+            try {
+                this.dutyTemplates = await DutyJobTemplateService.getAll() || []
+            } catch (error) {
+                showErrorMessage(error.message)
+            } finally {
+                this.loadingTemplates = false
+            }
+        },
+        formatDuration,
+        openTemplateForm(template) {
+            this.editingTemplate = template
+            this.templateErrors = {}
+            this.templateFormData = template
+                ? {
+                    title: template.title,
+                    startTime: template.startTime || '',
+                    durationMinutes: template.durationMinutes,
+                    note: template.note || '',
+                    onCall: !!template.onCall,
+                    isVisible: !!template.isVisible,
+                }
+                : { title: '', startTime: '', durationMinutes: null, note: '', onCall: false, isVisible: true }
+            this.showTemplateForm = true
+        },
+        closeTemplateForm() {
+            this.showTemplateForm = false
+            this.editingTemplate = null
+            this.templateErrors = {}
+        },
+        templatePayload() {
+            return {
+                title: this.templateFormData.title.trim(),
+                startTime: this.templateFormData.startTime.trim() || null,
+                durationMinutes: this.templateFormData.durationMinutes || null,
+                note: this.templateFormData.note.trim() || null,
+                onCall: !!this.templateFormData.onCall,
+                isVisible: !!this.templateFormData.isVisible,
+            }
+        },
+        async saveTemplate() {
+            this.templateErrors = {}
+            this.templateFormData.startTime = normalizeTimeInput(this.templateFormData.startTime)
+            const startTime = this.templateFormData.startTime.trim()
+            if (startTime && !isValidTimeString(startTime)) {
+                this.$set(this.templateErrors, 'startTime', this.t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)'))
+                return
+            }
+            try {
+                if (this.editingTemplate) {
+                    await DutyJobTemplateService.update(this.editingTemplate.id, this.templatePayload())
+                } else {
+                    await DutyJobTemplateService.create(this.templatePayload())
+                }
+                showSuccessMessage(this.t('zeitwerk', 'Vorlage gespeichert'))
+                this.closeTemplateForm()
+                await this.loadDutyTemplates()
+            } catch (error) {
+                // Feldfehler aus dem Backend direkt am Feld zeigen, Rest als Toast
+                if (error.errors) {
+                    const mapped = {}
+                    for (const [field, messages] of Object.entries(error.errors)) {
+                        mapped[field] = Array.isArray(messages) ? messages[0] : String(messages)
+                    }
+                    this.templateErrors = mapped
+                } else {
+                    showErrorMessage(error.message)
+                }
+            }
+        },
+        async toggleTemplateVisible(template, isVisible) {
+            try {
+                await DutyJobTemplateService.update(template.id, {
+                    title: template.title,
+                    startTime: template.startTime,
+                    durationMinutes: template.durationMinutes,
+                    note: template.note,
+                    onCall: !!template.onCall,
+                    isVisible,
+                })
+                await this.loadDutyTemplates()
+            } catch (error) {
+                showErrorMessage(error.message)
+                await this.loadDutyTemplates()
+            }
+        },
+        confirmDeleteTemplate(template) {
+            const dialog = new DialogBuilder()
+                .setName(this.t('zeitwerk', 'Vorlage löschen'))
+                .setText(this.t('zeitwerk', 'Vorlage «{title}» wirklich löschen? Bereits eingeplante Aufträge bleiben bestehen.', { title: template.title }))
+                .setButtons([
+                    {
+                        label: this.t('zeitwerk', 'Abbrechen'),
+                        type: 'secondary',
+                        callback: () => {},
+                    },
+                    {
+                        label: this.t('zeitwerk', 'Löschen'),
+                        type: 'error',
+                        callback: async () => {
+                            try {
+                                await DutyJobTemplateService.delete(template.id)
+                                showSuccessMessage(this.t('zeitwerk', 'Vorlage gelöscht'))
+                                await this.loadDutyTemplates()
+                            } catch (error) {
+                                showErrorMessage(error.message)
+                            }
+                        },
+                    },
+                ])
+                .build()
+
+            dialog.show()
         },
         // Holiday management methods
         async loadHolidays() {
@@ -2399,6 +2716,17 @@ export default {
     display: flex;
     gap: 4px;
     white-space: nowrap;
+}
+
+.template-note {
+    font-size: 12px;
+    color: var(--color-text-maxcontrast);
+}
+.field-error {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--color-error);
 }
 
 .holiday-type {
