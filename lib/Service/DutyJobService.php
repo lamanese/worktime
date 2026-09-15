@@ -28,7 +28,7 @@ use OCP\IUserManager;
  */
 class DutyJobService {
 
-    private const ENTITY_TYPE = 'duty_job';
+    public const ENTITY_TYPE = 'duty_job';
     private const TITLE_MAX = 200;
     private const NOTE_MAX = 500;
     private const SUGGEST_LIMIT = 10;

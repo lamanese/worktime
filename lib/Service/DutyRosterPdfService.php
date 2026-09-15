@@ -70,7 +70,7 @@ class DutyRosterPdfService {
             $this->logger->warning('Dienstplan-PDF konnte nicht abgelegt werden: {error}', ['error' => $e->getMessage()]);
         }
 
-        $this->auditLogService->log($userId, 'export_pdf', 'duty_job', null, null, [
+        $this->auditLogService->log($userId, 'export_pdf', DutyJobService::ENTITY_TYPE, null, null, [
             'weekStart' => $monday->format('Y-m-d'),
             'archive' => $archive,
             'path' => $path,
