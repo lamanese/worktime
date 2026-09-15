@@ -10,18 +10,18 @@
 		@dragstart="onDragStart">
 		<span class="duty-job__time">{{ job.startTime || '–' }}</span>
 		<span class="duty-job__title">{{ job.title }}</span>
-		<AlertOutlineIcon v-if="job.note" class="duty-job__note" :size="14" :title="job.note" />
+		<AlertIcon v-if="job.note" class="duty-job__note" :size="18" :title="job.note" />
 		<span v-if="duration" class="duty-job__duration">{{ duration }}</span>
 	</div>
 </template>
 
 <script>
-import AlertOutlineIcon from 'vue-material-design-icons/AlertOutline.vue'
+import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import { formatDuration, DUTY_JOB_MIME } from '../utils/dutyRoster.js'
 
 export default {
 	name: 'DutyJobCard',
-	components: { AlertOutlineIcon },
+	components: { AlertIcon },
 	props: {
 		job: { type: Object, required: true },
 		draggable: { type: Boolean, default: false },
@@ -69,7 +69,8 @@ export default {
 .duty-job__title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .duty-job__duration { color: var(--color-text-maxcontrast); font-size: 11px; flex: 0 0 auto; }
 /* Notiz vorhanden: kleines Warnschild, Text weiterhin als Tooltip. */
-.duty-job__note { flex: 0 0 auto; color: var(--color-error, #d0342c); display: inline-flex; }
+/* Notiz vorhanden: gefuelltes Warndreieck in knalligem Rot, unabhaengig vom Theme. */
+.duty-job__note { flex: 0 0 auto; color: #e60000; display: inline-flex; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .35)); }
 .duty-job--on-call { border-style: dashed; font-style: italic; }
 .duty-job--dimmed { opacity: 0.45; filter: grayscale(1); }
 </style>
