@@ -755,7 +755,19 @@
 		"Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.": "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.",
 		"z. B. 8, 830 oder 8:30": "z. B. 8, 830 oder 8:30",
 		"Vorlagen-Leiste im Dienstplan anzeigen": "Vorlagen-Leiste im Dienstplan anzeigen",
-		"Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.": "Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten."
+		"Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.": "Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.",
+		"Die Woche ist gesperrt. Der Auftrag kann nur angesehen werden.": "Die Woche ist gesperrt. Der Auftrag kann nur angesehen werden.",
+		"Schliessen": "Schliessen",
+		"Auftrag ansehen": "Auftrag ansehen",
+		"Woche gesperrt": "Woche gesperrt",
+		"Woche entsperrt": "Woche entsperrt",
+		"Woche sperren": "Woche sperren",
+		"Woche entsperren": "Woche entsperren",
+		"Woche ist gesperrt. Entsperren können nur Admin und HR.": "Woche ist gesperrt. Entsperren können nur Admin und HR.",
+		"KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.": "KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.",
+		"Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.": "Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.",
+		"Entsperren": "Entsperren",
+		"Woche ist gesperrt": "Woche ist gesperrt"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

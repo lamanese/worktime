@@ -134,6 +134,17 @@ class PermissionService {
     }
 
     /**
+     * Gesperrte Dienstplan-Woche wieder freigeben: nur Admin und HR-Manager
+     * (Sperren duerfen alle Planer; Entscheid 2026-09-15).
+     */
+    public function canUnlockDutyWeek(string $userId): bool {
+        if (!$this->settingsService->isDutyRosterEnabled()) {
+            return false;
+        }
+        return $this->isAdmin($userId) || $this->isHrManager($userId);
+    }
+
+    /**
      * Check if user can view a specific employee's data
      */
     public function canViewEmployee(string $userId, int $employeeId): bool {

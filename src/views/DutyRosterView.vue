@@ -14,8 +14,23 @@
 				<NcButton type="secondary" @click="goToDate(today)">
 					{{ t('zeitwerk', 'Heute') }}
 				</NcButton>
+				<NcButton v-if="canManage"
+					:type="locked ? 'warning' : 'tertiary'"
+					:disabled="lockBusy || (locked && !canUnlock)"
+					:aria-label="lockButtonLabel"
+					:title="lockButtonLabel"
+					@click="toggleLock">
+					<template #icon>
+						<LockOutlineIcon v-if="locked" :size="20" />
+						<LockOpenVariantOutlineIcon v-else :size="20" />
+					</template>
+				</NcButton>
 			</div>
 		</div>
+
+		<NcNoteCard v-if="locked" type="warning" class="lock-banner">
+			{{ lockBannerText }}
+		</NcNoteCard>
 
 		<div v-if="canManage" class="view-toolbar">
 			<NcButton type="secondary" @click="confirmCopyWeek">
@@ -71,10 +86,10 @@
 							<DutyJobCard v-for="job in cellMap[row.employee.id + '|' + day.date].jobs"
 								:key="job.id"
 								:job="job"
-								:draggable="canManage"
+								:draggable="canEdit"
 								:dimmed="cellMap[row.employee.id + '|' + day.date].state === 'absent'"
 								@edit="openEdit(row, day, $event)" />
-							<button v-if="canManage"
+							<button v-if="canEdit"
 								class="roster-add"
 								type="button"
 								:aria-label="t('zeitwerk', 'Auftrag für {name} am {date} hinzufügen', { name: row.employee.fullName, date: dayDate(day.date) })"
@@ -86,7 +101,7 @@
 				</div>
 			</div>
 
-			<DutyTemplateSidebar v-if="showTemplates" :templates="templates" />
+			<DutyTemplateSidebar v-if="showTemplates && !locked" :templates="templates" />
 		</div>
 
 		<DutyJobForm v-if="form.open"
@@ -94,6 +109,7 @@
 			:employee-id="form.employeeId"
 			:date="form.date"
 			:employees="employeeOptions"
+			:readonly="locked"
 			@saved="closeForm"
 			@deleted="closeForm"
 			@cancel="closeForm" />
@@ -105,12 +121,15 @@ import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
+import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
 import { usernameToColor } from '@nextcloud/vue/dist/Functions/usernameToColor.js'
 import { DialogBuilder } from '@nextcloud/dialogs'
 import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import ContentCopyIcon from 'vue-material-design-icons/ContentCopy.vue'
 import PrinterIcon from 'vue-material-design-icons/Printer.vue'
+import LockOutlineIcon from 'vue-material-design-icons/LockOutline.vue'
+import LockOpenVariantOutlineIcon from 'vue-material-design-icons/LockOpenVariantOutline.vue'
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import CalendarWeekIcon from 'vue-material-design-icons/CalendarWeek.vue'
 import { mapGetters, mapActions } from 'vuex'
@@ -119,7 +138,7 @@ import DutyJobForm from '../components/DutyJobForm.vue'
 import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
 import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
-import { getLocale } from '../utils/dateUtils.js'
+import { getLocale, getISOWeek } from '../utils/dateUtils.js'
 
 export default {
 	name: 'DutyRosterView',
@@ -137,15 +156,34 @@ export default {
 		DutyJobCard,
 		DutyJobForm,
 		DutyTemplateSidebar,
+		NcNoteCard,
+		LockOutlineIcon,
+		LockOpenVariantOutlineIcon,
 	},
 	data() {
 		return {
 			form: { open: false, job: null, employeeId: 0, date: '' },
 			overKey: null,
+			lockBusy: false,
 		}
 	},
 	computed: {
-		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'showTemplates', 'loading', 'error', 'templates']),
+		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'canEdit', 'showTemplates', 'locked', 'lockedBy', 'lockedAt', 'canUnlock', 'loading', 'error', 'templates']),
+		lockButtonLabel() {
+			if (!this.locked) return this.t('zeitwerk', 'Woche sperren')
+			return this.canUnlock
+				? this.t('zeitwerk', 'Woche entsperren')
+				: this.t('zeitwerk', 'Woche ist gesperrt. Entsperren können nur Admin und HR.')
+		},
+		lockBannerText() {
+			const week = getISOWeek(parseLocalDate(this.weekStart))
+			const when = this.lockedAt
+				? new Date(this.lockedAt).toLocaleString(getLocale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+				: ''
+			return this.t('zeitwerk', 'KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.', {
+				week, name: this.lockedBy || '–', date: when,
+			})
+		},
 		today() {
 			return toDateString(new Date())
 		},
@@ -199,7 +237,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'loadTemplates']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'loadTemplates', 'lockWeek', 'unlockWeek']),
 		dayName(date) {
 			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
@@ -217,7 +255,7 @@ export default {
 			return this.overKey === this.cellKey(row, day)
 		},
 		onDragOver(event, row, day) {
-			if (!this.canManage) return
+			if (!this.canEdit) return
 			event.preventDefault()
 			event.dataTransfer.dropEffect = event.dataTransfer.types.includes(DUTY_TEMPLATE_MIME) ? 'copy' : 'move'
 			this.overKey = this.cellKey(row, day)
@@ -227,7 +265,7 @@ export default {
 		},
 		async onDrop(event, row, day) {
 			this.overKey = null
-			if (!this.canManage) return
+			if (!this.canEdit) return
 			event.preventDefault()
 			const drop = resolveDrop(event.dataTransfer)
 			if (drop.kind === 'job') {
@@ -326,6 +364,47 @@ export default {
 				if (row && day) this.notifyAbsence(row, day)
 			}
 		},
+		// --- week lock ---
+		async toggleLock() {
+			if (this.locked) {
+				if (this.canUnlock) this.confirmUnlock()
+				return
+			}
+			this.lockBusy = true
+			try {
+				await this.lockWeek()
+				showSuccessMessage(this.t('zeitwerk', 'Woche gesperrt'))
+			} catch (error) {
+				showErrorMessage(error.message)
+			} finally {
+				this.lockBusy = false
+			}
+		},
+		confirmUnlock() {
+			const dialog = new DialogBuilder()
+				.setName(this.t('zeitwerk', 'Woche entsperren'))
+				.setText(this.t('zeitwerk', 'Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.'))
+				.setButtons([
+					{ label: this.t('zeitwerk', 'Abbrechen'), type: 'secondary', callback: () => {} },
+					{
+						label: this.t('zeitwerk', 'Entsperren'),
+						type: 'primary',
+						callback: async () => {
+							this.lockBusy = true
+							try {
+								await this.unlockWeek()
+								showSuccessMessage(this.t('zeitwerk', 'Woche entsperrt'))
+							} catch (error) {
+								showErrorMessage(error.message)
+							} finally {
+								this.lockBusy = false
+							}
+						},
+					},
+				])
+				.build()
+			dialog.show()
+		},
 		confirmCopyWeek() {
 			const dialog = new DialogBuilder()
 				.setName(this.t('zeitwerk', 'Woche kopieren'))
@@ -372,6 +451,7 @@ export default {
 .week-label { font-weight: 600; min-width: 210px; text-align: center; }
 .week-date { width: 150px; }
 .view-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.lock-banner { margin: 0 0 16px; }
 
 /* Wochenplan links (flexibel, scrollt bei Bedarf intern), Vorlagen-Leiste rechts
  * mit fester Breite — nie umbrechen, nie unter den Plan (Ahmad, 2026-09-14). */

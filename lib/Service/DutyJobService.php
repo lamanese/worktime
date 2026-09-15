@@ -14,10 +14,13 @@ use DateTime;
 use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\DutyJob;
 use OCA\Zeitwerk\Db\DutyJobMapper;
+use OCA\Zeitwerk\Db\DutyWeekLock;
+use OCA\Zeitwerk\Db\DutyWeekLockMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
+use OCP\IUserManager;
 
 /**
  * Dienstplan (Wochenplan): Auftragskarten pro Mitarbeiter und Tag. Fachlich
@@ -39,6 +42,8 @@ class DutyJobService {
         private AuditLogService $auditLogService,
         private IL10N $l,
         private CompanySettingsService $settingsService,
+        private DutyWeekLockMapper $lockMapper,
+        private IUserManager $userManager,
     ) {
     }
 
@@ -61,6 +66,7 @@ class DutyJobService {
         $monday = self::mondayOf($monday);
         $sunday = (clone $monday)->add(new DateInterval('P6D'));
         $canManage = $this->permissionService->canManageDutyRoster($userId);
+        $canUnlock = $this->permissionService->canUnlockDutyWeek($userId);
         $isPrivileged = $this->permissionService->isAdmin($userId) || $this->permissionService->isHrManager($userId);
         $viewer = $this->permissionService->getEmployeeForUser($userId);
         $viewerId = $viewer?->getId();
@@ -117,14 +123,95 @@ class DutyJobService {
             ];
         }
 
-        return [
+        return array_merge([
             'weekStart' => $monday->format('Y-m-d'),
             'weekEnd' => $sunday->format('Y-m-d'),
             'canManage' => $canManage,
+            'canUnlock' => $canUnlock,
             'showTemplates' => $canManage && $this->settingsService->isDutyRosterTemplatesSidebarEnabled(),
             'days' => $days,
             'rows' => $rows,
+        ], $this->lockInfo($monday));
+    }
+
+    // ---- Wochensperre («Schluessel», spec §11.2) ----
+
+    private function findLock(DateTime $monday): ?DutyWeekLock {
+        try {
+            return $this->lockMapper->findByWeekStart(self::mondayOf($monday));
+        } catch (DoesNotExistException) {
+            return null;
+        }
+    }
+
+    public function isWeekLocked(DateTime $day): bool {
+        return $this->findLock($day) !== null;
+    }
+
+    /**
+     * @return array{locked:bool,lockedBy:?string,lockedAt:?string}
+     */
+    public function lockInfo(DateTime $day): array {
+        $lock = $this->findLock($day);
+        if ($lock === null) {
+            return ['locked' => false, 'lockedBy' => null, 'lockedAt' => null];
+        }
+        $user = $this->userManager->get($lock->getLockedBy());
+        return [
+            'locked' => true,
+            'lockedBy' => $user?->getDisplayName() ?? $lock->getLockedBy(),
+            'lockedAt' => $lock->getLockedAt()->format('c'),
         ];
+    }
+
+    /**
+     * Idempotent: an already locked week keeps its original lock (no audit noise).
+     *
+     * @return array{locked:bool,lockedBy:?string,lockedAt:?string}
+     */
+    public function lockWeek(DateTime $day, string $userId): array {
+        $monday = self::mondayOf($day);
+        if ($this->findLock($monday) === null) {
+            $lock = new DutyWeekLock();
+            $lock->setWeekStart($monday);
+            $lock->setLockedBy($userId);
+            $lock->setLockedAt(new DateTime());
+            $this->lockMapper->insert($lock);
+            $this->auditLogService->log($userId, 'lock_week', self::ENTITY_TYPE, null, null, [
+                'weekStart' => $monday->format('Y-m-d'),
+            ]);
+        }
+        return $this->lockInfo($monday);
+    }
+
+    /**
+     * Idempotent: unlocking an open week is a no-op. Permission (Admin/HR only)
+     * is checked by the controller.
+     *
+     * @return array{locked:bool,lockedBy:?string,lockedAt:?string}
+     */
+    public function unlockWeek(DateTime $day, string $userId): array {
+        $monday = self::mondayOf($day);
+        $lock = $this->findLock($monday);
+        if ($lock !== null) {
+            $this->lockMapper->delete($lock);
+            $this->auditLogService->log($userId, 'unlock_week', self::ENTITY_TYPE, null, [
+                'weekStart' => $monday->format('Y-m-d'),
+                'lockedBy' => $lock->getLockedBy(),
+            ], null);
+        }
+        return $this->lockInfo($monday);
+    }
+
+    /**
+     * Every write path calls this for each week it touches (also via the API).
+     *
+     * @throws ForbiddenException
+     */
+    private function assertWeekOpen(DateTime $day): void {
+        if ($this->isWeekLocked($day)) {
+            throw new ForbiddenException($this->l->t('Woche ist gesperrt'));
+        }
     }
 
     /**
@@ -192,9 +279,11 @@ class DutyJobService {
 
     /**
      * @throws ValidationException
+     * @throws ForbiddenException when the week is locked
      */
     public function create(array $data, string $userId): DutyJob {
         $clean = $this->validate($data);
+        $this->assertWeekOpen(new DateTime($clean['date']));
 
         $job = new DutyJob();
         $this->apply($job, $clean);
@@ -212,11 +301,14 @@ class DutyJobService {
      *
      * @throws NotFoundException
      * @throws ValidationException
+     * @throws ForbiddenException when the old or the new week is locked
      */
     public function update(int $id, array $data, string $userId): DutyJob {
         $job = $this->find($id);
         $old = $job->jsonSerialize();
         $clean = $this->validate($data);
+        $this->assertWeekOpen($job->getJobDate());
+        $this->assertWeekOpen(new DateTime($clean['date']));
 
         $this->apply($job, $clean);
         $job->setUpdatedAt(new DateTime());
@@ -231,6 +323,7 @@ class DutyJobService {
      *
      * @throws NotFoundException
      * @throws ValidationException
+     * @throws ForbiddenException when the old or the new week is locked
      */
     public function move(int $id, int $employeeId, string $date, string $userId): DutyJob {
         $job = $this->find($id);
@@ -241,6 +334,8 @@ class DutyJobService {
         if ($clean['employeeId'] === $job->getEmployeeId() && $clean['date'] === $old['date']) {
             return $job; // same cell: nothing to do, no audit noise
         }
+        $this->assertWeekOpen($job->getJobDate());
+        $this->assertWeekOpen(new DateTime($clean['date']));
 
         $job->setEmployeeId($clean['employeeId']);
         $job->setJobDate(new DateTime($clean['date']));
@@ -253,9 +348,11 @@ class DutyJobService {
 
     /**
      * @throws NotFoundException
+     * @throws ForbiddenException when the week is locked
      */
     public function delete(int $id, string $userId): void {
         $job = $this->find($id);
+        $this->assertWeekOpen($job->getJobDate());
         $this->auditLogService->logDelete($userId, self::ENTITY_TYPE, $job->getId(), $job->jsonSerialize());
         $this->jobMapper->delete($job);
     }
@@ -263,9 +360,11 @@ class DutyJobService {
     /**
      * Copy every card of the source week into the target week (same weekday).
      * Duplicate = same employee, date, start time and title already in target.
-     * Only employees currently in the roster are copied.
+     * Only employees currently in the roster are copied. The source week may be
+     * locked; the target week must be open.
      *
      * @return int number of cards created
+     * @throws ForbiddenException when the target week is locked
      */
     public function copyWeek(DateTime $fromMonday, DateTime $toMonday, string $userId): int {
         $fromMonday = self::mondayOf($fromMonday);
@@ -274,6 +373,7 @@ class DutyJobService {
         if ($offsetDays === 0) {
             return 0;
         }
+        $this->assertWeekOpen($toMonday);
         $rosterIds = array_map(static fn (Employee $e) => $e->getId(), $this->employeeMapper->findAllActiveInDutyRoster());
 
         $existing = [];

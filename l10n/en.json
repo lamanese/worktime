@@ -755,7 +755,19 @@
 		"Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.": "Lower numbers appear higher up. Equal numbers are sorted by last name.",
 		"z. B. 8, 830 oder 8:30": "e.g. 8, 830 or 8:30",
 		"Vorlagen-Leiste im Dienstplan anzeigen": "Show template sidebar in the duty roster",
-		"Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.": "Shows or hides the template sidebar next to the week plan. The templates themselves are kept."
+		"Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.": "Shows or hides the template sidebar next to the week plan. The templates themselves are kept.",
+		"Die Woche ist gesperrt. Der Auftrag kann nur angesehen werden.": "The week is locked. The job can only be viewed.",
+		"Schliessen": "Close",
+		"Auftrag ansehen": "View job",
+		"Woche gesperrt": "Week locked",
+		"Woche entsperrt": "Week unlocked",
+		"Woche sperren": "Lock week",
+		"Woche entsperren": "Unlock week",
+		"Woche ist gesperrt. Entsperren können nur Admin und HR.": "Week is locked. Only admins and HR can unlock it.",
+		"KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.": "Week {week} is locked (by {name} on {date}). Jobs can only be viewed.",
+		"Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.": "Release the week for editing again? All planners can then make changes until the week is locked again.",
+		"Entsperren": "Unlock",
+		"Woche ist gesperrt": "Week is locked"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

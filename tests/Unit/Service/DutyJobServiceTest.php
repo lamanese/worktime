@@ -13,6 +13,8 @@ use DateTime;
 use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\DutyJob;
 use OCA\Zeitwerk\Db\DutyJobMapper;
+use OCA\Zeitwerk\Db\DutyWeekLock;
+use OCA\Zeitwerk\Db\DutyWeekLockMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCA\Zeitwerk\Db\Holiday;
@@ -20,12 +22,15 @@ use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\DutyJobService;
+use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\NotFoundException;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCA\Zeitwerk\Service\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 
 class DutyJobServiceTest extends TestCase {
@@ -37,7 +42,11 @@ class DutyJobServiceTest extends TestCase {
     private PermissionService $permissionService;
     private AuditLogService $auditLogService;
     private CompanySettingsService $settingsService;
+    private DutyWeekLockMapper $lockMapper;
+    private IUserManager $userManager;
     private bool $templatesSidebar = true;
+    /** @var string[] locked Mondays (Y-m-d) */
+    private array $lockedWeeks = [];
     private DutyJobService $service;
     private bool $absenceRowVisible = true;
 
@@ -54,6 +63,18 @@ class DutyJobServiceTest extends TestCase {
         $this->settingsService = $this->createMock(CompanySettingsService::class);
         $this->settingsService->method('isDutyRosterTemplatesSidebarEnabled')
             ->willReturnCallback(fn (): bool => $this->templatesSidebar);
+        $this->lockMapper = $this->createMock(DutyWeekLockMapper::class);
+        $this->lockMapper->method('findByWeekStart')->willReturnCallback(function (DateTime $monday): DutyWeekLock {
+            if (!in_array($monday->format('Y-m-d'), $this->lockedWeeks, true)) {
+                throw new DoesNotExistException('open');
+            }
+            $lock = new DutyWeekLock();
+            $lock->setWeekStart(clone $monday);
+            $lock->setLockedBy('hr1');
+            $lock->setLockedAt(new DateTime('2026-09-15 08:00:00'));
+            return $lock;
+        });
+        $this->userManager = $this->createMock(IUserManager::class);
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
@@ -66,6 +87,8 @@ class DutyJobServiceTest extends TestCase {
             $this->auditLogService,
             $l10n,
             $this->settingsService,
+            $this->lockMapper,
+            $this->userManager,
         );
     }
 
@@ -496,5 +519,117 @@ class DutyJobServiceTest extends TestCase {
         $this->templatesSidebar = true;
 
         $this->assertFalse($this->service->getWeek(new DateTime('2026-09-14'), 'user')['showTemplates']);
+    }
+    // ---- Wochensperre ----
+
+    public function testGetWeekCarriesLockInfoWithDisplayName(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->permissionService->method('canUnlockDutyWeek')->willReturn(false);
+        $this->mockViewer(false);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([]);
+        $user = $this->createMock(IUser::class);
+        $user->method('getDisplayName')->willReturn('Hanna HR');
+        $this->userManager->method('get')->with('hr1')->willReturn($user);
+        $this->lockedWeeks = ['2026-09-14'];
+
+        $week = $this->service->getWeek(new DateTime('2026-09-16'), 'sup');
+
+        $this->assertTrue($week['locked']);
+        $this->assertSame('Hanna HR', $week['lockedBy']);
+        $this->assertStringStartsWith('2026-09-15T08:00:00', $week['lockedAt']);
+        $this->assertFalse($week['canUnlock']);
+
+        $this->lockedWeeks = [];
+        $open = $this->service->getWeek(new DateTime('2026-09-16'), 'sup');
+        $this->assertFalse($open['locked']);
+        $this->assertNull($open['lockedBy']);
+    }
+
+    public function testLockWeekInsertsOnceAndIsIdempotent(): void {
+        $this->lockMapper->expects($this->once())->method('insert')->willReturnCallback(function (DutyWeekLock $lock): DutyWeekLock {
+            $this->assertSame('2026-09-14', $lock->getWeekStart()->format('Y-m-d'));
+            $this->assertSame('sup', $lock->getLockedBy());
+            $this->lockedWeeks[] = '2026-09-14';
+            return $lock;
+        });
+        $this->auditLogService->expects($this->once())->method('log')
+            ->with('sup', 'lock_week', 'duty_job', null, null, ['weekStart' => '2026-09-14']);
+
+        $first = $this->service->lockWeek(new DateTime('2026-09-17'), 'sup'); // Thursday -> Monday
+        $this->assertTrue($first['locked']);
+        $second = $this->service->lockWeek(new DateTime('2026-09-14'), 'sup');
+        $this->assertTrue($second['locked']);
+    }
+
+    public function testUnlockWeekDeletesAndIsNoopWhenOpen(): void {
+        $this->lockedWeeks = ['2026-09-14'];
+        $this->lockMapper->expects($this->once())->method('delete')->willReturnCallback(function (DutyWeekLock $lock): DutyWeekLock {
+            $this->lockedWeeks = [];
+            return $lock;
+        });
+        $this->auditLogService->expects($this->once())->method('log')
+            ->with('admin', 'unlock_week', 'duty_job', null, ['weekStart' => '2026-09-14', 'lockedBy' => 'hr1'], null);
+
+        $this->assertFalse($this->service->unlockWeek(new DateTime('2026-09-14'), 'admin')['locked']);
+        $this->assertFalse($this->service->unlockWeek(new DateTime('2026-09-14'), 'admin')['locked']);
+    }
+
+    public function testCreateRejectsLockedWeek(): void {
+        $this->lockedWeeks = ['2026-09-14'];
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $this->jobMapper->expects($this->never())->method('insert');
+
+        $this->expectException(ForbiddenException::class);
+        $this->expectExceptionMessage('Woche ist gesperrt');
+        $this->service->create(['employeeId' => 1, 'date' => '2026-09-18', 'title' => 'X'], 'sup');
+    }
+
+    public function testUpdateRejectsWhenSourceOrTargetWeekLocked(): void {
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $this->jobMapper->method('find')->willReturn($this->makeJob(5, 1, '2026-09-15', '09:00', 'A'));
+        $this->jobMapper->expects($this->never())->method('update');
+
+        // target week locked, source open
+        $this->lockedWeeks = ['2026-09-21'];
+        try {
+            $this->service->update(5, ['employeeId' => 1, 'date' => '2026-09-22', 'title' => 'A'], 'sup');
+            $this->fail('expected ForbiddenException');
+        } catch (ForbiddenException) {
+        }
+        // source week locked, target open
+        $this->lockedWeeks = ['2026-09-14'];
+        $this->expectException(ForbiddenException::class);
+        $this->service->update(5, ['employeeId' => 1, 'date' => '2026-09-22', 'title' => 'A'], 'sup');
+    }
+
+    public function testMoveAndDeleteRejectLockedWeek(): void {
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $this->jobMapper->method('find')->willReturn($this->makeJob(5, 1, '2026-09-15', '09:00', 'A'));
+        $this->jobMapper->expects($this->never())->method('update');
+        $this->jobMapper->expects($this->never())->method('delete');
+        $this->lockedWeeks = ['2026-09-14'];
+
+        try {
+            $this->service->move(5, 1, '2026-09-16', 'sup');
+            $this->fail('expected ForbiddenException');
+        } catch (ForbiddenException) {
+        }
+        $this->expectException(ForbiddenException::class);
+        $this->service->delete(5, 'sup');
+    }
+
+    public function testCopyWeekRejectsLockedTargetButAllowsLockedSource(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturnCallback(function (DateTime $from): array {
+            return $from->format('Y-m-d') === '2026-09-14' ? [$this->makeJob(1, 1, '2026-09-15', '09:00', 'A')] : [];
+        });
+
+        $this->lockedWeeks = ['2026-09-14']; // source locked: fine
+        $this->jobMapper->expects($this->once())->method('insert')->willReturnArgument(0);
+        $this->assertSame(1, $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-21'), 'sup'));
+
+        $this->lockedWeeks = ['2026-09-21']; // target locked
+        $this->expectException(ForbiddenException::class);
+        $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-21'), 'sup');
     }
 }

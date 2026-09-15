@@ -24,6 +24,13 @@ const getters = {
 	canManage: (state) => !!state.week?.canManage,
 	// Template sidebar: planner AND company setting «Vorlagen-Leiste anzeigen».
 	showTemplates: (state) => !!state.week?.showTemplates,
+	// Week lock («Schluessel»): a locked week is read-only for everyone.
+	locked: (state) => !!state.week?.locked,
+	lockedBy: (state) => state.week?.lockedBy ?? null,
+	lockedAt: (state) => state.week?.lockedAt ?? null,
+	canUnlock: (state) => !!state.week?.canUnlock,
+	// Planner AND week open: only then cards may be created, moved, edited, deleted.
+	canEdit: (state) => !!state.week?.canManage && !state.week?.locked,
 	loading: (state) => state.loading,
 	error: (state) => state.error,
 	templates: (state) => state.templates,
@@ -86,6 +93,14 @@ const actions = {
 	},
 	async deleteJob({ state, dispatch }, id) {
 		await DutyRosterService.deleteJob(id)
+		await dispatch('loadWeek', state.weekStart)
+	},
+	async lockWeek({ state, dispatch }) {
+		await DutyRosterService.lockWeek(state.weekStart)
+		await dispatch('loadWeek', state.weekStart)
+	},
+	async unlockWeek({ state, dispatch }) {
+		await DutyRosterService.unlockWeek(state.weekStart)
 		await dispatch('loadWeek', state.weekStart)
 	},
 	async copyToNextWeek({ state, dispatch }) {

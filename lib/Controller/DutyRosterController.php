@@ -172,6 +172,50 @@ class DutyRosterController extends BaseController {
     }
 
     /**
+     * Woche sperren: alle Planer. $start = beliebiger Tag der Woche.
+     */
+    #[NoAdminRequired]
+    public function lock(string $start): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $day = $this->parseDate($start);
+        if ($day === null) {
+            return new JSONResponse(['error' => 'Invalid start date'], Http::STATUS_BAD_REQUEST);
+        }
+        try {
+            return $this->successResponse($this->dutyJobService->lockWeek($day, $this->userId));
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Woche entsperren: nur Admin und HR-Manager.
+     */
+    #[NoAdminRequired]
+    public function unlock(string $start): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canUnlockDutyWeek($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $day = $this->parseDate($start);
+        if ($day === null) {
+            return new JSONResponse(['error' => 'Invalid start date'], Http::STATUS_BAD_REQUEST);
+        }
+        try {
+            return $this->successResponse($this->dutyJobService->unlockWeek($day, $this->userId));
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * Strict Y-m-d calendar date (WorkTime #537 rule), null when invalid.
      */
     private function parseDate(string $value): ?DateTime {

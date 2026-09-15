@@ -11,6 +11,7 @@ namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
 use OCA\Zeitwerk\Controller\DutyRosterController;
 use OCA\Zeitwerk\Service\DutyJobService;
+use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\NotFoundException;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
@@ -77,5 +78,38 @@ class DutyRosterControllerTest extends TestCase {
         $this->service->method('copyWeek')->willReturn(4);
         $response = $this->controller()->copyWeek('2026-09-14', '2026-09-21');
         $this->assertSame(['created' => 4], $response->getData());
+    }
+    public function testLockIs403ForViewersAndUnlockIs403ForSupervisors(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->permissions->method('canUnlockDutyWeek')->willReturn(false);
+        $this->service->expects($this->never())->method('unlockWeek');
+        $this->assertSame(Http::STATUS_FORBIDDEN, $this->controller()->unlock('2026-09-14')->getStatus());
+
+        $viewerPermissions = $this->createMock(PermissionService::class);
+        $viewerPermissions->method('canManageDutyRoster')->willReturn(false);
+        $c = new DutyRosterController($this->createMock(IRequest::class), 'user', $this->service, $viewerPermissions);
+        $this->assertSame(Http::STATUS_FORBIDDEN, $c->lock('2026-09-14')->getStatus());
+    }
+
+    public function testLockAndUnlockDelegateAndValidateDate(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->permissions->method('canUnlockDutyWeek')->willReturn(true);
+        $info = ['locked' => true, 'lockedBy' => 'Admin', 'lockedAt' => '2026-09-15T08:00:00+00:00'];
+        $this->service->expects($this->once())->method('lockWeek')->willReturn($info);
+        $this->service->expects($this->once())->method('unlockWeek')->willReturn(['locked' => false, 'lockedBy' => null, 'lockedAt' => null]);
+
+        $c = $this->controller();
+        $this->assertSame($info, $c->lock('2026-09-16')->getData());
+        $this->assertFalse($c->unlock('2026-09-16')->getData()['locked']);
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $c->lock('2026-02-30')->getStatus());
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $c->unlock('heute')->getStatus());
+    }
+
+    public function testWriteOnLockedWeekIs403(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->service->method('move')->willThrowException(new ForbiddenException('Woche ist gesperrt'));
+        $response = $this->controller()->move(1, 1, '2026-09-15');
+        $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+        $this->assertSame('Woche ist gesperrt', $response->getData()['error']);
     }
 }

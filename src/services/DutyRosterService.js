@@ -74,6 +74,24 @@ export default {
 		}
 	},
 
+	async lockWeek(start) {
+		try {
+			const response = await api.post('/duty-roster/lock', { start })
+			return response.data
+		} catch (error) {
+			rethrow(error)
+		}
+	},
+
+	async unlockWeek(start) {
+		try {
+			const response = await api.post('/duty-roster/unlock', { start })
+			return response.data
+		} catch (error) {
+			rethrow(error)
+		}
+	},
+
 	async copyWeek(from, to) {
 		try {
 			const response = await api.post('/duty-roster/copy-week', { from, to })

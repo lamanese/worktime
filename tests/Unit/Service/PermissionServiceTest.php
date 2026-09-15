@@ -401,6 +401,7 @@ class PermissionServiceTest extends TestCase {
 
         $this->assertFalse($this->service->canViewDutyRoster('admin'));
         $this->assertFalse($this->service->canManageDutyRoster('admin'));
+        $this->assertFalse($this->service->canUnlockDutyWeek('admin'));
     }
 
     public function testAdminAndHrCanManageDutyRoster(): void {
@@ -413,6 +414,8 @@ class PermissionServiceTest extends TestCase {
         $this->assertTrue($this->service->canManageDutyRoster('admin'));
         $this->assertTrue($this->service->canManageDutyRoster('hr_user'));
         $this->assertTrue($this->service->canViewDutyRoster('hr_user'));
+        $this->assertTrue($this->service->canUnlockDutyWeek('admin'));
+        $this->assertTrue($this->service->canUnlockDutyWeek('hr_user'));
     }
 
     public function testSupervisorCanManageButEmployeeOnlyViews(): void {
@@ -430,6 +433,9 @@ class PermissionServiceTest extends TestCase {
         $this->assertTrue($this->service->canManageDutyRoster('boss'));
         $this->assertTrue($this->service->canViewDutyRoster('worker'));
         $this->assertFalse($this->service->canManageDutyRoster('worker'));
+        // Sperren duerfen Vorgesetzte, Entsperren nicht (nur Admin/HR)
+        $this->assertFalse($this->service->canUnlockDutyWeek('boss'));
+        $this->assertFalse($this->service->canUnlockDutyWeek('worker'));
     }
 
     public function testPermissionInfoCarriesDutyRosterFlags(): void {

@@ -2,10 +2,11 @@
 	<NcModal :name="title" size="small" @close="$emit('cancel')">
 		<form class="duty-form" @submit.prevent="save">
 			<h3>{{ title }}</h3>
+			<p v-if="readonly" class="readonly-hint">{{ t('zeitwerk', 'Die Woche ist gesperrt. Der Auftrag kann nur angesehen werden.') }}</p>
 
 			<div class="form-group">
 				<label for="dj-employee">{{ t('zeitwerk', 'Mitarbeiter') }}</label>
-				<select id="dj-employee" v-model.number="form.employeeId" required>
+				<select id="dj-employee" v-model.number="form.employeeId" :disabled="readonly" required>
 					<option v-for="e in employees" :key="e.id" :value="e.id">{{ e.fullName }}</option>
 				</select>
 				<p v-if="errors.employeeId" class="field-error">{{ errors.employeeId[0] }}</p>
@@ -17,6 +18,7 @@
 					<NcDateTimePicker id="dj-date"
 						v-model="formDate"
 						type="date"
+						:disabled="readonly"
 						:format="'DD.MM.YYYY'" />
 					<p v-if="errors.date" class="field-error">{{ errors.date[0] }}</p>
 				</div>
@@ -30,6 +32,7 @@
 						:title="t('zeitwerk', 'z. B. 8, 830 oder 8:30')"
 						inputmode="numeric"
 						maxlength="5"
+						:disabled="readonly"
 						@blur="form.startTime = normalizeTimeInput(form.startTime)">
 					<p v-if="errors.startTime" class="field-error">{{ errors.startTime[0] }}</p>
 				</div>
@@ -45,6 +48,7 @@
 					maxlength="200"
 					required
 					autocomplete="off"
+					:disabled="readonly"
 					@input="onTitleInput">
 				<datalist id="dj-title-suggestions">
 					<option v-for="s in suggestions" :key="s" :value="s" />
@@ -55,8 +59,8 @@
 			<div class="form-group">
 				<label for="dj-duration">{{ t('zeitwerk', 'Dauer (Minuten)') }}</label>
 				<div class="duration-row">
-					<input id="dj-duration" v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1">
-					<NcButton v-for="m in [30, 60, 90, 120]" :key="m" type="tertiary" @click="form.durationMinutes = m">
+					<input id="dj-duration" v-model.number="form.durationMinutes" type="number" min="1" max="1440" step="1" :disabled="readonly">
+					<NcButton v-for="m in [30, 60, 90, 120]" :key="m" type="tertiary" :disabled="readonly" @click="form.durationMinutes = m">
 						{{ m }}
 					</NcButton>
 				</div>
@@ -65,17 +69,23 @@
 
 			<div class="form-group">
 				<label for="dj-note">{{ t('zeitwerk', 'Notiz') }}</label>
-				<textarea id="dj-note" v-model="form.note" rows="2" maxlength="500" />
+				<textarea id="dj-note" v-model="form.note" rows="2" maxlength="500" :disabled="readonly" />
 				<p v-if="errors.note" class="field-error">{{ errors.note[0] }}</p>
 			</div>
 
 			<div class="form-group">
-				<NcCheckboxRadioSwitch :checked.sync="form.onCall">
+				<NcCheckboxRadioSwitch :checked.sync="form.onCall" :disabled="readonly">
 					{{ t('zeitwerk', 'Auf Abruf') }}
 				</NcCheckboxRadioSwitch>
 			</div>
 
-			<div class="form-actions">
+			<div v-if="readonly" class="form-actions">
+				<span class="spacer" />
+				<NcButton type="primary" @click="$emit('cancel')">
+					{{ t('zeitwerk', 'Schliessen') }}
+				</NcButton>
+			</div>
+			<div v-else class="form-actions">
 				<NcButton v-if="isEdit" type="error" :disabled="saving" @click="remove">
 					{{ t('zeitwerk', 'Löschen') }}
 				</NcButton>
@@ -112,6 +122,8 @@ export default {
 		employeeId: { type: Number, required: true },
 		date: { type: String, required: true },
 		employees: { type: Array, required: true },
+		/** Locked week: show the card, allow nothing. */
+		readonly: { type: Boolean, default: false },
 	},
 	data() {
 		return {
@@ -135,6 +147,7 @@ export default {
 			return !!this.job
 		},
 		title() {
+			if (this.readonly) return this.t('zeitwerk', 'Auftrag ansehen')
 			return this.isEdit ? this.t('zeitwerk', 'Auftrag bearbeiten') : this.t('zeitwerk', 'Auftrag einplanen')
 		},
 		formDate: {
@@ -186,6 +199,7 @@ export default {
 			}
 		},
 		async save() {
+			if (this.readonly) return
 			this.errors = {}
 			this.form.startTime = normalizeTimeInput(this.form.startTime)
 			if (this.form.startTime && !isValidTimeString(this.form.startTime)) {
@@ -243,6 +257,7 @@ export default {
 .duration-row { display: flex; gap: 6px; align-items: center; }
 .duration-row input { width: 90px; }
 .field-error { color: var(--color-error); font-size: 12px; margin: 0; }
+.readonly-hint { margin: 0; color: var(--color-text-maxcontrast); font-size: 13px; }
 .form-actions { display: flex; gap: 8px; margin-top: 8px; }
 .spacer { flex: 1; }
 input, select, textarea { width: 100%; }
