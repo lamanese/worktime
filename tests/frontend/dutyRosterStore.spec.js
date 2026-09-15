@@ -10,6 +10,7 @@ jest.mock('../../src/services/DutyRosterService.js', () => ({
 		createJob: jest.fn(),
 		moveJob: jest.fn(),
 		copyWeek: jest.fn(),
+		setTemplatesSidebar: jest.fn(),
 	},
 }))
 
@@ -81,6 +82,32 @@ describe('dutyRoster store', () => {
 		await run('loadWeek', state, '2026-09-14')
 		expect(state.error).toBe('kaputt')
 		expect(state.loading).toBe(false)
+	})
+})
+
+describe('dutyRoster copyToWeek', () => {
+	let state
+	beforeEach(() => {
+		state = { ...dutyRoster.state() }
+		jest.clearAllMocks()
+	})
+
+	it('copies into the Monday of the target week and loads it (year boundary)', async () => {
+		state.weekStart = '2026-11-30' // KW 49/2026
+		DutyRosterService.copyWeek.mockResolvedValue({ created: 3 })
+		DutyRosterService.getWeek.mockResolvedValue({ rows: [], days: [] })
+		const { result } = await run('copyToWeek', state, '2027-03-31') // Wednesday of KW 13/2027
+		expect(DutyRosterService.copyWeek).toHaveBeenCalledWith('2026-11-30', '2027-03-29')
+		expect(DutyRosterService.getWeek).toHaveBeenLastCalledWith('2027-03-29')
+		expect(result).toBe(3)
+	})
+
+	it('copyToNextWeek delegates with +7 days', async () => {
+		state.weekStart = '2026-09-14'
+		DutyRosterService.copyWeek.mockResolvedValue({ created: 1 })
+		DutyRosterService.getWeek.mockResolvedValue({ rows: [], days: [] })
+		await run('copyToNextWeek', state)
+		expect(DutyRosterService.copyWeek).toHaveBeenCalledWith('2026-09-14', '2026-09-21')
 	})
 })
 

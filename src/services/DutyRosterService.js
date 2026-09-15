@@ -74,6 +74,15 @@ export default {
 		}
 	},
 
+	async setTemplatesSidebar(visible) {
+		try {
+			const response = await api.put('/duty-roster/templates-sidebar', { visible })
+			return response.data
+		} catch (error) {
+			rethrow(error)
+		}
+	},
+
 	async lockWeek(start) {
 		try {
 			const response = await api.post('/duty-roster/lock', { start })

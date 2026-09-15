@@ -104,10 +104,20 @@ const actions = {
 		await dispatch('loadWeek', state.weekStart)
 	},
 	async copyToNextWeek({ state, dispatch }) {
-		const target = addDays(state.weekStart, 7)
-		const { created } = await DutyRosterService.copyWeek(state.weekStart, target)
-		await dispatch('loadWeek', target)
+		return dispatch('copyToWeek', addDays(state.weekStart, 7))
+	},
+	/** Copies the current week into the week of `target` (any day) and jumps there. */
+	async copyToWeek({ state, dispatch }, target) {
+		const monday = getWeekStart(target)
+		const { created } = await DutyRosterService.copyWeek(state.weekStart, monday)
+		await dispatch('loadWeek', monday)
 		return created
+	},
+	/** Eye toggle: per-user override, then reload so showTemplates comes from the server. */
+	async setTemplatesSidebar({ state, dispatch }, visible) {
+		await DutyRosterService.setTemplatesSidebar(visible)
+		await dispatch('loadWeek', state.weekStart)
+		if (visible) await dispatch('loadTemplates')
 	},
 	/**
 	 * Visible templates for the sidebar. Only planners may call the endpoint;

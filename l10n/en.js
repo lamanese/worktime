@@ -780,6 +780,13 @@ OC.L10N.register(
     "Abruf" : "on call",
     "Feiertag: %s" : "Holiday: %s",
     "½ %s" : "½ %s",
-    "beantragt: %s" : "requested: %s"
+    "beantragt: %s" : "requested: %s",
+    "Vorlagen-Leiste ausblenden" : "Hide template sidebar",
+    "Vorlagen-Leiste einblenden" : "Show template sidebar",
+    "Woche kopieren nach …" : "Copy week to …",
+    "Quelle: {label}" : "Source: {label}",
+    "Ziel: {label}" : "Target: {label}",
+    "Diese Kalenderwoche gibt es in dem Jahr nicht." : "That calendar week does not exist in that year.",
+    "Ziel und Quelle sind dieselbe Woche." : "Target and source are the same week."
 },
 "nplurals=2; plural=(n != 1);");

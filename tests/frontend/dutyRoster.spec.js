@@ -1,5 +1,5 @@
 import {
-	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState, resolveDrop,
+	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState, resolveDrop, mondayOfIsoWeek, isoYear,
 } from '../../src/utils/dutyRoster.js'
 
 describe('week helpers (local dates, no UTC shift)', () => {
@@ -24,6 +24,23 @@ describe('week helpers (local dates, no UTC shift)', () => {
 	it('formatWeekLabel shows ISO week and range', () => {
 		expect(formatWeekLabel('2026-09-14')).toBe('KW 38 · 14.09. – 20.09.2026')
 		expect(formatWeekLabel('2025-12-29')).toBe('KW 1 · 29.12. – 04.01.2026')
+	})
+
+	it('mondayOfIsoWeek resolves KW/year incl. year boundaries', () => {
+		expect(mondayOfIsoWeek(2026, 38)).toBe('2026-09-14')
+		expect(mondayOfIsoWeek(2026, 1)).toBe('2025-12-29') // week 1 starts in the old year
+		expect(mondayOfIsoWeek(2027, 13)).toBe('2027-03-29')
+		expect(mondayOfIsoWeek(2026, 53)).toBe('2026-12-28') // 2026 has 53 weeks
+		expect(mondayOfIsoWeek(2027, 53)).toBeNull() // 2027 has 52
+		expect(mondayOfIsoWeek(2026, 0)).toBeNull()
+		expect(mondayOfIsoWeek(2026, 54)).toBeNull()
+		expect(mondayOfIsoWeek(NaN, 3)).toBeNull()
+	})
+
+	it('isoYear follows the Thursday rule', () => {
+		expect(isoYear('2026-01-01')).toBe(2026)
+		expect(isoYear('2025-12-29')).toBe(2026)
+		expect(isoYear('2027-01-03')).toBe(2026) // Sunday of week 53/2026
 	})
 
 	it('formatWeekLabel accepts a custom prefix', () => {

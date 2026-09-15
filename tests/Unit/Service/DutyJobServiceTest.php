@@ -28,6 +28,7 @@ use OCA\Zeitwerk\Service\NotFoundException;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCA\Zeitwerk\Service\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -44,7 +45,9 @@ class DutyJobServiceTest extends TestCase {
     private CompanySettingsService $settingsService;
     private DutyWeekLockMapper $lockMapper;
     private IUserManager $userManager;
+    private IConfig $config;
     private bool $templatesSidebar = true;
+    private string $templatesUserPref = '';
     /** @var string[] locked Mondays (Y-m-d) */
     private array $lockedWeeks = [];
     private DutyJobService $service;
@@ -75,6 +78,8 @@ class DutyJobServiceTest extends TestCase {
             return $lock;
         });
         $this->userManager = $this->createMock(IUserManager::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->config->method('getUserValue')->willReturnCallback(fn (): string => $this->templatesUserPref);
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
@@ -89,6 +94,7 @@ class DutyJobServiceTest extends TestCase {
             $this->settingsService,
             $this->lockMapper,
             $this->userManager,
+            $this->config,
         );
     }
 
@@ -510,6 +516,23 @@ class DutyJobServiceTest extends TestCase {
 
         $this->templatesSidebar = false;
         $this->assertFalse($this->service->getWeek(new DateTime('2026-09-14'), 'admin')['showTemplates']);
+    }
+
+    public function testUserPreferenceOverridesCompanyDefaultForTemplates(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([]);
+
+        $this->templatesSidebar = true;
+        $this->templatesUserPref = '0';
+        $this->assertFalse($this->service->getWeek(new DateTime('2026-09-14'), 'admin')['showTemplates']);
+
+        $this->templatesSidebar = false;
+        $this->templatesUserPref = '1';
+        $this->assertTrue($this->service->getWeek(new DateTime('2026-09-14'), 'admin')['showTemplates']);
+
+        $this->config->expects($this->once())->method('setUserValue')->with('admin', 'zeitwerk', 'duty_roster_templates_sidebar', '0');
+        $this->service->setTemplatesSidebarVisible('admin', false);
     }
 
     public function testGetWeekShowTemplatesFalseForReaders(): void {

@@ -70,6 +70,13 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->destroy(1)->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->copyWeek('2026-09-14', '2026-09-21')->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->pdf('2026-09-14')->getStatus());
+        $this->assertSame(Http::STATUS_FORBIDDEN, $c->templatesSidebar(false)->getStatus());
+    }
+
+    public function testTemplatesSidebarStoresPreference(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->service->expects($this->once())->method('setTemplatesSidebarVisible')->with('user', false);
+        $this->assertSame(['showTemplates' => false], $this->controller()->templatesSidebar(false)->getData());
     }
 
     public function testDestroyMapsNotFoundTo404(): void {

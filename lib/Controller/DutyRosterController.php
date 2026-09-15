@@ -175,6 +175,22 @@ class DutyRosterController extends BaseController {
     }
 
     /**
+     * Auge-Schalter: Vorlagen-Leiste fuer den eigenen Benutzer ein-/ausblenden
+     * (ueberschreibt die Firmenvorgabe nur fuer diesen Planer).
+     */
+    #[NoAdminRequired]
+    public function templatesSidebar(bool $visible): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $this->dutyJobService->setTemplatesSidebarVisible($this->userId, $visible);
+        return $this->successResponse(['showTemplates' => $visible]);
+    }
+
+    /**
      * Woche sperren: alle Planer. $start = beliebiger Tag der Woche.
      */
     #[NoAdminRequired]

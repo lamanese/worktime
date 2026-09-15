@@ -780,6 +780,13 @@ OC.L10N.register(
     "Abruf" : "Abruf",
     "Feiertag: %s" : "Feiertag: %s",
     "½ %s" : "½ %s",
-    "beantragt: %s" : "beantragt: %s"
+    "beantragt: %s" : "beantragt: %s",
+    "Vorlagen-Leiste ausblenden" : "Vorlagen-Leiste ausblenden",
+    "Vorlagen-Leiste einblenden" : "Vorlagen-Leiste einblenden",
+    "Woche kopieren nach …" : "Woche kopieren nach …",
+    "Quelle: {label}" : "Quelle: {label}",
+    "Ziel: {label}" : "Ziel: {label}",
+    "Diese Kalenderwoche gibt es in dem Jahr nicht." : "Diese Kalenderwoche gibt es in dem Jahr nicht.",
+    "Ziel und Quelle sind dieselbe Woche." : "Ziel und Quelle sind dieselbe Woche."
 },
 "nplurals=2; plural=(n != 1);");

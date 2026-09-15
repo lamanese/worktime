@@ -19,6 +19,7 @@ use OCA\Zeitwerk\Db\DutyWeekLockMapper;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IUserManager;
 
@@ -44,7 +45,27 @@ class DutyJobService {
         private CompanySettingsService $settingsService,
         private DutyWeekLockMapper $lockMapper,
         private IUserManager $userManager,
+        private IConfig $config,
     ) {
+    }
+
+    /** Per-user override of the company default for the template sidebar ('' = inherit). */
+    private const USER_PREF_TEMPLATES = 'duty_roster_templates_sidebar';
+
+    /**
+     * Effective sidebar visibility for one planner: own preference (eye
+     * toggle in the week view) wins, otherwise the company setting.
+     */
+    public function isTemplatesSidebarVisible(string $userId): bool {
+        $pref = $this->config->getUserValue($userId, 'zeitwerk', self::USER_PREF_TEMPLATES, '');
+        if ($pref === '1' || $pref === '0') {
+            return $pref === '1';
+        }
+        return $this->settingsService->isDutyRosterTemplatesSidebarEnabled();
+    }
+
+    public function setTemplatesSidebarVisible(string $userId, bool $visible): void {
+        $this->config->setUserValue($userId, 'zeitwerk', self::USER_PREF_TEMPLATES, $visible ? '1' : '0');
     }
 
     /**
@@ -128,7 +149,7 @@ class DutyJobService {
             'weekEnd' => $sunday->format('Y-m-d'),
             'canManage' => $canManage,
             'canUnlock' => $canUnlock,
-            'showTemplates' => $canManage && $this->settingsService->isDutyRosterTemplatesSidebarEnabled(),
+            'showTemplates' => $canManage && $this->isTemplatesSidebarVisible($userId),
             'days' => $days,
             'rows' => $rows,
         ], $this->lockInfo($monday));

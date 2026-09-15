@@ -24,6 +24,29 @@ export function addDays(str, n) {
 	return toDateString(d)
 }
 
+/**
+ * Monday (Y-m-d) of ISO week `week` in ISO year `year`, or null when the week
+ * does not exist in that year (e.g. week 53 in a 52-week year). ISO rule:
+ * 4 January is always in week 1.
+ *
+ * @param {number} year ISO year
+ * @param {number} week ISO week 1..53
+ * @return {string|null} Monday as Y-m-d
+ */
+export function mondayOfIsoWeek(year, week) {
+	if (!Number.isInteger(year) || !Number.isInteger(week) || week < 1 || week > 53) return null
+	const jan4 = new Date(year, 0, 4)
+	const monday = new Date(year, 0, 4 - ((jan4.getDay() + 6) % 7) + (week - 1) * 7)
+	const str = toDateString(monday)
+	return getISOWeek(monday) === week && isoYear(str) === year ? str : null
+}
+
+/** ISO year of the week containing the date (year of that week's Thursday). */
+export function isoYear(str) {
+	const thursday = parseLocalDate(addDays(getWeekStart(str), 3))
+	return thursday.getFullYear()
+}
+
 /** Monday of the ISO week containing the date. */
 export function getWeekStart(str) {
 	const d = parseLocalDate(str)

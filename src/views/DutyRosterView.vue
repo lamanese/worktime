@@ -14,6 +14,17 @@
 				<NcButton type="secondary" @click="goToDate(today)">
 					{{ t('zeitwerk', 'Heute') }}
 				</NcButton>
+				<NcButton v-if="canManage && !locked"
+					type="tertiary"
+					:disabled="templatesBusy"
+					:aria-label="showTemplates ? t('zeitwerk', 'Vorlagen-Leiste ausblenden') : t('zeitwerk', 'Vorlagen-Leiste einblenden')"
+					:title="showTemplates ? t('zeitwerk', 'Vorlagen-Leiste ausblenden') : t('zeitwerk', 'Vorlagen-Leiste einblenden')"
+					@click="toggleTemplates">
+					<template #icon>
+						<EyeOutlineIcon v-if="showTemplates" :size="20" />
+						<EyeOffOutlineIcon v-else :size="20" />
+					</template>
+				</NcButton>
 				<NcButton v-if="canManage"
 					:type="locked ? 'warning' : 'tertiary'"
 					:disabled="lockBusy || (locked && !canUnlock)"
@@ -36,6 +47,10 @@
 			<NcButton type="secondary" @click="confirmCopyWeek">
 				<template #icon><ContentCopyIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Woche in nächste Woche kopieren') }}
+			</NcButton>
+			<NcButton type="secondary" @click="openCopyTo">
+				<template #icon><CalendarArrowRightIcon :size="18" /></template>
+				{{ t('zeitwerk', 'Woche kopieren nach …') }}
 			</NcButton>
 			<NcButton type="secondary" :disabled="pdfBusy" @click="exportPdf">
 				<template #icon><FilePdfBoxIcon :size="18" /></template>
@@ -64,7 +79,10 @@
 		<div v-else class="board">
 			<div class="roster-card">
 				<div class="roster-grid" :style="{ '--day-count': days.length }">
-					<div class="roster-corner" />
+					<div class="roster-corner">
+						<span class="roster-corner__kw">{{ t('zeitwerk', 'KW') }}{{ weekNumber }}</span>
+						<span class="roster-corner__year">{{ weekIsoYear }}</span>
+					</div>
 					<div v-for="day in days"
 						:key="day.date"
 						class="roster-day-header"
@@ -108,6 +126,34 @@
 			<DutyTemplateSidebar v-if="showTemplates && !locked" :templates="templates" />
 		</div>
 
+		<NcModal v-if="copyTo.open" :name="t('zeitwerk', 'Woche kopieren nach …')" size="small" @close="copyTo.open = false">
+			<form class="copy-to" @submit.prevent="submitCopyTo">
+				<h3>{{ t('zeitwerk', 'Woche kopieren nach …') }}</h3>
+				<p class="copy-to__source">{{ t('zeitwerk', 'Quelle: {label}', { label: weekLabel }) }}</p>
+				<div class="copy-to__row">
+					<div class="copy-to__field">
+						<label for="copy-to-week">{{ t('zeitwerk', 'KW') }}</label>
+						<input id="copy-to-week" v-model.number="copyTo.week" type="number" min="1" max="53" required>
+					</div>
+					<div class="copy-to__field">
+						<label for="copy-to-year">{{ t('zeitwerk', 'Jahr') }}</label>
+						<input id="copy-to-year" v-model.number="copyTo.year" type="number" min="2000" max="2100" required>
+					</div>
+				</div>
+				<p v-if="copyToTarget" class="copy-to__preview">{{ t('zeitwerk', 'Ziel: {label}', { label: copyToLabel }) }}</p>
+				<p v-else class="copy-to__preview copy-to__preview--error">{{ t('zeitwerk', 'Diese Kalenderwoche gibt es in dem Jahr nicht.') }}</p>
+				<p v-if="copyToTarget === weekStart" class="copy-to__preview copy-to__preview--error">{{ t('zeitwerk', 'Ziel und Quelle sind dieselbe Woche.') }}</p>
+				<div class="copy-to__actions">
+					<NcButton type="secondary" :disabled="copyTo.busy" @click="copyTo.open = false">
+						{{ t('zeitwerk', 'Abbrechen') }}
+					</NcButton>
+					<NcButton type="primary" native-type="submit" :disabled="copyTo.busy || !copyToTarget || copyToTarget === weekStart">
+						{{ t('zeitwerk', 'Kopieren') }}
+					</NcButton>
+				</div>
+			</form>
+		</NcModal>
+
 		<DutyJobForm v-if="form.open"
 			:job="form.job"
 			:employee-id="form.employeeId"
@@ -126,6 +172,7 @@ import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
+import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
 import { usernameToColor } from '@nextcloud/vue/dist/Functions/usernameToColor.js'
 import { DialogBuilder } from '@nextcloud/dialogs'
 import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
@@ -134,6 +181,9 @@ import ContentCopyIcon from 'vue-material-design-icons/ContentCopy.vue'
 import PrinterIcon from 'vue-material-design-icons/Printer.vue'
 import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import LockOutlineIcon from 'vue-material-design-icons/LockOutline.vue'
+import EyeOutlineIcon from 'vue-material-design-icons/EyeOutline.vue'
+import EyeOffOutlineIcon from 'vue-material-design-icons/EyeOffOutline.vue'
+import CalendarArrowRightIcon from 'vue-material-design-icons/CalendarArrowRight.vue'
 import LockOpenVariantOutlineIcon from 'vue-material-design-icons/LockOpenVariantOutline.vue'
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import CalendarWeekIcon from 'vue-material-design-icons/CalendarWeek.vue'
@@ -142,7 +192,7 @@ import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
 import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
 import DutyRosterService from '../services/DutyRosterService.js'
-import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
+import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, addDays, mondayOfIsoWeek, isoYear, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { getLocale, getISOWeek } from '../utils/dateUtils.js'
 
@@ -163,7 +213,11 @@ export default {
 		DutyJobForm,
 		DutyTemplateSidebar,
 		NcNoteCard,
+		NcModal,
 		FilePdfBoxIcon,
+		EyeOutlineIcon,
+		EyeOffOutlineIcon,
+		CalendarArrowRightIcon,
 		LockOutlineIcon,
 		LockOpenVariantOutlineIcon,
 	},
@@ -173,6 +227,8 @@ export default {
 			overKey: null,
 			lockBusy: false,
 			pdfBusy: false,
+			templatesBusy: false,
+			copyTo: { open: false, week: 1, year: 2026, busy: false },
 		}
 	},
 	computed: {
@@ -197,6 +253,19 @@ export default {
 		},
 		weekLabel() {
 			return formatWeekLabel(this.weekStart, this.t('zeitwerk', 'KW'))
+		},
+		weekNumber() {
+			return getISOWeek(parseLocalDate(this.weekStart))
+		},
+		weekIsoYear() {
+			return isoYear(this.weekStart)
+		},
+		/** Monday of the chosen target week, or null when KW/year is invalid. */
+		copyToTarget() {
+			return mondayOfIsoWeek(this.copyTo.year, this.copyTo.week)
+		},
+		copyToLabel() {
+			return this.copyToTarget ? formatWeekLabel(this.copyToTarget, this.t('zeitwerk', 'KW')) : ''
 		},
 		employeeOptions() {
 			return this.rows.map(r => ({ id: r.employee.id, fullName: r.employee.fullName }))
@@ -245,7 +314,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'loadTemplates', 'lockWeek', 'unlockWeek']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
 		dayName(date) {
 			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
@@ -370,6 +439,36 @@ export default {
 				const row = this.rows.find(r => r.employee.id === job.employeeId)
 				const day = this.days.find(d => d.date === job.date)
 				if (row && day) this.notifyAbsence(row, day)
+			}
+		},
+		// --- template sidebar (eye): per-user override of the company default ---
+		async toggleTemplates() {
+			this.templatesBusy = true
+			try {
+				await this.setTemplatesSidebar(!this.showTemplates)
+			} catch (error) {
+				showErrorMessage(error.message)
+			} finally {
+				this.templatesBusy = false
+			}
+		},
+		// --- copy into any week (KW + year, year boundary safe) ---
+		openCopyTo() {
+			const next = addDays(this.weekStart, 7)
+			this.copyTo = { open: true, week: getISOWeek(parseLocalDate(next)), year: isoYear(next), busy: false }
+		},
+		async submitCopyTo() {
+			const target = this.copyToTarget
+			if (!target || target === this.weekStart) return
+			this.copyTo.busy = true
+			try {
+				const created = await this.copyToWeek(target)
+				this.copyTo.open = false
+				showSuccessMessage(this.t('zeitwerk', '{count} Aufträge kopiert', { count: created }))
+			} catch (error) {
+				showErrorMessage(error.message)
+			} finally {
+				this.copyTo.busy = false
 			}
 		},
 		// --- PDF export: archive in Nextcloud AND download in one click ---
@@ -509,6 +608,17 @@ export default {
 	border-bottom: 1px solid var(--color-border-dark);
 	padding: 8px 10px;
 }
+.roster-corner { display: flex; flex-direction: column; justify-content: center; line-height: 1; }
+.roster-corner__kw { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+.roster-corner__year { font-size: 12px; font-weight: 600; color: var(--color-text-maxcontrast); margin-top: 3px; }
+.copy-to { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.copy-to h3 { margin: 0; }
+.copy-to__source, .copy-to__preview { margin: 0; color: var(--color-text-maxcontrast); }
+.copy-to__preview--error { color: var(--color-error); }
+.copy-to__row { display: flex; gap: 12px; }
+.copy-to__field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.copy-to__field input { width: 100%; }
+.copy-to__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .roster-day-header { display: flex; flex-direction: column; font-weight: 600; font-size: 14px; color: var(--color-text-maxcontrast); }
 .roster-day-header.today { color: var(--color-primary-element); }
 .roster-day-date { font-weight: 400; font-size: 12px; }
