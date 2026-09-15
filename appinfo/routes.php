@@ -86,6 +86,7 @@ return [
         ['name' => 'duty_roster#copyWeek', 'url' => '/api/duty-roster/copy-week', 'verb' => 'POST'],
         ['name' => 'duty_roster#lock', 'url' => '/api/duty-roster/lock', 'verb' => 'POST'],
         ['name' => 'duty_roster#unlock', 'url' => '/api/duty-roster/unlock', 'verb' => 'POST'],
+        ['name' => 'duty_roster#pdf', 'url' => '/api/duty-roster/pdf', 'verb' => 'POST'],
         ['name' => 'duty_roster#create', 'url' => '/api/duty-roster/jobs', 'verb' => 'POST'],
         ['name' => 'duty_roster#update', 'url' => '/api/duty-roster/jobs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'duty_roster#move', 'url' => '/api/duty-roster/jobs/{id}/move', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],

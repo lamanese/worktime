@@ -11,9 +11,11 @@ namespace OCA\Zeitwerk\Controller;
 
 use DateTime;
 use OCA\Zeitwerk\Service\DutyJobService;
+use OCA\Zeitwerk\Service\DutyRosterPdfService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -28,6 +30,7 @@ class DutyRosterController extends BaseController {
         ?string $userId,
         private DutyJobService $dutyJobService,
         private PermissionService $permissionService,
+        private DutyRosterPdfService $pdfService,
     ) {
         parent::__construct($request, $userId);
     }
@@ -210,6 +213,35 @@ class DutyRosterController extends BaseController {
         }
         try {
             return $this->successResponse($this->dutyJobService->unlockWeek($day, $this->userId));
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
+     * Wochenplan als PDF: im Archiv ablegen (best effort) UND herunterladen.
+     * Ergebnis der Ablage steht im Header X-Zeitwerk-Archive (saved|skipped|failed),
+     * der Ablagepfad in X-Zeitwerk-Archive-Path. POST, damit der CSRF-Schutz greift.
+     */
+    #[NoAdminRequired]
+    public function pdf(string $start): DataDownloadResponse|JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $day = $this->parseDate($start);
+        if ($day === null) {
+            return new JSONResponse(['error' => 'Invalid start date'], Http::STATUS_BAD_REQUEST);
+        }
+        try {
+            $week = $this->dutyJobService->getWeek($day, $this->userId);
+            $result = $this->pdfService->export($week, $this->userId);
+            $response = new DataDownloadResponse($result['pdf'], 'Dienstplan-' . $result['filename'], 'application/pdf');
+            $response->addHeader('X-Zeitwerk-Archive', $result['archive']);
+            $response->addHeader('X-Zeitwerk-Archive-Path', (string)($result['path'] ?? ''));
+            return $response;
         } catch (\Exception $e) {
             return $this->handleException($e);
         }

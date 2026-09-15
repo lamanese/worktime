@@ -768,6 +768,18 @@ OC.L10N.register(
     "KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden." : "KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.",
     "Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird." : "Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.",
     "Entsperren" : "Entsperren",
-    "Woche ist gesperrt" : "Woche ist gesperrt"
+    "Woche ist gesperrt" : "Woche ist gesperrt",
+    "PDF exportiert" : "PDF exportiert",
+    "Als PDF speichern" : "Als PDF speichern",
+    "PDF gespeichert unter {path}" : "PDF gespeichert unter {path}",
+    "PDF heruntergeladen. Ablage in Nextcloud übersprungen: In den Einstellungen ist kein PDF-Archiv konfiguriert." : "PDF heruntergeladen. Ablage in Nextcloud übersprungen: In den Einstellungen ist kein PDF-Archiv konfiguriert.",
+    "PDF heruntergeladen, aber die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log." : "PDF heruntergeladen, aber die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log.",
+    "Dienstplan KW %s" : "Dienstplan KW %s",
+    "Erstellt am %1$s von %2$s" : "Erstellt am %1$s von %2$s",
+    "Woche gesperrt von %1$s am %2$s" : "Woche gesperrt von %1$s am %2$s",
+    "Abruf" : "Abruf",
+    "Feiertag: %s" : "Feiertag: %s",
+    "½ %s" : "½ %s",
+    "beantragt: %s" : "beantragt: %s"
 },
 "nplurals=2; plural=(n != 1);");

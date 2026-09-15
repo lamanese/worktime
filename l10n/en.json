@@ -767,7 +767,19 @@
 		"KW {week} ist gesperrt (von {name} am {date}). Aufträge können nur angesehen werden.": "Week {week} is locked (by {name} on {date}). Jobs can only be viewed.",
 		"Die Woche wieder zur Bearbeitung freigeben? Änderungen sind danach für alle Planer möglich, bis die Woche erneut gesperrt wird.": "Release the week for editing again? All planners can then make changes until the week is locked again.",
 		"Entsperren": "Unlock",
-		"Woche ist gesperrt": "Week is locked"
+		"Woche ist gesperrt": "Week is locked",
+		"PDF exportiert": "PDF exported",
+		"Als PDF speichern": "Save as PDF",
+		"PDF gespeichert unter {path}": "PDF saved at {path}",
+		"PDF heruntergeladen. Ablage in Nextcloud übersprungen: In den Einstellungen ist kein PDF-Archiv konfiguriert.": "PDF downloaded. Not stored in Nextcloud: no PDF archive is configured in the settings.",
+		"PDF heruntergeladen, aber die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log.": "PDF downloaded, but storing it in Nextcloud failed. See the Nextcloud log for details.",
+		"Dienstplan KW %s": "Duty roster week %s",
+		"Erstellt am %1$s von %2$s": "Created on %1$s by %2$s",
+		"Woche gesperrt von %1$s am %2$s": "Week locked by %1$s on %2$s",
+		"Abruf": "on call",
+		"Feiertag: %s": "Holiday: %s",
+		"½ %s": "½ %s",
+		"beantragt: %s": "requested: %s"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

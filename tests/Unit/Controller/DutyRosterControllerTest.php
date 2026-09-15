@@ -11,10 +11,12 @@ namespace OCA\Zeitwerk\Tests\Unit\Controller;
 
 use OCA\Zeitwerk\Controller\DutyRosterController;
 use OCA\Zeitwerk\Service\DutyJobService;
+use OCA\Zeitwerk\Service\DutyRosterPdfService;
 use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\NotFoundException;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -22,14 +24,16 @@ class DutyRosterControllerTest extends TestCase {
 
     private DutyJobService $service;
     private PermissionService $permissions;
+    private DutyRosterPdfService $pdfService;
 
     protected function setUp(): void {
         $this->service = $this->createMock(DutyJobService::class);
         $this->permissions = $this->createMock(PermissionService::class);
+        $this->pdfService = $this->createMock(DutyRosterPdfService::class);
     }
 
-    private function controller(?string $userId = 'user'): DutyRosterController {
-        return new DutyRosterController($this->createMock(IRequest::class), $userId, $this->service, $this->permissions);
+    private function controller(?string $userId = 'user', ?PermissionService $permissions = null): DutyRosterController {
+        return new DutyRosterController($this->createMock(IRequest::class), $userId, $this->service, $permissions ?? $this->permissions, $this->pdfService);
     }
 
     public function testWeekIs401WithoutUser(): void {
@@ -65,6 +69,7 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->move(1, 1, '2026-09-15')->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->destroy(1)->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->copyWeek('2026-09-14', '2026-09-21')->getStatus());
+        $this->assertSame(Http::STATUS_FORBIDDEN, $c->pdf('2026-09-14')->getStatus());
     }
 
     public function testDestroyMapsNotFoundTo404(): void {
@@ -87,7 +92,7 @@ class DutyRosterControllerTest extends TestCase {
 
         $viewerPermissions = $this->createMock(PermissionService::class);
         $viewerPermissions->method('canManageDutyRoster')->willReturn(false);
-        $c = new DutyRosterController($this->createMock(IRequest::class), 'user', $this->service, $viewerPermissions);
+        $c = $this->controller('user', $viewerPermissions);
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->lock('2026-09-14')->getStatus());
     }
 
@@ -111,5 +116,24 @@ class DutyRosterControllerTest extends TestCase {
         $response = $this->controller()->move(1, 1, '2026-09-15');
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
         $this->assertSame('Woche ist gesperrt', $response->getData()['error']);
+    }
+    public function testPdfDownloadsAndReportsArchiveState(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->service->expects($this->once())->method('getWeek')->willReturn(['weekStart' => '2026-09-14', 'rows' => []]);
+        $this->pdfService->expects($this->once())->method('export')
+            ->with(['weekStart' => '2026-09-14', 'rows' => []], 'user')
+            ->willReturn(['pdf' => '%PDF-1.7 x', 'filename' => 'KW38-2026.pdf', 'archive' => 'failed', 'path' => null]);
+
+        $response = $this->controller()->pdf('2026-09-16');
+
+        $this->assertInstanceOf(DataDownloadResponse::class, $response);
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        // Response::getHeaders() needs the NC server container; read the raw header map instead.
+        $prop = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
+        $headers = $prop->getValue($response);
+        $this->assertSame('failed', $headers['X-Zeitwerk-Archive']);
+        $this->assertSame('', $headers['X-Zeitwerk-Archive-Path']);
+        $this->assertStringContainsString('Dienstplan-KW38-2026.pdf', $headers['Content-Disposition']);
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->pdf('2026-13-01')->getStatus());
     }
 }

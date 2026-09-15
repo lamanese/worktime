@@ -37,6 +37,10 @@
 				<template #icon><ContentCopyIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Woche in nächste Woche kopieren') }}
 			</NcButton>
+			<NcButton type="secondary" :disabled="pdfBusy" @click="exportPdf">
+				<template #icon><FilePdfBoxIcon :size="18" /></template>
+				{{ t('zeitwerk', 'Als PDF speichern') }}
+			</NcButton>
 			<NcButton type="tertiary" @click="print">
 				<template #icon><PrinterIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Drucken') }}
@@ -128,6 +132,7 @@ import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import ContentCopyIcon from 'vue-material-design-icons/ContentCopy.vue'
 import PrinterIcon from 'vue-material-design-icons/Printer.vue'
+import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import LockOutlineIcon from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenVariantOutlineIcon from 'vue-material-design-icons/LockOpenVariantOutline.vue'
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
@@ -136,6 +141,7 @@ import { mapGetters, mapActions } from 'vuex'
 import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
 import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
+import DutyRosterService from '../services/DutyRosterService.js'
 import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { getLocale, getISOWeek } from '../utils/dateUtils.js'
@@ -157,6 +163,7 @@ export default {
 		DutyJobForm,
 		DutyTemplateSidebar,
 		NcNoteCard,
+		FilePdfBoxIcon,
 		LockOutlineIcon,
 		LockOpenVariantOutlineIcon,
 	},
@@ -165,6 +172,7 @@ export default {
 			form: { open: false, job: null, employeeId: 0, date: '' },
 			overKey: null,
 			lockBusy: false,
+			pdfBusy: false,
 		}
 	},
 	computed: {
@@ -362,6 +370,32 @@ export default {
 				const row = this.rows.find(r => r.employee.id === job.employeeId)
 				const day = this.days.find(d => d.date === job.date)
 				if (row && day) this.notifyAbsence(row, day)
+			}
+		},
+		// --- PDF export: archive in Nextcloud AND download in one click ---
+		async exportPdf() {
+			this.pdfBusy = true
+			try {
+				const { blob, filename, archive, path } = await DutyRosterService.downloadPdf(this.weekStart)
+				const url = URL.createObjectURL(blob)
+				const link = document.createElement('a')
+				link.href = url
+				link.download = filename
+				document.body.appendChild(link)
+				link.click()
+				link.remove()
+				setTimeout(() => URL.revokeObjectURL(url), 1000)
+				if (archive === 'saved') {
+					showSuccessMessage(this.t('zeitwerk', 'PDF gespeichert unter {path}', { path }))
+				} else if (archive === 'skipped') {
+					showSuccessMessage(this.t('zeitwerk', 'PDF heruntergeladen. Ablage in Nextcloud übersprungen: In den Einstellungen ist kein PDF-Archiv konfiguriert.'))
+				} else {
+					showErrorMessage(this.t('zeitwerk', 'PDF heruntergeladen, aber die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log.'))
+				}
+			} catch (error) {
+				showErrorMessage(error.message)
+			} finally {
+				this.pdfBusy = false
 			}
 		},
 		// --- week lock ---
