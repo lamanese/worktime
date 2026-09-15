@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.19.0] - unreleased
+## [0.19.0] - 2026-09-15
 
 ### Added
 - **Dienstplan (Wochenplan)** als abschaltbares Modul: Zeile pro Mitarbeiter mit Haekchen «Im Dienstplan», Spalten Mo–So, Auftragskarten (Uhrzeit, Dauer, Titel mit Vorschlaegen, Notiz, «Auf Abruf»), Drag and Drop, «Woche in naechste Woche kopieren», Druckansicht. Zellen mit genehmigter Abwesenheit oder Feiertag werden gedimmt, beantragte Abwesenheiten gestrichelt markiert (nur Planer). Planen duerfen Admin, HR und Vorgesetzte; alle anderen sehen den Plan lesend. Firmeneinstellung «Dienstplan aktiv», Standard aus. Migration V25 (Tabelle `zw_duty_jobs`, Spalte `in_duty_roster`).
