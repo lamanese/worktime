@@ -98,14 +98,7 @@ export default {
 .duty-template__time { font-weight: 600; flex: 0 0 auto; }
 .duty-template__title { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .duty-template__duration { color: var(--color-text-maxcontrast); font-size: 12px; flex: 0 0 auto; }
-.duty-template--on-call {
-	border-style: dashed;
-	border-color: var(--color-warning, #c98b3a);
-	border-right: 4px dashed var(--color-warning, #c98b3a);
-	border-left: 3px solid var(--color-primary-element);
-	background: color-mix(in srgb, var(--color-warning, #c98b3a) 10%, var(--color-main-background));
-	font-style: italic;
-}
+.duty-template--on-call { border-style: dashed; font-style: italic; }
 
 @media print {
 	body.zw-printing-roster .duty-template-sidebar { display: none !important; }

@@ -70,15 +70,6 @@ export default {
 .duty-job__duration { color: var(--color-text-maxcontrast); font-size: 11px; flex: 0 0 auto; }
 /* Notiz vorhanden: kleines Warnschild, Text weiterhin als Tooltip. */
 .duty-job__note { flex: 0 0 auto; color: var(--color-error, #d0342c); display: inline-flex; }
-/* Auf Abruf: kraeftig gestrichelt in Warnfarbe, rechts als breiter Streifen, damit die Karte auffaellt. */
-.duty-job--on-call {
-	border-style: dashed;
-	border-color: var(--color-warning, #c98b3a);
-	border-right: 4px dashed var(--color-warning, #c98b3a);
-	/* Mitarbeiterfarbe links bleibt (border-color oben wuerde sie sonst ueberschreiben). */
-	border-left: 3px solid var(--duty-row-color, var(--color-primary-element));
-	background: color-mix(in srgb, var(--color-warning, #c98b3a) 10%, var(--color-main-background));
-	font-style: italic;
-}
+.duty-job--on-call { border-style: dashed; font-style: italic; }
 .duty-job--dimmed { opacity: 0.45; filter: grayscale(1); }
 </style>
