@@ -123,8 +123,15 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
         $this->assertSame('Woche ist gesperrt', $response->getData()['error']);
     }
-    public function testPdfArchivesAndReportsArchiveState(): void {
+    public function testPdfIs403ForSupervisors(): void {
         $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->permissions->method('canArchiveDutyRosterPdf')->willReturn(false);
+        $this->pdfService->expects($this->never())->method('export');
+        $this->assertSame(Http::STATUS_FORBIDDEN, $this->controller()->pdf('2026-09-14')->getStatus());
+    }
+
+    public function testPdfArchivesAndReportsArchiveState(): void {
+        $this->permissions->method('canArchiveDutyRosterPdf')->willReturn(true);
         $this->service->expects($this->once())->method('getWeek')->willReturn(['weekStart' => '2026-09-14', 'rows' => []]);
         $this->pdfService->expects($this->once())->method('export')
             ->with(['weekStart' => '2026-09-14', 'rows' => []], 'user')

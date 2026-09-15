@@ -88,6 +88,7 @@ class DutyJobService {
         $sunday = (clone $monday)->add(new DateInterval('P6D'));
         $canManage = $this->permissionService->canManageDutyRoster($userId);
         $canUnlock = $this->permissionService->canUnlockDutyWeek($userId);
+        $canExportPdf = $this->permissionService->canArchiveDutyRosterPdf($userId);
         $isPrivileged = $this->permissionService->isAdmin($userId) || $this->permissionService->isHrManager($userId);
         $viewer = $this->permissionService->getEmployeeForUser($userId);
         $viewerId = $viewer?->getId();
@@ -149,6 +150,7 @@ class DutyJobService {
             'weekEnd' => $sunday->format('Y-m-d'),
             'canManage' => $canManage,
             'canUnlock' => $canUnlock,
+            'canExportPdf' => $canExportPdf,
             'showTemplates' => $canManage && $this->isTemplatesSidebarVisible($userId),
             'days' => $days,
             'rows' => $rows,

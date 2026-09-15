@@ -29,6 +29,8 @@ const getters = {
 	lockedBy: (state) => state.week?.lockedBy ?? null,
 	lockedAt: (state) => state.week?.lockedAt ?? null,
 	canUnlock: (state) => !!state.week?.canUnlock,
+	// PDF into the archive user's folder: admin/HR only.
+	canExportPdf: (state) => !!state.week?.canExportPdf,
 	// Planner AND week open: only then cards may be created, moved, edited, deleted.
 	canEdit: (state) => !!state.week?.canManage && !state.week?.locked,
 	loading: (state) => state.loading,

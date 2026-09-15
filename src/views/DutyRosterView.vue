@@ -48,7 +48,7 @@
 				<template #icon><ContentCopyIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Woche kopieren nach …') }}
 			</NcButton>
-			<NcButton type="secondary" :disabled="pdfBusy" @click="exportPdf">
+			<NcButton v-if="canExportPdf" type="secondary" :disabled="pdfBusy" @click="exportPdf">
 				<template #icon><FilePdfBoxIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Als PDF ins Archiv') }}
 			</NcButton>
@@ -227,7 +227,7 @@ export default {
 		}
 	},
 	computed: {
-		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'canEdit', 'showTemplates', 'locked', 'lockedBy', 'lockedAt', 'canUnlock', 'loading', 'error', 'templates']),
+		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'canEdit', 'showTemplates', 'locked', 'lockedBy', 'lockedAt', 'canUnlock', 'canExportPdf', 'loading', 'error', 'templates']),
 		lockButtonLabel() {
 			if (!this.locked) return this.t('zeitwerk', 'Woche sperren')
 			return this.canUnlock

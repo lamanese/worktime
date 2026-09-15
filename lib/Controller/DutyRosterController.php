@@ -235,7 +235,8 @@ class DutyRosterController extends BaseController {
 
     /**
      * Wochenplan als PDF ins Nextcloud-Archiv (kein Browser-Download, Entscheid
-     * 2026-09-15). Antwort: archive (saved|skipped|failed), path, filename.
+     * 2026-09-15). Nur Admin/HR, weil ins Konto des Archiv-Benutzers geschrieben
+     * wird. Antwort: archive (saved|skipped|failed), path, filename.
      * POST, damit der CSRF-Schutz greift.
      */
     #[NoAdminRequired]
@@ -243,7 +244,7 @@ class DutyRosterController extends BaseController {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
-        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+        if (!$this->permissionService->canArchiveDutyRosterPdf($this->userId)) {
             return $this->forbiddenResponse();
         }
         $day = $this->parseDate($start);

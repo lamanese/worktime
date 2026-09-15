@@ -145,6 +145,14 @@ class PermissionService {
     }
 
     /**
+     * Wochenplan als PDF ins Archiv schreiben: nur Admin und HR-Manager, weil die
+     * Datei im Konto des Archiv-Benutzers landet (Entscheid 2026-09-15).
+     */
+    public function canArchiveDutyRosterPdf(string $userId): bool {
+        return $this->canUnlockDutyWeek($userId);
+    }
+
+    /**
      * Check if user can view a specific employee's data
      */
     public function canViewEmployee(string $userId, int $employeeId): bool {

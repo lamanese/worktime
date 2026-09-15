@@ -561,6 +561,7 @@ class DutyJobServiceTest extends TestCase {
         $this->assertSame('Hanna HR', $week['lockedBy']);
         $this->assertStringStartsWith('2026-09-15T08:00:00', $week['lockedAt']);
         $this->assertFalse($week['canUnlock']);
+        $this->assertFalse($week['canExportPdf']);
 
         $this->lockedWeeks = [];
         $open = $this->service->getWeek(new DateTime('2026-09-16'), 'sup');
