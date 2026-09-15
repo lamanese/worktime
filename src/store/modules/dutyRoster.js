@@ -22,6 +22,8 @@ const getters = {
 	rows: (state) => state.week?.rows ?? [],
 	days: (state) => state.week?.days ?? [],
 	canManage: (state) => !!state.week?.canManage,
+	// Template sidebar: planner AND company setting «Vorlagen-Leiste anzeigen».
+	showTemplates: (state) => !!state.week?.showTemplates,
 	loading: (state) => state.loading,
 	error: (state) => state.error,
 	templates: (state) => state.templates,

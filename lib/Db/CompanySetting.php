@@ -64,6 +64,8 @@ class CompanySetting extends Entity implements JsonSerializable {
 
     // Dienstplan-Modul (Wochenplan): 1 = Navigationseintrag und API aktiv
     public const KEY_DUTY_ROSTER_ENABLED = 'duty_roster_enabled';
+    // 1 = Vorlagen-Leiste rechts neben dem Wochenplan (nur fuer Planer relevant)
+    public const KEY_DUTY_ROSTER_TEMPLATES_SIDEBAR = 'duty_roster_templates_sidebar';
 
     public const OPERATOR_GTE = 'gte';
     public const OPERATOR_GT = 'gt';
@@ -96,6 +98,7 @@ class CompanySetting extends Entity implements JsonSerializable {
         self::KEY_ALLOW_EMPLOYEE_DEFAULT_PROJECT => '0',
         self::KEY_ALLOW_EMPLOYEE_DEFAULT_DESCRIPTION => '0',
         self::KEY_DUTY_ROSTER_ENABLED => '0',
+        self::KEY_DUTY_ROSTER_TEMPLATES_SIDEBAR => '1',
     ];
 
     protected string $settingKey = '';

@@ -403,6 +403,12 @@
                 v-show="activeSection === 'sec-dienstplan-vorlagen'"
                 id="sec-dienstplan-vorlagen" :name="t('zeitwerk', 'Dienstplan-Vorlagen')"
                 :description="t('zeitwerk', 'Standard-Aufträge für den Dienstplan. Sichtbare Vorlagen erscheinen in der Seitenleiste der Wochenansicht und können von dort beliebig oft in eine Zelle gezogen werden.')">
+                <div class="form-group">
+                    <NcCheckboxRadioSwitch :checked.sync="settings.duty_roster_templates_sidebar"
+                        @update:checked="saveSettingBool('duty_roster_templates_sidebar')">
+                        {{ t('zeitwerk', 'Vorlagen-Leiste im Dienstplan anzeigen') }} <InfoIcon>{{ t('zeitwerk', 'Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.') }}</InfoIcon>
+                    </NcCheckboxRadioSwitch>
+                </div>
                 <div class="form-row">
                     <NcButton type="primary" @click="openTemplateForm(null)">
                         <template #icon>
@@ -1515,6 +1521,7 @@ export default {
                     allow_employee_default_project: settings.allow_employee_default_project === '1',
                     allow_employee_default_description: settings.allow_employee_default_description === '1',
                     duty_roster_enabled: settings.duty_roster_enabled === '1',
+                    duty_roster_templates_sidebar: settings.duty_roster_templates_sidebar !== '0',
                 }
                 await this.loadDutyTemplates()
             } catch (error) {

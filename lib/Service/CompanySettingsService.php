@@ -183,6 +183,13 @@ class CompanySettingsService {
     }
 
     /**
+     * Whether planners get the template sidebar next to the week plan
+     */
+    public function isDutyRosterTemplatesSidebarEnabled(): bool {
+        return $this->getBool(CompanySetting::KEY_DUTY_ROSTER_TEMPLATES_SIDEBAR);
+    }
+
+    /**
      * Get minimum break minutes for >6h work
      */
     public function getMinBreakMinutes6h(): int {

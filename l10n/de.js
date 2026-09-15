@@ -754,6 +754,8 @@ OC.L10N.register(
     "Vorlage gelöscht" : "Vorlage gelöscht",
     "Reihenfolge im Dienstplan" : "Reihenfolge im Dienstplan",
     "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert." : "Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.",
-    "z. B. 8, 830 oder 8:30" : "z. B. 8, 830 oder 8:30"
+    "z. B. 8, 830 oder 8:30" : "z. B. 8, 830 oder 8:30",
+    "Vorlagen-Leiste im Dienstplan anzeigen" : "Vorlagen-Leiste im Dienstplan anzeigen",
+    "Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten." : "Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten."
 },
 "nplurals=2; plural=(n != 1);");

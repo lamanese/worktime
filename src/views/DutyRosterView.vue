@@ -86,7 +86,7 @@
 				</div>
 			</div>
 
-			<DutyTemplateSidebar v-if="canManage" :templates="templates" />
+			<DutyTemplateSidebar v-if="showTemplates" :templates="templates" />
 		</div>
 
 		<DutyJobForm v-if="form.open"
@@ -145,7 +145,7 @@ export default {
 		}
 	},
 	computed: {
-		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'loading', 'error', 'templates']),
+		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'showTemplates', 'loading', 'error', 'templates']),
 		today() {
 			return toDateString(new Date())
 		},
@@ -187,8 +187,8 @@ export default {
 	},
 	async created() {
 		await this.loadWeek()
-		// canManage kommt aus der Wochenantwort, darum erst hier.
-		if (this.canManage) {
+		// showTemplates (Planer + Firmeneinstellung) kommt aus der Wochenantwort, darum erst hier.
+		if (this.showTemplates) {
 			await this.loadTemplates()
 		}
 	},

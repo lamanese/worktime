@@ -753,7 +753,9 @@
 		"Vorlage gelöscht": "Template deleted",
 		"Reihenfolge im Dienstplan": "Duty roster order",
 		"Kleinere Zahlen stehen weiter oben. Gleiche Zahlen werden nach Nachname sortiert.": "Lower numbers appear higher up. Equal numbers are sorted by last name.",
-		"z. B. 8, 830 oder 8:30": "e.g. 8, 830 or 8:30"
+		"z. B. 8, 830 oder 8:30": "e.g. 8, 830 or 8:30",
+		"Vorlagen-Leiste im Dienstplan anzeigen": "Show template sidebar in the duty roster",
+		"Blendet die Seitenleiste mit den Vorlagen rechts neben dem Wochenplan ein oder aus. Die Vorlagen selbst bleiben erhalten.": "Shows or hides the template sidebar next to the week plan. The templates themselves are kept."
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

@@ -18,6 +18,7 @@ use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCA\Zeitwerk\Db\Holiday;
 use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AuditLogService;
+use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\DutyJobService;
 use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\NotFoundException;
@@ -35,6 +36,8 @@ class DutyJobServiceTest extends TestCase {
     private HolidayService $holidayService;
     private PermissionService $permissionService;
     private AuditLogService $auditLogService;
+    private CompanySettingsService $settingsService;
+    private bool $templatesSidebar = true;
     private DutyJobService $service;
     private bool $absenceRowVisible = true;
 
@@ -48,6 +51,9 @@ class DutyJobServiceTest extends TestCase {
         $this->holidayService = $this->createMock(HolidayService::class);
         $this->permissionService = $this->createMock(PermissionService::class);
         $this->auditLogService = $this->createMock(AuditLogService::class);
+        $this->settingsService = $this->createMock(CompanySettingsService::class);
+        $this->settingsService->method('isDutyRosterTemplatesSidebarEnabled')
+            ->willReturnCallback(fn (): bool => $this->templatesSidebar);
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
@@ -59,6 +65,7 @@ class DutyJobServiceTest extends TestCase {
             $this->permissionService,
             $this->auditLogService,
             $l10n,
+            $this->settingsService,
         );
     }
 
@@ -469,5 +476,25 @@ class DutyJobServiceTest extends TestCase {
     public function testSuggestTitlesDelegatesWithLimit(): void {
         $this->jobMapper->expects($this->once())->method('findDistinctTitles')->with('car', 10)->willReturn(['CarTech']);
         $this->assertSame(['CarTech'], $this->service->suggestTitles('car'));
+    }
+    public function testGetWeekShowTemplatesFollowsSettingForPlanners(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->mockViewer(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([]);
+
+        $this->templatesSidebar = true;
+        $this->assertTrue($this->service->getWeek(new DateTime('2026-09-14'), 'admin')['showTemplates']);
+
+        $this->templatesSidebar = false;
+        $this->assertFalse($this->service->getWeek(new DateTime('2026-09-14'), 'admin')['showTemplates']);
+    }
+
+    public function testGetWeekShowTemplatesFalseForReaders(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(false);
+        $this->mockViewer(false);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([]);
+        $this->templatesSidebar = true;
+
+        $this->assertFalse($this->service->getWeek(new DateTime('2026-09-14'), 'user')['showTemplates']);
     }
 }

@@ -38,6 +38,7 @@ class DutyJobService {
         private PermissionService $permissionService,
         private AuditLogService $auditLogService,
         private IL10N $l,
+        private CompanySettingsService $settingsService,
     ) {
     }
 
@@ -120,6 +121,7 @@ class DutyJobService {
             'weekStart' => $monday->format('Y-m-d'),
             'weekEnd' => $sunday->format('Y-m-d'),
             'canManage' => $canManage,
+            'showTemplates' => $canManage && $this->settingsService->isDutyRosterTemplatesSidebarEnabled(),
             'days' => $days,
             'rows' => $rows,
         ];

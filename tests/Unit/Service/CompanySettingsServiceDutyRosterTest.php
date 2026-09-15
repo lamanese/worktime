@@ -28,4 +28,15 @@ class CompanySettingsServiceDutyRosterTest extends TestCase {
 
         $this->assertTrue($service->isDutyRosterEnabled());
     }
+    public function testTemplatesSidebarDefaultIsOn(): void {
+        $this->assertSame('1', CompanySetting::DEFAULTS[CompanySetting::KEY_DUTY_ROSTER_TEMPLATES_SIDEBAR]);
+    }
+
+    public function testIsDutyRosterTemplatesSidebarEnabledReadsBool(): void {
+        $mapper = $this->createMock(CompanySettingMapper::class);
+        $mapper->method('getValueAsBool')->with('duty_roster_templates_sidebar')->willReturn(false);
+        $service = new CompanySettingsService($mapper, $this->createMock(AuditLogService::class));
+
+        $this->assertFalse($service->isDutyRosterTemplatesSidebarEnabled());
+    }
 }
