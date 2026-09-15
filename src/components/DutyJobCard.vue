@@ -75,6 +75,8 @@ export default {
 	border-style: dashed;
 	border-color: var(--color-warning, #c98b3a);
 	border-right: 4px dashed var(--color-warning, #c98b3a);
+	/* Mitarbeiterfarbe links bleibt (border-color oben wuerde sie sonst ueberschreiben). */
+	border-left: 3px solid var(--duty-row-color, var(--color-primary-element));
 	background: color-mix(in srgb, var(--color-warning, #c98b3a) 10%, var(--color-main-background));
 	font-style: italic;
 }

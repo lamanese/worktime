@@ -102,6 +102,7 @@ export default {
 	border-style: dashed;
 	border-color: var(--color-warning, #c98b3a);
 	border-right: 4px dashed var(--color-warning, #c98b3a);
+	border-left: 3px solid var(--color-primary-element);
 	background: color-mix(in srgb, var(--color-warning, #c98b3a) 10%, var(--color-main-background));
 	font-style: italic;
 }
