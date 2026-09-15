@@ -1205,7 +1205,7 @@ class AbsenceService {
     /**
      * Check if an employee's absences should be visible to the current user.
      */
-    private function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds): bool {
+    public function isEmployeeVisibleInOverview(Employee $employee, bool $isPrivileged, ?int $currentEmployeeId, array $subtreeEmployeeIds): bool {
         // Admin/HR see all employees
         if ($isPrivileged) {
             return true;

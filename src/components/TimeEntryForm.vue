@@ -15,18 +15,28 @@
                 <label for="startTime">{{ t('zeitwerk', 'Beginn') }}</label>
                 <input id="startTime"
                     v-model="form.startTime"
-                    type="time"
+                    type="text"
                     class="time-input"
-                    @change="onTimeChange">
+                    :placeholder="t('zeitwerk', 'HH:MM')"
+                    inputmode="numeric"
+                    maxlength="5"
+                    @change="onTimeChange"
+                    @blur="form.startTime = normalizeTimeInput(form.startTime); onTimeChange()">
+                <p v-if="startTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
 
             <div class="form-group">
                 <label for="endTime">{{ t('zeitwerk', 'Ende') }}</label>
                 <input id="endTime"
                     v-model="form.endTime"
-                    type="time"
+                    type="text"
                     class="time-input"
-                    @change="onTimeChange">
+                    :placeholder="t('zeitwerk', 'HH:MM')"
+                    inputmode="numeric"
+                    maxlength="5"
+                    @change="onTimeChange"
+                    @blur="form.endTime = normalizeTimeInput(form.endTime); onTimeChange()">
+                <p v-if="endTimeInvalid" class="field-hint field-hint--error">{{ t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)') }}</p>
             </div>
         </div>
 
@@ -91,7 +101,7 @@ import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import NcDateTimePicker from '@nextcloud/vue/dist/Components/NcDateTimePicker.js'
 import { mapGetters, mapActions } from 'vuex'
 import { formatDateISO } from '../utils/dateUtils.js'
-import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil } from '../utils/timeUtils.js'
+import { formatMinutesWithUnit, calculateWorkMinutes, suggestBreak as suggestBreakUtil, isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 import SettingsService from '../services/SettingsService.js'
 import InfoIcon from '../components/InfoIcon.vue'
@@ -192,8 +202,16 @@ export default {
         descriptionMissing() {
             return this.requireDescription && !(this.form.description && this.form.description.trim())
         },
+        startTimeInvalid() {
+            return !!this.form.startTime && !isValidTimeString(this.form.startTime)
+        },
+        endTimeInvalid() {
+            return !!this.form.endTime && !isValidTimeString(this.form.endTime)
+        },
         isValid() {
             return this.form.date && this.form.startTime && this.form.endTime
+                && isValidTimeString(this.form.startTime)
+                && isValidTimeString(this.form.endTime)
                 && this.calculatedWorkMinutes > 0
                 && !this.projectMissing
                 && !this.descriptionMissing
@@ -259,6 +277,7 @@ export default {
     },
     methods: {
         ...mapActions('timeEntries', ['createTimeEntry', 'updateTimeEntry']),
+        normalizeTimeInput,
         formatMinutes(minutes) {
             return formatMinutesWithUnit(minutes)
         },
@@ -309,6 +328,8 @@ export default {
             this.$emit('cancel')
         },
         save() {
+            this.form.startTime = normalizeTimeInput(this.form.startTime)
+            this.form.endTime = normalizeTimeInput(this.form.endTime)
             const data = {
                 date: formatDateISO(this.form.date),
                 startTime: this.form.startTime,

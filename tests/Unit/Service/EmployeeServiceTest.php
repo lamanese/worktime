@@ -274,6 +274,66 @@ class EmployeeServiceTest extends TestCase {
         $this->assertSame('team', $result->getAbsenceVisibility());
     }
 
+    // ---- update: partial payload must not clear inDutyRoster ----
+
+    private function primeUpdate(Employee $employee): void {
+        $this->employeeMapper->method('find')->willReturn($employee);
+        $this->employeeMapper->method('update')->willReturnArgument(0);
+        $this->workScheduleService->method('getDisplaySchedule')->willReturn($this->makeSchedule(8.0, 30));
+    }
+
+    public function testUpdateWithoutDutyRosterFlagKeepsMembership(): void {
+        // Ein Teil-Update ohne inDutyRoster darf die Dienstplan-Zugehoerigkeit
+        // nicht stillschweigend entfernen.
+        $employee = $this->makeEmployee(1, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setInDutyRoster(true);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(1, 'Anna', 'Muster');
+
+        $this->assertSame(1, $result->getInDutyRoster());
+    }
+
+    public function testUpdateWithFalseClearsDutyRosterMembership(): void {
+        $employee = $this->makeEmployee(2, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setInDutyRoster(true);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(2, 'Anna', 'Muster', inDutyRoster: false);
+
+        $this->assertSame(0, $result->getInDutyRoster());
+    }
+
+    // ---- update: partial payload must not clear dutyRosterOrder ----
+
+    public function testUpdateWithoutDutyRosterOrderKeepsValue(): void {
+        $employee = $this->makeEmployee(3, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setDutyRosterOrder(3);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(3, 'Anna', 'Muster');
+
+        $this->assertSame(3, $result->getDutyRosterOrder());
+    }
+
+    public function testUpdateWithDutyRosterOrderSetsValue(): void {
+        $employee = $this->makeEmployee(4, '40.00', 30);
+        $employee->setFirstName('Anna');
+        $employee->setLastName('Muster');
+        $employee->setDutyRosterOrder(3);
+        $this->primeUpdate($employee);
+
+        $result = $this->service->update(4, 'Anna', 'Muster', dutyRosterOrder: 7);
+
+        $this->assertSame(7, $result->getDutyRosterOrder());
+    }
+
     // ---- delete: cascade ----
 
     public function testDeleteRemovesMonthStatusRows(): void {

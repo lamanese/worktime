@@ -30,6 +30,7 @@ class PermissionService {
         private IConfig $config,
         private IGroupManager $groupManager,
         private EmployeeMapper $employeeMapper,
+        private CompanySettingsService $settingsService,
     ) {
     }
 
@@ -111,6 +112,44 @@ class PermissionService {
      */
     public function canManageHolidays(string $userId): bool {
         return $this->isAdmin($userId) || $this->isHrManager($userId);
+    }
+
+    /**
+     * Dienstplan lesen: jeder mit App-Zugang, sobald das Modul aktiv ist.
+     */
+    public function canViewDutyRoster(string $userId): bool {
+        return $this->settingsService->isDutyRosterEnabled() && $this->hasAccess($userId);
+    }
+
+    /**
+     * Dienstplan planen (Karten anlegen, verschieben, loeschen): Admin, HR-Manager
+     * und Vorgesetzte — bewusst fuer den GANZEN Plan, nicht nur die eigenen
+     * Unterstellten (Entscheid 2026-09-14).
+     */
+    public function canManageDutyRoster(string $userId): bool {
+        if (!$this->settingsService->isDutyRosterEnabled()) {
+            return false;
+        }
+        return $this->isAdmin($userId) || $this->isHrManager($userId) || $this->isSupervisor($userId);
+    }
+
+    /**
+     * Gesperrte Dienstplan-Woche wieder freigeben: nur Admin und HR-Manager
+     * (Sperren duerfen alle Planer; Entscheid 2026-09-15).
+     */
+    public function canUnlockDutyWeek(string $userId): bool {
+        if (!$this->settingsService->isDutyRosterEnabled()) {
+            return false;
+        }
+        return $this->isAdmin($userId) || $this->isHrManager($userId);
+    }
+
+    /**
+     * Wochenplan als PDF ins Archiv schreiben: nur Admin und HR-Manager, weil die
+     * Datei im Konto des Archiv-Benutzers landet (Entscheid 2026-09-15).
+     */
+    public function canArchiveDutyRosterPdf(string $userId): bool {
+        return $this->canUnlockDutyWeek($userId);
     }
 
     /**
@@ -259,6 +298,7 @@ class PermissionService {
         $isSupervisor = $this->isSupervisor($userId);
         $isEmployee = $this->isEmployee($userId);
         $employee = $this->getEmployeeForUser($userId);
+        $dutyRosterEnabled = $this->settingsService->isDutyRosterEnabled();
 
         return [
             'isAdmin' => $isAdmin,
@@ -272,6 +312,9 @@ class PermissionService {
             'canManageProjects' => $isAdmin || $isHrManager,
             'canManageHolidays' => $isAdmin || $isHrManager,
             'canApprove' => $isAdmin || $isHrManager || $isSupervisor,
+            'dutyRosterEnabled' => $dutyRosterEnabled,
+            'canManageDutyRoster' => $dutyRosterEnabled && ($isAdmin || $isHrManager || $isSupervisor),
+            'hasDutyRosterEmployees' => $dutyRosterEnabled && count($this->employeeMapper->findAllActiveInDutyRoster()) > 0,
         ];
     }
 

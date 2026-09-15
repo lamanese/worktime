@@ -16,24 +16,28 @@ const ROLES = {
 		employeeId: 1, hasEmployees: true,
 		canManageEmployees: true, canManageSettings: true,
 		canManageProjects: true, canManageHolidays: true, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	hrManager: {
 		isAdmin: false, isHrManager: true, isSupervisor: false, isEmployee: true,
 		employeeId: 2, hasEmployees: true,
 		canManageEmployees: true, canManageSettings: false,
 		canManageProjects: true, canManageHolidays: true, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	supervisor: {
 		isAdmin: false, isHrManager: false, isSupervisor: true, isEmployee: true,
 		employeeId: 3, hasEmployees: true,
 		canManageEmployees: false, canManageSettings: false,
 		canManageProjects: false, canManageHolidays: false, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	employee: {
 		isAdmin: false, isHrManager: false, isSupervisor: false, isEmployee: true,
 		employeeId: 4, hasEmployees: false,
 		canManageEmployees: false, canManageSettings: false,
 		canManageProjects: false, canManageHolidays: false, canApprove: false,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	// HR manager (or managing director) WITHOUT an own employee record (#604):
 	// role comes from group membership, not from zw_employees, so employeeId is
@@ -43,6 +47,7 @@ const ROLES = {
 		employeeId: null, hasEmployees: true,
 		canManageEmployees: true, canManageSettings: false,
 		canManageProjects: true, canManageHolidays: true, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	// Same class as hrNoProfile, but Admin without an own record — the fix rule
 	// (employeeId || isAdmin || isHrManager) is symmetric, so lock both sides.
@@ -51,6 +56,7 @@ const ROLES = {
 		employeeId: null, hasEmployees: true,
 		canManageEmployees: true, canManageSettings: true,
 		canManageProjects: true, canManageHolidays: true, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	// #631: hrNoProfile WHILE correcting an employee. The correction target is
 	// merged into the access profile (store getter accessProfile), so the
@@ -61,6 +67,7 @@ const ROLES = {
 		employeeId: null, hasEmployees: true, targetEmployeeId: 42,
 		canManageEmployees: true, canManageSettings: false,
 		canManageProjects: true, canManageHolidays: true, canApprove: true,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 	// Degenerate: authenticated user with no employee record and no role at all.
 	bare: {
@@ -68,6 +75,7 @@ const ROLES = {
 		employeeId: null, hasEmployees: false,
 		canManageEmployees: false, canManageSettings: false,
 		canManageProjects: false, canManageHolidays: false, canApprove: false,
+		dutyRosterEnabled: false, canManageDutyRoster: false, hasDutyRosterEmployees: false,
 	},
 }
 
@@ -146,5 +154,36 @@ describe('route access matrix', () => {
 			hrNoProfileCorrecting: ['tracking', 'absences', 'team', 'approvals', 'evaluation', 'settings', 'audit'],
 			bare: [],
 		})
+	})
+})
+
+describe('dutyRoster route (0.19.0)', () => {
+	const on = (p, extra = {}) => ({ ...p, dutyRosterEnabled: true, hasDutyRosterEmployees: true, ...extra })
+
+	it('is blocked for everyone while the module is off', () => {
+		for (const role of Object.values(ROLES)) {
+			expect(canAccess('dutyRoster', role)).toBe(false)
+			expect(isNavVisible('dutyRoster', role)).toBe(false)
+		}
+	})
+
+	it('is reachable for employees, admin and HR once enabled', () => {
+		expect(canAccess('dutyRoster', on(ROLES.employee))).toBe(true)
+		expect(canAccess('dutyRoster', on(ROLES.supervisor))).toBe(true)
+		expect(canAccess('dutyRoster', on(ROLES.hrNoProfile))).toBe(true)
+		expect(canAccess('dutyRoster', on(ROLES.adminNoProfile))).toBe(true)
+	})
+
+	it('hides the tab when nobody is in the roster, route stays reachable', () => {
+		const p = on(ROLES.admin, { hasDutyRosterEmployees: false })
+		expect(canAccess('dutyRoster', p)).toBe(true)
+		expect(isNavVisible('dutyRoster', p)).toBe(false)
+	})
+
+	it('nav implies access', () => {
+		for (const role of Object.values(ROLES)) {
+			const p = on(role)
+			if (isNavVisible('dutyRoster', p)) expect(canAccess('dutyRoster', p)).toBe(true)
+		}
 	})
 })

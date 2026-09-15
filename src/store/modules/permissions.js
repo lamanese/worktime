@@ -13,6 +13,9 @@ const state = {
         canManageProjects: false,
         canManageHolidays: false,
         canApprove: false,
+        dutyRosterEnabled: false,
+        canManageDutyRoster: false,
+        hasDutyRosterEmployees: false,
     },
     loading: false,
     loaded: false,
@@ -63,6 +66,8 @@ const getters = {
     canManageProjects: (state) => state.permissions.canManageProjects,
     canManageHolidays: (state) => state.permissions.canManageHolidays,
     canApprove: (state) => state.permissions.canApprove,
+    dutyRosterEnabled: (state) => state.permissions.dutyRosterEnabled,
+    canManageDutyRoster: (state) => state.permissions.canManageDutyRoster,
     loading: (state) => state.loading,
     loaded: (state) => state.loaded,
 }

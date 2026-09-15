@@ -148,3 +148,56 @@ export function roundToNearestFive(timeStr) {
     const rounded = Math.round(minutes / 5) * 5
     return minutesToTime(rounded)
 }
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/**
+ * Check whether a string is a valid HH:MM time (00:00-23:59). Used to
+ * validate time text inputs client-side before saving, since the native
+ * `pattern` attribute only blocks a native form submit and several forms
+ * save via click/change handlers instead. #bugfix-round-1
+ * @param {string} timeStr
+ * @returns {boolean}
+ */
+export function isValidTimeString(timeStr) {
+    return TIME_PATTERN.test(timeStr)
+}
+
+/**
+ * Normalize lenient time input (e.g. `8`, `830`, `8:30`, `8.30`) to the
+ * canonical `HH:MM` form used by `isValidTimeString`. Accepts `H`, `HH`,
+ * `H:MM`, `HH:MM`, `H.MM`, `HH.MM`, `HMM` and `HHMM` (3-4 digits, the last
+ * two being minutes). `H:M` (single-digit minutes with a separator) is
+ * intentionally NOT accepted. Returns the trimmed input unchanged when it
+ * doesn't match one of these shapes or the resulting time is out of range
+ * (00:00-23:59), so downstream validation still fails on it. #ux-time-entry
+ * @param {string} raw
+ * @returns {string}
+ */
+export function normalizeTimeInput(raw) {
+    if (raw === null || raw === undefined) return ''
+    const trimmed = String(raw).trim()
+    if (trimmed === '') return ''
+
+    let hours
+    let minutes
+    let match
+
+    if ((match = /^(\d{1,2})$/.exec(trimmed))) {
+        hours = parseInt(match[1], 10)
+        minutes = 0
+    } else if ((match = /^(\d{1,2})[:.](\d{2})$/.exec(trimmed))) {
+        hours = parseInt(match[1], 10)
+        minutes = parseInt(match[2], 10)
+    } else if ((match = /^(\d{3,4})$/.exec(trimmed))) {
+        const digits = match[1]
+        hours = parseInt(digits.slice(0, -2), 10)
+        minutes = parseInt(digits.slice(-2), 10)
+    } else {
+        return trimmed
+    }
+
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return trimmed
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}

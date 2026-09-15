@@ -7,6 +7,7 @@ namespace OCA\Zeitwerk\Tests\Unit\Service;
 use OCA\Zeitwerk\AppInfo\Application;
 use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
+use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
@@ -19,16 +20,19 @@ class PermissionServiceTest extends TestCase {
     private IConfig $config;
     private IGroupManager $groupManager;
     private EmployeeMapper $employeeMapper;
+    private CompanySettingsService $settingsService;
 
     protected function setUp(): void {
         $this->config = $this->createMock(IConfig::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->employeeMapper = $this->createMock(EmployeeMapper::class);
+        $this->settingsService = $this->createMock(CompanySettingsService::class);
 
         $this->service = new PermissionService(
             $this->config,
             $this->groupManager,
-            $this->employeeMapper
+            $this->employeeMapper,
+            $this->settingsService
         );
     }
 
@@ -389,5 +393,66 @@ class PermissionServiceTest extends TestCase {
         $ids = array_map(fn(Employee $e) => $e->getId(), $this->service->getSubordinateEmployees(1));
         sort($ids);
         $this->assertSame([2, 3], $ids); // each visited once, no infinite loop
+    }
+
+    public function testDutyRosterDeniedWhenDisabled(): void {
+        $this->settingsService->method('isDutyRosterEnabled')->willReturn(false);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+
+        $this->assertFalse($this->service->canViewDutyRoster('admin'));
+        $this->assertFalse($this->service->canManageDutyRoster('admin'));
+        $this->assertFalse($this->service->canUnlockDutyWeek('admin'));
+    }
+
+    public function testAdminAndHrCanManageDutyRoster(): void {
+        $this->settingsService->method('isDutyRosterEnabled')->willReturn(true);
+        $this->groupManager->method('isAdmin')->willReturnCallback(fn (string $u) => $u === 'admin');
+        $this->config->method('getAppValue')->willReturn('["user:hr_user"]');
+        $this->employeeMapper->method('existsByUserId')->willReturn(true);
+        $this->employeeMapper->method('findByUserId')->willThrowException(new DoesNotExistException(''));
+
+        $this->assertTrue($this->service->canManageDutyRoster('admin'));
+        $this->assertTrue($this->service->canManageDutyRoster('hr_user'));
+        $this->assertTrue($this->service->canViewDutyRoster('hr_user'));
+        $this->assertTrue($this->service->canUnlockDutyWeek('admin'));
+        $this->assertTrue($this->service->canUnlockDutyWeek('hr_user'));
+        $this->assertTrue($this->service->canArchiveDutyRosterPdf('hr_user'));
+    }
+
+    public function testSupervisorCanManageButEmployeeOnlyViews(): void {
+        $this->settingsService->method('isDutyRosterEnabled')->willReturn(true);
+        $this->groupManager->method('isAdmin')->willReturn(false);
+        $this->config->method('getAppValue')->willReturn('[]');
+        $this->employeeMapper->method('existsByUserId')->willReturn(true);
+        $this->employeeMapper->method('findByUserId')->willReturnCallback(function (string $u) {
+            return $this->makeEmployee($u === 'boss' ? 1 : 2);
+        });
+        $this->employeeMapper->method('findBySupervisor')->willReturnCallback(
+            fn (int $id) => $id === 1 ? [$this->makeEmployee(2, 1)] : []
+        );
+
+        $this->assertTrue($this->service->canManageDutyRoster('boss'));
+        $this->assertTrue($this->service->canViewDutyRoster('worker'));
+        $this->assertFalse($this->service->canManageDutyRoster('worker'));
+        // Sperren duerfen Vorgesetzte, Entsperren nicht (nur Admin/HR)
+        $this->assertFalse($this->service->canUnlockDutyWeek('boss'));
+        $this->assertFalse($this->service->canUnlockDutyWeek('worker'));
+        $this->assertFalse($this->service->canArchiveDutyRosterPdf('boss'));
+    }
+
+    public function testPermissionInfoCarriesDutyRosterFlags(): void {
+        $this->settingsService->method('isDutyRosterEnabled')->willReturn(true);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+        $this->config->method('getAppValue')->willReturn('[]');
+        $this->employeeMapper->method('existsByUserId')->willReturn(false);
+        $this->employeeMapper->method('findByUserId')->willThrowException(new DoesNotExistException(''));
+        $this->employeeMapper->method('hasAny')->willReturn(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(5)]);
+
+        $info = $this->service->getPermissionInfo('admin');
+
+        $this->assertTrue($info['dutyRosterEnabled']);
+        $this->assertTrue($info['canManageDutyRoster']);
+        $this->assertTrue($info['hasDutyRosterEmployees']);
     }
 }

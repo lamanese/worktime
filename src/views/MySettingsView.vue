@@ -13,9 +13,12 @@
                         <label for="defaultStartTime">{{ t('zeitwerk', 'Arbeitsbeginn') }}</label>
                         <input id="defaultStartTime"
                             v-model="form.defaultStartTime"
-                            type="time"
+                            type="text"
                             class="time-input"
                             :placeholder="t('zeitwerk', 'z.B. 08:00')"
+                            inputmode="numeric"
+                            maxlength="5"
+                            @blur="form.defaultStartTime = normalizeTimeInput(form.defaultStartTime)"
                             @change="saveWorkTimes">
                     </div>
 
@@ -23,9 +26,12 @@
                         <label for="defaultEndTime">{{ t('zeitwerk', 'Arbeitsende') }}</label>
                         <input id="defaultEndTime"
                             v-model="form.defaultEndTime"
-                            type="time"
+                            type="text"
                             class="time-input"
                             :placeholder="t('zeitwerk', 'z.B. 17:00')"
+                            inputmode="numeric"
+                            maxlength="5"
+                            @blur="form.defaultEndTime = normalizeTimeInput(form.defaultEndTime)"
                             @change="saveWorkTimes">
                     </div>
 
@@ -126,6 +132,7 @@ import NcSettingsSection from '@nextcloud/vue/dist/Components/NcSettingsSection.
 import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
 import { mapGetters, mapActions } from 'vuex'
 import { showError } from '@nextcloud/dialogs'
+import { isValidTimeString, normalizeTimeInput } from '../utils/timeUtils.js'
 import InfoIcon from '../components/InfoIcon.vue'
 
 export default {
@@ -231,6 +238,7 @@ export default {
     },
     methods: {
         ...mapActions('employees', ['updateMyDefaults']),
+        normalizeTimeInput,
         loadFromEmployee(employee) {
             this.form.defaultStartTime = employee.defaultStartTime || '08:00'
             this.form.defaultEndTime = employee.defaultEndTime || '17:00'
@@ -284,6 +292,16 @@ export default {
             }
         },
         async saveWorkTimes() {
+            // '' = Wert löschen ist erlaubt, alles andere muss HH:MM sein — die
+            // Felder sind Textfelder, `pattern` greift hier nicht (kein natives
+            // Form-Submit), also clientseitig vor dem Request prüfen.
+            this.form.defaultStartTime = normalizeTimeInput(this.form.defaultStartTime)
+            this.form.defaultEndTime = normalizeTimeInput(this.form.defaultEndTime)
+            if ((this.form.defaultStartTime && !isValidTimeString(this.form.defaultStartTime))
+                || (this.form.defaultEndTime && !isValidTimeString(this.form.defaultEndTime))) {
+                showError(t('zeitwerk', 'Ungültige Uhrzeit (HH:MM)'))
+                return
+            }
             this.savingWorkTimes = true
             this.workTimesSaved = false
             try {

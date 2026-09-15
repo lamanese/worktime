@@ -55,6 +55,12 @@ const routes = [
 		component: TeamView,
 	},
 	{
+		path: '/duty-roster',
+		name: 'dutyRoster',
+		// Lazy: eigener Chunk, Hauptbundle bleibt fuer Kunden ohne Dienstplan gleich gross.
+		component: () => import(/* webpackChunkName: "duty-roster" */ '../views/DutyRosterView.vue'),
+	},
+	{
 		path: '/approvals',
 		name: 'approvals',
 		component: ApprovalOverviewView,
