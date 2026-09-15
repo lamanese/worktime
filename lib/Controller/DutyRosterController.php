@@ -15,7 +15,6 @@ use OCA\Zeitwerk\Service\DutyRosterPdfService;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -235,12 +234,12 @@ class DutyRosterController extends BaseController {
     }
 
     /**
-     * Wochenplan als PDF: im Archiv ablegen (best effort) UND herunterladen.
-     * Ergebnis der Ablage steht im Header X-Zeitwerk-Archive (saved|skipped|failed),
-     * der Ablagepfad in X-Zeitwerk-Archive-Path. POST, damit der CSRF-Schutz greift.
+     * Wochenplan als PDF ins Nextcloud-Archiv (kein Browser-Download, Entscheid
+     * 2026-09-15). Antwort: archive (saved|skipped|failed), path, filename.
+     * POST, damit der CSRF-Schutz greift.
      */
     #[NoAdminRequired]
-    public function pdf(string $start): DataDownloadResponse|JSONResponse {
+    public function pdf(string $start): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
         }
@@ -254,10 +253,11 @@ class DutyRosterController extends BaseController {
         try {
             $week = $this->dutyJobService->getWeek($day, $this->userId);
             $result = $this->pdfService->export($week, $this->userId);
-            $response = new DataDownloadResponse($result['pdf'], 'Dienstplan-' . $result['filename'], 'application/pdf');
-            $response->addHeader('X-Zeitwerk-Archive', $result['archive']);
-            $response->addHeader('X-Zeitwerk-Archive-Path', (string)($result['path'] ?? ''));
-            return $response;
+            return $this->successResponse([
+                'archive' => $result['archive'],
+                'path' => $result['path'],
+                'filename' => $result['filename'],
+            ]);
         } catch (\Exception $e) {
             return $this->handleException($e);
         }

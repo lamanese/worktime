@@ -44,17 +44,13 @@
 		</NcNoteCard>
 
 		<div v-if="canManage" class="view-toolbar">
-			<NcButton type="secondary" @click="confirmCopyWeek">
-				<template #icon><ContentCopyIcon :size="18" /></template>
-				{{ t('zeitwerk', 'Woche in nächste Woche kopieren') }}
-			</NcButton>
 			<NcButton type="secondary" @click="openCopyTo">
-				<template #icon><CalendarArrowRightIcon :size="18" /></template>
+				<template #icon><ContentCopyIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Woche kopieren nach …') }}
 			</NcButton>
 			<NcButton type="secondary" :disabled="pdfBusy" @click="exportPdf">
 				<template #icon><FilePdfBoxIcon :size="18" /></template>
-				{{ t('zeitwerk', 'Als PDF speichern') }}
+				{{ t('zeitwerk', 'Als PDF ins Archiv') }}
 			</NcButton>
 			<NcButton type="tertiary" @click="print">
 				<template #icon><PrinterIcon :size="18" /></template>
@@ -129,6 +125,7 @@
 		<NcModal v-if="copyTo.open" :name="t('zeitwerk', 'Woche kopieren nach …')" size="small" @close="copyTo.open = false">
 			<form class="copy-to" @submit.prevent="submitCopyTo">
 				<h3>{{ t('zeitwerk', 'Woche kopieren nach …') }}</h3>
+				<p class="copy-to__hint">{{ t('zeitwerk', 'Alle Aufträge dieser Woche in die Zielwoche übernehmen. Bereits vorhandene identische Aufträge werden übersprungen.') }}</p>
 				<p class="copy-to__source">{{ t('zeitwerk', 'Quelle: {label}', { label: weekLabel }) }}</p>
 				<div class="copy-to__row">
 					<div class="copy-to__field">
@@ -183,7 +180,6 @@ import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import LockOutlineIcon from 'vue-material-design-icons/LockOutline.vue'
 import EyeOutlineIcon from 'vue-material-design-icons/EyeOutline.vue'
 import EyeOffOutlineIcon from 'vue-material-design-icons/EyeOffOutline.vue'
-import CalendarArrowRightIcon from 'vue-material-design-icons/CalendarArrowRight.vue'
 import LockOpenVariantOutlineIcon from 'vue-material-design-icons/LockOpenVariantOutline.vue'
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
 import CalendarWeekIcon from 'vue-material-design-icons/CalendarWeek.vue'
@@ -217,7 +213,6 @@ export default {
 		FilePdfBoxIcon,
 		EyeOutlineIcon,
 		EyeOffOutlineIcon,
-		CalendarArrowRightIcon,
 		LockOutlineIcon,
 		LockOpenVariantOutlineIcon,
 	},
@@ -314,7 +309,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToNextWeek', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
 		dayName(date) {
 			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
@@ -471,25 +466,17 @@ export default {
 				this.copyTo.busy = false
 			}
 		},
-		// --- PDF export: archive in Nextcloud AND download in one click ---
+		// --- PDF export: archive in Nextcloud (no browser download, Ahmad 2026-09-15) ---
 		async exportPdf() {
 			this.pdfBusy = true
 			try {
-				const { blob, filename, archive, path } = await DutyRosterService.downloadPdf(this.weekStart)
-				const url = URL.createObjectURL(blob)
-				const link = document.createElement('a')
-				link.href = url
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				link.remove()
-				setTimeout(() => URL.revokeObjectURL(url), 1000)
+				const { archive, path } = await DutyRosterService.archivePdf(this.weekStart)
 				if (archive === 'saved') {
 					showSuccessMessage(this.t('zeitwerk', 'PDF gespeichert unter {path}', { path }))
 				} else if (archive === 'skipped') {
-					showSuccessMessage(this.t('zeitwerk', 'PDF heruntergeladen. Ablage in Nextcloud übersprungen: In den Einstellungen ist kein PDF-Archiv konfiguriert.'))
+					showErrorMessage(this.t('zeitwerk', 'Kein PDF-Archiv konfiguriert. Bitte in den Einstellungen unter «PDF-Archiv» einen Ablagepfad setzen.'))
 				} else {
-					showErrorMessage(this.t('zeitwerk', 'PDF heruntergeladen, aber die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log.'))
+					showErrorMessage(this.t('zeitwerk', 'Die Ablage in Nextcloud ist fehlgeschlagen. Details stehen im Nextcloud-Log.'))
 				}
 			} catch (error) {
 				showErrorMessage(error.message)
@@ -531,28 +518,6 @@ export default {
 								showErrorMessage(error.message)
 							} finally {
 								this.lockBusy = false
-							}
-						},
-					},
-				])
-				.build()
-			dialog.show()
-		},
-		confirmCopyWeek() {
-			const dialog = new DialogBuilder()
-				.setName(this.t('zeitwerk', 'Woche kopieren'))
-				.setText(this.t('zeitwerk', 'Alle Aufträge dieser Woche in die nächste Woche übernehmen? Bereits vorhandene identische Aufträge werden übersprungen.'))
-				.setButtons([
-					{ label: this.t('zeitwerk', 'Abbrechen'), type: 'secondary', callback: () => {} },
-					{
-						label: this.t('zeitwerk', 'Kopieren'),
-						type: 'primary',
-						callback: async () => {
-							try {
-								const created = await this.copyToNextWeek()
-								showSuccessMessage(this.t('zeitwerk', '{count} Aufträge kopiert', { count: created }))
-							} catch (error) {
-								showErrorMessage(error.message)
 							}
 						},
 					},
@@ -613,7 +578,7 @@ export default {
 .roster-corner__year { font-size: 12px; font-weight: 600; color: var(--color-text-maxcontrast); margin-top: 3px; }
 .copy-to { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
 .copy-to h3 { margin: 0; }
-.copy-to__source, .copy-to__preview { margin: 0; color: var(--color-text-maxcontrast); }
+.copy-to__source, .copy-to__preview, .copy-to__hint { margin: 0; color: var(--color-text-maxcontrast); }
 .copy-to__preview--error { color: var(--color-error); }
 .copy-to__row { display: flex; gap: 12px; }
 .copy-to__field { display: flex; flex-direction: column; gap: 4px; flex: 1; }

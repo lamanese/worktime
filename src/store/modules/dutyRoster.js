@@ -103,9 +103,6 @@ const actions = {
 		await DutyRosterService.unlockWeek(state.weekStart)
 		await dispatch('loadWeek', state.weekStart)
 	},
-	async copyToNextWeek({ state, dispatch }) {
-		return dispatch('copyToWeek', addDays(state.weekStart, 7))
-	},
 	/** Copies the current week into the week of `target` (any day) and jumps there. */
 	async copyToWeek({ state, dispatch }, target) {
 		const monday = getWeekStart(target)

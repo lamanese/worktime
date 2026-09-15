@@ -67,11 +67,11 @@ describe('dutyRoster store', () => {
 		expect(DutyRosterService.getWeek).toHaveBeenCalledWith('2026-09-14')
 	})
 
-	it('copyToNextWeek returns the count and jumps to the target week', async () => {
+	it('copyToWeek returns the count and jumps to the target week', async () => {
 		DutyRosterService.copyWeek.mockResolvedValue({ created: 3 })
 		DutyRosterService.getWeek.mockResolvedValue({ rows: [], days: [] })
 		state.weekStart = '2026-09-14'
-		const { result } = await run('copyToNextWeek', state)
+		const { result } = await run('copyToWeek', state, '2026-09-21')
 		expect(result).toBe(3)
 		expect(DutyRosterService.copyWeek).toHaveBeenCalledWith('2026-09-14', '2026-09-21')
 		expect(state.weekStart).toBe('2026-09-21')
@@ -102,13 +102,6 @@ describe('dutyRoster copyToWeek', () => {
 		expect(result).toBe(3)
 	})
 
-	it('copyToNextWeek delegates with +7 days', async () => {
-		state.weekStart = '2026-09-14'
-		DutyRosterService.copyWeek.mockResolvedValue({ created: 1 })
-		DutyRosterService.getWeek.mockResolvedValue({ rows: [], days: [] })
-		await run('copyToNextWeek', state)
-		expect(DutyRosterService.copyWeek).toHaveBeenCalledWith('2026-09-14', '2026-09-21')
-	})
 })
 
 describe('dutyRoster templates', () => {

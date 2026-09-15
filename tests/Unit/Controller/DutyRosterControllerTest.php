@@ -16,7 +16,6 @@ use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\NotFoundException;
 use OCA\Zeitwerk\Service\PermissionService;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -124,7 +123,7 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
         $this->assertSame('Woche ist gesperrt', $response->getData()['error']);
     }
-    public function testPdfDownloadsAndReportsArchiveState(): void {
+    public function testPdfArchivesAndReportsArchiveState(): void {
         $this->permissions->method('canManageDutyRoster')->willReturn(true);
         $this->service->expects($this->once())->method('getWeek')->willReturn(['weekStart' => '2026-09-14', 'rows' => []]);
         $this->pdfService->expects($this->once())->method('export')
@@ -133,14 +132,8 @@ class DutyRosterControllerTest extends TestCase {
 
         $response = $this->controller()->pdf('2026-09-16');
 
-        $this->assertInstanceOf(DataDownloadResponse::class, $response);
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        // Response::getHeaders() needs the NC server container; read the raw header map instead.
-        $prop = new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers');
-        $headers = $prop->getValue($response);
-        $this->assertSame('failed', $headers['X-Zeitwerk-Archive']);
-        $this->assertSame('', $headers['X-Zeitwerk-Archive-Path']);
-        $this->assertStringContainsString('Dienstplan-KW38-2026.pdf', $headers['Content-Disposition']);
+        $this->assertSame(['archive' => 'failed', 'path' => null, 'filename' => 'KW38-2026.pdf'], $response->getData());
         $this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->pdf('2026-13-01')->getStatus());
     }
 }

@@ -102,32 +102,17 @@ export default {
 	},
 
 	/**
-	 * Saves the week as PDF in the Nextcloud archive AND returns it for download.
-	 * With responseType 'blob' an error body arrives as a Blob, so it is parsed
-	 * before rethrow() can read the message.
+	 * Renders the week as PDF and stores it in the Nextcloud archive
+	 * (<pdf_archive_path>/Dienstplan/KWnn-JJJJ.pdf). No browser download.
 	 *
 	 * @param {string} start any day of the week (Y-m-d)
-	 * @return {Promise<{blob: Blob, filename: string, archive: string, path: string}>} pdf and archive outcome
+	 * @return {Promise<{archive: string, path: string|null, filename: string}>} archive outcome
 	 */
-	async downloadPdf(start) {
+	async archivePdf(start) {
 		try {
-			const response = await api.post('/duty-roster/pdf', { start }, { responseType: 'blob' })
-			const disposition = response.headers['content-disposition'] || ''
-			const match = disposition.match(/filename="?([^";]+)"?/)
-			return {
-				blob: response.data,
-				filename: match ? match[1] : 'Dienstplan.pdf',
-				archive: response.headers['x-zeitwerk-archive'] || 'skipped',
-				path: response.headers['x-zeitwerk-archive-path'] || '',
-			}
+			const response = await api.post('/duty-roster/pdf', { start })
+			return response.data
 		} catch (error) {
-			if (error.response && error.response.data instanceof Blob) {
-				try {
-					error.response.data = JSON.parse(await error.response.data.text())
-				} catch (e) {
-					error.response.data = {}
-				}
-			}
 			rethrow(error)
 		}
 	},
