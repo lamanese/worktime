@@ -83,6 +83,16 @@ export default {
 		}
 	},
 
+	/** «Diese Woche ignorieren» for a fixed-weekday template. */
+	async skipTemplate(id, start, skipped) {
+		try {
+			const response = await api.put(`/duty-roster/templates/${id}/skip`, { start, skipped })
+			return response.data
+		} catch (error) {
+			rethrow(error)
+		}
+	},
+
 	async lockWeek(start) {
 		try {
 			const response = await api.post('/duty-roster/lock', { start })

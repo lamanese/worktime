@@ -33,6 +33,9 @@ const getters = {
 	canExportPdf: (state) => !!state.week?.canExportPdf,
 	// Planner AND week open: only then cards may be created, moved, edited, deleted.
 	canEdit: (state) => !!state.week?.canManage && !state.week?.locked,
+	// Fixed-weekday templates (spec §12): what is placed, what is still missing.
+	templateCoverage: (state) => state.week?.templateCoverage ?? [],
+	openTemplateDays: (state) => state.week?.openTemplateDays ?? 0,
 	loading: (state) => state.loading,
 	error: (state) => state.error,
 	templates: (state) => state.templates,
@@ -103,6 +106,18 @@ const actions = {
 	},
 	async unlockWeek({ state, dispatch }) {
 		await DutyRosterService.unlockWeek(state.weekStart)
+		await dispatch('loadWeek', state.weekStart)
+	},
+	/**
+	 * «Diese Woche ignorieren» (or undo) for one fixed-weekday template. Acts
+	 * on the week whose coverage is on screen (`week.weekStart`), never on
+	 * `state.weekStart`: that one already points to the next week while a
+	 * navigation is still loading. Afterwards the week the user is on reloads.
+	 */
+	async setTemplateSkipped({ state, dispatch }, { id, skipped, weekStart }) {
+		const shown = weekStart || state.week?.weekStart
+		if (!shown) return
+		await DutyRosterService.skipTemplate(id, shown, skipped)
 		await dispatch('loadWeek', state.weekStart)
 	},
 	/** Copies the current week into the week of `target` (any day) and jumps there. */

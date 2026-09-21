@@ -13,6 +13,7 @@ use DateTime;
 use OCA\Zeitwerk\Db\Absence;
 use OCA\Zeitwerk\Db\DutyJob;
 use OCA\Zeitwerk\Db\DutyJobMapper;
+use OCA\Zeitwerk\Db\DutyJobTemplate;
 use OCA\Zeitwerk\Db\DutyWeekLock;
 use OCA\Zeitwerk\Db\DutyWeekLockMapper;
 use OCA\Zeitwerk\Db\Employee;
@@ -22,6 +23,7 @@ use OCA\Zeitwerk\Service\AbsenceService;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\CompanySettingsService;
 use OCA\Zeitwerk\Service\DutyJobService;
+use OCA\Zeitwerk\Service\DutyTemplateCoverageService;
 use OCA\Zeitwerk\Service\ForbiddenException;
 use OCA\Zeitwerk\Service\HolidayService;
 use OCA\Zeitwerk\Service\NotFoundException;
@@ -46,6 +48,11 @@ class DutyJobServiceTest extends TestCase {
     private DutyWeekLockMapper $lockMapper;
     private IUserManager $userManager;
     private IConfig $config;
+    private DutyTemplateCoverageService $coverageService;
+    /** Template 7, the only one resolveTemplate() knows */
+    private DutyJobTemplate $template;
+    /** @var array<int, array<string, mixed>> what coverage() answers */
+    private array $coverage = [];
     private bool $templatesSidebar = true;
     private string $templatesUserPref = '';
     /** @var string[] locked Mondays (Y-m-d) */
@@ -80,6 +87,13 @@ class DutyJobServiceTest extends TestCase {
         $this->userManager = $this->createMock(IUserManager::class);
         $this->config = $this->createMock(IConfig::class);
         $this->config->method('getUserValue')->willReturnCallback(fn (): string => $this->templatesUserPref);
+        $this->coverage = [];
+        $this->coverageService = $this->createMock(DutyTemplateCoverageService::class);
+        $this->coverageService->method('coverage')->willReturnCallback(fn (): array => $this->coverage);
+        $this->template = new DutyJobTemplate();
+        $this->template->setId(7);
+        $this->coverageService->method('resolveTemplate')
+            ->willReturnCallback(fn (mixed $id): ?DutyJobTemplate => (int)($id ?? 0) === 7 ? $this->template : null);
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
@@ -95,6 +109,7 @@ class DutyJobServiceTest extends TestCase {
             $this->lockMapper,
             $this->userManager,
             $this->config,
+            $this->coverageService,
         );
     }
 
@@ -296,7 +311,7 @@ class DutyJobServiceTest extends TestCase {
         $dates = array_map(fn ($a) => $a['date'] . ':' . $a['status'], $row['absences']);
         $this->assertSame(['2026-09-14:approved', '2026-09-15:approved', '2026-09-17:pending'], $dates);
         $this->assertSame('Urlaub', $row['absences'][0]['typeName']);
-        $this->assertSame([['date' => '2026-09-16', 'name' => 'Testtag']], $row['holidays']);
+        $this->assertSame([['date' => '2026-09-16', 'name' => 'Testtag', 'halfDay' => false]], $row['holidays']);
     }
 
     public function testGetWeekMasksAbsencesForNonPlanner(): void {
@@ -655,5 +670,142 @@ class DutyJobServiceTest extends TestCase {
         $this->lockedWeeks = ['2026-09-21']; // target locked
         $this->expectException(ForbiddenException::class);
         $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-21'), 'sup');
+    }
+
+    // ---- Vorlagen mit festen Wochentagen (spec §12) ----
+
+    public function testCreateKeepsKnownTemplateIdAndDropsUnknown(): void {
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $this->jobMapper->method('insert')->willReturnArgument(0);
+
+        $known = $this->service->create($this->validData(['templateId' => 7]), 'admin');
+        $unknown = $this->service->create($this->validData(['templateId' => 99]), 'admin');
+        $none = $this->service->create($this->validData(), 'admin');
+
+        $this->assertSame(7, $known->getTemplateId());
+        $this->assertNull($unknown->getTemplateId());
+        $this->assertNull($none->getTemplateId());
+    }
+
+    public function testCreateFromFixedTemplateOnOtherDayNeedsTheFlag(): void {
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $this->jobMapper->method('insert')->willReturnArgument(0);
+        $this->template->setWeekdays(0b0000101); // Mo, Mi
+
+        // 2026-09-21 is a Monday, 2026-09-22 a Tuesday
+        $this->assertSame(7, $this->service->create($this->validData(['templateId' => 7, 'date' => '2026-09-21']), 'admin')->getTemplateId());
+        try {
+            $this->service->create($this->validData(['templateId' => 7, 'date' => '2026-09-22']), 'admin');
+            $this->fail('expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertTrue($e->hasError('date'));
+        }
+
+        $this->template->setAllowOtherDays(true);
+        $other = $this->service->create($this->validData(['templateId' => 7, 'date' => '2026-09-22']), 'admin');
+        $this->assertSame(7, $other->getTemplateId());
+    }
+
+    public function testGetWeekPassesHolidaysCommonToAllRowsToCoverage(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([
+            $this->makeEmployee(1, true, 'DE-BW'),
+            $this->makeEmployee(2, true, 'CH-ZH'),
+        ]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $holiday = static function (string $date, string $scope = '1.00'): Holiday {
+            $h = new Holiday();
+            $h->setDate(new DateTime($date));
+            $h->setName('Feiertag');
+            $h->setScope($scope);
+            return $h;
+        };
+        // Monday for both regions, Thursday only for DE-BW, Friday for both but only half a day
+        $this->holidayService->method('findHolidaysInRange')->willReturnCallback(
+            static fn (DateTime $from, DateTime $to, string $region): array => $region === 'DE-BW'
+                ? [$holiday('2026-09-21'), $holiday('2026-09-24'), $holiday('2026-09-25', '0.50')]
+                : [$holiday('2026-09-21'), $holiday('2026-09-25', '0.50')]
+        );
+        $this->coverageService->expects($this->once())->method('coverage')
+            ->with($this->anything(), $this->anything(), [1]);
+
+        $this->service->getWeek(new DateTime('2026-09-21'), 'admin');
+    }
+
+    public function testUpdateAndMoveKeepTemplateId(): void {
+        $this->employeeMapper->method('find')->willReturn($this->makeEmployee(1));
+        $job = $this->makeJob(3, 1, '2026-09-21', '08:00', 'Reinigung');
+        $job->setTemplateId(7);
+        $this->jobMapper->method('find')->willReturn($job);
+        $this->jobMapper->method('update')->willReturnArgument(0);
+
+        $updated = $this->service->update(3, $this->validData(['title' => 'Neu', 'templateId' => 99]), 'admin');
+        $this->assertSame(7, $updated->getTemplateId());
+
+        $moved = $this->service->move(3, 1, '2026-09-23', 'admin');
+        $this->assertSame(7, $moved->getTemplateId());
+        $this->assertSame('2026-09-23', $moved->getJobDate()->format('Y-m-d'));
+    }
+
+    public function testCopyWeekCarriesTemplateId(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $source = $this->makeJob(1, 1, '2026-09-21', '08:00', 'Reinigung');
+        $source->setTemplateId(7);
+        $this->jobMapper->method('findByDateRange')->willReturnCallback(
+            static fn (DateTime $from): array => $from->format('Y-m-d') === '2026-09-21' ? [$source] : []
+        );
+        $inserted = [];
+        $this->jobMapper->method('insert')->willReturnCallback(function (DutyJob $j) use (&$inserted) {
+            $inserted[] = $j;
+            return $j;
+        });
+
+        $this->service->copyWeek(new DateTime('2026-09-21'), new DateTime('2026-09-28'), 'admin');
+
+        $this->assertCount(1, $inserted);
+        $this->assertSame(7, $inserted[0]->getTemplateId());
+    }
+
+    public function testGetWeekCarriesCoverageForPlannersOnly(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([]);
+        $this->jobMapper->method('findByDateRange')->willReturn([]);
+        $this->coverage = [
+            ['templateId' => 7, 'title' => 'A', 'weekdays' => [1, 3], 'doneDays' => [1], 'openDays' => [3], 'skipped' => false],
+            ['templateId' => 8, 'title' => 'B', 'weekdays' => [2, 4], 'doneDays' => [], 'openDays' => [2, 4], 'skipped' => true],
+        ];
+
+        $this->permissionService->method('canManageDutyRoster')->willReturnOnConsecutiveCalls(true, false);
+        $planner = $this->service->getWeek(new DateTime('2026-09-21'), 'sup');
+        $reader = $this->service->getWeek(new DateTime('2026-09-21'), 'emp');
+
+        $this->assertCount(2, $planner['templateCoverage']);
+        $this->assertSame(1, $planner['openTemplateDays']); // skipped template does not count
+        $this->assertSame([], $reader['templateCoverage']);
+        $this->assertSame(0, $reader['openTemplateDays']);
+    }
+
+    public function testGetWeekCoverageIgnoresJobsOfEmployeesOutsideRoster(): void {
+        $this->permissionService->method('canManageDutyRoster')->willReturn(true);
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([
+            $this->makeJob(1, 1, '2026-09-21', null, 'im Plan'),
+            $this->makeJob(2, 5, '2026-09-22', null, 'nicht im Plan'),
+        ]);
+        $this->coverageService->expects($this->once())->method('coverage')
+            ->with($this->anything(), $this->callback(
+                static fn (array $jobs): bool => count($jobs) === 1 && $jobs[0]->getId() === 1
+            ));
+
+        $this->service->getWeek(new DateTime('2026-09-21'), 'admin');
+    }
+
+    public function testSetTemplateSkippedNormalizesToMondayAndRejectsLockedWeek(): void {
+        $this->coverageService->expects($this->once())->method('setSkipped')
+            ->with(7, $this->callback(static fn (DateTime $d): bool => $d->format('Y-m-d') === '2026-09-21'), true, 'sup');
+        $this->service->setTemplateSkipped(7, new DateTime('2026-09-24'), true, 'sup');
+
+        $this->lockedWeeks = ['2026-09-28'];
+        $this->expectException(ForbiddenException::class);
+        $this->service->setTemplateSkipped(7, new DateTime('2026-09-30'), true, 'sup');
     }
 }

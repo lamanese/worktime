@@ -89,7 +89,7 @@
                             <span v-else-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
                                 {{ formatValues(entry.oldValues) }}
                             </span>
-                            <span v-else-if="['create', 'copy_week', 'lock_week', 'export_pdf'].includes(entry.action) && entry.newValues" class="diff-new">
+                            <span v-else-if="['create', 'copy_week', 'lock_week', 'export_pdf', 'skip_template_week'].includes(entry.action) && entry.newValues" class="diff-new">
                                 {{ formatValues(entry.newValues) }}
                             </span>
                             <span v-else>-</span>
@@ -207,6 +207,8 @@ export default {
                 lock_week: this.t('zeitwerk', 'Woche gesperrt'),
                 unlock_week: this.t('zeitwerk', 'Woche entsperrt'),
                 export_pdf: this.t('zeitwerk', 'PDF exportiert'),
+                skip_template_week: this.t('zeitwerk', 'Vorlage für Woche abgehakt'),
+                unskip_template_week: this.t('zeitwerk', 'Vorlage für Woche wieder offen'),
             }
             return map[action] || action
         },

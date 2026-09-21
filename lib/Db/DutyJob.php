@@ -48,6 +48,8 @@ class DutyJob extends Entity implements JsonSerializable {
     protected string $title = '';
     protected ?string $note = null;
     protected int $onCall = 0;
+    /** Vorlage, aus der die Karte entstand (null = frei angelegt; kann verwaist sein). */
+    protected ?int $templateId = null;
     protected string $createdBy = '';
     protected ?DateTime $createdAt = null;
     protected ?DateTime $updatedAt = null;
@@ -58,6 +60,7 @@ class DutyJob extends Entity implements JsonSerializable {
         $this->addType('jobDate', 'datetime');
         $this->addType('durationMinutes', 'integer');
         $this->addType('onCall', 'integer');
+        $this->addType('templateId', 'integer');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
     }
@@ -78,6 +81,7 @@ class DutyJob extends Entity implements JsonSerializable {
             'title' => $this->title,
             'note' => $this->note,
             'onCall' => (bool)$this->onCall,
+            'templateId' => $this->templateId,
             'createdBy' => $this->createdBy,
             'createdAt' => $this->createdAt?->format('c'),
             'updatedAt' => $this->updatedAt?->format('c'),

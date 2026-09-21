@@ -1,5 +1,5 @@
 import {
-	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState, resolveDrop, mondayOfIsoWeek, isoYear,
+	getWeekStart, getWeekDays, addDays, formatWeekLabel, sortJobs, formatDuration, cellState, resolveDrop, mondayOfIsoWeek, isoYear, splitTemplates, weekdayShortName, isoWeekday, blockedWeekdays,
 } from '../../src/utils/dutyRoster.js'
 
 describe('week helpers (local dates, no UTC shift)', () => {
@@ -151,5 +151,65 @@ describe('resolveDrop', () => {
 		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-template': 'abc' }))).toEqual({ kind: null, id: 0 })
 		expect(resolveDrop(transfer({ 'application/x-zeitwerk-duty-job': '0' }))).toEqual({ kind: null, id: 0 })
 		expect(resolveDrop(null)).toEqual({ kind: null, id: 0 })
+	})
+})
+
+describe('fixed-weekday templates (spec §12)', () => {
+	const fixed = { id: 7, title: 'Reinigung', weekdays: [1, 3, 5] }
+	const free = { id: 8, title: 'Frei', weekdays: [] }
+	const legacy = { id: 9, title: 'Alt' } // payload without weekdays
+
+	it('splitTemplates groups by open, any and done', () => {
+		const groups = splitTemplates([fixed, free, legacy], [
+			{ templateId: 7, title: 'Reinigung', weekdays: [1, 3, 5], doneDays: [1], openDays: [3, 5], skipped: false },
+		])
+		expect(groups.open.map(e => e.template.id)).toEqual([7])
+		expect(groups.any.map(e => e.template.id)).toEqual([8, 9])
+		expect(groups.done).toEqual([])
+		expect(groups.open[0].coverage.openDays).toEqual([3, 5])
+	})
+
+	it('a complete or ignored template moves to done', () => {
+		const complete = splitTemplates([fixed], [{ templateId: 7, weekdays: [1, 3, 5], doneDays: [1, 3, 5], openDays: [], skipped: false }])
+		expect(complete.done).toHaveLength(1)
+		const skipped = splitTemplates([fixed], [{ templateId: 7, weekdays: [1, 3, 5], doneDays: [], openDays: [1, 3, 5], skipped: true }])
+		expect(skipped.done).toHaveLength(1)
+		expect(skipped.open).toEqual([])
+	})
+
+	it('a fixed template without coverage stays visible as fully open', () => {
+		const groups = splitTemplates([fixed], [])
+		expect(groups.open).toHaveLength(1)
+		expect(groups.open[0].coverage.openDays).toEqual([1, 3, 5])
+	})
+
+	it('weekdayShortName and isoWeekday agree on ISO numbering', () => {
+		expect(weekdayShortName(1, 'de-CH')).toBe('Mo')
+		expect(weekdayShortName(7, 'de-CH')).toBe('So')
+		expect(isoWeekday('2026-09-21')).toBe(1) // Monday
+		expect(isoWeekday('2026-09-27')).toBe(7) // Sunday
+	})
+})
+
+describe('templates: done for the week, blocked days (spec §12)', () => {
+	it('a free template marked «Erledigt» moves to done, otherwise stays in any', () => {
+		const free = { id: 8, title: 'Frei', weekdays: [] }
+		const cov = (skipped) => [{ templateId: 8, weekdays: [], doneDays: [], openDays: [], holidayDays: [], skipped }]
+		expect(splitTemplates([free], cov(true)).done).toHaveLength(1)
+		expect(splitTemplates([free], cov(false)).any).toHaveLength(1)
+		expect(splitTemplates([free], []).any[0].coverage.skipped).toBe(false)
+	})
+
+	it('a fixed template whose only missing day is a holiday counts as done', () => {
+		const fixed = { id: 7, title: 'Reinigung', weekdays: [1, 3] }
+		const groups = splitTemplates([fixed], [{ templateId: 7, weekdays: [1, 3], doneDays: [3], openDays: [], holidayDays: [1], skipped: false }])
+		expect(groups.done).toHaveLength(1)
+	})
+
+	it('blockedWeekdays limits fixed templates unless other days are allowed', () => {
+		expect(blockedWeekdays({ weekdays: [1, 3, 5] })).toEqual([2, 4, 6, 7])
+		expect(blockedWeekdays({ weekdays: [1, 3, 5], allowOtherDays: true })).toEqual([])
+		expect(blockedWeekdays({ weekdays: [] })).toEqual([])
+		expect(blockedWeekdays({})).toEqual([])
 	})
 })

@@ -78,11 +78,18 @@
 					<div class="roster-corner">
 						<span class="roster-corner__kw">{{ t('zeitwerk', 'KW') }}{{ weekNumber }}</span>
 						<span class="roster-corner__year">{{ weekIsoYear }}</span>
+						<button v-if="openTemplateDays > 0"
+							class="roster-corner__open"
+							type="button"
+							:title="openDaysTitle"
+							@click="showOpenTemplates">
+							{{ openDaysLabel }}
+						</button>
 					</div>
 					<div v-for="day in days"
 						:key="day.date"
 						class="roster-day-header"
-						:class="{ weekend: day.isWeekend, today: day.isToday }">
+						:class="{ weekend: day.isWeekend, today: day.isToday, wanted: isWanted(day), blocked: isBlocked(day) }">
 						<span class="roster-day-name">{{ dayName(day.date) }}</span>
 						<span class="roster-day-date">{{ dayDate(day.date) }}</span>
 					</div>
@@ -95,7 +102,7 @@
 						<div v-for="day in days"
 							:key="row.employee.id + '-' + day.date"
 							class="roster-cell"
-							:class="['roster-cell--' + cellMap[row.employee.id + '|' + day.date].state, { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day) }]"
+							:class="['roster-cell--' + cellMap[row.employee.id + '|' + day.date].state, { weekend: day.isWeekend, today: day.isToday, over: isOver(row, day), wanted: isWanted(day), blocked: isBlocked(day) }]"
 							:style="rowStyles[row.employee.id]"
 							@dragover="onDragOver($event, row, day)"
 							@dragleave="onDragLeave(row, day)"
@@ -119,7 +126,12 @@
 				</div>
 			</div>
 
-			<DutyTemplateSidebar v-if="showTemplates && !locked" :templates="templates" />
+			<DutyTemplateSidebar v-if="showTemplates && !locked"
+				:templates="templates"
+				:coverage="templateCoverage"
+				:week-start="week.weekStart"
+				@drag-start="dragInfo = $event"
+				@drag-end="dragInfo = { wanted: [], blocked: [] }" />
 		</div>
 
 		<NcModal v-if="copyTo.open" :name="t('zeitwerk', 'Woche kopieren nach …')" size="small" @close="copyTo.open = false">
@@ -188,7 +200,7 @@ import DutyJobCard from '../components/DutyJobCard.vue'
 import DutyJobForm from '../components/DutyJobForm.vue'
 import DutyTemplateSidebar from '../components/DutyTemplateSidebar.vue'
 import DutyRosterService from '../services/DutyRosterService.js'
-import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, addDays, mondayOfIsoWeek, isoYear, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
+import { cellState, sortJobs, formatWeekLabel, parseLocalDate, toDateString, resolveDrop, addDays, mondayOfIsoWeek, isoYear, isoWeekday, weekdayShortName, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
 import { showErrorMessage, showSuccessMessage } from '../utils/errorHandler.js'
 import { getLocale, getISOWeek } from '../utils/dateUtils.js'
 
@@ -220,6 +232,9 @@ export default {
 		return {
 			form: { open: false, job: null, employeeId: 0, date: '' },
 			overKey: null,
+			// Template being dragged: ISO weekdays it still misses (highlight) and
+			// weekdays it must not be dropped on (dimmed, drop refused).
+			dragInfo: { wanted: [], blocked: [] },
 			lockBusy: false,
 			pdfBusy: false,
 			templatesBusy: false,
@@ -227,7 +242,21 @@ export default {
 		}
 	},
 	computed: {
-		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'canEdit', 'showTemplates', 'locked', 'lockedBy', 'lockedAt', 'canUnlock', 'canExportPdf', 'loading', 'error', 'templates']),
+		...mapGetters('dutyRoster', ['weekStart', 'week', 'rows', 'days', 'canManage', 'canEdit', 'showTemplates', 'locked', 'lockedBy', 'lockedAt', 'canUnlock', 'canExportPdf', 'loading', 'error', 'templates', 'templateCoverage', 'openTemplateDays']),
+		/** Fixed-weekday templates that still miss days, as «Titel (Mi, Fr)» lines. */
+		openTemplateLines() {
+			return this.templateCoverage
+				.filter(c => !c.skipped && c.openDays.length > 0)
+				.map(c => `${c.title} (${c.openDays.map(d => weekdayShortName(d, getLocale())).join(', ')})`)
+		},
+		openDaysLabel() {
+			return this.openTemplateDays === 1
+				? this.t('zeitwerk', '1 Tag offen')
+				: this.t('zeitwerk', '{count} Tage offen', { count: this.openTemplateDays })
+		},
+		openDaysTitle() {
+			return this.t('zeitwerk', 'Noch nicht verteilt: {list}', { list: this.openTemplateLines.join('; ') })
+		},
 		lockButtonLabel() {
 			if (!this.locked) return this.t('zeitwerk', 'Woche sperren')
 			return this.canUnlock
@@ -310,6 +339,16 @@ export default {
 	},
 	methods: {
 		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
+		isWanted(day) {
+			return this.dragInfo.wanted.includes(isoWeekday(day.date))
+		},
+		isBlocked(day) {
+			return this.dragInfo.blocked.includes(isoWeekday(day.date))
+		},
+		/** Badge click: bring the sidebar up so the missing days can be placed. */
+		async showOpenTemplates() {
+			if (!this.showTemplates && this.canEdit) await this.toggleTemplates()
+		},
 		dayName(date) {
 			return parseLocalDate(date).toLocaleDateString(getLocale(), { weekday: 'short' })
 		},
@@ -328,6 +367,8 @@ export default {
 		},
 		onDragOver(event, row, day) {
 			if (!this.canEdit) return
+			// No preventDefault: the browser refuses the drop on a blocked day.
+			if (this.isBlocked(day)) return
 			event.preventDefault()
 			event.dataTransfer.dropEffect = event.dataTransfer.types.includes(DUTY_TEMPLATE_MIME) ? 'copy' : 'move'
 			this.overKey = this.cellKey(row, day)
@@ -337,6 +378,7 @@ export default {
 		},
 		async onDrop(event, row, day) {
 			this.overKey = null
+			this.dragInfo = { wanted: [], blocked: [] }
 			if (!this.canEdit) return
 			event.preventDefault()
 			const drop = resolveDrop(event.dataTransfer)
@@ -375,13 +417,15 @@ export default {
 					title: template.title,
 					note: template.note || null,
 					onCall: !!template.onCall,
+					templateId: template.id,
 				})
 				const freshRow = this.rows.find(r => r.employee.id === row.employee.id)
 				if (freshRow && !this.notifyAbsence(freshRow, day)) {
 					showSuccessMessage(this.t('zeitwerk', '«{title}» eingeplant', { title: template.title }))
 				}
 			} catch (error) {
-				showErrorMessage(error.message)
+				// e.g. «nur an festen Wochentagen»: the field message says more than the generic one
+				showErrorMessage(error.errors?.date?.[0] || error.message)
 			}
 		},
 		/**
@@ -490,6 +534,25 @@ export default {
 				if (this.canUnlock) this.confirmUnlock()
 				return
 			}
+			if (this.openTemplateLines.length > 0) {
+				this.confirmLockWithOpenDays()
+				return
+			}
+			await this.doLock()
+		},
+		/** Locking stays possible; the planner just sees what is still missing. */
+		confirmLockWithOpenDays() {
+			const dialog = new DialogBuilder()
+				.setName(this.t('zeitwerk', 'Woche sperren'))
+				.setText(this.t('zeitwerk', 'Es sind noch nicht alle festen Tage verteilt: {list}. Woche trotzdem sperren?', { list: this.openTemplateLines.join('; ') }))
+				.setButtons([
+					{ label: this.t('zeitwerk', 'Abbrechen'), type: 'secondary', callback: () => {} },
+					{ label: this.t('zeitwerk', 'Trotzdem sperren'), type: 'primary', callback: () => this.doLock() },
+				])
+				.build()
+			dialog.show()
+		},
+		async doLock() {
 			this.lockBusy = true
 			try {
 				await this.lockWeek()
@@ -604,6 +667,26 @@ export default {
 	background-color: rgba(var(--duty-row-rgb, 0, 0, 0), 0.06);
 }
 .roster-cell.weekend, .roster-day-header.weekend { background: var(--color-background-hover); }
+/* Day columns the dragged fixed-weekday template still misses (spec §12). */
+.roster-day-header.wanted { background: rgba(230, 0, 0, .14); color: #c00000; }
+.roster-cell.wanted { background: rgba(230, 0, 0, .07); box-shadow: inset 0 0 0 1px rgba(230, 0, 0, .35); }
+/* Days a fixed-weekday template must not be dropped on. */
+.roster-day-header.blocked, .roster-cell.blocked { opacity: .35; }
+.roster-cell.blocked { cursor: not-allowed; }
+.roster-corner__open {
+	margin: 6px 0 0;
+	padding: 3px 8px;
+	min-height: 0;
+	align-self: flex-start;
+	border: 0;
+	border-radius: 999px;
+	background: #e60000;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.2;
+	cursor: pointer;
+}
 .roster-cell.over { outline: 2px solid var(--color-primary-element); outline-offset: -2px; background: var(--color-primary-element-light); }
 .roster-cell--absent { background: var(--color-background-dark); }
 .roster-cell--absent-half {
@@ -627,6 +710,7 @@ export default {
 @media print {
 	body.zw-printing-roster .view-header__nav,
 	body.zw-printing-roster .view-toolbar,
+	body.zw-printing-roster .roster-corner__open,
 	body.zw-printing-roster .roster-add { display: none !important; }
 	body.zw-printing-roster .board { display: block; }
 	body.zw-printing-roster .duty-roster-view { padding: 0; max-width: none; }

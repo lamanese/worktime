@@ -70,6 +70,7 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->copyWeek('2026-09-14', '2026-09-21')->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->pdf('2026-09-14')->getStatus());
         $this->assertSame(Http::STATUS_FORBIDDEN, $c->templatesSidebar(false)->getStatus());
+        $this->assertSame(Http::STATUS_FORBIDDEN, $c->skipTemplate(7, '2026-09-21', true)->getStatus());
     }
 
     public function testTemplatesSidebarStoresPreference(): void {
@@ -142,5 +143,22 @@ class DutyRosterControllerTest extends TestCase {
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
         $this->assertSame(['archive' => 'failed', 'path' => null, 'filename' => 'KW38-2026.pdf'], $response->getData());
         $this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->pdf('2026-13-01')->getStatus());
+    }
+
+    public function testSkipTemplateDelegatesValidatesDateAndMapsLockedWeek(): void {
+        $this->permissions->method('canManageDutyRoster')->willReturn(true);
+        $this->service->expects($this->exactly(2))->method('setTemplateSkipped')
+            ->willReturnCallback(function (int $id, \DateTime $day, bool $skipped, string $userId): void {
+                if ($day->format('Y-m-d') === '2026-09-28') {
+                    throw new ForbiddenException('Woche ist gesperrt');
+                }
+                $this->assertSame([7, false, 'user'], [$id, $skipped, $userId]);
+            });
+
+        $ok = $this->controller()->skipTemplate(7, '2026-09-21', false);
+        $this->assertSame(Http::STATUS_OK, $ok->getStatus());
+        $this->assertSame(['templateId' => 7, 'skipped' => false], $ok->getData());
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller()->skipTemplate(7, 'morgen', true)->getStatus());
+        $this->assertSame(Http::STATUS_FORBIDDEN, $this->controller()->skipTemplate(7, '2026-09-28', true)->getStatus());
     }
 }

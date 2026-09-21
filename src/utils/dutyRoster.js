@@ -150,3 +150,67 @@ export function resolveDrop(dataTransfer) {
 	}
 	return none
 }
+
+/**
+ * Short weekday name for an ISO weekday (1 = Monday ... 7 = Sunday).
+ *
+ * @param {number} isoDay ISO weekday
+ * @param {string} [locale] BCP 47 locale, browser default when omitted
+ * @return {string} e.g. «Mo»
+ */
+export function weekdayShortName(isoDay, locale) {
+	// 2024-01-01 is a Monday.
+	return new Date(2024, 0, isoDay).toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, '')
+}
+
+/**
+ * Splits the sidebar templates into the three groups of spec §12: fixed-weekday
+ * templates that still miss days (`open`), templates without fixed weekdays
+ * (`any`) and templates that are through for this week (`done`): fixed ones
+ * that are complete or ignored, free ones marked «Erledigt». Each entry
+ * carries its coverage. A template without a coverage entry (stale week data)
+ * is treated as untouched, so nothing silently disappears.
+ *
+ * @param {Array<object>} templates visible templates
+ * @param {Array<object>} coverage `templateCoverage` of the week response
+ * @return {{open: Array<object>, any: Array<object>, done: Array<object>}} grouped entries
+ */
+export function splitTemplates(templates, coverage) {
+	const byId = new Map((coverage || []).map(c => [c.templateId, c]))
+	const groups = { open: [], any: [], done: [] }
+	for (const template of templates || []) {
+		const weekdays = template.weekdays || []
+		const cov = byId.get(template.id)
+			|| { templateId: template.id, title: template.title, weekdays, doneDays: [], openDays: weekdays, holidayDays: [], skipped: false }
+		if (weekdays.length === 0) {
+			groups[cov.skipped ? 'done' : 'any'].push({ template, coverage: cov })
+			continue
+		}
+		const complete = cov.skipped || cov.openDays.length === 0
+		groups[complete ? 'done' : 'open'].push({ template, coverage: cov })
+	}
+	return groups
+}
+
+/**
+ * ISO weekday (1 = Monday ... 7 = Sunday) of a YYYY-MM-DD date string.
+ *
+ * @param {string} date local date
+ * @return {number} ISO weekday
+ */
+export function isoWeekday(date) {
+	return parseLocalDate(date).getDay() || 7
+}
+
+/**
+ * ISO weekdays a template must not be dropped on: a template with fixed
+ * weekdays is limited to them unless «auch an anderen Tagen erlaubt» is set.
+ *
+ * @param {object} template sidebar template
+ * @return {number[]} blocked ISO weekdays (empty = every day allowed)
+ */
+export function blockedWeekdays(template) {
+	const weekdays = template.weekdays || []
+	if (weekdays.length === 0 || template.allowOtherDays) return []
+	return [1, 2, 3, 4, 5, 6, 7].filter(d => !weekdays.includes(d))
+}

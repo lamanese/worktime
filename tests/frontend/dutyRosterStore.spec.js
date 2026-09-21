@@ -11,6 +11,7 @@ jest.mock('../../src/services/DutyRosterService.js', () => ({
 		moveJob: jest.fn(),
 		copyWeek: jest.fn(),
 		setTemplatesSidebar: jest.fn(),
+		skipTemplate: jest.fn(),
 	},
 }))
 
@@ -127,5 +128,41 @@ describe('dutyRoster templates', () => {
 		DutyJobTemplateService.getVisible.mockRejectedValue(new Error('403'))
 		await run('loadTemplates', state)
 		expect(state.templates).toEqual([])
+	})
+})
+
+describe('dutyRoster fixed-weekday templates', () => {
+	let state
+	beforeEach(() => {
+		state = { ...dutyRoster.state(), weekStart: '2026-09-21' }
+		jest.clearAllMocks()
+	})
+
+	it('coverage getters default to empty and read the week payload', () => {
+		expect(dutyRoster.getters.templateCoverage(state)).toEqual([])
+		expect(dutyRoster.getters.openTemplateDays(state)).toBe(0)
+		state.week = { templateCoverage: [{ templateId: 7 }], openTemplateDays: 3 }
+		expect(dutyRoster.getters.templateCoverage(state)).toEqual([{ templateId: 7 }])
+		expect(dutyRoster.getters.openTemplateDays(state)).toBe(3)
+	})
+
+	it('setTemplateSkipped acts on the loaded week, not on a pending navigation target', async () => {
+		DutyRosterService.skipTemplate.mockResolvedValue({})
+		DutyRosterService.getWeek.mockResolvedValue({ weekStart: '2026-09-28', openTemplateDays: 0 })
+		// Navigation to the next week has started: weekStart moved, week data is still the old one.
+		state.week = { weekStart: '2026-09-21', templateCoverage: [] }
+		state.weekStart = '2026-09-28'
+		await run('setTemplateSkipped', state, { id: 7, skipped: true })
+		expect(DutyRosterService.skipTemplate).toHaveBeenCalledWith(7, '2026-09-21', true)
+		expect(DutyRosterService.getWeek).toHaveBeenCalledWith('2026-09-28')
+	})
+
+	it('setTemplateSkipped prefers the explicit week of the sidebar and is a no-op without any week', async () => {
+		DutyRosterService.skipTemplate.mockResolvedValue({})
+		DutyRosterService.getWeek.mockResolvedValue({ weekStart: '2026-09-21' })
+		await run('setTemplateSkipped', state, { id: 7, skipped: false })
+		expect(DutyRosterService.skipTemplate).not.toHaveBeenCalled()
+		await run('setTemplateSkipped', state, { id: 7, skipped: false, weekStart: '2026-09-14' })
+		expect(DutyRosterService.skipTemplate).toHaveBeenCalledWith(7, '2026-09-14', false)
 	})
 })
