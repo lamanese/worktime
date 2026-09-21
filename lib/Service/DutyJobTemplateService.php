@@ -12,6 +12,7 @@ namespace OCA\Zeitwerk\Service;
 use DateTime;
 use OCA\Zeitwerk\Db\DutyJobTemplate;
 use OCA\Zeitwerk\Db\DutyJobTemplateMapper;
+use OCA\Zeitwerk\Db\DutyTemplateWeekSkipMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 
@@ -23,12 +24,13 @@ use OCP\IL10N;
  */
 class DutyJobTemplateService {
 
-    private const ENTITY_TYPE = 'duty_job_template';
+    public const ENTITY_TYPE = 'duty_job_template';
     private const TITLE_MAX = 200;
     private const NOTE_MAX = 500;
 
     public function __construct(
         private DutyJobTemplateMapper $templateMapper,
+        private DutyTemplateWeekSkipMapper $skipMapper,
         private AuditLogService $auditLogService,
         private IL10N $l,
     ) {
@@ -83,6 +85,8 @@ class DutyJobTemplateService {
         $template = $this->find($id);
         $old = $template->jsonSerialize();
         $data['sortOrder'] = $data['sortOrder'] ?? $template->getSortOrder();
+        $data['weekdays'] = $data['weekdays'] ?? $template->getWeekdayList();
+        $data['allowOtherDays'] = $data['allowOtherDays'] ?? (bool)$template->getAllowOtherDays();
         $clean = $this->validate($data);
 
         $this->apply($template, $clean);
@@ -95,7 +99,8 @@ class DutyJobTemplateService {
 
     /**
      * Vorlagen werden hart geloescht. Bereits erzeugte Karten bleiben
-     * unberuehrt — sie sind eigenstaendige Datensaetze ohne Rueckbezug.
+     * unberuehrt; ihre template_id verwaist und wird ignoriert. Die
+     * «Woche ignorieren»-Eintraege der Vorlage gehen mit.
      *
      * @throws NotFoundException
      */
@@ -103,6 +108,7 @@ class DutyJobTemplateService {
         $template = $this->find($id);
         $this->auditLogService->logDelete($userId, self::ENTITY_TYPE, $template->getId(), $template->jsonSerialize());
         $this->templateMapper->delete($template);
+        $this->skipMapper->deleteByTemplate($id);
     }
 
     private function apply(DutyJobTemplate $template, array $clean): void {
@@ -113,6 +119,8 @@ class DutyJobTemplateService {
         $template->setOnCall($clean['onCall']);
         $template->setIsVisible($clean['isVisible']);
         $template->setSortOrder($clean['sortOrder']);
+        $template->setWeekdays($clean['weekdays']);
+        $template->setAllowOtherDays($clean['allowOtherDays']);
     }
 
     /**
@@ -148,11 +156,29 @@ class DutyJobTemplateService {
             $errors['note'] = [$this->l->t('Notiz darf höchstens %d Zeichen haben', [self::NOTE_MAX])];
         }
 
+        $weekdays = $data['weekdays'] ?? [];
+        $mask = 0;
+        if (!is_array($weekdays)) {
+            $errors['weekdays'] = [$this->l->t('Ungültige Wochentage')];
+        } else {
+            foreach ($weekdays as $day) {
+                $isWholeNumber = is_int($day) || (is_string($day) && ctype_digit($day));
+                if (!$isWholeNumber || (int)$day < 1 || (int)$day > 7) {
+                    $errors['weekdays'] = [$this->l->t('Ungültige Wochentage')];
+                    break;
+                }
+                $mask |= 1 << ((int)$day - 1);
+            }
+        }
+
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
 
         return [
+            'weekdays' => $mask,
+            // Only meaningful with fixed weekdays; cleared otherwise.
+            'allowOtherDays' => $mask > 0 && (bool)($data['allowOtherDays'] ?? false),
             'title' => $title,
             'startTime' => $startTime,
             'durationMinutes' => $duration,

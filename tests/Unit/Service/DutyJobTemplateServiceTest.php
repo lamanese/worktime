@@ -11,6 +11,7 @@ namespace OCA\Zeitwerk\Tests\Unit\Service;
 
 use OCA\Zeitwerk\Db\DutyJobTemplate;
 use OCA\Zeitwerk\Db\DutyJobTemplateMapper;
+use OCA\Zeitwerk\Db\DutyTemplateWeekSkipMapper;
 use OCA\Zeitwerk\Service\AuditLogService;
 use OCA\Zeitwerk\Service\DutyJobTemplateService;
 use OCA\Zeitwerk\Service\NotFoundException;
@@ -25,13 +26,16 @@ class DutyJobTemplateServiceTest extends TestCase {
     private AuditLogService $auditLogService;
     private DutyJobTemplateService $service;
 
+    private DutyTemplateWeekSkipMapper $skipMapper;
+
     protected function setUp(): void {
         $this->mapper = $this->createMock(DutyJobTemplateMapper::class);
         $this->auditLogService = $this->createMock(AuditLogService::class);
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
-        $this->service = new DutyJobTemplateService($this->mapper, $this->auditLogService, $l10n);
+        $this->skipMapper = $this->createMock(DutyTemplateWeekSkipMapper::class);
+        $this->service = new DutyJobTemplateService($this->mapper, $this->skipMapper, $this->auditLogService, $l10n);
     }
 
     private function makeTemplate(int $id, string $title, bool $visible = true): DutyJobTemplate {
@@ -181,6 +185,7 @@ class DutyJobTemplateServiceTest extends TestCase {
             ->method('logDelete')
             ->with('admin', 'duty_job_template', 5, $this->anything());
         $this->mapper->expects($this->once())->method('delete')->with($existing);
+        $this->skipMapper->expects($this->once())->method('deleteByTemplate')->with(5);
 
         $this->service->delete(5, 'admin');
     }
@@ -189,5 +194,68 @@ class DutyJobTemplateServiceTest extends TestCase {
         $this->mapper->method('find')->willThrowException(new DoesNotExistException('nope'));
         $this->expectException(NotFoundException::class);
         $this->service->delete(404, 'admin');
+    }
+
+    // ---- feste Wochentage (spec §12) ----
+
+    public function testCreateStoresWeekdaysAsBitmaskAndSerializesSortedList(): void {
+        $this->mapper->method('insert')->willReturnArgument(0);
+
+        $template = $this->service->create(['title' => 'Reinigung', 'weekdays' => [5, 1, '3', 1]], 'admin');
+
+        $this->assertSame(0b0010101, $template->getWeekdays());
+        $this->assertSame([1, 3, 5], $template->jsonSerialize()['weekdays']);
+    }
+
+    public function testCreateWithoutWeekdaysMeansAnyDay(): void {
+        $this->mapper->method('insert')->willReturnArgument(0);
+        $template = $this->service->create(['title' => 'Frei'], 'admin');
+        $this->assertSame(0, $template->getWeekdays());
+        $this->assertSame([], $template->jsonSerialize()['weekdays']);
+    }
+
+    public function testCreateRejectsInvalidWeekdays(): void {
+        foreach ([[0], [8], ['x'], ['3.9'], [2.5], [[1]], 'mo'] as $bad) {
+            try {
+                $this->service->create(['title' => 'X', 'weekdays' => $bad], 'admin');
+                $this->fail('expected ValidationException');
+            } catch (ValidationException $e) {
+                $this->assertTrue($e->hasError('weekdays'));
+            }
+        }
+    }
+
+    public function testUpdateWithoutWeekdaysKeepsThemAndEmptyListClearsThem(): void {
+        $existing = $this->makeTemplate(5, 'Reinigung');
+        $existing->setWeekdays(0b0000011);
+        $this->mapper->method('find')->willReturn($existing);
+        $this->mapper->method('update')->willReturnArgument(0);
+
+        $kept = $this->service->update(5, ['title' => 'Reinigung', 'weekdays' => null], 'admin');
+        $this->assertSame([1, 2], $kept->getWeekdayList());
+
+        $cleared = $this->service->update(5, ['title' => 'Reinigung', 'weekdays' => []], 'admin');
+        $this->assertSame([], $cleared->getWeekdayList());
+    }
+
+    public function testAllowOtherDaysNeedsFixedWeekdaysAndSurvivesPartialUpdate(): void {
+        $this->mapper->method('insert')->willReturnArgument(0);
+        $this->mapper->method('update')->willReturnArgument(0);
+
+        $free = $this->service->create(['title' => 'Frei', 'allowOtherDays' => true], 'admin');
+        $this->assertFalse($free->jsonSerialize()['allowOtherDays']); // meaningless without fixed days
+
+        $fixed = $this->service->create(['title' => 'Fix', 'weekdays' => [1], 'allowOtherDays' => true], 'admin');
+        $this->assertTrue($fixed->jsonSerialize()['allowOtherDays']);
+        $this->assertTrue($fixed->allowsDay(2));
+
+        // visibility toggle sends neither weekdays nor the flag
+        $this->mapper->method('find')->willReturn($fixed);
+        $kept = $this->service->update(1, ['title' => 'Fix', 'weekdays' => null, 'allowOtherDays' => null], 'admin');
+        $this->assertTrue((bool)$kept->getAllowOtherDays());
+
+        $strict = $this->service->update(1, ['title' => 'Fix', 'allowOtherDays' => false], 'admin');
+        $this->assertFalse($strict->allowsDay(2));
+        $this->assertTrue($strict->allowsDay(1));
     }
 }

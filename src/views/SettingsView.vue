@@ -427,6 +427,7 @@
                                 <th>{{ t('zeitwerk', 'Titel') }}</th>
                                 <th>{{ t('zeitwerk', 'Uhrzeit') }}</th>
                                 <th>{{ t('zeitwerk', 'Dauer') }}</th>
+                                <th>{{ t('zeitwerk', 'Feste Tage') }}</th>
                                 <th>{{ t('zeitwerk', 'Auf Abruf') }}</th>
                                 <th>{{ t('zeitwerk', 'Sichtbar') }}</th>
                                 <th>{{ t('zeitwerk', 'Aktionen') }}</th>
@@ -440,6 +441,10 @@
                                 </td>
                                 <td>{{ template.startTime || '–' }}</td>
                                 <td>{{ formatDuration(template.durationMinutes) || '–' }}</td>
+                                <td>
+                                    {{ formatWeekdays(template.weekdays) }}
+                                    <div v-if="template.allowOtherDays" class="template-note">{{ t('zeitwerk', 'auch andere Tage') }}</div>
+                                </td>
                                 <td>{{ template.onCall ? t('zeitwerk', 'Ja') : '–' }}</td>
                                 <td>
                                     <NcCheckboxRadioSwitch :checked="template.isVisible"
@@ -521,6 +526,28 @@
                                 maxlength="500"
                                 class="input-field">
                             <span v-if="templateErrors.note" class="field-error">{{ templateErrors.note }}</span>
+                        </div>
+                        <div class="form-group">
+                            <label id="templateWeekdaysLabel">{{ t('zeitwerk', 'Feste Wochentage') }}</label>
+                            <div class="weekday-chips" role="group" aria-labelledby="templateWeekdaysLabel">
+                                <button v-for="day in 7"
+                                    :key="day"
+                                    type="button"
+                                    class="weekday-chip"
+                                    :class="{ 'weekday-chip--on': templateFormData.weekdays.includes(day) }"
+                                    :aria-pressed="templateFormData.weekdays.includes(day) ? 'true' : 'false'"
+                                    @click="toggleTemplateWeekday(day)">
+                                    {{ weekdayShortName(day) }}
+                                </button>
+                            </div>
+                            <p class="weekday-chips__hint">
+                                {{ t('zeitwerk', 'Ohne Auswahl bleibt die Vorlage beliebig oft einplanbar. Mit festen Tagen zeigt der Dienstplan, an welchen Tagen der Auftrag noch nicht verteilt ist.') }}
+                            </p>
+                            <span v-if="templateErrors.weekdays" class="field-error">{{ templateErrors.weekdays }}</span>
+                            <NcCheckboxRadioSwitch v-if="templateFormData.weekdays.length"
+                                :checked.sync="templateFormData.allowOtherDays">
+                                {{ t('zeitwerk', 'Auch an anderen Tagen einplanbar (zählt dort nicht)') }}
+                            </NcCheckboxRadioSwitch>
                         </div>
                         <div class="form-group">
                             <NcCheckboxRadioSwitch :checked.sync="templateFormData.onCall">
@@ -1055,7 +1082,7 @@ import KeyVariant from 'vue-material-design-icons/KeyVariant.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import ClockCheckOutline from 'vue-material-design-icons/ClockCheckOutline.vue'
 import { canTakeOverActuals, takeOverAndSave } from '../utils/carryoverTakeOver.js'
-import { formatDuration } from '../utils/dutyRoster.js'
+import { formatDuration, weekdayShortName } from '../utils/dutyRoster.js'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import CoffeeOutline from 'vue-material-design-icons/CoffeeOutline.vue'
 import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
@@ -1162,6 +1189,8 @@ export default {
                 note: '',
                 onCall: false,
                 isVisible: true,
+                weekdays: [],
+                allowOtherDays: false,
             },
             // Holiday management
             holidays: [],
@@ -1789,8 +1818,10 @@ export default {
                     note: template.note || '',
                     onCall: !!template.onCall,
                     isVisible: !!template.isVisible,
+                    weekdays: [...(template.weekdays || [])],
+                    allowOtherDays: !!template.allowOtherDays,
                 }
-                : { title: '', startTime: '', durationMinutes: null, note: '', onCall: false, isVisible: true }
+                : { title: '', startTime: '', durationMinutes: null, note: '', onCall: false, isVisible: true, weekdays: [], allowOtherDays: false }
             this.showTemplateForm = true
         },
         closeTemplateForm() {
@@ -1806,6 +1837,23 @@ export default {
                 note: this.templateFormData.note.trim() || null,
                 onCall: !!this.templateFormData.onCall,
                 isVisible: !!this.templateFormData.isVisible,
+                weekdays: [...this.templateFormData.weekdays].sort((a, b) => a - b),
+                allowOtherDays: this.templateFormData.weekdays.length > 0 && !!this.templateFormData.allowOtherDays,
+            }
+        },
+        weekdayShortName(day) {
+            return weekdayShortName(day, getLocale())
+        },
+        formatWeekdays(weekdays) {
+            return (weekdays || []).length ? weekdays.map(d => this.weekdayShortName(d)).join(', ') : '–'
+        },
+        toggleTemplateWeekday(day) {
+            const days = this.templateFormData.weekdays
+            const index = days.indexOf(day)
+            if (index === -1) {
+                days.push(day)
+            } else {
+                days.splice(index, 1)
             }
         },
         async saveTemplate() {
@@ -2718,6 +2766,39 @@ export default {
     white-space: nowrap;
 }
 
+.weekday-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.weekday-chip {
+    min-width: 44px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border-dark);
+    border-radius: 999px;
+    background: var(--color-main-background);
+    font-weight: 600;
+    cursor: pointer;
+}
+/* Nextcloud's global button :hover/:focus styles would wash out the chip right
+ * after a click (mouse still on it, focus kept), so both states are pinned. */
+.weekday-chip,
+.weekday-chip:hover,
+.weekday-chip:focus,
+.weekday-chip:active {
+    background: var(--color-main-background) !important;
+    border-color: var(--color-border-dark) !important;
+    color: var(--color-main-text) !important;
+    opacity: 1;
+}
+.weekday-chip:hover { border-color: var(--color-primary-element) !important; }
+.weekday-chip--on,
+.weekday-chip--on:hover,
+.weekday-chip--on:focus,
+.weekday-chip--on:active {
+    background: var(--color-primary-element) !important;
+    border-color: var(--color-primary-element) !important;
+    color: var(--color-primary-element-text) !important;
+}
+.weekday-chip:focus-visible { outline: 2px solid var(--color-main-text); outline-offset: 2px; }
+.weekday-chips__hint { margin: 6px 0 0; font-size: 12px; color: var(--color-text-maxcontrast); }
 .template-note {
     font-size: 12px;
     color: var(--color-text-maxcontrast);

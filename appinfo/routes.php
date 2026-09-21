@@ -87,6 +87,7 @@ return [
         ['name' => 'duty_roster#lock', 'url' => '/api/duty-roster/lock', 'verb' => 'POST'],
         ['name' => 'duty_roster#unlock', 'url' => '/api/duty-roster/unlock', 'verb' => 'POST'],
         ['name' => 'duty_roster#pdf', 'url' => '/api/duty-roster/pdf', 'verb' => 'POST'],
+        ['name' => 'duty_roster#skipTemplate', 'url' => '/api/duty-roster/templates/{id}/skip', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
         ['name' => 'duty_roster#templatesSidebar', 'url' => '/api/duty-roster/templates-sidebar', 'verb' => 'PUT'],
         ['name' => 'duty_roster#create', 'url' => '/api/duty-roster/jobs', 'verb' => 'POST'],
         ['name' => 'duty_roster#update', 'url' => '/api/duty-roster/jobs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
