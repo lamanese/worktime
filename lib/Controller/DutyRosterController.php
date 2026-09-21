@@ -73,7 +73,8 @@ class DutyRosterController extends BaseController {
         ?int $durationMinutes = null,
         string $title = '',
         ?string $note = null,
-        bool $onCall = false
+        bool $onCall = false,
+        ?int $templateId = null
     ): JSONResponse {
         if ($authError = $this->requireAuth()) {
             return $authError;
@@ -83,7 +84,7 @@ class DutyRosterController extends BaseController {
         }
         try {
             $job = $this->dutyJobService->create(
-                compact('employeeId', 'date', 'startTime', 'durationMinutes', 'title', 'note', 'onCall'),
+                compact('employeeId', 'date', 'startTime', 'durationMinutes', 'title', 'note', 'onCall', 'templateId'),
                 $this->userId
             );
             return $this->createdResponse($job);
@@ -187,6 +188,30 @@ class DutyRosterController extends BaseController {
         }
         $this->dutyJobService->setTemplatesSidebarVisible($this->userId, $visible);
         return $this->successResponse(['showTemplates' => $visible]);
+    }
+
+    /**
+     * «Diese Woche ignorieren» fuer eine Vorlage mit festen Wochentagen: alle
+     * Planer, Woche muss offen sein. $start = beliebiger Tag der Woche.
+     */
+    #[NoAdminRequired]
+    public function skipTemplate(int $id, string $start, bool $skipped = true): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $day = $this->parseDate($start);
+        if ($day === null) {
+            return new JSONResponse(['error' => 'Invalid start date'], Http::STATUS_BAD_REQUEST);
+        }
+        try {
+            $this->dutyJobService->setTemplateSkipped($id, $day, $skipped, $this->userId);
+            return $this->successResponse(['templateId' => $id, 'skipped' => $skipped]);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
     }
 
     /**

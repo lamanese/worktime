@@ -31,6 +31,9 @@ use OCP\AppFramework\Db\Entity;
  * @method void setNote(?string $note)
  * @method int getOnCall()
  * @method int getIsVisible()
+ * @method int getAllowOtherDays()
+ * @method int getWeekdays()
+ * @method void setWeekdays(int $weekdays)
  * @method int getSortOrder()
  * @method void setSortOrder(int $sortOrder)
  * @method DateTime getCreatedAt()
@@ -47,6 +50,10 @@ class DutyJobTemplate extends Entity implements JsonSerializable {
     protected int $onCall = 0;
     protected int $isVisible = 1;
     protected int $sortOrder = 0;
+    /** Bitmaske fester Wochentage: Bit 0 = Montag ... Bit 6 = Sonntag, 0 = keine. */
+    protected int $weekdays = 0;
+    /** Nur mit festen Tagen relevant: 1 = Drop auch an anderen Tagen erlaubt. */
+    protected int $allowOtherDays = 0;
     protected ?DateTime $createdAt = null;
     protected ?DateTime $updatedAt = null;
 
@@ -56,6 +63,8 @@ class DutyJobTemplate extends Entity implements JsonSerializable {
         $this->addType('onCall', 'integer');
         $this->addType('isVisible', 'integer');
         $this->addType('sortOrder', 'integer');
+        $this->addType('weekdays', 'integer');
+        $this->addType('allowOtherDays', 'integer');
         $this->addType('createdAt', 'datetime');
         $this->addType('updatedAt', 'datetime');
     }
@@ -65,9 +74,39 @@ class DutyJobTemplate extends Entity implements JsonSerializable {
         $this->markFieldUpdated('onCall');
     }
 
+    public function setAllowOtherDays(bool|int $allowOtherDays): void {
+        $this->allowOtherDays = is_bool($allowOtherDays) ? ($allowOtherDays ? 1 : 0) : $allowOtherDays;
+        $this->markFieldUpdated('allowOtherDays');
+    }
+
+    /**
+     * May a card from this template be planned on that ISO weekday? Templates
+     * without fixed weekdays allow every day.
+     */
+    public function allowsDay(int $isoDay): bool {
+        return $this->weekdays === 0
+            || (bool)$this->allowOtherDays
+            || (bool)($this->weekdays & (1 << ($isoDay - 1)));
+    }
+
     public function setIsVisible(bool|int $isVisible): void {
         $this->isVisible = is_bool($isVisible) ? ($isVisible ? 1 : 0) : $isVisible;
         $this->markFieldUpdated('isVisible');
+    }
+
+    /**
+     * Fixed weekdays as ascending ISO numbers (1 = Monday ... 7 = Sunday).
+     *
+     * @return int[]
+     */
+    public function getWeekdayList(): array {
+        $days = [];
+        for ($day = 1; $day <= 7; $day++) {
+            if ($this->weekdays & (1 << ($day - 1))) {
+                $days[] = $day;
+            }
+        }
+        return $days;
     }
 
     public function jsonSerialize(): array {
@@ -80,6 +119,8 @@ class DutyJobTemplate extends Entity implements JsonSerializable {
             'onCall' => (bool)$this->onCall,
             'isVisible' => (bool)$this->isVisible,
             'sortOrder' => $this->sortOrder,
+            'weekdays' => $this->getWeekdayList(),
+            'allowOtherDays' => (bool)$this->allowOtherDays,
             'createdAt' => $this->createdAt?->format('c'),
             'updatedAt' => $this->updatedAt?->format('c'),
         ];

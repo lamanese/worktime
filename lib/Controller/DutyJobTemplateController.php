@@ -63,14 +63,16 @@ class DutyJobTemplateController extends BaseController {
         ?int $durationMinutes = null,
         ?string $note = null,
         bool $onCall = false,
-        bool $isVisible = true
+        bool $isVisible = true,
+        ?array $weekdays = null,
+        ?bool $allowOtherDays = null
     ): JSONResponse {
         if ($guard = $this->requireTemplateAdmin()) {
             return $guard;
         }
         try {
             $template = $this->templateService->create(
-                compact('title', 'startTime', 'durationMinutes', 'note', 'onCall', 'isVisible'),
+                compact('title', 'startTime', 'durationMinutes', 'note', 'onCall', 'isVisible', 'weekdays', 'allowOtherDays'),
                 $this->userId
             );
             return $this->createdResponse($template);
@@ -87,7 +89,9 @@ class DutyJobTemplateController extends BaseController {
         ?int $durationMinutes = null,
         ?string $note = null,
         bool $onCall = false,
-        bool $isVisible = true
+        bool $isVisible = true,
+        ?array $weekdays = null,
+        ?bool $allowOtherDays = null
     ): JSONResponse {
         if ($guard = $this->requireTemplateAdmin()) {
             return $guard;
@@ -95,7 +99,7 @@ class DutyJobTemplateController extends BaseController {
         try {
             $template = $this->templateService->update(
                 $id,
-                compact('title', 'startTime', 'durationMinutes', 'note', 'onCall', 'isVisible'),
+                compact('title', 'startTime', 'durationMinutes', 'note', 'onCall', 'isVisible', 'weekdays', 'allowOtherDays'),
                 $this->userId
             );
             return $this->successResponse($template);

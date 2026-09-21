@@ -46,6 +46,7 @@ class DutyJobService {
         private DutyWeekLockMapper $lockMapper,
         private IUserManager $userManager,
         private IConfig $config,
+        private DutyTemplateCoverageService $coverageService,
     ) {
     }
 
@@ -110,12 +111,23 @@ class DutyJobService {
         $employees = $this->employeeMapper->findAllActiveInDutyRoster();
         $rosterIds = array_map(static fn (Employee $e) => $e->getId(), $employees);
 
+        // Planners see cards that lie off their template's fixed weekdays (spec §12.5).
+        $fixedWeekdays = $canManage ? $this->coverageService->fixedWeekdaysByTemplate() : [];
+
         $jobsByEmployee = [];
+        $shownJobs = [];
         foreach ($this->jobMapper->findByDateRange($monday, $sunday) as $job) {
             if (!in_array($job->getEmployeeId(), $rosterIds, true)) {
                 continue; // employee left the roster: card stays in DB, not shown
             }
-            $jobsByEmployee[$job->getEmployeeId()][] = $job->jsonSerialize();
+            $shownJobs[] = $job;
+            $payload = $job->jsonSerialize();
+            $target = $fixedWeekdays[$job->getTemplateId() ?? 0] ?? null;
+            // Set only when the card is misplaced: the weekdays it belongs to.
+            $payload['targetWeekdays'] = $target !== null && !in_array((int)$job->getJobDate()->format('N'), $target, true)
+                ? $target
+                : null;
+            $jobsByEmployee[$job->getEmployeeId()][] = $payload;
         }
 
         $rows = [];
@@ -145,7 +157,15 @@ class DutyJobService {
             ];
         }
 
+        // Templates (spec §12): planners see what is still missing. A target day
+        // that is a holiday for the whole roster is not required.
+        $coverage = $canManage
+            ? $this->coverageService->coverage($monday, $shownJobs, $this->commonHolidayWeekdays($rows))
+            : [];
+
         return array_merge([
+            'templateCoverage' => $coverage,
+            'openTemplateDays' => DutyTemplateCoverageService::countOpenDays($coverage),
             'weekStart' => $monday->format('Y-m-d'),
             'weekEnd' => $sunday->format('Y-m-d'),
             'canManage' => $canManage,
@@ -238,6 +258,19 @@ class DutyJobService {
     }
 
     /**
+     * «Diese Woche ignorieren» for a fixed-weekday template (spec §12). A
+     * planning action like any other: the week must be open.
+     *
+     * @throws NotFoundException
+     * @throws ForbiddenException when the week is locked
+     */
+    public function setTemplateSkipped(int $templateId, DateTime $day, bool $skipped, string $userId): void {
+        $monday = self::mondayOf($day);
+        $this->assertWeekOpen($monday);
+        $this->coverageService->setSkipped($templateId, $monday, $skipped, $userId);
+    }
+
+    /**
      * Absences resolved to single days inside the week. Same rule as
      * AbsenceService::getAbsenceOverview: viewers who see the employee unmasked
      * (Admin/HR, own subtree, own row) get approved AND pending with the real
@@ -279,12 +312,40 @@ class DutyJobService {
     }
 
     /**
-     * @return array<int, array{date:string,name:string}>
+     * ISO weekdays of the week that are a full-day holiday for every row.
+     * Holidays depend on the employee's region, templates know no employee:
+     * only a day nobody works lifts a template's target day. Half-day holidays
+     * (e.g. Christmas Eve, scope 0.5) are still working days and lift nothing.
+     *
+     * @param array<int, array{holidays: array<int, array{date:string,halfDay:bool}>}> $rows
+     * @return int[]
+     */
+    private function commonHolidayWeekdays(array $rows): array {
+        $common = null;
+        foreach ($rows as $row) {
+            $fullDays = array_filter($row['holidays'], static fn (array $h): bool => !$h['halfDay']);
+            $days = array_map(static fn (array $h): int => (int)(new DateTime($h['date']))->format('N'), $fullDays);
+            $common = $common === null ? $days : array_intersect($common, $days);
+            if ($common === []) {
+                return [];
+            }
+        }
+        $common = array_values(array_unique($common ?? []));
+        sort($common);
+        return $common;
+    }
+
+    /**
+     * @return array<int, array{date:string,name:string,halfDay:bool}>
      */
     private function holidayDays(Employee $employee, DateTime $monday, DateTime $sunday): array {
         $result = [];
         foreach ($this->holidayService->findHolidaysInRange($monday, $sunday, $employee->getFederalState()) as $holiday) {
-            $result[] = ['date' => $holiday->getDate()->format('Y-m-d'), 'name' => $holiday->getName()];
+            $result[] = [
+                'date' => $holiday->getDate()->format('Y-m-d'),
+                'name' => $holiday->getName(),
+                'halfDay' => $holiday->isHalfDay(),
+            ];
         }
         return $result;
     }
@@ -308,8 +369,16 @@ class DutyJobService {
         $clean = $this->validate($data);
         $this->assertWeekOpen(new DateTime($clean['date']));
 
+        // A template with fixed weekdays may be limited to exactly those days.
+        $template = $this->coverageService->resolveTemplate($data['templateId'] ?? null);
+        if ($template !== null && !$template->allowsDay((int)(new DateTime($clean['date']))->format('N'))) {
+            throw new ValidationException(['date' => [$this->l->t('Diese Vorlage ist nur an ihren festen Wochentagen einplanbar')]]);
+        }
+
         $job = new DutyJob();
         $this->apply($job, $clean);
+        // Origin is set once; update/move keep it, so a moved card covers its new day.
+        $job->setTemplateId($template?->getId());
         $job->setCreatedBy($userId);
         $job->setCreatedAt(new DateTime());
         $job->setUpdatedAt(new DateTime());
@@ -427,6 +496,7 @@ class DutyJobService {
             $copy->setTitle($source->getTitle());
             $copy->setNote($source->getNote());
             $copy->setOnCall($source->getOnCall());
+            $copy->setTemplateId($source->getTemplateId());
             $copy->setCreatedBy($userId);
             $copy->setCreatedAt($now);
             $copy->setUpdatedAt($now);
