@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [0.20.0] - unreleased
+## [0.20.0] - 2026-09-21
 
 ### Added
 - **Dienstplan-Vorlagen mit festen Wochentagen**: Eine Vorlage kann in den Einstellungen feste Wochentage bekommen (Mo bis So). Die Vorlagen-Leiste zeigt solche Vorlagen oben in der Gruppe «Feste Tage – noch offen» mit einem Chip pro Soll-Tag: offene Tage rot, verteilte durchgestrichen. Ein Tag gilt als verteilt, sobald an ihm in der Woche mindestens ein Auftrag aus der Vorlage liegt, egal bei welchem Mitarbeiter; beim Verschieben oder Loeschen der Karte rechnet der Plan neu. Komplett verteilte Vorlagen wandern in die einklappbare Zeile «n erledigt». Beim Ziehen leuchten die noch offenen Tagesspalten auf. Eine Vorlage mit festen Tagen laesst sich nur an diesen Tagen einplanen, ausser die Option «Auch an anderen Tagen einplanbar» ist gesetzt (zaehlt dort nicht); gesperrte Spalten sind beim Ziehen abgedunkelt. Faellt ein Soll-Tag fuer alle Mitarbeitenden im Dienstplan auf einen ganztaegigen Feiertag (halbe Feiertage zaehlen nicht), entfaellt er automatisch (grauer Chip). Vorlagen ohne feste Tage bleiben wie bisher beliebig oft einplanbar. Migration V29 (Spalten `weekdays`, `allow_other_days` und `template_id`, Tabelle `zw_duty_tpl_week_skips`).
