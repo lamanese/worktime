@@ -170,4 +170,12 @@ class DutyTemplateCoverageServiceTest extends TestCase {
         $this->expectException(NotFoundException::class);
         $this->service->setSkipped(404, new DateTime('2026-09-21'), true, 'sup');
     }
+
+    public function testFixedWeekdaysByTemplateListsOnlyTemplatesWithDays(): void {
+        $this->templateMapper->method('findAll')->willReturn([
+            $this->makeTemplate(7, 'Reinigung', 0b0000101),
+            $this->makeTemplate(8, 'Frei', 0),
+        ]);
+        $this->assertSame([7 => [1, 3]], $this->service->fixedWeekdaysByTemplate());
+    }
 }

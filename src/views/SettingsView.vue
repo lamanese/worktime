@@ -2777,11 +2777,27 @@ export default {
     font-weight: 600;
     cursor: pointer;
 }
-.weekday-chip--on {
-    background: var(--color-primary-element);
-    border-color: var(--color-primary-element);
-    color: var(--color-primary-element-text);
+/* Nextcloud's global button :hover/:focus styles would wash out the chip right
+ * after a click (mouse still on it, focus kept), so both states are pinned. */
+.weekday-chip,
+.weekday-chip:hover,
+.weekday-chip:focus,
+.weekday-chip:active {
+    background: var(--color-main-background) !important;
+    border-color: var(--color-border-dark) !important;
+    color: var(--color-main-text) !important;
+    opacity: 1;
 }
+.weekday-chip:hover { border-color: var(--color-primary-element) !important; }
+.weekday-chip--on,
+.weekday-chip--on:hover,
+.weekday-chip--on:focus,
+.weekday-chip--on:active {
+    background: var(--color-primary-element) !important;
+    border-color: var(--color-primary-element) !important;
+    color: var(--color-primary-element-text) !important;
+}
+.weekday-chip:focus-visible { outline: 2px solid var(--color-main-text); outline-offset: 2px; }
 .weekday-chips__hint { margin: 6px 0 0; font-size: 12px; color: var(--color-text-maxcontrast); }
 .template-note {
     font-size: 12px;

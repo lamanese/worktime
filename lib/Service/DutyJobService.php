@@ -111,6 +111,9 @@ class DutyJobService {
         $employees = $this->employeeMapper->findAllActiveInDutyRoster();
         $rosterIds = array_map(static fn (Employee $e) => $e->getId(), $employees);
 
+        // Planners see cards that lie off their template's fixed weekdays (spec §12.5).
+        $fixedWeekdays = $canManage ? $this->coverageService->fixedWeekdaysByTemplate() : [];
+
         $jobsByEmployee = [];
         $shownJobs = [];
         foreach ($this->jobMapper->findByDateRange($monday, $sunday) as $job) {
@@ -118,7 +121,13 @@ class DutyJobService {
                 continue; // employee left the roster: card stays in DB, not shown
             }
             $shownJobs[] = $job;
-            $jobsByEmployee[$job->getEmployeeId()][] = $job->jsonSerialize();
+            $payload = $job->jsonSerialize();
+            $target = $fixedWeekdays[$job->getTemplateId() ?? 0] ?? null;
+            // Set only when the card is misplaced: the weekdays it belongs to.
+            $payload['targetWeekdays'] = $target !== null && !in_array((int)$job->getJobDate()->format('N'), $target, true)
+                ? $target
+                : null;
+            $jobsByEmployee[$job->getEmployeeId()][] = $payload;
         }
 
         $rows = [];

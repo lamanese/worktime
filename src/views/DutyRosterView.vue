@@ -130,6 +130,7 @@
 				:templates="templates"
 				:coverage="templateCoverage"
 				:week-start="week.weekStart"
+				@remove-job="removeJob"
 				@drag-start="dragInfo = $event"
 				@drag-end="dragInfo = { wanted: [], blocked: [] }" />
 		</div>
@@ -338,7 +339,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'deleteJob', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
 		isWanted(day) {
 			return this.dragInfo.wanted.includes(isoWeekday(day.date))
 		},
@@ -386,6 +387,18 @@ export default {
 				await this.dropJob(drop.id, row, day)
 			} else if (drop.kind === 'template') {
 				await this.dropTemplate(drop.id, row, day)
+			}
+		},
+		/** Card dragged onto the template sidebar: removed right away, no dialog (Ahmad 2026-09-21). */
+		async removeJob(id) {
+			if (!this.canEdit) return
+			const job = this.rows.flatMap(r => r.jobs).find(j => j.id === id)
+			if (!job) return
+			try {
+				await this.deleteJob(id)
+				showSuccessMessage(this.t('zeitwerk', '«{title}» aus dem Plan entfernt', { title: job.title }))
+			} catch (error) {
+				showErrorMessage(error.message)
 			}
 		},
 		/** Existing card moved into another cell. */

@@ -10,6 +10,7 @@
 		@dragstart="onDragStart">
 		<span class="duty-job__time">{{ job.startTime || '–' }}</span>
 		<span class="duty-job__title">{{ job.title }}</span>
+		<MinusCircleIcon v-if="offTargetTitle" class="duty-job__off-target" :size="18" :title="offTargetTitle" />
 		<AlertIcon v-if="job.note" class="duty-job__note" :size="18" :title="job.note" />
 		<span v-if="duration" class="duty-job__duration">{{ duration }}</span>
 	</div>
@@ -17,11 +18,13 @@
 
 <script>
 import AlertIcon from 'vue-material-design-icons/Alert.vue'
-import { formatDuration, DUTY_JOB_MIME } from '../utils/dutyRoster.js'
+import MinusCircleIcon from 'vue-material-design-icons/MinusCircle.vue'
+import { formatDuration, weekdayShortName, DUTY_JOB_MIME } from '../utils/dutyRoster.js'
+import { getLocale } from '../utils/dateUtils.js'
 
 export default {
 	name: 'DutyJobCard',
-	components: { AlertIcon },
+	components: { AlertIcon, MinusCircleIcon },
 	props: {
 		job: { type: Object, required: true },
 		draggable: { type: Boolean, default: false },
@@ -30,6 +33,14 @@ export default {
 	computed: {
 		duration() {
 			return formatDuration(this.job.durationMinutes)
+		},
+		/** Card from a fixed-weekday template that lies on another day (planners only). */
+		offTargetTitle() {
+			const days = this.job.targetWeekdays
+			if (!days || !days.length) return ''
+			return this.t('zeitwerk', 'Nicht am vorgesehenen Tag – die Vorlage gilt für: {days}', {
+				days: days.map(d => weekdayShortName(d, getLocale())).join(', '),
+			})
 		},
 	},
 	methods: {
@@ -71,6 +82,15 @@ export default {
 /* Notiz vorhanden: kleines Warnschild, Text weiterhin als Tooltip. */
 /* Notiz vorhanden: gefuelltes Warndreieck in knalligem Rot, unabhaengig vom Theme. */
 .duty-job__note { flex: 0 0 auto; color: #e60000; display: inline-flex; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .35)); }
+/* Falscher Wochentag: rundes rotes Schild mit weissem Balken («Einfahrt verboten»). */
+.duty-job__off-target {
+	flex: 0 0 auto;
+	display: inline-flex;
+	color: #e60000;
+	background: radial-gradient(circle, #fff 0 45%, transparent 46%);
+	border-radius: 50%;
+	filter: drop-shadow(0 0 1px rgba(0, 0, 0, .35));
+}
 .duty-job--on-call { border-style: dashed; font-style: italic; }
 .duty-job--dimmed { opacity: 0.45; filter: grayscale(1); }
 </style>

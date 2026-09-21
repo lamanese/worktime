@@ -49,6 +49,22 @@ class DutyTemplateCoverageService {
     }
 
     /**
+     * Fixed weekdays of every template that has some (hidden ones included: a
+     * card keeps its origin when the template leaves the sidebar).
+     *
+     * @return array<int, int[]> template id => ascending ISO weekdays
+     */
+    public function fixedWeekdaysByTemplate(): array {
+        $map = [];
+        foreach ($this->templateMapper->findAll() as $template) {
+            if ($template->getWeekdays() > 0) {
+                $map[$template->getId()] = $template->getWeekdayList();
+            }
+        }
+        return $map;
+    }
+
+    /**
      * One entry per visible template, ordered like the sidebar. Templates
      * without fixed weekdays have empty day lists; for them only `skipped`
      * («Erledigt» for this week) matters. A target day that is a holiday for

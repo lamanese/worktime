@@ -808,4 +808,25 @@ class DutyJobServiceTest extends TestCase {
         $this->expectException(ForbiddenException::class);
         $this->service->setTemplateSkipped(7, new DateTime('2026-09-30'), true, 'sup');
     }
+
+    public function testGetWeekMarksCardsOffTheirTemplatesFixedWeekdaysForPlanners(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $onTarget = $this->makeJob(1, 1, '2026-09-21', null, 'Montag');   // Monday
+        $offTarget = $this->makeJob(2, 1, '2026-09-22', null, 'Dienstag'); // Tuesday
+        $free = $this->makeJob(3, 1, '2026-09-22', null, 'Frei');
+        $onTarget->setTemplateId(7);
+        $offTarget->setTemplateId(7);
+        $this->jobMapper->method('findByDateRange')->willReturn([$onTarget, $offTarget, $free]);
+        $this->coverageService->method('fixedWeekdaysByTemplate')->willReturn([7 => [1, 3]]);
+
+        $this->permissionService->method('canManageDutyRoster')->willReturnOnConsecutiveCalls(true, false);
+        $planner = $this->service->getWeek(new DateTime('2026-09-21'), 'sup')['rows'][0]['jobs'];
+        $reader = $this->service->getWeek(new DateTime('2026-09-21'), 'emp')['rows'][0]['jobs'];
+
+        $byId = array_column($planner, 'targetWeekdays', 'id');
+        $this->assertNull($byId[1]);
+        $this->assertSame([1, 3], $byId[2]);
+        $this->assertNull($byId[3]);
+        $this->assertSame([null, null, null], array_column($reader, 'targetWeekdays'));
+    }
 }

@@ -1,9 +1,20 @@
 <template>
-	<aside class="duty-template-sidebar">
+	<aside class="duty-template-sidebar"
+		:class="{ 'duty-template-sidebar--trash': trashOver }"
+		@dragover="onJobDragOver"
+		@dragleave="onJobDragLeave"
+		@drop="onJobDrop">
+		<div v-if="trashOver" class="duty-template-sidebar__trash">
+			<TrashCanOutlineIcon :size="32" />
+			<span>{{ t('zeitwerk', 'Loslassen, um den Auftrag aus dem Plan zu entfernen') }}</span>
+		</div>
 		<h3 class="duty-template-sidebar__title">{{ t('zeitwerk', 'Vorlagen') }}</h3>
 
 		<p v-if="templates.length" class="duty-template-sidebar__hint">
 			{{ t('zeitwerk', 'In eine Zelle ziehen, um den Auftrag einzuplanen. Die Vorlage bleibt hier stehen.') }}
+		</p>
+		<p class="duty-template-sidebar__hint">
+			{{ t('zeitwerk', 'Einen Auftrag aus dem Plan hierher ziehen, um ihn zu entfernen.') }}
 		</p>
 
 		<template v-if="groups.open.length">
@@ -133,12 +144,14 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { formatDuration, splitTemplates, weekdayShortName, blockedWeekdays, DUTY_TEMPLATE_MIME } from '../utils/dutyRoster.js'
+import TrashCanOutlineIcon from 'vue-material-design-icons/TrashCanOutline.vue'
+import { formatDuration, splitTemplates, weekdayShortName, blockedWeekdays, DUTY_TEMPLATE_MIME, DUTY_JOB_MIME } from '../utils/dutyRoster.js'
 import { getLocale } from '../utils/dateUtils.js'
 import { showErrorMessage } from '../utils/errorHandler.js'
 
 export default {
 	name: 'DutyTemplateSidebar',
+	components: { TrashCanOutlineIcon },
 	props: {
 		templates: { type: Array, required: true },
 		// `templateCoverage` of the week response (spec §12).
@@ -147,7 +160,7 @@ export default {
 		weekStart: { type: String, required: true },
 	},
 	data() {
-		return { showDone: false, busyId: 0 }
+		return { showDone: false, busyId: 0, trashOver: false }
 	},
 	computed: {
 		...mapGetters('permissions', ['canManageSettings']),
@@ -173,6 +186,27 @@ export default {
 				wanted: entry.coverage.skipped ? [] : entry.coverage.openDays,
 				blocked: blockedWeekdays(entry.template),
 			})
+		},
+		// --- a roster card dragged onto the sidebar is removed from the plan ---
+		isJobDrag(event) {
+			return Array.from(event.dataTransfer?.types || []).includes(DUTY_JOB_MIME)
+		},
+		onJobDragOver(event) {
+			if (!this.isJobDrag(event)) return
+			event.preventDefault()
+			event.dataTransfer.dropEffect = 'move'
+			this.trashOver = true
+		},
+		onJobDragLeave(event) {
+			// dragleave also fires when moving over child elements
+			if (!this.$el.contains(event.relatedTarget)) this.trashOver = false
+		},
+		onJobDrop(event) {
+			this.trashOver = false
+			if (!this.isJobDrag(event)) return
+			event.preventDefault()
+			const id = Number(event.dataTransfer.getData(DUTY_JOB_MIME))
+			if (Number.isInteger(id) && id > 0) this.$emit('remove-job', id)
 		},
 		chipState(coverage, day) {
 			if (coverage.openDays.includes(day)) return 'open'
@@ -217,6 +251,25 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+}
+.duty-template-sidebar { position: relative; }
+.duty-template-sidebar--trash { border-color: #e60000; box-shadow: 0 0 0 2px rgba(230, 0, 0, .35); }
+.duty-template-sidebar__trash {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 16px;
+	text-align: center;
+	font-weight: 600;
+	color: #c00000;
+	background: rgba(255, 235, 235, .94);
+	border-radius: inherit;
+	pointer-events: none;
 }
 .duty-template-sidebar__title { margin: 0 0 6px; font-size: 15px; }
 .duty-template-sidebar__hint,

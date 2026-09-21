@@ -811,7 +811,11 @@
 		"Vorlage für Woche wieder offen": "Template open again for week",
 		"auch andere Tage": "other days too",
 		"Auch an anderen Tagen einplanbar (zählt dort nicht)": "Can also be scheduled on other days (does not count there)",
-		"Diese Vorlage ist nur an ihren festen Wochentagen einplanbar": "This template can only be scheduled on its fixed weekdays"
+		"Diese Vorlage ist nur an ihren festen Wochentagen einplanbar": "This template can only be scheduled on its fixed weekdays",
+		"Nicht am vorgesehenen Tag – die Vorlage gilt für: {days}": "Not on the intended day – the template applies to: {days}",
+		"Loslassen, um den Auftrag aus dem Plan zu entfernen": "Release to remove the job from the roster",
+		"Einen Auftrag aus dem Plan hierher ziehen, um ihn zu entfernen.": "Drag a job from the roster here to remove it.",
+		"«{title}» aus dem Plan entfernt": "“{title}” removed from the roster"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }

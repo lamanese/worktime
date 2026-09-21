@@ -812,6 +812,10 @@ OC.L10N.register(
     "Vorlage für Woche wieder offen" : "Vorlage für Woche wieder offen",
     "auch andere Tage" : "auch andere Tage",
     "Auch an anderen Tagen einplanbar (zählt dort nicht)" : "Auch an anderen Tagen einplanbar (zählt dort nicht)",
-    "Diese Vorlage ist nur an ihren festen Wochentagen einplanbar" : "Diese Vorlage ist nur an ihren festen Wochentagen einplanbar"
+    "Diese Vorlage ist nur an ihren festen Wochentagen einplanbar" : "Diese Vorlage ist nur an ihren festen Wochentagen einplanbar",
+    "Nicht am vorgesehenen Tag – die Vorlage gilt für: {days}" : "Nicht am vorgesehenen Tag – die Vorlage gilt für: {days}",
+    "Loslassen, um den Auftrag aus dem Plan zu entfernen" : "Loslassen, um den Auftrag aus dem Plan zu entfernen",
+    "Einen Auftrag aus dem Plan hierher ziehen, um ihn zu entfernen." : "Einen Auftrag aus dem Plan hierher ziehen, um ihn zu entfernen.",
+    "«{title}» aus dem Plan entfernt" : "«{title}» aus dem Plan entfernt"
 },
 "nplurals=2; plural=(n != 1);");
