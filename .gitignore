@@ -52,3 +52,8 @@ DEPLOY-TESTSERVER.md
 .claude/agents/
 docs/
 sessions/
+
+# Lokale KI-Infra (Codex/Claude), nie in den Fork
+AGENTS.md
+HANDOFF.md
+.codex/
