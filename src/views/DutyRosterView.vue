@@ -56,6 +56,14 @@
 				<template #icon><PrinterIcon :size="18" /></template>
 				{{ t('zeitwerk', 'Drucken') }}
 			</NcButton>
+			<NcButton v-if="!locked"
+				type="error"
+				class="view-toolbar__clear"
+				:disabled="loading || jobCount === 0"
+				@click="openClearWeek">
+				<template #icon><TrashCanOutlineIcon :size="18" /></template>
+				{{ t('zeitwerk', 'Woche leeren') }}
+			</NcButton>
 		</div>
 
 		<NcLoadingIcon v-if="loading && !week" :size="44" />
@@ -164,6 +172,28 @@
 			</form>
 		</NcModal>
 
+		<NcModal v-if="clearWeekDialog.open" :name="t('zeitwerk', 'Woche leeren')" size="small" @close="closeClearWeek">
+			<form class="clear-week" @submit.prevent="submitClearWeek">
+				<h3>{{ t('zeitwerk', 'Woche leeren') }}</h3>
+				<p class="clear-week__hint">
+					{{ t('zeitwerk', 'Alle {count} Aufträge der Woche {label} werden gelöscht. Das lässt sich nicht rückgängig machen.', { count: clearWeekDialog.count, label: clearWeekLabel }) }}
+				</p>
+				<p class="clear-week__hint">{{ t('zeitwerk', 'Vorlagen, Wochensperre und «Ignorieren»-Markierungen bleiben erhalten.') }}</p>
+				<NcCheckboxRadioSwitch :checked.sync="clearWeekDialog.confirmed" :disabled="clearWeekDialog.busy">
+					{{ t('zeitwerk', 'Ich weiss, was ich tue: alle Aufträge dieser Woche endgültig löschen.') }}
+				</NcCheckboxRadioSwitch>
+				<div class="clear-week__actions">
+					<NcButton type="secondary" :disabled="clearWeekDialog.busy" @click="closeClearWeek">
+						{{ t('zeitwerk', 'Abbrechen') }}
+					</NcButton>
+					<NcButton type="error" native-type="submit" :disabled="clearWeekDialog.busy || !clearWeekDialog.confirmed">
+						<template #icon><TrashCanOutlineIcon :size="18" /></template>
+						{{ t('zeitwerk', 'Woche leeren') }}
+					</NcButton>
+				</div>
+			</form>
+		</NcModal>
+
 		<DutyJobForm v-if="form.open"
 			:job="form.job"
 			:employee-id="form.employeeId"
@@ -179,6 +209,7 @@
 <script>
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
 import NcNoteCard from '@nextcloud/vue/dist/Components/NcNoteCard.js'
@@ -189,6 +220,7 @@ import ChevronLeftIcon from 'vue-material-design-icons/ChevronLeft.vue'
 import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue'
 import ContentCopyIcon from 'vue-material-design-icons/ContentCopy.vue'
 import PrinterIcon from 'vue-material-design-icons/Printer.vue'
+import TrashCanOutlineIcon from 'vue-material-design-icons/TrashCanOutline.vue'
 import FilePdfBoxIcon from 'vue-material-design-icons/FilePdfBox.vue'
 import LockOutlineIcon from 'vue-material-design-icons/LockOutline.vue'
 import EyeOutlineIcon from 'vue-material-design-icons/EyeOutline.vue'
@@ -209,6 +241,7 @@ export default {
 	name: 'DutyRosterView',
 	components: {
 		NcButton,
+		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcEmptyContent,
 		NcAvatar,
@@ -216,6 +249,7 @@ export default {
 		ChevronRightIcon,
 		ContentCopyIcon,
 		PrinterIcon,
+		TrashCanOutlineIcon,
 		AlertIcon,
 		CalendarWeekIcon,
 		DutyJobCard,
@@ -240,6 +274,7 @@ export default {
 			pdfBusy: false,
 			templatesBusy: false,
 			copyTo: { open: false, week: 1, year: 2026, busy: false },
+			clearWeekDialog: { open: false, confirmed: false, busy: false, weekStart: null, count: 0 },
 		}
 	},
 	computed: {
@@ -278,6 +313,14 @@ export default {
 		},
 		weekLabel() {
 			return formatWeekLabel(this.weekStart, this.t('zeitwerk', 'KW'))
+		},
+		/** Cards in the week on screen; drives the «Woche leeren» button. */
+		jobCount() {
+			return this.rows.reduce((sum, r) => sum + r.jobs.length, 0)
+		},
+		/** Label of the week the clear dialog was opened on, not of a navigation in flight. */
+		clearWeekLabel() {
+			return this.clearWeekDialog.weekStart ? formatWeekLabel(this.clearWeekDialog.weekStart, this.t('zeitwerk', 'KW')) : ''
 		},
 		weekNumber() {
 			return getISOWeek(parseLocalDate(this.weekStart))
@@ -339,7 +382,7 @@ export default {
 		window.removeEventListener('afterprint', this.onAfterPrint)
 	},
 	methods: {
-		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'deleteJob', 'copyToWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
+		...mapActions('dutyRoster', ['loadWeek', 'prevWeek', 'nextWeek', 'goToDate', 'moveJob', 'createJob', 'deleteJob', 'copyToWeek', 'clearWeek', 'loadTemplates', 'lockWeek', 'unlockWeek', 'setTemplatesSidebar']),
 		isWanted(day) {
 			return this.dragInfo.wanted.includes(isoWeekday(day.date))
 		},
@@ -523,6 +566,32 @@ export default {
 				this.copyTo.busy = false
 			}
 		},
+		// --- clear the shown week (Ahmad 2026-09-24: confirm dialog with a mandatory checkbox) ---
+		// The dialog pins the week and count it was opened on (`week.weekStart`, the
+		// data on screen) so a navigation in flight can neither change the text nor
+		// the week that gets cleared (Codex 2026-09-24).
+		openClearWeek() {
+			const shown = this.week?.weekStart
+			if (!this.canManage || this.locked || this.loading || this.jobCount === 0 || !shown) return
+			this.clearWeekDialog = { open: true, confirmed: false, busy: false, weekStart: shown, count: this.jobCount }
+		},
+		closeClearWeek() {
+			if (this.clearWeekDialog.busy) return
+			this.clearWeekDialog = { open: false, confirmed: false, busy: false, weekStart: null, count: 0 }
+		},
+		async submitClearWeek() {
+			if (!this.clearWeekDialog.confirmed || !this.clearWeekDialog.weekStart) return
+			this.clearWeekDialog.busy = true
+			try {
+				const deleted = await this.clearWeek(this.clearWeekDialog.weekStart)
+				this.clearWeekDialog = { open: false, confirmed: false, busy: false, weekStart: null, count: 0 }
+				showSuccessMessage(this.t('zeitwerk', '{count} Aufträge gelöscht', { count: deleted }))
+			} catch (error) {
+				showErrorMessage(error.message)
+			} finally {
+				this.clearWeekDialog.busy = false
+			}
+		},
 		// --- PDF export: archive in Nextcloud (no browser download, Ahmad 2026-09-15) ---
 		async exportPdf() {
 			this.pdfBusy = true
@@ -660,6 +729,11 @@ export default {
 .copy-to__field { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .copy-to__field input { width: 100%; }
 .copy-to__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.clear-week { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.clear-week h3 { margin: 0; }
+.clear-week__hint { margin: 0; color: var(--color-text-maxcontrast); }
+.clear-week__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.view-toolbar__clear { margin-left: auto; }
 .roster-day-header { display: flex; flex-direction: column; font-weight: 600; font-size: 14px; color: var(--color-text-maxcontrast); }
 .roster-day-header.today { color: var(--color-primary-element); }
 .roster-day-date { font-weight: 400; font-size: 12px; }

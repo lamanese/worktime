@@ -175,6 +175,30 @@ class DutyRosterController extends BaseController {
     }
 
     /**
+     * «Woche leeren»: alle Auftraege der Woche loeschen. Der Client zeigt vorher
+     * einen Dialog mit Pflicht-Checkbox; der Server prueft Rolle und Wochensperre.
+     */
+    #[NoAdminRequired]
+    public function clearWeek(string $start): JSONResponse {
+        if ($authError = $this->requireAuth()) {
+            return $authError;
+        }
+        if (!$this->permissionService->canManageDutyRoster($this->userId)) {
+            return $this->forbiddenResponse();
+        }
+        $day = $this->parseDate($start);
+        if ($day === null) {
+            return new JSONResponse(['error' => 'Invalid date'], Http::STATUS_BAD_REQUEST);
+        }
+        try {
+            $deleted = $this->dutyJobService->clearWeek($day, $this->userId);
+            return $this->successResponse(['deleted' => $deleted]);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * Auge-Schalter: Vorlagen-Leiste fuer den eigenen Benutzer ein-/ausblenden
      * (ueberschreibt die Firmenvorgabe nur fuer diesen Planer).
      */

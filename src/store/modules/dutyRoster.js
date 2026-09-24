@@ -127,6 +127,18 @@ const actions = {
 		await dispatch('loadWeek', monday)
 		return created
 	},
+	/**
+	 * «Woche leeren»: deletes every card of the week the dialog was opened on
+	 * (the view passes the week it showed; fallback `week.weekStart`, same
+	 * reasoning as setTemplateSkipped), then reloads that week.
+	 */
+	async clearWeek({ state, dispatch }, weekStart) {
+		const shown = weekStart || state.week?.weekStart
+		if (!shown) return 0
+		const { deleted } = await DutyRosterService.clearWeek(shown)
+		await dispatch('loadWeek', shown)
+		return deleted
+	},
 	/** Eye toggle: per-user override, then reload so showTemplates comes from the server. */
 	async setTemplatesSidebar({ state, dispatch }, visible) {
 		await DutyRosterService.setTemplatesSidebar(visible)
