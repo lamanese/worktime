@@ -5,7 +5,7 @@ Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokument
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
-## [Unreleased]
+## [0.21.0] - 2026-09-24
 
 ### Added
 - **«Woche leeren» im Dienstplan**: Roter Button in der Werkzeugleiste des Wochenplans (nur Planer, nur in offenen Wochen, inaktiv bei leerer Woche). Loescht alle angezeigten Auftraege der Woche nach einem Bestaetigungsdialog, dessen Knopf erst nach dem Anhaken von «Ich weiss, was ich tue» klickbar wird; der Dialog haelt die geoeffnete Woche und Anzahl fest. Auftraege von Mitarbeitern, die nicht mehr im Dienstplan sind, bleiben wie in der Ansicht unangetastet. Vorlagen, Wochensperre und «Ignorieren»-Markierungen bleiben erhalten. Loeschung und der eine Audit-Eintrag «Woche geleert» (mit den entfernten Auftraegen) laufen in einer Transaktion. Neue Route `POST /api/duty-roster/clear-week`.
