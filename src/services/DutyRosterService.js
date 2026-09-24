@@ -135,4 +135,13 @@ export default {
 			rethrow(error)
 		}
 	},
+
+	async clearWeek(start) {
+		try {
+			const response = await api.post('/duty-roster/clear-week', { start })
+			return response.data
+		} catch (error) {
+			rethrow(error)
+		}
+	},
 }

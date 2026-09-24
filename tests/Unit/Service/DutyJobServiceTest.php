@@ -31,6 +31,7 @@ use OCA\Zeitwerk\Service\PermissionService;
 use OCA\Zeitwerk\Service\ValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -58,6 +59,7 @@ class DutyJobServiceTest extends TestCase {
     /** @var string[] locked Mondays (Y-m-d) */
     private array $lockedWeeks = [];
     private DutyJobService $service;
+    private IDBConnection $db;
     private bool $absenceRowVisible = true;
 
     protected function setUp(): void {
@@ -97,6 +99,8 @@ class DutyJobServiceTest extends TestCase {
         $l10n = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(fn (string $s, array $p = []) => vsprintf($s, $p));
 
+        $this->db = $this->createMock(IDBConnection::class);
+
         $this->service = new DutyJobService(
             $this->jobMapper,
             $this->employeeMapper,
@@ -110,6 +114,7 @@ class DutyJobServiceTest extends TestCase {
             $this->userManager,
             $this->config,
             $this->coverageService,
+            $this->db,
         );
     }
 
@@ -670,6 +675,89 @@ class DutyJobServiceTest extends TestCase {
         $this->lockedWeeks = ['2026-09-21']; // target locked
         $this->expectException(ForbiddenException::class);
         $this->service->copyWeek(new DateTime('2026-09-14'), new DateTime('2026-09-21'), 'sup');
+    }
+
+    // ---- Woche leeren ----
+
+    public function testClearWeekDeletesOnlyShownCardsInOneTransactionWithOneAudit(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1), $this->makeEmployee(2)]);
+        $this->jobMapper->method('findByDateRange')->willReturnCallback(function (DateTime $from, DateTime $to): array {
+            $this->assertSame('2026-09-14', $from->format('Y-m-d'));
+            $this->assertSame('2026-09-20', $to->format('Y-m-d'));
+            return [
+                $this->makeJob(1, 1, '2026-09-15', '09:00', 'A'),
+                $this->makeJob(2, 2, '2026-09-20', null, 'B'),
+                $this->makeJob(3, 9, '2026-09-16', null, 'hidden'), // employee 9 left the roster: not shown, stays
+            ];
+        });
+        $deleted = [];
+        $this->jobMapper->expects($this->exactly(2))->method('delete')
+            ->willReturnCallback(function (DutyJob $j) use (&$deleted): DutyJob { $deleted[] = $j->getId(); return $j; });
+        $this->auditLogService->expects($this->never())->method('logDelete');
+        $this->auditLogService->expects($this->once())->method('log')
+            ->with('admin', 'clear_week', DutyJobService::ENTITY_TYPE, null, $this->callback(
+                static fn (array $old): bool => array_column($old['jobs'], 'id') === [1, 2]
+            ), ['week' => '2026-09-14', 'deleted' => 2]);
+        $this->db->expects($this->once())->method('beginTransaction');
+        $this->db->expects($this->once())->method('commit');
+        $this->db->expects($this->never())->method('rollBack');
+
+        // Wednesday of the week: the service normalises to Monday
+        $this->assertSame(2, $this->service->clearWeek(new DateTime('2026-09-16'), 'admin'));
+        $this->assertSame([1, 2], $deleted);
+    }
+
+    public function testClearWeekRollsBackWhenAuditFails(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([$this->makeJob(1, 1, '2026-09-15', '09:00', 'A')]);
+        $this->jobMapper->method('delete')->willReturnArgument(0);
+        $this->auditLogService->method('log')->willThrowException(new \RuntimeException('audit down'));
+        $this->db->expects($this->once())->method('beginTransaction');
+        $this->db->expects($this->never())->method('commit');
+        $this->db->expects($this->once())->method('rollBack');
+
+        $this->expectException(\RuntimeException::class);
+        $this->service->clearWeek(new DateTime('2026-09-14'), 'admin');
+    }
+
+    public function testClearWeekRollsBackWhenADeleteFails(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([
+            $this->makeJob(1, 1, '2026-09-15', '09:00', 'A'),
+            $this->makeJob(2, 1, '2026-09-16', null, 'B'),
+        ]);
+        $this->jobMapper->method('delete')->willReturnCallback(static function (DutyJob $j): DutyJob {
+            if ($j->getId() === 2) {
+                throw new \RuntimeException('db gone');
+            }
+            return $j;
+        });
+        $this->auditLogService->expects($this->never())->method('log');
+        $this->db->expects($this->never())->method('commit');
+        $this->db->expects($this->once())->method('rollBack');
+
+        $this->expectException(\RuntimeException::class);
+        $this->service->clearWeek(new DateTime('2026-09-14'), 'admin');
+    }
+
+    public function testClearWeekOnEmptyWeekReturnsZeroWithoutTransactionOrAudit(): void {
+        $this->employeeMapper->method('findAllActiveInDutyRoster')->willReturn([$this->makeEmployee(1)]);
+        $this->jobMapper->method('findByDateRange')->willReturn([$this->makeJob(3, 9, '2026-09-16', null, 'hidden')]);
+        $this->jobMapper->expects($this->never())->method('delete');
+        $this->auditLogService->expects($this->never())->method('log');
+        $this->db->expects($this->never())->method('beginTransaction');
+
+        $this->assertSame(0, $this->service->clearWeek(new DateTime('2026-09-14'), 'admin'));
+    }
+
+    public function testClearWeekRejectsLockedWeek(): void {
+        $this->lockedWeeks = ['2026-09-14'];
+        $this->jobMapper->expects($this->never())->method('findByDateRange');
+        $this->jobMapper->expects($this->never())->method('delete');
+        $this->db->expects($this->never())->method('beginTransaction');
+
+        $this->expectException(ForbiddenException::class);
+        $this->service->clearWeek(new DateTime('2026-09-16'), 'sup');
     }
 
     // ---- Vorlagen mit festen Wochentagen (spec §12) ----

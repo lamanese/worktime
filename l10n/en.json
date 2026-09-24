@@ -815,7 +815,13 @@
 		"Nicht am vorgesehenen Tag – die Vorlage gilt für: {days}": "Not on the intended day – the template applies to: {days}",
 		"Loslassen, um den Auftrag aus dem Plan zu entfernen": "Release to remove the job from the roster",
 		"Einen Auftrag aus dem Plan hierher ziehen, um ihn zu entfernen.": "Drag a job from the roster here to remove it.",
-		"«{title}» aus dem Plan entfernt": "“{title}” removed from the roster"
+		"«{title}» aus dem Plan entfernt": "“{title}” removed from the roster",
+		"Woche geleert": "Week cleared",
+		"Woche leeren": "Clear week",
+		"Vorlagen, Wochensperre und «Ignorieren»-Markierungen bleiben erhalten.": "Templates, the week lock and “ignore” marks are kept.",
+		"Ich weiss, was ich tue: alle Aufträge dieser Woche endgültig löschen.": "I know what I am doing: permanently delete all jobs of this week.",
+		"Alle {count} Aufträge der Woche {label} werden gelöscht. Das lässt sich nicht rückgängig machen.": "All {count} jobs of week {label} will be deleted. This cannot be undone.",
+		"{count} Aufträge gelöscht": "{count} jobs deleted"
 	},
 	"pluralForm": "nplurals=2; plural=(n != 1);"
 }
