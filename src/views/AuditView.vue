@@ -89,7 +89,7 @@
                             <span v-else-if="entry.action === 'delete' && entry.oldValues" class="diff-old">
                                 {{ formatValues(entry.oldValues) }}
                             </span>
-                            <span v-else-if="['create', 'copy_week', 'lock_week', 'export_pdf', 'skip_template_week'].includes(entry.action) && entry.newValues" class="diff-new">
+                            <span v-else-if="['create', 'copy_week', 'clear_week', 'lock_week', 'export_pdf', 'skip_template_week'].includes(entry.action) && entry.newValues" class="diff-new">
                                 {{ formatValues(entry.newValues) }}
                             </span>
                             <span v-else>-</span>
@@ -204,6 +204,7 @@ export default {
                 approve: this.t('zeitwerk', 'Genehmigt'),
                 reject: this.t('zeitwerk', 'Abgelehnt'),
                 copy_week: this.t('zeitwerk', 'Woche kopiert'),
+                clear_week: this.t('zeitwerk', 'Woche geleert'),
                 lock_week: this.t('zeitwerk', 'Woche gesperrt'),
                 unlock_week: this.t('zeitwerk', 'Woche entsperrt'),
                 export_pdf: this.t('zeitwerk', 'PDF exportiert'),
@@ -349,7 +350,7 @@ export default {
 .action-unlock_week { background: var(--color-primary-element, #2563eb); color: #fff; }
 .action-export_pdf { background: var(--color-text-maxcontrast, #6b7280); color: #fff; }
 .action-update { background: var(--color-primary-element, #2563eb); color: #fff; }
-.action-delete { background: var(--wt-sick, #cc4b42); color: #fff; }
+.action-delete, .action-clear_week { background: var(--wt-sick, #cc4b42); color: #fff; }
 .action-submit { background: var(--wt-holiday, #c98b3a); color: #fff; }
 .action-approve { background: var(--wt-vacation, #4a9d63); color: #fff; }
 .action-reject { background: var(--wt-sick, #cc4b42); color: #fff; }

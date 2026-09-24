@@ -20,6 +20,7 @@ use OCA\Zeitwerk\Db\Employee;
 use OCA\Zeitwerk\Db\EmployeeMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IL10N;
 use OCP\IUserManager;
 
@@ -47,6 +48,7 @@ class DutyJobService {
         private IUserManager $userManager,
         private IConfig $config,
         private DutyTemplateCoverageService $coverageService,
+        private IDBConnection $db,
     ) {
     }
 
@@ -511,6 +513,52 @@ class DutyJobService {
             'created' => $created,
         ]);
         return $created;
+    }
+
+    /**
+     * «Woche leeren»: delete every card the planner sees in one week. Cards of
+     * employees who left the roster are hidden by getWeek() and stay untouched
+     * here too, so the count in the confirm dialog is exactly what disappears.
+     * Templates, the week lock and the per-week template skips stay as they are
+     * (Ahmad 2026-09-24): after clearing, the planner must not have to mark
+     * ignored templates again.
+     *
+     * Deletions and the single audit entry (carrying the removed cards) run in
+     * one transaction: either every card is gone and logged, or nothing changed.
+     *
+     * @return int number of cards deleted
+     * @throws ForbiddenException when the week is locked
+     */
+    public function clearWeek(DateTime $day, string $userId): int {
+        $monday = self::mondayOf($day);
+        $this->assertWeekOpen($monday);
+
+        $rosterIds = array_map(static fn (Employee $e) => $e->getId(), $this->employeeMapper->findAllActiveInDutyRoster());
+        $jobs = array_values(array_filter(
+            $this->jobMapper->findByDateRange($monday, (clone $monday)->add(new DateInterval('P6D'))),
+            static fn (DutyJob $job): bool => in_array($job->getEmployeeId(), $rosterIds, true)
+        ));
+        if ($jobs === []) {
+            return 0;
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $removed = [];
+            foreach ($jobs as $job) {
+                $removed[] = $job->jsonSerialize();
+                $this->jobMapper->delete($job);
+            }
+            $this->auditLogService->log($userId, 'clear_week', self::ENTITY_TYPE, null, ['jobs' => $removed], [
+                'week' => $monday->format('Y-m-d'),
+                'deleted' => count($removed),
+            ]);
+            $this->db->commit();
+        } catch (\Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+        return count($removed);
     }
 
     /**
