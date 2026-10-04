@@ -2,8 +2,10 @@
 
 Nextcloud App zur Arbeitszeiterfassung für Unternehmen.
 
-> **Dieses Repository wird nicht mehr weiterentwickelt.** Die im Nextcloud App Store
-> veröffentlichten Versionen bis 0.21.0 bleiben hier als Releases verfügbar.
+> **Hinweis:** Ich entwickle meine Projekte auf diesem Account nicht mehr weiter und
+> beantworte hier keine Issues oder Anfragen mehr. Die veröffentlichten Releases bleiben
+> verfügbar; die im Nextcloud App Store veröffentlichten Versionen bis 0.21.0 liegen hier
+> als Releases.
 
 > **Hinweis:** Zeitwerk ist ein eigenständig gepflegter Fork der App WorkTime
 > ([cpcMomentum/worktime](https://github.com/cpcMomentum/worktime),
